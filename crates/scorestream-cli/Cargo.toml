@@ -1,0 +1,14 @@
+[package]
+name = "scorestream-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "scorestream"
+path = "src/main.rs"
+
+[dependencies]
+scorestream-codec = { path = "../scorestream-codec" }
+scorestream-app = { path = "../scorestream-app" }
+serde_json.workspace = true
+

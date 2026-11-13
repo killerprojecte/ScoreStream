@@ -1,0 +1,11 @@
+!fragment 1.1 unit=q span=4
+@0
+mel C5:1 id=f1
+.
+@1
+mel D5:1 id=f2
+.
+@2
+mel E5:2 id=f3
+.
+!end at=4

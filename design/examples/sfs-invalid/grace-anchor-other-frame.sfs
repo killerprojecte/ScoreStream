@@ -1,0 +1,10 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=2
+!voice v part=p staff=1
+@0
+v C4:1 id=a
+.
+@1
+v D4:? id=g kind=grace anchor=#a order=-1
+.
+!end at=1

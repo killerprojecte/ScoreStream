@@ -1,0 +1,81 @@
+(* ScoreStream 1.1. Normative lexical and structural grammar.
+   Semantic constraints and the versioned vocabulary are in
+   scorestream-language.json and docs/02-format-standard.md.
+   Newline is LF; a reader may normalize CRLF before parsing.
+   JSON Schema validates the parsed AST, not raw SFS source text. *)
+
+document = ( score_document | fragment_document ), end_of_input ;
+score_document = { trivia }, score_header, { trivia | declaration },
+                 { frame, { trivia } }, end_record, { trivia } ;
+fragment_document = { trivia }, fragment_header, { trivia },
+                    { frame, { trivia } }, end_record, { trivia } ;
+score_header = "!score", ws, "1.1", ws, "unit=q", nl ;
+fragment_header = "!fragment", ws, "1.1", ws, "unit=q", ws,
+                  "span=", positive_rational, nl ;
+declaration = part_decl | voice_decl | metadata_decl | requirement_decl ;
+part_decl = "!part", ws, identifier, ws, "instrument=", atom,
+            ws, "staves=", positive_integer, nl ;
+voice_decl = "!voice", ws, identifier, ws, "part=", identifier,
+             ws, "staff=", positive_integer, nl ;
+metadata_decl = "!meta", ws, attributes, nl ;
+requirement_decl = "!requires", ws, namespace, "@", version, nl ;
+
+frame = "@", nonnegative_rational, nl, { trivia | record }, ".", nl ;
+record = event | state | mark | relation | measure ;
+event = identifier, ws, event_pitch, ":", duration, [ ws, attributes ], nl ;
+state = "=", ws, scope, ws, attributes, nl ;
+mark = "+", ws, target, ws, kind, [ ws, attributes ], nl ;
+relation = "~", ws, kind, ws, identifier, ws,
+           ( "start=" | "end=" | "continue=" ), reference,
+           [ ws, attributes ], nl ;
+measure = "|", ws, scope, ws, identifier, ws,
+          "len=", positive_rational, [ ws, attributes ], nl ;
+end_record = "!end", ws, "at=", nonnegative_rational, ( nl | end_of_input ) ;
+
+event_pitch = pitch | "r" | "_" | "u.", identifier ;
+pitch = step, [ accidental ], signed_integer ;
+step = "A" | "B" | "C" | "D" | "E" | "F" | "G" ;
+accidental = "#" | "##" | "b" | "bb" | "(", signed_rational, ")" ;
+duration = positive_rational | "?" ;
+reference = "#", identifier ;
+scope = "score" | identifier | identifier, ".s", positive_integer ;
+target = scope | reference ;
+kind = identifier | namespace, ".", identifier ;
+attributes = attribute, { ws, attribute } ;
+attribute = attribute_name, "=", value ;
+attribute_name = identifier | "x.", namespace, ".", identifier ;
+value = quoted_string | atom ;
+
+(* quoted_string has the JSON string lexical grammar; physical newlines
+   inside it are forbidden. Escapes such as \n are literal source escapes.
+   An atom contains no whitespace, quote, or control character.
+   Attributes are typed by their registered field, not guessed globally. *)
+quoted_string = '"', { json_string_character | json_escape }, '"' ;
+atom = atom_character, { atom_character } ;
+json_string_character = ? Unicode scalar other than quote, backslash, or U+0000 through U+001F ? ;
+json_escape = ? JSON escape: escaped quote, backslash, slash, b, f, n, r, t, or valid Unicode escape sequence; surrogate escapes must form valid pairs ? ;
+atom_character = ? Unicode scalar other than whitespace, quote, or control character ? ;
+non_newline_character = ? Unicode scalar other than CR or LF ? ;
+end_of_input = ? End of the input; a zero-width assertion, never repeated ? ;
+identifier = letter, { letter | digit | "_" | "-" } ;
+namespace = identifier, { ".", identifier } ;
+version = nonnegative_integer, { ".", nonnegative_integer } ;
+positive_rational = positive_integer, [ "/", positive_integer ] ;
+nonnegative_rational = nonnegative_integer, [ "/", positive_integer ] ;
+signed_rational = [ "+" | "-" ], nonnegative_rational ;
+signed_integer = [ "-" ], nonnegative_integer ;
+positive_integer = nonzero_digit, { digit } ;
+nonnegative_integer = "0" | positive_integer ;
+nonzero_digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+digit = "0" | nonzero_digit ;
+letter = "A".."Z" | "a".."z" ;
+ws = ( " " | "\t" ), { " " | "\t" } ;
+nl = "\n" ;
+trivia = blank_line | comment_line ;
+blank_line = [ ws ], nl ;
+comment_line = [ ws ], ";", { non_newline_character }, nl ;
+
+(* Canonical writers emit one space between fields, LF newlines,
+   reduced rationals, and no trailing whitespace. Comments are source
+   trivia, not musical annotations. Production readers use a real lexer:
+   splitting on '#' would corrupt pitch spellings and references. *)

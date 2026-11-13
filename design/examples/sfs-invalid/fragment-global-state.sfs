@@ -1,0 +1,6 @@
+!fragment 1.1 unit=q span=4
+@0
+= score tempo=q:120
+mel C4:4
+.
+!end at=4

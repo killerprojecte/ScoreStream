@@ -1,0 +1,9 @@
+[package]
+name = "scorestream-codec"
+version = "0.1.0"
+edition = "2021"
+description = "Strict ScoreStream 1.1 text reader and deterministic writer"
+
+[dependencies]
+scorestream-core = { path = "../scorestream-core" }
+serde_json = "=1.0.145"

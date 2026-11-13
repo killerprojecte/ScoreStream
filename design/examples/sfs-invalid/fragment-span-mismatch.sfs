@@ -1,0 +1,5 @@
+!fragment 1.1 unit=q span=4
+@0
+mel C4:3
+.
+!end at=3

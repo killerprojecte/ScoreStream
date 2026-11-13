@@ -1,0 +1,64 @@
+!score 1.1 unit=q
+!part piano instrument=piano staves=2
+!voice rh part=piano staff=1
+!voice lh part=piano staff=2
+@0
+= score tempo=q:104
+= piano.s1 meter=4/4 key=0 clef=G2
+= piano.s2 meter=4/4 key=0 clef=F4
+| piano m1 len=4 label="1"
+lh C3:4 id=b1
+rh E4:1 id=n1
+.
+@1
+rh G4:1 id=n2
+.
+@2
+rh C5:1 id=n3
+.
+@3
+rh G4:1 id=n4
+.
+@4
+| piano m2 len=4 label="2"
+lh F2:4 id=b2
+rh F4:1 id=n5
+.
+@5
+rh A4:1 id=n6
+.
+@6
+rh C5:1 id=n7
+.
+@7
+rh A4:1 id=n8
+.
+@8
+| piano m3 len=4 label="3"
+lh G2:4 id=b3
+rh G4:1 id=n9
+.
+@9
+rh B4:1 id=n10
+.
+@10
+rh D5:1 id=n11
+.
+@11
+rh B4:1 id=n12
+.
+@12
+| piano m4 len=4 label="4"
+lh C3:4 id=b4
+rh E4:1 id=n13
+.
+@13
+rh G4:1 id=n14
+.
+@14
+rh C5:1 id=n15
+.
+@15
+rh C5:1 id=n16
+.
+!end at=16

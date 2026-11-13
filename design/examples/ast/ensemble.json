@@ -1,0 +1,224 @@
+{
+  "format": "ScoreStream",
+  "format_version": "1.1",
+  "time_unit": "quarter",
+  "parts": [
+    {
+      "id": "p",
+      "instrument": "piano",
+      "staves": 2
+    },
+    {
+      "id": "v",
+      "instrument": "violin",
+      "staves": 1
+    }
+  ],
+  "voices": [
+    {
+      "id": "pr",
+      "part": "p",
+      "staff": 1
+    },
+    {
+      "id": "pl",
+      "part": "p",
+      "staff": 2
+    },
+    {
+      "id": "vn",
+      "part": "v",
+      "staff": 1
+    }
+  ],
+  "metadata": {},
+  "required_extensions": [],
+  "frames": [
+    {
+      "time": "0",
+      "records": [
+        {
+          "record": "state",
+          "target": "score",
+          "attributes": {
+            "tempo": "q:120"
+          }
+        },
+        {
+          "record": "state",
+          "target": "p.s1",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "G2"
+          }
+        },
+        {
+          "record": "state",
+          "target": "p.s2",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "F4"
+          }
+        },
+        {
+          "record": "state",
+          "target": "v.s1",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "G2"
+          }
+        },
+        {
+          "record": "measure",
+          "target": "p",
+          "id": "pm1",
+          "length": "4",
+          "attributes": {
+            "label": "1"
+          }
+        },
+        {
+          "record": "measure",
+          "target": "v",
+          "id": "vm1",
+          "length": "4",
+          "attributes": {
+            "label": "1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "C4",
+          "duration": "1",
+          "attributes": {
+            "id": "n1",
+            "chord": "c1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "E4",
+          "duration": "1",
+          "attributes": {
+            "id": "n2",
+            "chord": "c1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "G4",
+          "duration": "1",
+          "attributes": {
+            "id": "n3",
+            "chord": "c1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pl",
+          "pitch": "C3",
+          "duration": "4",
+          "attributes": {
+            "id": "n4"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "C5",
+          "duration": "2",
+          "attributes": {
+            "id": "n5"
+          }
+        }
+      ]
+    },
+    {
+      "time": "1",
+      "records": [
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "D4",
+          "duration": "1",
+          "attributes": {
+            "id": "n6",
+            "chord": "c2"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "F4",
+          "duration": "1",
+          "attributes": {
+            "id": "n7",
+            "chord": "c2"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "A4",
+          "duration": "1",
+          "attributes": {
+            "id": "n8",
+            "chord": "c2"
+          }
+        }
+      ]
+    },
+    {
+      "time": "2",
+      "records": [
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "E4",
+          "duration": "2",
+          "attributes": {
+            "id": "n9",
+            "chord": "c3"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "G4",
+          "duration": "2",
+          "attributes": {
+            "id": "n10",
+            "chord": "c3"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "B4",
+          "duration": "2",
+          "attributes": {
+            "id": "n11",
+            "chord": "c3"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "D5",
+          "duration": "2",
+          "attributes": {
+            "id": "n12"
+          }
+        }
+      ]
+    }
+  ],
+  "document_kind": "score",
+  "end": "4"
+}

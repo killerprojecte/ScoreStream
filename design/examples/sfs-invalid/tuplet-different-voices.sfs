@@ -1,0 +1,13 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=2
+!voice v part=p staff=1
+!voice v2 part=p staff=1
+@0
+v C4:1 id=a
+~ tuplet t start=#a actual=3 normal=2
+.
+@1
+v2 D4:1 id=b
+~ tuplet t end=#b
+.
+!end at=2

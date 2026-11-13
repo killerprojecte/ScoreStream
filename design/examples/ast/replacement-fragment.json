@@ -1,0 +1,56 @@
+{
+  "format": "ScoreStream",
+  "format_version": "1.1",
+  "time_unit": "quarter",
+  "parts": [],
+  "voices": [],
+  "metadata": {},
+  "required_extensions": [],
+  "frames": [
+    {
+      "time": "0",
+      "records": [
+        {
+          "record": "event",
+          "voice": "mel",
+          "pitch": "C5",
+          "duration": "1",
+          "attributes": {
+            "id": "f1"
+          }
+        }
+      ]
+    },
+    {
+      "time": "1",
+      "records": [
+        {
+          "record": "event",
+          "voice": "mel",
+          "pitch": "D5",
+          "duration": "1",
+          "attributes": {
+            "id": "f2"
+          }
+        }
+      ]
+    },
+    {
+      "time": "2",
+      "records": [
+        {
+          "record": "event",
+          "voice": "mel",
+          "pitch": "E5",
+          "duration": "2",
+          "attributes": {
+            "id": "f3"
+          }
+        }
+      ]
+    }
+  ],
+  "document_kind": "fragment",
+  "span": "4",
+  "end": "4"
+}

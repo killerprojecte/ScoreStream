@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_get_format:input:1.1",
+  "title": "Get the ScoreStream language standard input",
+  "type": "object",
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "const": "1.1",
+      "default": "1.1"
+    },
+    "profile": {
+      "type": "string",
+      "const": "core-measured",
+      "default": "core-measured"
+    },
+    "detail": {
+      "type": "string",
+      "enum": [
+        "quick",
+        "full"
+      ],
+      "default": "quick"
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "syntax",
+          "pitch",
+          "time",
+          "polyphony",
+          "state",
+          "marks",
+          "relations",
+          "editing",
+          "extensions",
+          "validation"
+        ]
+      },
+      "maxItems": 10,
+      "uniqueItems": true
+    }
+  },
+  "required": [],
+  "additionalProperties": false,
+  "description": "Empty arguments return current quick syntax and examples inline. Topics add requested detail without omitting the minimum authoring contract. Selection of unsupported versions/profiles is an actionable tool error."
+}

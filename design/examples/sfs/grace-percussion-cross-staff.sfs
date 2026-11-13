@@ -1,0 +1,23 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=2
+!part d instrument=drums staves=1
+!voice pr part=p staff=1
+!voice dr part=d staff=1
+@0
+= p.s1 meter=4/4 key=0 clef=G2
+= p.s2 meter=4/4 key=0 clef=F4
+= d.s1 meter=4/4 key=0 clef=percussion
+| p pm1 len=4 label="1"
+| d dm1 len=4 label="1"
+pr D5:? id=g1 kind=grace anchor=#a order=-1 w=8 slash=true
+pr C5:2 id=a w=2
++ #a articulation value=staccato
+dr u.snare:1 id=hit1
+.
+@1
+dr r:3 id=rest1 w=2 dots=1
+.
+@2
+pr C4:2 id=b staff=2 w=2
+.
+!end at=4

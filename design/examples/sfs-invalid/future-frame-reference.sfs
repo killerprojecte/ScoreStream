@@ -1,0 +1,10 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=2
+!voice v part=p staff=1
+@0
++ #a articulation value=staccato
+.
+@1
+v C4:1 id=a
+.
+!end at=2

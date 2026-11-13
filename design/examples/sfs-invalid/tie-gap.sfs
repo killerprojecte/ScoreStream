@@ -1,0 +1,12 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=2
+!voice v part=p staff=1
+@0
+v C4:1 id=a
+~ tie t start=#a sound=true
+.
+@2
+v C4:1 id=b
+~ tie t end=#b
+.
+!end at=3

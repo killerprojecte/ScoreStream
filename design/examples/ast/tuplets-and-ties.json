@@ -1,0 +1,199 @@
+{
+  "format": "ScoreStream",
+  "format_version": "1.1",
+  "time_unit": "quarter",
+  "parts": [
+    {
+      "id": "v",
+      "instrument": "violin",
+      "staves": 1
+    }
+  ],
+  "voices": [
+    {
+      "id": "vn",
+      "part": "v",
+      "staff": 1
+    }
+  ],
+  "metadata": {},
+  "required_extensions": [],
+  "frames": [
+    {
+      "time": "0",
+      "records": [
+        {
+          "record": "state",
+          "target": "v.s1",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "G2"
+          }
+        },
+        {
+          "record": "measure",
+          "target": "v",
+          "id": "vm1",
+          "length": "4",
+          "attributes": {
+            "label": "1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "C5",
+          "duration": "1/3",
+          "attributes": {
+            "id": "a",
+            "w": "8",
+            "tm": "3:2"
+          }
+        },
+        {
+          "record": "relation",
+          "kind": "tuplet",
+          "id": "u1",
+          "phase": "start",
+          "anchor": "#a",
+          "attributes": {
+            "actual": 3,
+            "normal": 2
+          }
+        }
+      ]
+    },
+    {
+      "time": "1/3",
+      "records": [
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "D5",
+          "duration": "1/3",
+          "attributes": {
+            "id": "b",
+            "w": "8",
+            "tm": "3:2"
+          }
+        }
+      ]
+    },
+    {
+      "time": "2/3",
+      "records": [
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "E5",
+          "duration": "1/3",
+          "attributes": {
+            "id": "c",
+            "w": "8",
+            "tm": "3:2"
+          }
+        },
+        {
+          "record": "relation",
+          "kind": "tuplet",
+          "id": "u1",
+          "phase": "end",
+          "anchor": "#c",
+          "attributes": {}
+        }
+      ]
+    },
+    {
+      "time": "1",
+      "records": [
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "r",
+          "duration": "2",
+          "attributes": {
+            "id": "r1",
+            "w": "2"
+          }
+        }
+      ]
+    },
+    {
+      "time": "3",
+      "records": [
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "F5",
+          "duration": "1",
+          "attributes": {
+            "id": "d",
+            "w": "4"
+          }
+        },
+        {
+          "record": "relation",
+          "kind": "tie",
+          "id": "t1",
+          "phase": "start",
+          "anchor": "#d",
+          "attributes": {
+            "sound": true,
+            "print": true
+          }
+        }
+      ]
+    },
+    {
+      "time": "4",
+      "records": [
+        {
+          "record": "measure",
+          "target": "v",
+          "id": "vm2",
+          "length": "4",
+          "attributes": {
+            "label": "2"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "F5",
+          "duration": "1",
+          "attributes": {
+            "id": "e",
+            "w": "4"
+          }
+        },
+        {
+          "record": "relation",
+          "kind": "tie",
+          "id": "t1",
+          "phase": "end",
+          "anchor": "#e",
+          "attributes": {}
+        }
+      ]
+    },
+    {
+      "time": "5",
+      "records": [
+        {
+          "record": "event",
+          "voice": "vn",
+          "pitch": "r",
+          "duration": "3",
+          "attributes": {
+            "id": "r2",
+            "w": "2",
+            "dots": 1
+          }
+        }
+      ]
+    }
+  ],
+  "document_kind": "score",
+  "end": "8"
+}

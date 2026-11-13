@@ -1,0 +1,7 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=1
+!voice p part=p staff=1
+@0
+p C4:1
+.
+!end at=1

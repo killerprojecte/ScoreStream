@@ -1,0 +1,138 @@
+{
+  "fixture_kind": "finite-negative-core-corpus",
+  "format_version": "1.1",
+  "cases": [
+    {
+      "path": "examples/sfs-invalid/uncommitted-frame.sfs",
+      "expected_code": "FRAME_UNCOMMITTED"
+    },
+    {
+      "path": "examples/sfs-invalid/duplicate-frame-time.sfs",
+      "expected_code": "FRAME_ORDER"
+    },
+    {
+      "path": "examples/sfs-invalid/unreduced-duration.sfs",
+      "expected_code": "RATIONAL_NOT_CANONICAL"
+    },
+    {
+      "path": "examples/sfs-invalid/zero-duration.sfs",
+      "expected_code": "DURATION_NOT_POSITIVE"
+    },
+    {
+      "path": "examples/sfs-invalid/decimal-position.sfs",
+      "expected_code": "RATIONAL_LEXICAL"
+    },
+    {
+      "path": "examples/sfs-invalid/undeclared-voice.sfs",
+      "expected_code": "VOICE_UNDECLARED"
+    },
+    {
+      "path": "examples/sfs-invalid/out-of-range-staff.sfs",
+      "expected_code": "STAFF_RANGE"
+    },
+    {
+      "path": "examples/sfs-invalid/duplicate-object-id.sfs",
+      "expected_code": "ID_DUPLICATE"
+    },
+    {
+      "path": "examples/sfs-invalid/alias-namespace-collision.sfs",
+      "expected_code": "ALIAS_DUPLICATE"
+    },
+    {
+      "path": "examples/sfs-invalid/unresolved-mark.sfs",
+      "expected_code": "REFERENCE_UNRESOLVED"
+    },
+    {
+      "path": "examples/sfs-invalid/future-frame-reference.sfs",
+      "expected_code": "REFERENCE_FUTURE_FRAME"
+    },
+    {
+      "path": "examples/sfs-invalid/grace-missing-anchor.sfs",
+      "expected_code": "GRACE_ANCHOR"
+    },
+    {
+      "path": "examples/sfs-invalid/grace-zero-order.sfs",
+      "expected_code": "GRACE_ORDER"
+    },
+    {
+      "path": "examples/sfs-invalid/grace-anchor-other-frame.sfs",
+      "expected_code": "GRACE_ANCHOR"
+    },
+    {
+      "path": "examples/sfs-invalid/grace-duplicate-order.sfs",
+      "expected_code": "GRACE_ORDER_DUPLICATE"
+    },
+    {
+      "path": "examples/sfs-invalid/chord-different-voices.sfs",
+      "expected_code": "CHORD_VOICE"
+    },
+    {
+      "path": "examples/sfs-invalid/chord-different-onsets.sfs",
+      "expected_code": "CHORD_ONSET"
+    },
+    {
+      "path": "examples/sfs-invalid/state-wrong-scope.sfs",
+      "expected_code": "STATE_SCOPE"
+    },
+    {
+      "path": "examples/sfs-invalid/state-conflict.sfs",
+      "expected_code": "STATE_CONFLICT"
+    },
+    {
+      "path": "examples/sfs-invalid/unknown-event-field.sfs",
+      "expected_code": "FIELD_UNKNOWN"
+    },
+    {
+      "path": "examples/sfs-invalid/truncated-event.sfs",
+      "expected_code": "END_TRUNCATES_EVENT"
+    },
+    {
+      "path": "examples/sfs-invalid/tuplet-end-without-start.sfs",
+      "expected_code": "RELATION_PHASE"
+    },
+    {
+      "path": "examples/sfs-invalid/tuplet-different-voices.sfs",
+      "expected_code": "TUPLET_VOICE"
+    },
+    {
+      "path": "examples/sfs-invalid/tie-pitch-mismatch.sfs",
+      "expected_code": "TIE_PITCH"
+    },
+    {
+      "path": "examples/sfs-invalid/tie-gap.sfs",
+      "expected_code": "TIE_CONTINUITY"
+    },
+    {
+      "path": "examples/sfs-invalid/unclosed-relation.sfs",
+      "expected_code": "RELATION_UNCLOSED"
+    },
+    {
+      "path": "examples/sfs-invalid/duplicate-attribute.sfs",
+      "expected_code": "ATTRIBUTE_DUPLICATE"
+    },
+    {
+      "path": "examples/sfs-invalid/negative-dots.sfs",
+      "expected_code": "DOTS_NEGATIVE"
+    },
+    {
+      "path": "examples/sfs-invalid/invalid-time-modification.sfs",
+      "expected_code": "TIME_MODIFICATION"
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-global-state.sfs",
+      "expected_code": "FRAGMENT_GLOBAL_STATE"
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-span-mismatch.sfs",
+      "expected_code": "FRAGMENT_SPAN"
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-gap.sfs",
+      "expected_code": "FRAGMENT_GAP"
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-undeclared-binding.sfs",
+      "expected_code": "VOICE_UNDECLARED"
+    }
+  ]
+}

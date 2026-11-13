@@ -1,0 +1,158 @@
+{
+  "format": "ScoreStream",
+  "format_version": "1.1",
+  "time_unit": "quarter",
+  "parts": [
+    {
+      "id": "p",
+      "instrument": "piano",
+      "staves": 2
+    },
+    {
+      "id": "d",
+      "instrument": "drums",
+      "staves": 1
+    }
+  ],
+  "voices": [
+    {
+      "id": "pr",
+      "part": "p",
+      "staff": 1
+    },
+    {
+      "id": "dr",
+      "part": "d",
+      "staff": 1
+    }
+  ],
+  "metadata": {},
+  "required_extensions": [],
+  "frames": [
+    {
+      "time": "0",
+      "records": [
+        {
+          "record": "state",
+          "target": "p.s1",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "G2"
+          }
+        },
+        {
+          "record": "state",
+          "target": "p.s2",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "F4"
+          }
+        },
+        {
+          "record": "state",
+          "target": "d.s1",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "percussion"
+          }
+        },
+        {
+          "record": "measure",
+          "target": "p",
+          "id": "pm1",
+          "length": "4",
+          "attributes": {
+            "label": "1"
+          }
+        },
+        {
+          "record": "measure",
+          "target": "d",
+          "id": "dm1",
+          "length": "4",
+          "attributes": {
+            "label": "1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "D5",
+          "duration": "?",
+          "attributes": {
+            "id": "g1",
+            "kind": "grace",
+            "anchor": "#a",
+            "order": -1,
+            "w": "8",
+            "slash": true
+          }
+        },
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "C5",
+          "duration": "2",
+          "attributes": {
+            "id": "a",
+            "w": "2"
+          }
+        },
+        {
+          "record": "mark",
+          "target": "#a",
+          "kind": "articulation",
+          "attributes": {
+            "value": "staccato"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "dr",
+          "pitch": "u.snare",
+          "duration": "1",
+          "attributes": {
+            "id": "hit1"
+          }
+        }
+      ]
+    },
+    {
+      "time": "1",
+      "records": [
+        {
+          "record": "event",
+          "voice": "dr",
+          "pitch": "r",
+          "duration": "3",
+          "attributes": {
+            "id": "rest1",
+            "w": "2",
+            "dots": 1
+          }
+        }
+      ]
+    },
+    {
+      "time": "2",
+      "records": [
+        {
+          "record": "event",
+          "voice": "pr",
+          "pitch": "C4",
+          "duration": "2",
+          "attributes": {
+            "id": "b",
+            "staff": 2,
+            "w": "2"
+          }
+        }
+      ]
+    }
+  ],
+  "document_kind": "score",
+  "end": "4"
+}
