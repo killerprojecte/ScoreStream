@@ -33,6 +33,14 @@ pub struct ViewResponse {
     pub can_undo: bool,
     pub can_redo: bool,
 }
+
+/// A committed score without editor drafts or view-only projection work.
+#[derive(Clone, Debug, Serialize)]
+pub struct CommittedSnapshot {
+    pub source: String,
+    pub document: Value,
+    pub revision_id: String,
+}
 #[derive(Clone)]
 struct Snapshot {
     source: String,
@@ -214,6 +222,14 @@ impl Workspace {
     pub fn current(&self) -> ViewResponse {
         let snap = &self.history[self.cursor];
         self.view(snap, &snap.source, true, vec![])
+    }
+    pub fn committed_snapshot(&self) -> CommittedSnapshot {
+        let snap = &self.history[self.cursor];
+        CommittedSnapshot {
+            source: snap.source.clone(),
+            document: snap.document.clone(),
+            revision_id: self.revision_id.clone(),
+        }
     }
     pub fn preview_source(&mut self, source: &str) -> ViewResponse {
         self.draft_seq += 1;

@@ -1,5 +1,6 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import type { View } from './types';
+import type { McpSettings, McpStatus } from './mcp/model';
 export const native = isTauri();
 export const backend = {
   openDemo:()=>invoke<View>('open_demo'),
@@ -11,4 +12,10 @@ export const backend = {
   setDuration:(eventId:string,duration:string,expectedRevisionId:string)=>invoke<View>('set_event_duration',{eventId,duration,expectedRevisionId}),
   openFile:()=>invoke<{path:string;source:string}|null>('open_source_file'),
   saveFile:(source:string)=>invoke<string|null>('save_source_file',{source}),
+};
+export const mcpBackend = {
+  status:()=>invoke<McpStatus>('mcp_status'),
+  save:(settings:McpSettings)=>invoke<McpStatus>('mcp_save_settings',{settings}),
+  start:(settings:McpSettings,token:string|null)=>invoke<McpStatus>('mcp_start',{settings,token}),
+  stop:()=>invoke<McpStatus>('mcp_stop'),
 };

@@ -1,5 +1,6 @@
 /target/
 /crates/scorestream-desktop/target/
+/crates/scorestream-desktop/gen/
 /desktop/node_modules/
 /desktop/dist/
 *.log

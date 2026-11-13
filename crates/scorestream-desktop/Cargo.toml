@@ -17,6 +17,8 @@ tauri-build = { version = "=2.5.3", features = [] }
 
 [dependencies]
 scorestream-app = { path = "../scorestream-app" }
+scorestream-mcp = { path = "../scorestream-mcp" }
+serde_json = "1"
 tauri = { version = "=2.9.4", features = [] }
 # Keep the runtime API compatible with Tauri 2.9 / tauri-runtime-wry 2.9.3.
 # Newer 2.11 runtime releases add trait methods absent in this Wry adapter.

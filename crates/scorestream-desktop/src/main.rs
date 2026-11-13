@@ -1,9 +1,40 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use scorestream_app::{ViewResponse, Workspace};
 use std::io::Write;
-use std::sync::Mutex;
-use tauri::State;
-type Authority = Mutex<Workspace>;
+use std::sync::{Arc, Mutex};
+use tauri::{Manager, State};
+mod mcp_service;
+use mcp_service::{McpService, McpSettings, McpStatus};
+type Authority = Arc<Mutex<Workspace>>;
+type McpHost = Mutex<McpService>;
+
+#[tauri::command]
+fn mcp_status(state: State<'_, McpHost>) -> Result<McpStatus, String> {
+    Ok(state.lock().map_err(|e| e.to_string())?.status())
+}
+#[tauri::command]
+async fn mcp_save_settings(
+    settings: McpSettings,
+    state: State<'_, McpHost>,
+) -> Result<McpStatus, String> {
+    state.lock().map_err(|e| e.to_string())?.save(settings)
+}
+#[tauri::command]
+async fn mcp_start(
+    settings: McpSettings,
+    token: Option<String>,
+    state: State<'_, McpHost>,
+    authority: State<'_, Authority>,
+) -> Result<McpStatus, String> {
+    state
+        .lock()
+        .map_err(|e| e.to_string())?
+        .start(settings, token, authority.inner().clone())
+}
+#[tauri::command]
+async fn mcp_stop(state: State<'_, McpHost>) -> Result<McpStatus, String> {
+    state.lock().map_err(|e| e.to_string())?.stop()
+}
 #[tauri::command]
 fn current(state: State<'_, Authority>) -> Result<ViewResponse, String> {
     Ok(state.lock().map_err(|e| e.to_string())?.current())
@@ -129,8 +160,11 @@ fn report_smoke_test(report: String) -> Result<(), String> {
 fn main() {
     let authority = Workspace::demo().expect("embedded demo must validate");
     let builder = tauri::Builder::default()
-        .manage(Mutex::new(authority))
+        .manage(Arc::new(Mutex::new(authority)))
         .setup(|app| {
+            app.manage(Mutex::new(McpService::load(
+                app.path().app_config_dir()?.join("mcp-service.json"),
+            )));
             #[allow(unused_mut)]
             let mut window = tauri::WebviewWindowBuilder::new(
                 app,
@@ -159,6 +193,10 @@ fn main() {
         set_event_duration,
         open_source_file,
         save_source_file,
+        mcp_status,
+        mcp_save_settings,
+        mcp_start,
+        mcp_stop,
         report_smoke_test
     ]);
     #[cfg(not(feature = "smoke-test"))]
@@ -172,9 +210,22 @@ fn main() {
         set_event_pitch,
         set_event_duration,
         open_source_file,
-        save_source_file
+        save_source_file,
+        mcp_status,
+        mcp_save_settings,
+        mcp_start,
+        mcp_stop
     ]);
     builder
-        .run(tauri::generate_context!())
-        .expect("failed to run ScoreStream");
+        .build(tauri::generate_context!())
+        .expect("failed to build ScoreStream")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                if let Some(state) = app.try_state::<McpHost>() {
+                    if let Ok(mut service) = state.lock() {
+                        let _ = service.stop();
+                    }
+                }
+            }
+        });
 }

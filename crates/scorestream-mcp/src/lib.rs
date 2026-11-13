@@ -1,6 +1,9 @@
-//! Read-only MCP format discovery. No score-edit tool is advertised until it
-//! can connect to the same exclusive workspace authority as the desktop.
+//! MCP format discovery and optional read-only access to the desktop authority.
+//! Stdio remains format-only. No score editing tools are advertised.
+pub mod sse;
+use scorestream_app::Workspace;
 use serde_json::{Value, json};
+use std::sync::{Arc, Mutex, TryLockError};
 const REFERENCE: &str = include_str!("../../../design/spec/agent-reference.md");
 const GRAMMAR: &str = include_str!("../../../design/spec/scorestream.ebnf");
 const LANGUAGE: &str = include_str!("../../../design/spec/scorestream-language.json");
@@ -83,6 +86,16 @@ fn read_resource(uri: &str) -> Option<Value> {
     Some(json!({"contents":[{"uri":uri,"mimeType":mime,"text":text}]}))
 }
 pub fn handle(request: Value) -> Option<Value> {
+    handle_with_workspace(request, None)
+}
+
+/// Share the desktop's existing authority, never a subprocess or copied score.
+/// Reads use committed snapshots only; preview buffers are private to the editor.
+pub fn workspace_handler(workspace: Arc<Mutex<Workspace>>) -> sse::Handler {
+    Arc::new(move |request| handle_with_workspace(request, Some(&workspace)))
+}
+
+fn handle_with_workspace(request: Value, workspace: Option<&Mutex<Workspace>>) -> Option<Value> {
     let id = request.get("id").cloned();
     if request["jsonrpc"] != "2.0" || !request["method"].is_string() {
         return Some(error(id.unwrap_or(Value::Null), -32600, "Invalid Request"));
@@ -117,12 +130,45 @@ pub fn handle(request: Value) -> Option<Value> {
         }
         "resources/list" => resources(),
         "resources/templates/list" => json!({"resourceTemplates":[]}),
+        "resources/read"
+            if params["uri"] == "scorestream://workspace/current" && workspace.is_some() =>
+        {
+            let current = match workspace.unwrap().try_lock() {
+                Ok(authority) => authority.committed_snapshot(),
+                Err(TryLockError::WouldBlock) => {
+                    return Some(error(id, -32001, "Workspace busy; retry the request"));
+                }
+                Err(TryLockError::Poisoned(_)) => {
+                    return Some(error(id, -32603, "Workspace unavailable"));
+                }
+            };
+            let text = json!({"source":current.source,"document":current.document,"revision_id":current.revision_id}).to_string();
+            json!({"contents":[{"uri":"scorestream://workspace/current","mimeType":"application/json","text":text}]})
+        }
         "resources/read" => match read_resource(params["uri"].as_str().unwrap_or("")) {
             Some(v) => v,
             None => return Some(error(id, -32002, "Resource not found")),
         },
         _ => return Some(error(id, -32601, "Method not found")),
     };
+    let mut result = result;
+    if workspace.is_some() {
+        match method {
+            "initialize" => {
+                result["serverInfo"]["name"] = json!("scorestream-desktop");
+                result["instructions"] = json!("Read-only ScoreStream 1.1 discovery and the desktop's current committed score at scorestream://workspace/current. Private drafts and score editing are not exposed.");
+            }
+            "resources/list" => result["resources"].as_array_mut().unwrap().push(json!({
+                "uri":"scorestream://workspace/current", "name":"Current committed desktop score", "mimeType":"application/json"
+            })),
+            "resources/read" if params["uri"] == "scorestream://capabilities" => {
+                let mut data: Value = serde_json::from_str(result["contents"][0]["text"].as_str().unwrap()).unwrap();
+                data["workspace_access"] = json!(true);
+                result["contents"][0]["text"] = json!(data.to_string());
+            }
+            _ => {}
+        }
+    }
     Some(json!({"jsonrpc":"2.0","id":id,"result":result}))
 }
 #[cfg(test)]
@@ -160,5 +206,68 @@ mod tests {
     fn no_unimplemented_mutation() {
         let r=handle(json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"score_apply_edit"}})).unwrap();
         assert_eq!(r["error"]["code"], -32602);
+    }
+    #[test]
+    fn shared_workspace_reads_committed_state_without_touching_drafts() {
+        let workspace = Arc::new(Mutex::new(Workspace::demo().unwrap()));
+        let handler = workspace_handler(workspace.clone());
+        let request = json!({"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"scorestream://workspace/current"}});
+        let read = || {
+            let response = handler(request.clone()).unwrap();
+            serde_json::from_str::<Value>(
+                response["result"]["contents"][0]["text"].as_str().unwrap(),
+            )
+            .unwrap()
+        };
+        let first = read();
+        {
+            let _busy = workspace.lock().unwrap();
+            let response = handler(request.clone()).unwrap();
+            assert_eq!(response["error"]["code"], -32001);
+        }
+        let source = first["source"].as_str().unwrap();
+        workspace
+            .lock()
+            .unwrap()
+            .preview_source(&format!("{source}; private draft\n"));
+        assert_eq!(read(), first);
+        assert!(
+            workspace
+                .lock()
+                .unwrap()
+                .set_event_pitch("n1", "D4", first["revision_id"].as_str().unwrap())
+                .is_err(),
+            "Reading MCP must not clear the dirty buffer gate"
+        );
+        let replacement = source.replace("E4:1", "F4:1");
+        workspace
+            .lock()
+            .unwrap()
+            .apply_source(&replacement, first["revision_id"].as_str().unwrap())
+            .unwrap();
+        assert_eq!(read()["source"], replacement);
+        // Opening another document swaps the value, not the shared authority.
+        *workspace.lock().unwrap() = Workspace::demo().unwrap();
+        assert_eq!(read()["source"], source);
+        assert_eq!(read().as_object().unwrap().len(), 3);
+        let list = handler(json!({"jsonrpc":"2.0","id":2,"method":"resources/list"})).unwrap();
+        assert!(
+            list["result"]["resources"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|r| r["uri"] == "scorestream://workspace/current")
+        );
+        let no_workspace = handle(request).unwrap();
+        assert_eq!(no_workspace["error"]["code"], -32002);
+        let capabilities = handler(json!({"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"scorestream://capabilities"}})).unwrap();
+        let data: Value = serde_json::from_str(
+            capabilities["result"]["contents"][0]["text"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(data["workspace_access"], true);
+        assert_eq!(data["score_edits"], false);
     }
 }

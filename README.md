@@ -16,7 +16,39 @@ cargo run -p scorestream-cli -- canonical examples/first-light.sfs
 cargo run -p scorestream-mcp
 ```
 
-The MCP binary reads newline-delimited JSON-RPC on stdin and writes responses only on stdout. It exposes `score_get_format` and a finite set of versioned language resources. It intentionally does not advertise unimplemented score editing, rendering or conversion tools.
+The MCP binary defaults to newline-delimited JSON-RPC on stdin and writes responses only on stdout. It exposes `score_get_format` and a finite set of versioned language resources. It intentionally does not advertise unimplemented score editing, rendering or conversion tools.
+
+### MCP over HTTP + SSE
+
+For clients configured with an SSE server URL, start the standalone server:
+
+```sh
+cargo run -p scorestream-mcp -- --transport sse
+# Optional explicit address and port (port 0 selects an available port):
+cargo run -p scorestream-mcp -- --transport sse --bind 127.0.0.1 --port 3210
+# Optional authentication; supply the secret through your environment, not argv:
+cargo run -p scorestream-mcp -- --transport sse --token-env SCORESTREAM_MCP_TOKEN
+```
+
+Connect to **http://127.0.0.1:3210/sse**. [Example client configuration](examples/mcp-sse-client.json) uses the common `mcpServers` / `type: sse` shape; adapt the surrounding configuration to your client. If authentication is enabled, the client must send `Authorization: Bearer <your token>` on both GET and POST. Clients that cannot set this header cannot connect to an authenticated service. Tokens are not accepted from URLs and are not printed by the server.
+
+This implements the [2024-11-05 HTTP+SSE transport](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports): GET `/sse` opens a stream and returns an `endpoint` event with a session-specific POST `/messages?session_id=…` URI. POSTs return HTTP 202; JSON-RPC responses arrive as `message` events on that session's stream. It is **not Streamable HTTP** and does not expose a `/mcp` endpoint. A disconnected client starts a fresh connection and initializes again; replay/resumption is not supported.
+
+The default listener is loopback only. Binding to another interface requires a token; plain HTTP is not encrypted, so use loopback or a separately secured TLS tunnel rather than exposing it publicly. Browser `Origin` and HTTP `Host` are checked against the actual listener address/port (also `localhost` for loopback). Missing Origin is allowed for native clients, but untrusted origins are rejected even with a token. Arbitrary browser origins and reverse-proxy hostnames are not enabled. The server limits each request to 1 MiB, active sessions to 32, and each session's pending replies to 32; slow clients receive HTTP 429 before their request is processed. Stop with Ctrl-C.
+
+The desktop hosts the same Rust service in-process. Its optional `scorestream://workspace/current` resource reads the **current committed** source, document and revision from the desktop's existing workspace. It never reads a private editor draft or exposes file paths. Standalone stdio/SSE remain format-only because they have no desktop workspace. No score mutation tools or resource subscriptions are advertised. See [desktop setup](desktop/README.md) for configuration and lifecycle controls.
+
+Transport verification:
+
+```sh
+cargo test -p scorestream-mcp --locked
+cargo build -p scorestream-mcp --locked
+python3 scripts/verify_mcp_sse.py
+# Optional, if the official Python MCP SDK is installed:
+python3 scripts/verify_mcp_sdk.py
+```
+
+The Rust tests exercise the HTTP router and stream bodies in-process. The Python acceptance test additionally uses real loopback HTTP connections, compares two SSE sessions with stdio, checks authentication/origin rejection and disconnect cleanup, and verifies shutdown releases the listening port. The optional SDK test uses two simultaneous authenticated `sse_client` / `ClientSession` connections from the official Python MCP SDK (verified with 1.29.0). These process tests need permission to bind a local socket.
 
 The separate desktop crate keeps platform WebView dependencies out of headless core/CLI builds. Desktop setup and platform verification are described in `desktop/README.md` when available.
 

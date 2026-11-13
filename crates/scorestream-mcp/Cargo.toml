@@ -6,3 +6,14 @@ edition.workspace = true
 [dependencies]
 serde_json.workspace = true
 
+scorestream-app = { path = "../scorestream-app" }
+axum = { version = "=0.8.8", default-features = false, features = ["http1", "tokio", "json", "query"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "sync", "time", "macros", "signal"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+serde.workspace = true
+uuid = { version = "=1.26.1", features = ["v4", "serde"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

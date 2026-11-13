@@ -2,7 +2,8 @@ import './style.css';
 import { shell } from './shell';
 import { Inspector } from './inspector/view';
 import { clampZoom, engravingWidth, MIN_ZOOM, MAX_ZOOM } from './layout';
-import { backend,native } from './bridge';
+import { backend,mcpBackend,native } from './bridge';
+import { McpDialog } from './mcp/view';
 import { SourceEditor } from './editor/source';
 import { project,RENDERER } from './render/project';
 import { LatestOnly } from './render/scheduler';
@@ -11,6 +12,7 @@ import RenderWorker from './render/worker?worker';
 import type {View,RenderResult,PreviewKey,ScoreEvent} from './types';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 $('app').innerHTML = shell;
+new McpDialog(mcpBackend,native);
 
 export class Workbench {
  editor:SourceEditor; inspector:Inspector; current:View|null=null; view:View|null=null; published:View|null=null; selected:ScoreEvent|null=null;
@@ -35,7 +37,7 @@ export class Workbench {
   $('toggle-title').onclick=()=>{const heading=$('score-heading');heading.hidden=!heading.hidden;$('toggle-title').setAttribute('aria-pressed',String(!heading.hidden));};
   new ResizeObserver(()=>{const width=this.measureWidth();if(width===this.layoutWidth)return;this.layoutWidth=width;clearTimeout(this.resizeTimer);this.resizeTimer=window.setTimeout(()=>this.relayout(),120);}).observe($('canvas-scroll'));
   $('about').onclick=()=>$<HTMLDialogElement>('about-dialog').showModal();$('close-about').onclick=()=>$<HTMLDialogElement>('about-dialog').close();
-  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();void this.save();}if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();void this.apply();}});
+  document.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();void this.save();}if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();void this.apply();}});
   window.addEventListener('beforeunload',e=>{if(this.dirty){e.preventDefault();e.returnValue='';}});
  }
  get dirty(){return !!this.current&&this.editor.value!==this.current.source;}

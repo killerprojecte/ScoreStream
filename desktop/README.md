@@ -9,11 +9,12 @@ A native **Tauri 2 + Rust** application with a TypeScript/Monaco view layer. The
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
 - Bounded renderer queue: one running job and one replaceable pending job, off the UI thread.
+- In-process HTTP + SSE MCP service with listen IP/port controls, an optional session-only key, start/stop/status, and a secret-free connection URL. MCP reads the same committed workspace as the editor; private drafts are excluded. See [MCP service](MCP.md).
 - Compact split/score views, optional page title, collapsible inspector, 60–200% zoom and width-aware engraving. These presentation controls never mutate score data. See [UI refinement](../docs/UI_REFINEMENT.md).
 
 The initial projection supports aligned measured staves, ordinary pitches, rests/spacers, equal-duration chords, basic clefs/key/meter, and ordinary/dotted durations. It rejects unsupported rhythmic/layout cases and reports omitted markings. It is **not MusicXML interchange** and not a full milestone D implementation. MEI projection currently lives in an isolated TypeScript adapter over Rust-typed DTOs; moving it into a Rust rendering crate is planned. No renderer output becomes authoritative score data.
 
-Session history is in memory. Save As persists the SFS source, not revision history. No audio/playback, shared desktop/MCP writer, packaged installers, or complete notation editing is claimed. Native Windows/macOS verification remains pending unless recorded in a later test report.
+Session history is in memory. Save As persists the SFS source, not revision history. No audio/playback, MCP score mutation, packaged installers, or complete notation editing is claimed. Native Windows/macOS verification remains pending unless recorded in a later test report.
 
 For the latest actual build/runtime results and blockers, see [desktop validation](../docs/DESKTOP_VALIDATION.md).
 
@@ -58,6 +59,7 @@ An opt-in `smoke-test` Cargo feature adds a test-only report command. Set `SCORE
 - `src/render/scheduler.ts`: bounded latest-only publication.
 - `src/render/sanitize.ts`: inert SVG-only publication.
 - `src/main.ts`: editor-session state and UI orchestration.
+- `src/mcp/`: service settings dialog and a testable, stale-response-safe lifecycle controller.
 - `../crates/scorestream-desktop`: thin native command/dialog/lifecycle adapters over the shared Rust authority.
 
 Each pending preview is invalidated on **every** keystroke, even if the new source is invalid. Draft keys distinguish session, sequence, SHA-256 content hash, base revision and renderer/layout identity. Graphical mutations are disabled for dirty text. Save writes source only after Rust validation; no unrestricted filesystem API is exposed to the WebView. File opens are bounded to 4 MiB.
