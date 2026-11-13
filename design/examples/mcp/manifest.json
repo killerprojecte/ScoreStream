@@ -1,0 +1,221 @@
+{
+  "status": "design_fixtures_not_server_execution",
+  "validation": "JSON Schema 2020-12, offline; semantic constraints require the future Rust core",
+  "fixture_note": "Examples illustrate individual contract shapes. They are not a log of a live workspace; server-assigned identifiers, renderer names and times are sample values.",
+  "cases": [
+    {
+      "file": "examples/mcp/valid/score_get_format.arguments.json",
+      "tool": "score_get_format",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "mcp/examples/score_get_format.structured.json",
+      "tool": "score_get_format",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_import.arguments.json",
+      "tool": "score_import",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_import.structured.json",
+      "tool": "score_import",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_inspect.arguments.json",
+      "tool": "score_inspect",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_inspect.structured.json",
+      "tool": "score_inspect",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_read_region.arguments.json",
+      "tool": "score_read_region",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_read_region.structured.json",
+      "tool": "score_read_region",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_validate.arguments.json",
+      "tool": "score_validate",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_validate.structured.json",
+      "tool": "score_validate",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_preview_edit.arguments.json",
+      "tool": "score_preview_edit",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_preview_edit.structured.json",
+      "tool": "score_preview_edit",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_apply_edit.arguments.json",
+      "tool": "score_apply_edit",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_apply_edit.structured.json",
+      "tool": "score_apply_edit",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_export.arguments.json",
+      "tool": "score_export",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_export.structured.json",
+      "tool": "score_export",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_render.arguments.json",
+      "tool": "score_render",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_render.structured.json",
+      "tool": "score_render",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/job_get.arguments.json",
+      "tool": "job_get",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/job_get.structured.json",
+      "tool": "job_get",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/job_cancel.arguments.json",
+      "tool": "job_cancel",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/job_cancel.structured.json",
+      "tool": "job_cancel",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_get_format.full.structured.json",
+      "tool": "score_get_format",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_apply_edit.conflict.structured.json",
+      "tool": "score_apply_edit",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_render.job.structured.json",
+      "tool": "score_render",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/score_import.asset-mxl.arguments.json",
+      "tool": "score_import",
+      "schema": "inputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/valid/job_get.failed.structured.json",
+      "tool": "job_get",
+      "schema": "outputSchema",
+      "expected_valid": true
+    },
+    {
+      "file": "examples/mcp/invalid/score_import.remote-url.json",
+      "tool": "score_import",
+      "schema": "inputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/score_apply_edit.missing-idempotency.json",
+      "tool": "score_apply_edit",
+      "schema": "inputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/score_apply_edit.caller-actor.json",
+      "tool": "score_apply_edit",
+      "schema": "inputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/score_render.missing-revision.json",
+      "tool": "score_render",
+      "schema": "inputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/result.mixed-branches.json",
+      "tool": "score_get_format",
+      "schema": "outputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/result.diagnostics-overflow.json",
+      "tool": "score_validate",
+      "schema": "outputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/score_read_region.missing-text-map.json",
+      "tool": "score_read_region",
+      "schema": "outputSchema",
+      "expected_valid": false
+    },
+    {
+      "file": "examples/mcp/invalid/job_get.success-without-result.json",
+      "tool": "job_get",
+      "schema": "outputSchema",
+      "expected_valid": false
+    }
+  ],
+  "wire_examples": [
+    "mcp/examples/score_get_format.request.modern.json",
+    "mcp/examples/score_get_format.result.modern.json"
+  ]
+}

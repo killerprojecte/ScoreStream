@@ -1,0 +1,440 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:schema:annotation-future:1.1",
+  "title": "Future independent knowledge annotation contract 1.1 — not implemented",
+  "$ref": "#/$defs/KnowledgeAnnotation",
+  "$defs": {
+    "EventAnchor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "events"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "event_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Exact stable event identities. Does not mean every event between their earliest and latest positions."
+    },
+    "MeasureAnchor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "measures"
+        },
+        "measure_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "measure_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Exact stable measure identities, possibly from separate local part/staff sequences. Display labels are never identity."
+    },
+    "ScoreRegionAnchor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "score_region"
+        },
+        "clock_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "start": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "end": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "filters": {
+          "$ref": "urn:scorestream:schema:selection:1.1#/$defs/Filters"
+        }
+      },
+      "required": [
+        "kind",
+        "clock_id",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false,
+      "description": "Semantic musical region: half-open exact time interval intersected with explicit part/voice/staff filters. Pinned-only; an unchanged absolute time does not prove unchanged musical content."
+    },
+    "VisualSnapshotAnchor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "visual_snapshot"
+        },
+        "render_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "page_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "coordinate_space": {
+          "const": "page_viewbox"
+        },
+        "rectangle": {
+          "$ref": "urn:scorestream:schema:selection:1.1#/$defs/PageRectangle"
+        }
+      },
+      "required": [
+        "kind",
+        "render_id",
+        "page_id",
+        "coordinate_space",
+        "rectangle"
+      ],
+      "additionalProperties": false,
+      "description": "Pinned render evidence only, e.g. a graphic-notation region not yet mapped to semantic objects. Cannot follow a new layout or be treated as a musical event selection. Render revision must equal the binding revision."
+    },
+    "IdentityAnchor": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EventAnchor"
+        },
+        {
+          "$ref": "#/$defs/MeasureAnchor"
+        }
+      ]
+    },
+    "PinnedAnchor": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EventAnchor"
+        },
+        {
+          "$ref": "#/$defs/MeasureAnchor"
+        },
+        {
+          "$ref": "#/$defs/ScoreRegionAnchor"
+        },
+        {
+          "$ref": "#/$defs/VisualSnapshotAnchor"
+        }
+      ]
+    },
+    "PinnedBinding": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "const": "pinned"
+        },
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "anchor": {
+          "$ref": "#/$defs/PinnedAnchor"
+        }
+      },
+      "required": [
+        "mode",
+        "score",
+        "anchor"
+      ],
+      "additionalProperties": false,
+      "description": "Always refers to this immutable score revision. Later score edits do not invalidate this historical reference, though a UI may indicate that it is not the latest revision."
+    },
+    "FollowIdentityBinding": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "const": "follow_identity"
+        },
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "origin_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "resolved_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "anchor": {
+          "$ref": "#/$defs/IdentityAnchor"
+        }
+      },
+      "required": [
+        "mode",
+        "score_id",
+        "origin_revision_id",
+        "resolved_revision_id",
+        "anchor"
+      ],
+      "additionalProperties": false,
+      "description": "Track the same stable event/measure identities, not the same time, measure label, or pixels. resolved_revision_id changes only after an explicit successful rebase result. No automatic replacement, split/merge choice, or nearest-object matching."
+    },
+    "Binding": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PinnedBinding"
+        },
+        {
+          "$ref": "#/$defs/FollowIdentityBinding"
+        }
+      ]
+    },
+    "EffectDescription": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "musical_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "perceived_effect": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "evidence_kind": {
+          "type": "string",
+          "enum": [
+            "source_statement",
+            "computed",
+            "human_analysis",
+            "model_analysis"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "summary",
+        "musical_features",
+        "perceived_effect",
+        "conditions",
+        "evidence_kind"
+      ],
+      "additionalProperties": false,
+      "description": "Structured textual knowledge about how a musical passage produces an effect. Analysis and perceived effect are attributed claims, not source-score facts. Computed/model claims must identify their method/model version semantically; confidence is optional and must have a documented interpretation."
+    },
+    "ResolutionState": {
+      "type": "object",
+      "properties": {
+        "anchor_status": {
+          "type": "string",
+          "enum": [
+            "resolved",
+            "partially_unresolved",
+            "unresolved",
+            "conflict",
+            "invalidated"
+          ]
+        },
+        "content_status": {
+          "type": "string",
+          "enum": [
+            "current",
+            "review_required",
+            "superseded"
+          ]
+        },
+        "checked_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "missing_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "anchor_status",
+        "content_status",
+        "checked_revision_id",
+        "missing_ids",
+        "reasons"
+      ],
+      "additionalProperties": false,
+      "description": "Anchor validity and claim validity are separate. A note may retain its ID while pitch/rhythm changes, leaving the anchor resolved but making an effect explanation require review. Historical pinned bindings are not relabeled invalid merely because head advanced."
+    },
+    "KnowledgeAnnotation": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.1"
+        },
+        "annotation_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "annotation_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "binding": {
+          "$ref": "#/$defs/Binding"
+        },
+        "effect": {
+          "$ref": "#/$defs/EffectDescription"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "resolution": {
+          "$ref": "#/$defs/ResolutionState"
+        },
+        "created_by": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Actor"
+        }
+      },
+      "required": [
+        "schema_version",
+        "annotation_id",
+        "annotation_revision_id",
+        "binding",
+        "effect",
+        "tags",
+        "resolution",
+        "created_by"
+      ],
+      "additionalProperties": false,
+      "description": "FUTURE CONTRACT ONLY. Independent knowledge-store object, never embedded in or treated as a mutation of a score revision. created_by is output authority-derived provenance. This schema does not enable a service, endpoint, store, index, or annotation write workflow in v1.1."
+    },
+    "RebaseRequest": {
+      "type": "object",
+      "properties": {
+        "annotation_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "expected_annotation_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "from_score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "to_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "policy": {
+          "const": "identity_only"
+        }
+      },
+      "required": [
+        "annotation_id",
+        "expected_annotation_revision_id",
+        "from_score",
+        "to_revision_id",
+        "policy"
+      ],
+      "additionalProperties": false,
+      "description": "Future explicit rebase of a follow-identity binding. Requires available lineage and a supported ancestor/branch relationship. Rebase annotation storage only; never modify either score revision."
+    },
+    "RebaseResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "rebased",
+            "review_required",
+            "conflict",
+            "unresolved"
+          ]
+        },
+        "annotation_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "previous_annotation_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "new_annotation_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "resolved_score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "anchor_status": {
+          "type": "string",
+          "enum": [
+            "resolved",
+            "partially_unresolved",
+            "unresolved",
+            "conflict",
+            "invalidated"
+          ]
+        },
+        "content_status": {
+          "type": "string",
+          "enum": [
+            "current",
+            "review_required",
+            "superseded"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "status",
+        "annotation_id",
+        "previous_annotation_revision_id",
+        "anchor_status",
+        "content_status",
+        "reasons"
+      ],
+      "additionalProperties": false,
+      "description": "Conflict/unresolved outcomes do not overwrite the previous resolved binding. Successful rebase creates a new independent annotation revision; resolved_score and new_annotation_revision_id are then required by semantic validation."
+    }
+  }
+}

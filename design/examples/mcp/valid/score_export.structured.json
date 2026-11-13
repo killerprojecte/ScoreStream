@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "data": {
+    "kind": "exported_score",
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "format": "sfs",
+    "artifact": {
+      "artifact_id": "artifact_demo",
+      "uri": "scorestream://artifacts/artifact_demo",
+      "mime_type": "text/plain",
+      "size_bytes": 270,
+      "sha256": "809f1804985914cc98a8a6b2428a7c6bd4c78d419708241be9230044d5b2270e"
+    },
+    "lossy": false,
+    "coverage": {
+      "interpreted_features": [
+        "pitched_notes",
+        "voices",
+        "rational_time"
+      ],
+      "preserved_only_features": [],
+      "unsupported_features": [],
+      "complete": true
+    },
+    "diagnostics": []
+  }
+}

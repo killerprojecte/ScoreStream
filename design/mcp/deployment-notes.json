@@ -1,0 +1,21 @@
+{
+  "status": "design_only_no_running_server",
+  "protocol_baseline": "2026-07-28",
+  "legacy_adapter": "2025-11-25",
+  "catalog_file": "mcp/tools-list.planned.json",
+  "central_discovery_tool": "score_get_format",
+  "conditional_tools": {
+    "score_render": "Advertise only with an implemented available desktop-attached or headless renderer; a protocol handler alone is insufficient."
+  },
+  "publication_rule": "Filter this planned catalog to implemented, configured and authorized handlers. No stub operations are available simply because they appear here.",
+  "withheld_families": [
+    "annotations",
+    "knowledge_search",
+    "model_generation",
+    "performance_rendering",
+    "audio_synthesis",
+    "playback_control"
+  ],
+  "application_jobs": "job_id belongs to job_get/job_cancel and the job resources. It is not an MCP taskId.",
+  "schema_rule": "Every embedded tool schema is self-contained JSON Schema 2020-12; no external $ref dereference is needed."
+}

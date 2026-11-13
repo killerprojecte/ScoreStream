@@ -1,0 +1,116 @@
+{
+  "resultType": "complete",
+  "resourceTemplates": [
+    {
+      "uriTemplate": "scorestream://spec/{format_version}/agent-reference",
+      "name": "scorestream-agent-reference",
+      "title": "ScoreStream agent authoring reference",
+      "description": "The exact syntax, semantic rules, conventions, and complete short examples for the selected format version/profile.",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uriTemplate": "scorestream://spec/{format_version}/grammar",
+      "name": "scorestream-ebnf-grammar",
+      "title": "ScoreStream EBNF grammar",
+      "description": "The normative grammar of the raw SFS text, distinct from JSON Schema for its parsed AST.",
+      "mimeType": "text/plain"
+    },
+    {
+      "uriTemplate": "scorestream://spec/{format_version}/language",
+      "name": "scorestream-language-descriptor",
+      "title": "ScoreStream machine-readable language standard",
+      "description": "Versioned vocabulary, syntax templates, scopes, defaults, semantic constraints, and profile support. This is a language descriptor, not a JSON Schema pretending to validate raw DSL text.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://spec/{format_version}/ast-schema",
+      "name": "scorestream-ast-schema",
+      "title": "ScoreStream parsed AST JSON Schema",
+      "description": "A self-contained JSON Schema 2020-12 document validating the parsed AST for this format version/profile. Parsing and semantic validation are still required.",
+      "mimeType": "application/schema+json"
+    },
+    {
+      "uriTemplate": "scorestream://spec/{format_version}/examples/{example_id}",
+      "name": "scorestream-format-example",
+      "title": "Complete ScoreStream format example",
+      "description": "A complete valid SFS example listed by score_get_format or the versioned format reference.",
+      "mimeType": "text/plain"
+    },
+    {
+      "uriTemplate": "scorestream://schemas/{schema_version}/{schema_name}",
+      "name": "scorestream-json-schema",
+      "title": "Versioned ScoreStream JSON Schema",
+      "description": "A self-contained JSON Schema 2020-12 document. Tool definitions independently embed all schemas required to call the tool.",
+      "mimeType": "application/schema+json"
+    },
+    {
+      "uriTemplate": "scorestream://scores/{score_id}/latest",
+      "name": "score-head",
+      "title": "Current score revision pointer",
+      "description": "A mutable head pointer containing the current revision_id and its immutable manifest URI. A reader must pin the returned revision for subsequent work.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://scores/{score_id}/revisions/{revision_id}/manifest",
+      "name": "score-revision-manifest",
+      "title": "Immutable score revision manifest",
+      "description": "Score identity, exact revision, parts, sections, region anchors, supported profile, and readable resource references.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://scores/{score_id}/revisions/{revision_id}/stream",
+      "name": "score-revision-stream",
+      "title": "Immutable SFS score stream",
+      "description": "The canonical SFS text for an exact score revision. Use score_read_region for bounded selections and entry context rather than repeatedly reading the whole score.",
+      "mimeType": "text/plain"
+    },
+    {
+      "uriTemplate": "scorestream://scores/{score_id}/revisions/{revision_id}/diagnostics",
+      "name": "score-revision-diagnostics",
+      "title": "Score diagnostics snapshot",
+      "description": "Revision-specific validation and fidelity diagnostics with truncation/continuation metadata when needed.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://renders/{render_id}/manifest",
+      "name": "score-render-manifest",
+      "title": "Revision-specific score rendering",
+      "description": "Source score_id and revision_id, rendering options/version, page resources, and event-to-graphic mapping references.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://renders/{render_id}/pages/{page_id}",
+      "name": "score-render-page",
+      "title": "Rendered score page",
+      "description": "One SVG score page or system belonging to an immutable render result; page_id values come from its render manifest.",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "uriTemplate": "scorestream://renders/{render_id}/pages/{page_id}/mapping",
+      "name": "score-render-page-mapping",
+      "title": "Rendered page object mapping",
+      "description": "Revision-bound SVG object IDs, score object IDs, and page-viewBox bounds. The correspondence can be one-to-many, many-to-one, or layout-only.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://artifacts/{artifact_id}",
+      "name": "score-artifact",
+      "title": "Generated score artifact",
+      "description": "An export or other derived artifact. The result supplies its exact MIME type, size, checksum, source revision, and retention. Possession of the URI does not replace authorization."
+    },
+    {
+      "uriTemplate": "scorestream://jobs/{job_id}",
+      "name": "score-application-job",
+      "title": "Application job status",
+      "description": "A durable application job and its result references. job_id is not an MCP taskId. The mutable status resource may support resource updates when implemented.",
+      "mimeType": "application/json"
+    },
+    {
+      "uriTemplate": "scorestream://jobs/{job_id}/result",
+      "name": "score-application-job-result",
+      "title": "Application job final tool result",
+      "description": "The original operation's final application result envelope, validated by the result_schema_uri declared in job status. This is not an MCP tasks/result method.",
+      "mimeType": "application/json"
+    }
+  ]
+}

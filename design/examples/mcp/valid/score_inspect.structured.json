@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "data": {
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "head_revision_id": "rev_001",
+    "format_version": "1.1",
+    "profile": "core-measured",
+    "parts": [
+      {
+        "part_id": "part_p",
+        "alias": "p",
+        "instrument": "piano",
+        "staff_ids": [
+          "staff_p1",
+          "staff_p2"
+        ]
+      }
+    ],
+    "voices": [
+      {
+        "voice_id": "voice_pr",
+        "alias": "pr",
+        "part_id": "part_p",
+        "default_staff_id": "staff_p1"
+      },
+      {
+        "voice_id": "voice_pl",
+        "alias": "pl",
+        "part_id": "part_p",
+        "default_staff_id": "staff_p2"
+      }
+    ],
+    "measure_count": 1,
+    "manifest_uri": "scorestream://scores/score_demo/revisions/rev_001/manifest",
+    "coverage": {
+      "interpreted_features": [
+        "pitched_notes",
+        "voices",
+        "rational_time"
+      ],
+      "preserved_only_features": [],
+      "unsupported_features": [],
+      "complete": true
+    },
+    "diagnostics": []
+  }
+}

@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:job_get:output:1.1",
+  "title": "Get application job status application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/job__ApplicationJob"
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "job__ApplicationJob": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "score_import",
+            "score_export",
+            "score_render"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "cancel_requested",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "poll_after_ms": {
+          "type": "integer",
+          "minimum": 250,
+          "maximum": 60000
+        },
+        "source_score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "stage": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "progress": {
+          "type": "object",
+          "properties": {
+            "completed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "completed"
+          ],
+          "additionalProperties": false
+        },
+        "result_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "result_schema_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "job_id",
+        "operation",
+        "state",
+        "created_at",
+        "updated_at",
+        "expires_at",
+        "poll_after_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "succeeded"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "result_uri",
+              "result_schema_uri"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "result_uri"
+                  ]
+                },
+                {
+                  "required": [
+                    "result_schema_uri"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "error"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "Result resources contain the original tool's final application envelope and are validated by result_schema_uri. These application states are not MCP extension task states."
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    }
+  }
+}

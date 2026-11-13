@@ -1,0 +1,8 @@
+{
+  "source": {
+    "kind": "asset",
+    "format": "mxl",
+    "asset_id": "asset_source_mxl"
+  },
+  "idempotency_key": "import_mxl_demo"
+}

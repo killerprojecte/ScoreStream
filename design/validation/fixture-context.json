@@ -1,0 +1,142 @@
+{
+  "purpose": "Synthetic package fixture data only. These IDs are not an existing runtime workspace.",
+  "standalone_fragment_aliases": [
+    "mel"
+  ],
+  "expected_counts": {
+    "ensemble": {
+      "events": 12,
+      "frames": 3
+    },
+    "tuplets-and-ties": {
+      "events": 7,
+      "frames": 7
+    },
+    "replacement-fragment": {
+      "events": 3,
+      "frames": 3
+    },
+    "grace-percussion-cross-staff": {
+      "events": 5,
+      "frames": 3
+    }
+  },
+  "render_records": {
+    "render_rev001_a": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "render_rev999_a": {
+      "score_id": "score_demo",
+      "revision_id": "rev_999"
+    }
+  },
+  "event_facts": {
+    "ensemble": [
+      {
+        "id": "n4",
+        "time": "0",
+        "voice": "pl",
+        "pitch": "C3",
+        "duration": "4"
+      },
+      {
+        "id": "n5",
+        "time": "0",
+        "voice": "vn",
+        "pitch": "C5",
+        "duration": "2"
+      },
+      {
+        "id": "n12",
+        "time": "2",
+        "voice": "vn",
+        "pitch": "D5",
+        "duration": "2"
+      }
+    ],
+    "tuplets-and-ties": [
+      {
+        "id": "a",
+        "time": "0",
+        "pitch": "C5",
+        "duration": "1/3",
+        "attributes": {
+          "w": "8",
+          "tm": "3:2"
+        }
+      },
+      {
+        "id": "d",
+        "time": "3",
+        "pitch": "F5",
+        "duration": "1"
+      },
+      {
+        "id": "e",
+        "time": "4",
+        "pitch": "F5",
+        "duration": "1"
+      },
+      {
+        "id": "r2",
+        "time": "5",
+        "pitch": "r",
+        "duration": "3",
+        "attributes": {
+          "w": "2",
+          "dots": 1
+        }
+      }
+    ],
+    "replacement-fragment": [
+      {
+        "id": "f1",
+        "time": "0",
+        "voice": "mel",
+        "pitch": "C5",
+        "duration": "1"
+      },
+      {
+        "id": "f3",
+        "time": "2",
+        "voice": "mel",
+        "pitch": "E5",
+        "duration": "2"
+      }
+    ],
+    "grace-percussion-cross-staff": [
+      {
+        "id": "g1",
+        "time": "0",
+        "pitch": "D5",
+        "duration": "?",
+        "attributes": {
+          "kind": "grace",
+          "anchor": "#a",
+          "order": -1,
+          "w": "8",
+          "slash": true
+        }
+      },
+      {
+        "id": "hit1",
+        "time": "0",
+        "voice": "dr",
+        "pitch": "u.snare",
+        "duration": "1"
+      },
+      {
+        "id": "b",
+        "time": "2",
+        "voice": "pr",
+        "pitch": "C4",
+        "duration": "2",
+        "attributes": {
+          "staff": 2,
+          "w": "2"
+        }
+      }
+    ]
+  }
+}

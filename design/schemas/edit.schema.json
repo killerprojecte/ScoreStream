@@ -1,0 +1,607 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:schema:edit:1.1",
+  "title": "Atomic revision-aware score editing 1.1",
+  "$ref": "#/$defs/EditRequest",
+  "$defs": {
+    "WrittenType": {
+      "type": "string",
+      "enum": [
+        "maxima",
+        "long",
+        "breve",
+        "1",
+        "2",
+        "4",
+        "8",
+        "16",
+        "32",
+        "64",
+        "128",
+        "256",
+        "512",
+        "1024"
+      ]
+    },
+    "TimeModification": {
+      "type": "object",
+      "properties": {
+        "actual": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "normal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "normal_type": {
+          "$ref": "#/$defs/WrittenType"
+        },
+        "normal_dots": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "actual",
+        "normal"
+      ],
+      "additionalProperties": false,
+      "description": "Per-event written time modification, distinct from visible tuplet relations. Optional normal_type/normal_dots are preserved when explicitly supplied."
+    },
+    "WrittenDuration": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/WrittenType"
+        },
+        "dots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "time_modification": {
+          "$ref": "#/$defs/TimeModification"
+        }
+      },
+      "required": [
+        "type",
+        "dots"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit replacement of this event's written duration fields. The engine verifies consistency with the requested exact duration; it never silently changes onsets, unrelated events or measure lengths."
+    },
+    "SetPitch": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "set_pitch"
+        },
+        "event_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "pitch": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/WrittenPitch"
+        },
+        "accidental_policy": {
+          "type": "string",
+          "enum": [
+            "preserve_if_consistent",
+            "recompute"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "event_id",
+        "pitch",
+        "accidental_policy"
+      ],
+      "additionalProperties": false,
+      "description": "Change one pitched event's written pitch. Onset, duration, voice and staff are unchanged. preserve_if_consistent rejects contradictory existing explicit accidentals; recompute is an explicit engraving request and must report all resulting accidental-object changes. Tied endpoints and transposition-dependent constraints are validated at transaction end."
+    },
+    "SetDuration": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "set_duration"
+        },
+        "event_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "duration": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/PositiveRational"
+        },
+        "written": {
+          "$ref": "#/$defs/WrittenDuration"
+        }
+      },
+      "required": [
+        "op",
+        "event_id",
+        "duration",
+        "written"
+      ],
+      "additionalProperties": false,
+      "description": "Change one ordinary timed note/rest/spacer duration and its explicitly supplied written-duration fields; no ripple and no automatic split. Grace and open-duration event kinds reject this operation. The event must remain within the frozen editing scope and score extent."
+    },
+    "MoveEvent": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "move_event"
+        },
+        "event_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "onset": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "voice_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "staff_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        }
+      },
+      "required": [
+        "op",
+        "event_id",
+        "onset"
+      ],
+      "additionalProperties": false,
+      "description": "Move an existing event in its existing clock; optionally change voice/staff. Preserve identity, pitch and duration. The destination must be an explicitly selected scope, existing staff must belong to the destination part, and no dependent relation may be left unresolved. Cross-clock moves are unsupported."
+    },
+    "DeleteEvents": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "delete_events"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "owned_marks": {
+          "const": "delete"
+        },
+        "relations": {
+          "const": "delete_internal_reject_crossing"
+        }
+      },
+      "required": [
+        "op",
+        "event_ids",
+        "owned_marks",
+        "relations"
+      ],
+      "additionalProperties": false,
+      "description": "Delete named events and score-owned attached marks. Delete a relation only when all of its referenced members are deleted. Any surviving dependent endpoint/member requires an explicit relation operation in this same transaction. Future knowledge annotations are not score-owned marks and are never deleted here."
+    },
+    "RemoveRelation": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "remove_relation"
+        },
+        "relation_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        }
+      },
+      "required": [
+        "op",
+        "relation_id"
+      ],
+      "additionalProperties": false,
+      "description": "Explicitly remove this score relation. It must be internal to, or appear in the frozen selection's touching context. Report impacts outside the selected notes; never infer this operation from a dangling endpoint."
+    },
+    "RetargetRelation": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "retarget_relation"
+        },
+        "relation_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "endpoint": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/RelationTarget"
+        }
+      },
+      "required": [
+        "op",
+        "relation_id",
+        "endpoint",
+        "target"
+      ],
+      "additionalProperties": false,
+      "description": "Explicitly retarget a registered endpoint role of an existing relation to an existing or same-transaction fragment event. Only relation kinds whose registry defines that endpoint role support this operation; non-binary/member-based relations require a dedicated future operation. Validate kind, scope, order and musical constraints against the final transaction graph."
+    },
+    "VoiceBinding": {
+      "type": "object",
+      "properties": {
+        "fragment_voice": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/TextIdentifier"
+        },
+        "voice_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        }
+      },
+      "required": [
+        "fragment_voice",
+        "voice_id"
+      ],
+      "additionalProperties": false,
+      "description": "Map a fragment-local alias to one pre-existing logical voice identity in the selected revision. Use the returned mapping; never paste an opaque voice ID into SFS as if it were an alias."
+    },
+    "ReplacementSpan": {
+      "type": "object",
+      "properties": {
+        "clock_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "start": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "end": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "voice_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "clock_id",
+        "start",
+        "end",
+        "voice_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Half-open target span. Must exactly match one frozen contiguous time/measure span and the explicitly affected voices. An arbitrary event-set bounding box is not replaceable. All selected local measure boundaries and unsupported state boundaries must be aligned or the operation is rejected."
+    },
+    "IdentityReplacement": {
+      "type": "object",
+      "properties": {
+        "old_event_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "new_fragment_event_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/TextIdentifier"
+        }
+      },
+      "required": [
+        "old_event_id",
+        "new_fragment_event_id"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit replacement lineage, not a claim of unchanged semantic identity. Old and new IDs remain distinct. Future follow-identity annotations require review for a replacement even when lineage exists."
+    },
+    "ReplaceRange": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "replace_range"
+        },
+        "span": {
+          "$ref": "#/$defs/ReplacementSpan"
+        },
+        "fragment_sfs": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1048576,
+          "pattern": "^!fragment 1\\.1 unit=q span="
+        },
+        "voice_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VoiceBinding"
+          },
+          "minItems": 1
+        },
+        "duration_policy": {
+          "const": "preserve"
+        },
+        "boundary_policy": {
+          "const": "reject_unresolved_crossings"
+        },
+        "identity_replacements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IdentityReplacement"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "op",
+        "span",
+        "fragment_sfs",
+        "voice_bindings",
+        "duration_policy",
+        "boundary_policy"
+      ],
+      "additionalProperties": false,
+      "description": "Replace selected voices only inside the frozen span. Parse !fragment 1.1 unit=q span=<length>, local committed @frames and !end at=<length>; no !part declarations. Span length equals end-start and is preserved exactly. Bind aliases explicitly. v1.1 fragments carry event/mark/relation edits only: they cannot introduce persistent state or change measure-boundary objects. Existing states and measure objects stay at their frozen positions; inserted events are validated against that preserved context at every onset. Notes crossing either outer boundary are rejected rather than silently cut. Untouched spanning relations remain intact; affected external endpoints/members need explicit relation operations in the same atomic transaction. Ripple is unsupported and not advertised."
+    },
+    "Operation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SetPitch"
+        },
+        {
+          "$ref": "#/$defs/SetDuration"
+        },
+        {
+          "$ref": "#/$defs/MoveEvent"
+        },
+        {
+          "$ref": "#/$defs/DeleteEvents"
+        },
+        {
+          "$ref": "#/$defs/RemoveRelation"
+        },
+        {
+          "$ref": "#/$defs/RetargetRelation"
+        },
+        {
+          "$ref": "#/$defs/ReplaceRange"
+        }
+      ]
+    },
+    "EditRequest": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "expected_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "idempotency_key": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "selection": {
+          "$ref": "urn:scorestream:schema:selection:1.1#/$defs/FrozenSelectionRef"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Operation"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "score_id",
+        "expected_revision_id",
+        "idempotency_key",
+        "selection",
+        "operations"
+      ],
+      "additionalProperties": false,
+      "description": "One atomic compare-and-swap command shared by desktop and MCP. Authenticate the actor externally. Selection score/revision and expected_revision_id must agree and equal current head at commit. Resolve the immutable selection reference, never its original query against a new head. Apply operations to a private working revision and publish all or none. Unknown caller authority/provenance fields are rejected."
+    },
+    "LineageEntry": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "preserved",
+            "replaced",
+            "split",
+            "merged",
+            "deleted",
+            "created"
+          ]
+        },
+        "before_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "after_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "before_ids",
+        "after_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit object lineage emitted by the command authority. Semantic cardinality rules depend on kind. Replacement/split/merge does not automatically prove annotation equivalence."
+    },
+    "EditResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "committed"
+        },
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "parent_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "command_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "actor": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Actor"
+        },
+        "changed_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "created_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "deleted_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "lineage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LineageEntry"
+          },
+          "minItems": 0
+        },
+        "invalidated_render_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "status",
+        "score",
+        "parent_revision_id",
+        "command_id",
+        "actor",
+        "changed_ids",
+        "created_ids",
+        "deleted_ids",
+        "lineage",
+        "invalidated_render_ids",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "Actor is server-derived. The same authenticated principal + score + idempotency key + canonical request yields this same committed result on retry, even after later head changes. Reusing that key with a different request is an idempotency conflict."
+    },
+    "EditFailure": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "rejected"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "revision_conflict",
+            "selection_stale",
+            "selection_mismatch",
+            "idempotency_conflict",
+            "outside_selection",
+            "crossing_event",
+            "crossing_relation",
+            "unresolved_reference",
+            "invalid_fragment",
+            "unsupported_operation",
+            "invalid_notation",
+            "invalid_scope"
+          ]
+        },
+        "expected_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "status",
+        "code",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "No partial revision is published. A stale edit must be deliberately re-read/reselected and submitted with a new base and key; neither GUI nor MCP may silently retarget."
+    },
+    "RelationTarget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "existing"
+            },
+            "event_id": {
+              "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+            }
+          },
+          "required": [
+            "kind",
+            "event_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "fragment"
+            },
+            "operation_index": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fragment_event_id": {
+              "$ref": "urn:scorestream:schema:common:1.1#/$defs/TextIdentifier"
+            }
+          },
+          "required": [
+            "kind",
+            "operation_index",
+            "fragment_event_id"
+          ],
+          "additionalProperties": false,
+          "description": "Reference an explicitly named event inside the replace_range operation at this zero-based index in the same transaction. The command authority allocates final identities and resolves this reference before final graph validation; never guess a future global ID."
+        }
+      ]
+    }
+  }
+}

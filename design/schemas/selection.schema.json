@@ -1,0 +1,518 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:schema:selection:1.1",
+  "title": "Revision-scoped score selections 1.1",
+  "$ref": "#/$defs/SelectionRequest",
+  "$defs": {
+    "MeasureScope": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "part"
+            },
+            "part_id": {
+              "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+            }
+          },
+          "required": [
+            "kind",
+            "part_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "staff"
+            },
+            "staff_id": {
+              "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+            }
+          },
+          "required": [
+            "kind",
+            "staff_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Filters": {
+      "type": "object",
+      "properties": {
+        "part_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "voice_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "staff_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Intersect supplied filters. Omitted lists mean unrestricted; empty lists are not accepted. Staff means the event's resolved staff at its onset, including local overrides, not its voice's initial default."
+    },
+    "SelectionPolicy": {
+      "type": "object",
+      "properties": {
+        "grace": {
+          "type": "string",
+          "enum": [
+            "explicit_only",
+            "with_principal",
+            "by_anchor"
+          ]
+        },
+        "chords": {
+          "type": "string",
+          "enum": [
+            "exact_members",
+            "whole_chord"
+          ]
+        },
+        "ties": {
+          "type": "string",
+          "enum": [
+            "exact_events",
+            "whole_chain"
+          ]
+        }
+      },
+      "required": [
+        "grace",
+        "chords",
+        "ties"
+      ],
+      "additionalProperties": false,
+      "description": "Resolve the selector, intersect explicit filters, then apply the requested expansions. Expansions may intentionally extend beyond the original time interval, but must not escape explicit part/voice/staff filters: report a policy/filter conflict rather than silently truncate a whole chord/chain. explicit_only never adds grace notes but does not remove explicitly requested grace IDs. with_principal includes attached grace events when their principal is selected. by_anchor uses half-open temporal spans and is not accepted for an unbounded event-ID selector. Return expanded membership explicitly; it does not enlarge the permitted replace_range span."
+    },
+    "EventSelector": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "events"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "event_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Select these exact event identities before explicitly requested expansions. Unknown IDs are an error, not an empty match."
+    },
+    "MeasureRangeByEnd": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "measure_range"
+        },
+        "scope": {
+          "$ref": "#/$defs/MeasureScope"
+        },
+        "start_measure_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "end_measure_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "end_exclusive": {
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "scope",
+        "start_measure_id",
+        "end_measure_id",
+        "end_exclusive"
+      ],
+      "additionalProperties": false,
+      "description": "Select from the start measure to, but not including, the end measure in one declared measure sequence. IDs are stable identities; no arithmetic on printed labels. Both endpoints must belong to the same scope and appear in that order."
+    },
+    "MeasureRangeByCount": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "measure_range"
+        },
+        "scope": {
+          "$ref": "#/$defs/MeasureScope"
+        },
+        "start_measure_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "kind",
+        "scope",
+        "start_measure_id",
+        "count"
+      ],
+      "additionalProperties": false,
+      "description": "Select count consecutive measures beginning with start_measure_id. A count is resolved only in the pinned revision. Overrun is an error; the result still freezes concrete IDs and boundaries."
+    },
+    "TimeRangeSelector": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "time_range"
+        },
+        "clock_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "start": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "end": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "event_match": {
+          "type": "string",
+          "enum": [
+            "onset",
+            "overlap",
+            "contained"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "clock_id",
+        "start",
+        "end",
+        "event_match"
+      ],
+      "additionalProperties": false,
+      "description": "Half-open [start,end), start < end. Onset: start <= t < end. Overlap: t < end and t+duration > start. Contained: start <= t and t+duration <= end. Overlap selects the entire event, never an implicit clipped fragment. Grace handling is separate."
+    },
+    "Selector": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/EventSelector"
+        },
+        {
+          "$ref": "#/$defs/MeasureRangeByEnd"
+        },
+        {
+          "$ref": "#/$defs/MeasureRangeByCount"
+        },
+        {
+          "$ref": "#/$defs/TimeRangeSelector"
+        }
+      ]
+    },
+    "SelectionRequest": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "selector": {
+          "$ref": "#/$defs/Selector"
+        },
+        "filters": {
+          "$ref": "#/$defs/Filters"
+        },
+        "policy": {
+          "$ref": "#/$defs/SelectionPolicy"
+        }
+      },
+      "required": [
+        "score",
+        "selector",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "FrozenSelectionRef": {
+      "type": "object",
+      "properties": {
+        "selection_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "selection_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "selection_id",
+        "score",
+        "selection_digest"
+      ],
+      "additionalProperties": false,
+      "description": "Reference to an immutable, server-resolved selection. All three components must agree. Never re-evaluate against a newer head."
+    },
+    "ResolvedSpan": {
+      "type": "object",
+      "properties": {
+        "clock_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "start": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "end": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Rational"
+        },
+        "voice_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "clock_id",
+        "start",
+        "end",
+        "voice_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Concrete half-open temporal scope in the pinned revision. For event-ID selection these spans are descriptive and do not grant replacement permission over their gaps."
+    },
+    "BoundaryEvent": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "selected": {
+          "type": "boolean"
+        },
+        "crosses_start": {
+          "type": "boolean"
+        },
+        "crosses_end": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "event_id",
+        "selected",
+        "crosses_start",
+        "crosses_end"
+      ],
+      "additionalProperties": false
+    },
+    "RelationContext": {
+      "type": "object",
+      "properties": {
+        "internal_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "crossing_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "spanning_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "internal_ids",
+        "crossing_ids",
+        "spanning_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Context only, not automatic edit targets. internal references selected objects only; crossing has selected and unselected endpoint/member objects; spanning crosses the temporal region while its relevant endpoints remain outside. A relation can be reported in more than one applicable category."
+    },
+    "FrozenSelection": {
+      "type": "object",
+      "properties": {
+        "selection_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "selection_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "request": {
+          "$ref": "#/$defs/SelectionRequest"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "measure_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "resolved_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResolvedSpan"
+          },
+          "minItems": 0
+        },
+        "boundary_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BoundaryEvent"
+          },
+          "minItems": 0
+        },
+        "relations": {
+          "$ref": "#/$defs/RelationContext"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "selection_id",
+        "score",
+        "selection_digest",
+        "request",
+        "event_ids",
+        "measure_ids",
+        "resolved_spans",
+        "boundary_events",
+        "relations",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "PageRectangle": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false,
+      "description": "Finite coordinates in the renderer's page viewBox, not viewport CSS pixels. Geometric coordinates may be floating point; musical time may not."
+    },
+    "GeometryResolutionRequest": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "render_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "page_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "coordinate_space": {
+          "const": "page_viewbox"
+        },
+        "rectangle": {
+          "$ref": "#/$defs/PageRectangle"
+        },
+        "hit_test": {
+          "type": "string",
+          "enum": [
+            "intersects",
+            "contained"
+          ]
+        },
+        "filters": {
+          "$ref": "#/$defs/Filters"
+        },
+        "policy": {
+          "$ref": "#/$defs/SelectionPolicy"
+        }
+      },
+      "required": [
+        "score",
+        "render_id",
+        "page_id",
+        "coordinate_space",
+        "rectangle",
+        "hit_test",
+        "policy"
+      ],
+      "additionalProperties": false,
+      "description": "Transient UI selector only. Resolve note/rest glyph hit-map entries to stable score event IDs, apply explicit expansion, then return FrozenSelection. The render and page must belong to score.revision_id. Curves and page pixels do not become persistent musical truth; rendered marks require a separate explicit object-selection capability."
+    }
+  }
+}

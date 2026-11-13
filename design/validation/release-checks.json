@@ -1,0 +1,34 @@
+{
+  "package": "ScoreStream 1.1 design",
+  "checked_at_utc": "2026-11-13T02:34:40.880291+00:00",
+  "status": "passed",
+  "executed_commands": [
+    {
+      "command": "python3 tools/build_format_reference.py",
+      "exit_code": 0,
+      "stdout": "Wrote grammar companion schemas, language descriptor and four complete SFS fixtures.",
+      "stderr": ""
+    },
+    {
+      "command": "python3 tools/build_mcp_catalog.py",
+      "exit_code": 0,
+      "stdout": "Validated 11 planned tools, 22 self-contained tool schemas, and 35 example expectations; no server was executed.",
+      "stderr": ""
+    },
+    {
+      "command": "python3 tools/validate_package.py",
+      "exit_code": 0,
+      "stdout": "Package QA: passed; 40 core cases, 25 auxiliary cases, 0 failures.",
+      "stderr": ""
+    }
+  ],
+  "json_files_parsed": 108,
+  "json_schemas_checked": 31,
+  "local_markdown_links_checked": 14,
+  "pdf_files": 0,
+  "limits": [
+    "Finite design-package checks only; see validation/README.md.",
+    "No Rust compilation or product runtime executed.",
+    "No MusicXML conversion, GUI, renderer, actual MCP server, annotations, or playback tested."
+  ]
+}

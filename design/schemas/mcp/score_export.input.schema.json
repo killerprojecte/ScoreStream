@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_export:input:1.1",
+  "title": "Export an immutable score revision input",
+  "type": "object",
+  "properties": {
+    "score_id": {
+      "$ref": "#/$defs/common__Id"
+    },
+    "revision_id": {
+      "$ref": "#/$defs/common__RevisionId"
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "sfs",
+        "sfp",
+        "musicxml",
+        "mxl"
+      ]
+    },
+    "fidelity_policy": {
+      "type": "string",
+      "enum": [
+        "strict",
+        "allow_reported_loss"
+      ],
+      "default": "strict"
+    }
+  },
+  "required": [
+    "score_id",
+    "revision_id",
+    "format"
+  ],
+  "additionalProperties": false,
+  "description": "Export a pinned revision. Adapter availability comes from the deployed capability matrix; unsupported formats fail. Loss is allowed only when the request explicitly opts in.",
+  "$defs": {
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    }
+  }
+}

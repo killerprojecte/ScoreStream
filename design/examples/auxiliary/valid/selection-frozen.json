@@ -1,0 +1,57 @@
+{
+  "selection_id": "sel_001",
+  "score": {
+    "score_id": "score_demo",
+    "revision_id": "rev_001"
+  },
+  "selection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "request": {
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "selector": {
+      "kind": "time_range",
+      "clock_id": "score",
+      "start": "0",
+      "end": "4",
+      "event_match": "onset"
+    },
+    "filters": {
+      "voice_ids": [
+        "voice_pr",
+        "voice_pl"
+      ]
+    },
+    "policy": {
+      "grace": "with_principal",
+      "chords": "exact_members",
+      "ties": "exact_events"
+    }
+  },
+  "event_ids": [
+    "event_c4",
+    "event_e4"
+  ],
+  "measure_ids": [
+    "measure_p1"
+  ],
+  "resolved_spans": [
+    {
+      "clock_id": "score",
+      "start": "0",
+      "end": "4",
+      "voice_ids": [
+        "voice_pr",
+        "voice_pl"
+      ]
+    }
+  ],
+  "boundary_events": [],
+  "relations": {
+    "internal_ids": [],
+    "crossing_ids": [],
+    "spanning_ids": []
+  },
+  "diagnostics": []
+}

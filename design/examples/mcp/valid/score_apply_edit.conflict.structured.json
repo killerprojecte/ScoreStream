@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "error": {
+    "code": "revision_conflict",
+    "message": "The head changed. Read rev_002 and deliberately re-plan this edit.",
+    "retryable": false,
+    "score_id": "score_demo",
+    "expected_revision_id": "rev_001",
+    "current_revision_id": "rev_002",
+    "diagnostics": []
+  }
+}

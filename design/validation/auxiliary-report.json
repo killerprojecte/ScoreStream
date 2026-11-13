@@ -1,0 +1,255 @@
+{
+  "report_version": "1.1",
+  "scope": "Auxiliary JSON Schema package validation only",
+  "validated_at_utc": "2026-11-13T02:28:30.508977+00:00",
+  "status": "passed",
+  "runner": {
+    "python": "3.12.14",
+    "jsonschema": "4.26.0",
+    "referencing": "0.37.0"
+  },
+  "dialect": "JSON Schema Draft 2020-12",
+  "reference_resolution": {
+    "mode": "explicit local URN registry",
+    "http_schema_fetching_enabled": false,
+    "all_referenced_auxiliary_definitions_resolved": true
+  },
+  "schema_count": 4,
+  "schema_uris": [
+    "urn:scorestream:schema:common:1.1",
+    "urn:scorestream:schema:selection:1.1",
+    "urn:scorestream:schema:edit:1.1",
+    "urn:scorestream:schema:annotation-future:1.1"
+  ],
+  "example_count": 25,
+  "counts": {
+    "schema_valid_examples_passed": 12,
+    "schema_invalid_examples_rejected": 8,
+    "semantic_invalid_examples_structurally_accepted": 5
+  },
+  "semantic_invalid_cases": {
+    "count": 5,
+    "semantic_checks_executed": false,
+    "meaning": "These fixtures deliberately pass structural JSON Schema and document future semantic-engine rejections. No Rust semantic validator was implemented or run."
+  },
+  "not_executed_or_claimed": [
+    "Rust compilation or runtime tests",
+    "SFS lexer/parser execution",
+    "musical semantic validation",
+    "CAS/idempotency concurrency execution",
+    "MCP server or transport interoperability",
+    "GUI or renderer integration",
+    "rendering performance or playback",
+    "future annotation storage/rebase implementation"
+  ],
+  "manifest": "examples/auxiliary/manifest.json",
+  "cases": [
+    {
+      "path": "examples/auxiliary/valid/selection-time-range.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-measure-range.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-measure-count.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-geometry-resolution.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-frozen.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/selection-floating-time.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/selection-inclusive-end.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/selection-reversed-range.json",
+      "expected": "schema_valid_semantically_invalid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/selection-unreduced-rational.json",
+      "expected": "schema_valid_semantically_invalid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-set-pitch.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-set-duration.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-replace-range.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-replace-and-retarget.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-caller-invented-actor.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-ripple-unsupported.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-guessed-fragment-identity.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/edit-selection-base-mismatch.json",
+      "expected": "schema_valid_semantically_invalid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/edit-replacement-length-mismatch.json",
+      "expected": "schema_valid_semantically_invalid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-pinned-region.future.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-follow-events.future.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-pinned-visual.future.json",
+      "expected": "schema_valid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-follow-time.future.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-follow-pixels.future.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-invalid-confidence.future.json",
+      "expected": "schema_invalid",
+      "actual_json_schema_valid": false,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/annotation-render-revision-mismatch.future.json",
+      "expected": "schema_valid_semantically_invalid",
+      "actual_json_schema_valid": true,
+      "expectation_passed": true,
+      "semantic_validation_executed": false
+    }
+  ],
+  "sha256": {
+    "schemas/common.schema.json": "16b0284d09620448e19e298921b02d943031907216bd5bb63fd8bd4c8f5b036e",
+    "schemas/selection.schema.json": "3c7d62839bb08ca0d344c605f66a80c01a389b416ba7e2fe6eebeec70c3efad7",
+    "schemas/edit.schema.json": "f2f259e829c6f80745612eb614428c589320fcdd486e9a136e250ea118867aec",
+    "schemas/annotation.future.schema.json": "52b3837271494a7ae6fcb615d3472417ef830d5518cec0228d76ad0d3e6d296a",
+    "examples/auxiliary/valid/selection-time-range.json": "413a87ff5c1e62564d514e9827b51a6b4c6c9ee859d419e5c59ca52110d12b74",
+    "examples/auxiliary/valid/selection-measure-range.json": "bfb12d07ac255e7de87eb7298d5adcb5e56fd9525d41671a937662a6f024f27b",
+    "examples/auxiliary/valid/selection-measure-count.json": "0070f89feb94ec6201b9fc7ecf22e0c53486e3dcc34dea9d37357e814ce07b74",
+    "examples/auxiliary/valid/selection-geometry-resolution.json": "3273435a3362b40d9c397d2eff88ec2959bd3480144902cb4ccc634b8b0e46b1",
+    "examples/auxiliary/valid/selection-frozen.json": "e6e1ef11677355f0a82f46559dce4686c695d49d8055904ee2e989e58fc6bde5",
+    "examples/auxiliary/invalid/selection-floating-time.json": "18f4c1d59005817a51ec33f5b4ea583aaf47c18a35bfbe11a1773844701d625a",
+    "examples/auxiliary/invalid/selection-inclusive-end.json": "48429b34349156824a1e8549cbbd184b7ee12a096b5ef0dc4f5a5c7412425fc1",
+    "examples/auxiliary/semantic-invalid/selection-reversed-range.json": "ca7d3c8af131adf296776fae6895af14653e70a19b59548e1c1b07fce4a0f605",
+    "examples/auxiliary/semantic-invalid/selection-unreduced-rational.json": "9ac8c6f04a7f7b439d558a5664b88368ac831b1e2dfeb2903ce1653d31819183",
+    "examples/auxiliary/valid/edit-set-pitch.json": "0cb795bfb5665a8ad75c84adf9cb4bcde065d9f20c297149d80511f8df6d820b",
+    "examples/auxiliary/valid/edit-set-duration.json": "b1497337e202e971bffc4cc06781c2eb66f46189978a853c3242ffd0fa992579",
+    "examples/auxiliary/valid/edit-replace-range.json": "e1c2cad2b7a0c164e8c98a3af15d69e6e5d1af70c8696b2df625f04d728e23ac",
+    "examples/auxiliary/valid/edit-replace-and-retarget.json": "e6fbec68b6ffe231e0659296622656a31ebfe68f5f13abb5b9e0c959ab53d6b5",
+    "examples/auxiliary/invalid/edit-caller-invented-actor.json": "8046a5e709355e8791289a47b905f6f87f93aaa6bd5f55fa1aa7f1d4f7f443d1",
+    "examples/auxiliary/invalid/edit-ripple-unsupported.json": "cb6fbdfb17e7bac672e49f391814c0d32b3c7d9776be118384fc16e5cc69eb92",
+    "examples/auxiliary/invalid/edit-guessed-fragment-identity.json": "22df73b2b0a7db634b56a31218aa22334864c4050d9fb55e9e9dd1b1f6518e20",
+    "examples/auxiliary/semantic-invalid/edit-selection-base-mismatch.json": "08e0d8fd4206e431e69be9ced79a91c242095754c23e9576f92f956267c1c7ea",
+    "examples/auxiliary/semantic-invalid/edit-replacement-length-mismatch.json": "45086d2316b56041e9935a38fbe859e134c917bac9039a42c36bbf4448049ee4",
+    "examples/auxiliary/valid/annotation-pinned-region.future.json": "b7fe4f83bd365d45ae16f10fb269bef717c192c3a70227ae3c523542ab0273fa",
+    "examples/auxiliary/valid/annotation-follow-events.future.json": "ed59deb9b6042d8c2cb42d9c84b4d21f5091e7c52b350b215be57cb796a1bab9",
+    "examples/auxiliary/valid/annotation-pinned-visual.future.json": "4c052520cb74712ebfac795f35866604d12f4ecbc5fec149b607945e5c8eae0f",
+    "examples/auxiliary/invalid/annotation-follow-time.future.json": "24a45702af236298708d7fa47042ec31bb15cb2076284b578b20ea619b6c5efc",
+    "examples/auxiliary/invalid/annotation-follow-pixels.future.json": "d9da9243a7b05305f24009e9e6987a686ad6150e6399b9392749b3991c0e18c5",
+    "examples/auxiliary/invalid/annotation-invalid-confidence.future.json": "416cc0f16088ae71eb575221c8e24535f9de942f480f49c452e0dfefab55611c",
+    "examples/auxiliary/semantic-invalid/annotation-render-revision-mismatch.future.json": "89790a85756f5061c61975ca9baf6aa2ea0bb4bf90e94a81925ca7bfef294c8c",
+    "examples/auxiliary/manifest.json": "74252958f4239b675d88ff375ed605165e57e5823199da35abd2119f4e5b8b81"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "data": {
+    "status": "preview",
+    "score_id": "score_demo",
+    "expected_revision_id": "rev_001",
+    "would_commit": true,
+    "changed_ids": [
+      "event_c4"
+    ],
+    "deleted_ids": [],
+    "planned_insertions": 0,
+    "affected_relation_ids": [],
+    "diagnostics": []
+  }
+}

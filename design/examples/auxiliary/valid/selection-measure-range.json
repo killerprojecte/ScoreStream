@@ -1,0 +1,21 @@
+{
+  "score": {
+    "score_id": "score_demo",
+    "revision_id": "rev_001"
+  },
+  "selector": {
+    "kind": "measure_range",
+    "scope": {
+      "kind": "part",
+      "part_id": "part_p"
+    },
+    "start_measure_id": "measure_p1",
+    "end_measure_id": "measure_p3",
+    "end_exclusive": true
+  },
+  "policy": {
+    "grace": "with_principal",
+    "chords": "exact_members",
+    "ties": "exact_events"
+  }
+}

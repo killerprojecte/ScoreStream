@@ -1,0 +1,20 @@
+{
+  "score_id": "score_demo",
+  "expected_revision_id": "rev_001",
+  "selection": {
+    "selection_id": "sel_001",
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "selection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "operations": [
+    {
+      "op": "set_pitch",
+      "event_id": "event_c4",
+      "pitch": "D4",
+      "accidental_policy": "preserve_if_consistent"
+    }
+  ]
+}

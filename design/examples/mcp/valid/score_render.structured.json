@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "data": {
+    "kind": "render",
+    "render_id": "render_demo",
+    "score_id": "score_demo",
+    "revision_id": "rev_001",
+    "options_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "renderer": {
+      "name": "configured-test-backend",
+      "version": "design-fixture",
+      "projection_version": "1.1",
+      "font_set_id": "fixture-fonts"
+    },
+    "manifest_uri": "scorestream://renders/render_demo/manifest",
+    "total_pages": 1,
+    "pages": [
+      {
+        "page_id": "page_1",
+        "page_number": 1,
+        "svg_uri": "scorestream://renders/render_demo/pages/page_1",
+        "mapping_uri": "scorestream://renders/render_demo/pages/page_1/mapping",
+        "coordinate_space": "page_viewbox",
+        "view_box": {
+          "x": 0,
+          "y": 0,
+          "width": 1000,
+          "height": 1400
+        }
+      }
+    ],
+    "pages_complete": true,
+    "coverage": {
+      "interpreted_features": [
+        "pitched_notes",
+        "voices",
+        "rational_time"
+      ],
+      "preserved_only_features": [],
+      "unsupported_features": [],
+      "complete": true
+    },
+    "diagnostics": []
+  }
+}

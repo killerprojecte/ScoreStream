@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.1",
+  "annotation_id": "ann_002",
+  "annotation_revision_id": "annrev_001",
+  "binding": {
+    "mode": "follow_identity",
+    "score_id": "score_demo",
+    "origin_revision_id": "rev_001",
+    "resolved_revision_id": "rev_001",
+    "anchor": {
+      "kind": "visual_snapshot",
+      "render_id": "render_rev001_a",
+      "page_id": "page_1",
+      "coordinate_space": "page_viewbox",
+      "rectangle": {
+        "x": 40,
+        "y": 90,
+        "width": 240,
+        "height": 100
+      }
+    }
+  },
+  "effect": {
+    "summary": "A rising upper line increases forward motion over a held bass.",
+    "musical_features": [
+      "ascending upper-line contour",
+      "sustained lower voice"
+    ],
+    "perceived_effect": "Increased anticipation while the bass supplies continuity.",
+    "conditions": [
+      "Interpretation depends on tempo, articulation and surrounding harmony."
+    ],
+    "evidence_kind": "human_analysis",
+    "confidence": 0.8,
+    "method": "Manual analysis of the pinned score passage."
+  },
+  "tags": [
+    "contour",
+    "texture"
+  ],
+  "resolution": {
+    "anchor_status": "resolved",
+    "content_status": "current",
+    "checked_revision_id": "rev_001",
+    "missing_ids": [],
+    "reasons": []
+  },
+  "created_by": {
+    "kind": "human",
+    "principal_id": "user_local"
+  }
+}

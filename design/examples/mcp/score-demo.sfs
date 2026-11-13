@@ -1,0 +1,13 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=2
+!voice pr part=p staff=1
+!voice pl part=p staff=2
+@0
+= score tempo=q:120
+= p.s1 meter=4/4 key=0 clef=G2
+= p.s2 meter=4/4 key=0 clef=F4
+| p measure_p1 len=4 label="1"
+pr C4:4 id=event_c4
+pl E4:4 id=event_e4
+.
+!end at=4

@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_render:input:1.1",
+  "title": "Render notation for a pinned revision input",
+  "type": "object",
+  "properties": {
+    "score_id": {
+      "$ref": "#/$defs/common__Id"
+    },
+    "revision_id": {
+      "$ref": "#/$defs/common__RevisionId"
+    },
+    "selection": {
+      "$ref": "#/$defs/selection__FrozenSelectionRef"
+    },
+    "layout": {
+      "$ref": "#/$defs/render__LayoutOptions"
+    }
+  },
+  "required": [
+    "score_id",
+    "revision_id"
+  ],
+  "additionalProperties": false,
+  "description": "Requires a configured available backend. Optional selection must name this same score revision. Whole score is the default scope.",
+  "$defs": {
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "render__LayoutOptions": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "page"
+          ],
+          "default": "page"
+        },
+        "page_width_mm": {
+          "type": "number",
+          "minimum": 50,
+          "maximum": 1000,
+          "default": 210
+        },
+        "page_height_mm": {
+          "type": "number",
+          "minimum": 50,
+          "maximum": 1000,
+          "default": 297
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Physical page dimensions. They are translated by the backend; returned SVG viewBox coordinates are a separate space. A UI zoom is not a score edit."
+    },
+    "selection__FrozenSelectionRef": {
+      "type": "object",
+      "properties": {
+        "selection_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "selection_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "selection_id",
+        "score",
+        "selection_digest"
+      ],
+      "additionalProperties": false,
+      "description": "Reference to an immutable, server-resolved selection. All three components must agree. Never re-evaluate against a newer head."
+    }
+  }
+}

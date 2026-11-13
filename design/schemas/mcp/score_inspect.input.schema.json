@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_inspect:input:1.1",
+  "title": "Inspect score identity and revision input",
+  "type": "object",
+  "properties": {
+    "score_id": {
+      "$ref": "#/$defs/common__Id"
+    },
+    "revision_id": {
+      "$ref": "#/$defs/common__RevisionId"
+    }
+  },
+  "required": [
+    "score_id"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    }
+  }
+}

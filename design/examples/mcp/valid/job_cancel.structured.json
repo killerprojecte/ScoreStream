@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "data": {
+    "job_id": "job_render_002",
+    "state": "cancel_requested",
+    "cancellation_requested": true,
+    "status_uri": "scorestream://jobs/job_render_002"
+  }
+}

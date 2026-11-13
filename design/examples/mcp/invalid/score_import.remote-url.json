@@ -1,0 +1,8 @@
+{
+  "source": {
+    "kind": "url",
+    "url": "https://example.invalid/score.musicxml",
+    "format": "musicxml"
+  },
+  "idempotency_key": "import_demo"
+}

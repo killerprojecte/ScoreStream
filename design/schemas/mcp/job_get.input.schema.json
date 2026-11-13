@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:job_get:input:1.1",
+  "title": "Get application job status input",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "$ref": "#/$defs/common__Id"
+    }
+  },
+  "required": [
+    "job_id"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    }
+  }
+}

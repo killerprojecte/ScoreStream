@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_import:input:1.1",
+  "title": "Import a score input",
+  "type": "object",
+  "properties": {
+    "source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "inline"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "sfs",
+                "musicxml"
+              ]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1048576
+            }
+          },
+          "required": [
+            "kind",
+            "format",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "asset"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "sfs",
+                "musicxml",
+                "mxl"
+              ]
+            },
+            "asset_id": {
+              "$ref": "#/$defs/common__Id"
+            }
+          },
+          "required": [
+            "kind",
+            "format",
+            "asset_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "idempotency_key": {
+      "$ref": "#/$defs/common__Id"
+    },
+    "profile": {
+      "const": "core-measured",
+      "default": "core-measured"
+    },
+    "fidelity_policy": {
+      "type": "string",
+      "enum": [
+        "strict",
+        "preserve_uninterpreted"
+      ],
+      "default": "preserve_uninterpreted"
+    }
+  },
+  "required": [
+    "source",
+    "idempotency_key"
+  ],
+  "additionalProperties": false,
+  "description": "Text or registered assets only. No network fetch or caller-supplied filesystem path. Preserved source payload is explicitly distinguished from interpreted score semantics.",
+  "$defs": {
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    }
+  }
+}

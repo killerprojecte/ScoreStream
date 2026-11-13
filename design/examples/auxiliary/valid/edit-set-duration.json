@@ -1,0 +1,28 @@
+{
+  "score_id": "score_demo",
+  "expected_revision_id": "rev_001",
+  "idempotency_key": "cmd_duration_001",
+  "selection": {
+    "selection_id": "sel_001",
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "selection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "operations": [
+    {
+      "op": "set_duration",
+      "event_id": "event_c4",
+      "duration": "1/3",
+      "written": {
+        "type": "8",
+        "dots": 0,
+        "time_modification": {
+          "actual": 3,
+          "normal": 2
+        }
+      }
+    }
+  ]
+}

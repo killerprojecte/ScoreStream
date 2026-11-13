@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_import:output:1.1",
+  "title": "Import a score application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/mcp_contract__ImportResult"
+            },
+            {
+              "$ref": "#/$defs/job__JobSubmission"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    },
+    "job__JobSubmission": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "application_job"
+        },
+        "job_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "score_import",
+            "score_export",
+            "score_render"
+          ]
+        },
+        "status_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "poll_after_ms": {
+          "type": "integer",
+          "minimum": 250,
+          "maximum": 60000
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "kind",
+        "job_id",
+        "operation",
+        "status_uri",
+        "poll_after_ms",
+        "expires_at"
+      ],
+      "additionalProperties": false,
+      "description": "A durable application job handle. job_id is not an MCP taskId; it is used only with application job tools/resources."
+    },
+    "mcp_contract__ImportResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "imported_score"
+        },
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "format_version": {
+          "const": "1.1"
+        },
+        "profile": {
+          "const": "core-measured"
+        },
+        "manifest_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "source_asset_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "coverage": {
+          "$ref": "#/$defs/render__Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "kind",
+        "score",
+        "format_version",
+        "profile",
+        "manifest_uri",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "render__Coverage": {
+      "type": "object",
+      "properties": {
+        "interpreted_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "preserved_only_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "unsupported_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "interpreted_features",
+        "preserved_only_features",
+        "unsupported_features",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "description": "Capability observations for this operation and revision, not a claim of universal MusicXML completeness. complete describes this bounded report, not total semantic coverage."
+    }
+  }
+}

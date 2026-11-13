@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_apply_edit:output:1.1",
+  "title": "Commit an atomic score edit application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/edit__EditResult"
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Actor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "human",
+            "agent"
+          ]
+        },
+        "principal_id": {
+          "$ref": "#/$defs/common__Id"
+        }
+      },
+      "required": [
+        "kind",
+        "principal_id"
+      ],
+      "additionalProperties": false,
+      "description": "Output provenance derived from the authenticated desktop/MCP command context. Never accepted as caller-controlled mutation authority."
+    },
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "edit__EditResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "committed"
+        },
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "parent_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "command_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "actor": {
+          "$ref": "#/$defs/common__Actor"
+        },
+        "changed_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "created_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "deleted_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "lineage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit__LineageEntry"
+          },
+          "minItems": 0
+        },
+        "invalidated_render_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "status",
+        "score",
+        "parent_revision_id",
+        "command_id",
+        "actor",
+        "changed_ids",
+        "created_ids",
+        "deleted_ids",
+        "lineage",
+        "invalidated_render_ids",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "Actor is server-derived. The same authenticated principal + score + idempotency key + canonical request yields this same committed result on retry, even after later head changes. Reusing that key with a different request is an idempotency conflict."
+    },
+    "edit__LineageEntry": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "preserved",
+            "replaced",
+            "split",
+            "merged",
+            "deleted",
+            "created"
+          ]
+        },
+        "before_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "after_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "before_ids",
+        "after_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit object lineage emitted by the command authority. Semantic cardinality rules depend on kind. Replacement/split/merge does not automatically prove annotation equivalence."
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "data": {
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "valid": true,
+    "profile": "core-measured",
+    "coverage": {
+      "interpreted_features": [
+        "pitched_notes",
+        "voices",
+        "rational_time"
+      ],
+      "preserved_only_features": [],
+      "unsupported_features": [],
+      "complete": true
+    },
+    "diagnostics": []
+  }
+}

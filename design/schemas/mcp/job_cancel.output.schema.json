@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:job_cancel:output:1.1",
+  "title": "Request application job cancellation application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/job__JobCancellation"
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    },
+    "job__JobCancellation": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "cancel_requested",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "cancellation_requested": {
+          "type": "boolean"
+        },
+        "status_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "job_id",
+        "state",
+        "cancellation_requested",
+        "status_uri"
+      ],
+      "additionalProperties": false,
+      "description": "The observed result of a cooperative cancellation request. Terminal jobs may return cancellation_requested=false; no committed revision is undone."
+    }
+  }
+}

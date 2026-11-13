@@ -1,0 +1,40 @@
+{
+  "score_id": "score_demo",
+  "expected_revision_id": "rev_001",
+  "idempotency_key": "cmd_replace_001",
+  "selection": {
+    "selection_id": "sel_001",
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "selection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "operations": [
+    {
+      "op": "replace_range",
+      "span": {
+        "clock_id": "score",
+        "start": "0",
+        "end": "4",
+        "voice_ids": [
+          "voice_pr",
+          "voice_pl"
+        ]
+      },
+      "fragment_sfs": "!fragment 1.1 unit=q span=3\n@0\nright C4:3\n.\n!end at=3\n",
+      "voice_bindings": [
+        {
+          "fragment_voice": "right",
+          "voice_id": "voice_pr"
+        },
+        {
+          "fragment_voice": "left",
+          "voice_id": "voice_pl"
+        }
+      ],
+      "duration_policy": "preserve",
+      "boundary_policy": "reject_unresolved_crossings"
+    }
+  ]
+}

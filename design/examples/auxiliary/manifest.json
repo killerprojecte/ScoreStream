@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.1",
+  "cases": [
+    {
+      "path": "examples/auxiliary/valid/selection-time-range.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-measure-range.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-measure-count.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-geometry-resolution.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid",
+      "definition": "GeometryResolutionRequest"
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-frozen.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid",
+      "definition": "FrozenSelection"
+    },
+    {
+      "path": "examples/auxiliary/invalid/selection-floating-time.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_invalid",
+      "reason": "Musical time must be a canonical exact rational string."
+    },
+    {
+      "path": "examples/auxiliary/invalid/selection-inclusive-end.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_invalid",
+      "reason": "This variant defines an exclusive end measure; use count to include the final measure."
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/selection-reversed-range.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid_semantically_invalid",
+      "reason": "Schema-valid strings, but start must be less than end."
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/selection-unreduced-rational.json",
+      "schema": "urn:scorestream:schema:selection:1.1",
+      "expectation": "schema_valid_semantically_invalid",
+      "reason": "JSON Schema cannot enforce gcd; the semantic validator rejects 2/4 as noncanonical."
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-set-pitch.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-set-duration.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-replace-range.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-replace-and-retarget.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-caller-invented-actor.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_invalid",
+      "reason": "Actor authority is derived by the shared command service; callers cannot inject actor fields."
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-ripple-unsupported.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_invalid",
+      "reason": "v1.1 only accepts explicit duration-preserving replacement; ripple is deferred."
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-guessed-fragment-identity.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_invalid",
+      "reason": "A newly created fragment event must be referenced by operation_index and fragment_event_id, not a guessed future global ID."
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/edit-selection-base-mismatch.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_valid_semantically_invalid",
+      "reason": "expected_revision_id differs from the frozen selection revision; never retarget."
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/edit-replacement-length-mismatch.json",
+      "schema": "urn:scorestream:schema:edit:1.1",
+      "expectation": "schema_valid_semantically_invalid",
+      "reason": "The parsed fragment length 3 does not equal the frozen target duration 4."
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-pinned-region.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-follow-events.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-pinned-visual.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_valid"
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-follow-time.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_invalid",
+      "reason": "Absolute-time and visual anchors cannot claim follow-identity semantics; resolve explicit stable identities or pin the revision."
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-follow-pixels.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_invalid",
+      "reason": "Pixels belong to a pinned render and cannot follow score identity."
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-invalid-confidence.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_invalid",
+      "reason": "Confidence, when supplied with an interpretation, is restricted to [0,1]."
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/annotation-render-revision-mismatch.future.json",
+      "schema": "urn:scorestream:schema:annotation-future:1.1",
+      "expectation": "schema_valid_semantically_invalid",
+      "reason": "Fixture assumes render_rev999_a belongs to rev_999; visual snapshot binding must reference a render of rev_001."
+    }
+  ]
+}

@@ -1,0 +1,859 @@
+{
+  "report_kind": "finite-design-package-qa",
+  "format_version": "1.1",
+  "result": "passed",
+  "production_parser": false,
+  "ebnf_compiled_or_fully_verified": false,
+  "rust_built_or_run": false,
+  "renderer_or_mcp_executed": false,
+  "annotation_store_implemented": false,
+  "dependencies": {
+    "jsonschema": "4.26.0",
+    "referencing": "0.37.0"
+  },
+  "descriptor_schema_errors": [],
+  "core_cases": [
+    {
+      "path": "examples/sfs/ensemble.sfs",
+      "expected": "valid",
+      "passed": true,
+      "ast": "examples/ast/ensemble.json",
+      "diagnostics": [],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs/tuplets-and-ties.sfs",
+      "expected": "valid",
+      "passed": true,
+      "ast": "examples/ast/tuplets-and-ties.json",
+      "diagnostics": [],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs/replacement-fragment.sfs",
+      "expected": "valid",
+      "passed": true,
+      "ast": "examples/ast/replacement-fragment.json",
+      "diagnostics": [],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs/grace-percussion-cross-staff.sfs",
+      "expected": "valid",
+      "passed": true,
+      "ast": "examples/ast/grace-percussion-cross-staff.json",
+      "diagnostics": [],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/uncommitted-frame.sfs",
+      "expected": "FRAME_UNCOMMITTED",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "FRAME_UNCOMMITTED",
+          "severity": "error",
+          "message": "A dot must commit the frame before !end",
+          "line": 6
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/duplicate-frame-time.sfs",
+      "expected": "FRAME_ORDER",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "FRAME_ORDER",
+          "severity": "error",
+          "message": "Core frame positions must strictly increase"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/unreduced-duration.sfs",
+      "expected": "RATIONAL_NOT_CANONICAL",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "RATIONAL_NOT_CANONICAL",
+          "severity": "error",
+          "message": "'2/4' must be written '1/2'",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/zero-duration.sfs",
+      "expected": "DURATION_NOT_POSITIVE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "DURATION_NOT_POSITIVE",
+          "severity": "error",
+          "message": "Expected a positive value, found 0",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/decimal-position.sfs",
+      "expected": "RATIONAL_LEXICAL",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "RATIONAL_LEXICAL",
+          "severity": "error",
+          "message": "Not an exact rational token: '0.5'",
+          "line": 4
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/undeclared-voice.sfs",
+      "expected": "VOICE_UNDECLARED",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "VOICE_UNDECLARED",
+          "severity": "error",
+          "message": "Undeclared voice missing",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/out-of-range-staff.sfs",
+      "expected": "STAFF_RANGE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "STAFF_RANGE",
+          "severity": "error",
+          "message": "Event staff override does not exist",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/duplicate-object-id.sfs",
+      "expected": "ID_DUPLICATE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "ID_DUPLICATE",
+          "severity": "error",
+          "message": "Duplicate object ID a",
+          "line": 6
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/alias-namespace-collision.sfs",
+      "expected": "ALIAS_DUPLICATE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "ALIAS_DUPLICATE",
+          "severity": "error",
+          "message": "Part/voice aliases are disjoint and score is reserved"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/unresolved-mark.sfs",
+      "expected": "REFERENCE_UNRESOLVED",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "REFERENCE_UNRESOLVED",
+          "severity": "error",
+          "message": "Unresolved #missing",
+          "line": 6
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/future-frame-reference.sfs",
+      "expected": "REFERENCE_FUTURE_FRAME",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "REFERENCE_FUTURE_FRAME",
+          "severity": "error",
+          "message": "References must resolve by the frame commit",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/grace-missing-anchor.sfs",
+      "expected": "GRACE_ANCHOR",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "GRACE_ANCHOR",
+          "severity": "error",
+          "message": "Grace event requires an anchor",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/grace-zero-order.sfs",
+      "expected": "GRACE_ORDER",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "GRACE_ORDER",
+          "severity": "error",
+          "message": "Grace order must be a nonzero integer",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/grace-anchor-other-frame.sfs",
+      "expected": "GRACE_ANCHOR",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "GRACE_ANCHOR",
+          "severity": "error",
+          "message": "Principal grace anchor must be a non-grace event in the same frame",
+          "line": 8
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/grace-duplicate-order.sfs",
+      "expected": "GRACE_ORDER_DUPLICATE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "GRACE_ORDER_DUPLICATE",
+          "severity": "error",
+          "message": "Order must be unique for the principal anchor",
+          "line": 6
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/chord-different-voices.sfs",
+      "expected": "CHORD_VOICE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "CHORD_VOICE",
+          "severity": "error",
+          "message": "A notated chord group belongs to one logical voice"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/chord-different-onsets.sfs",
+      "expected": "CHORD_ONSET",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "CHORD_ONSET",
+          "severity": "error",
+          "message": "Members of one notated chord must share an onset"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/state-wrong-scope.sfs",
+      "expected": "STATE_SCOPE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "STATE_SCOPE",
+          "severity": "error",
+          "message": "tempo cannot target staff",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/state-conflict.sfs",
+      "expected": "STATE_CONFLICT",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "STATE_CONFLICT",
+          "severity": "error",
+          "message": "Conflicting simultaneous assignment to p.s1.key",
+          "line": 6
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/unknown-event-field.sfs",
+      "expected": "FIELD_UNKNOWN",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "FIELD_UNKNOWN",
+          "severity": "error",
+          "message": "Field 'midi' is not in the supported record registry",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/truncated-event.sfs",
+      "expected": "END_TRUNCATES_EVENT",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "END_TRUNCATES_EVENT",
+          "severity": "error",
+          "message": "!end truncates a measured event",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/tuplet-end-without-start.sfs",
+      "expected": "RELATION_PHASE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "RELATION_PHASE",
+          "severity": "error",
+          "message": "Relation continuation/end requires an open start",
+          "line": 6
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/tuplet-different-voices.sfs",
+      "expected": "TUPLET_VOICE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "TUPLET_VOICE",
+          "severity": "error",
+          "message": "This core tuplet group requires one logical voice",
+          "line": 11
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/tie-pitch-mismatch.sfs",
+      "expected": "TIE_PITCH",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "TIE_PITCH",
+          "severity": "error",
+          "message": "Sounding tie endpoints have different nominal pitches",
+          "line": 10
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/tie-gap.sfs",
+      "expected": "TIE_CONTINUITY",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "TIE_CONTINUITY",
+          "severity": "error",
+          "message": "Sounding tie endpoints must meet without a gap",
+          "line": 10
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/unclosed-relation.sfs",
+      "expected": "RELATION_UNCLOSED",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "RELATION_UNCLOSED",
+          "severity": "error",
+          "message": "This standalone QA fixture supplies no external open-relation context"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/duplicate-attribute.sfs",
+      "expected": "ATTRIBUTE_DUPLICATE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "ATTRIBUTE_DUPLICATE",
+          "severity": "error",
+          "message": "Repeated attribute id",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/negative-dots.sfs",
+      "expected": "DOTS_NEGATIVE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "DOTS_NEGATIVE",
+          "severity": "error",
+          "message": "Dot counts cannot be negative",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/invalid-time-modification.sfs",
+      "expected": "TIME_MODIFICATION",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "TIME_MODIFICATION",
+          "severity": "error",
+          "message": "tm requires positive actual:normal integers",
+          "line": 5
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-global-state.sfs",
+      "expected": "FRAGMENT_GLOBAL_STATE",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "FRAGMENT_GLOBAL_STATE",
+          "severity": "error",
+          "message": "A replacement fragment cannot change global/part/staff state",
+          "line": 3
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-span-mismatch.sfs",
+      "expected": "FRAGMENT_SPAN",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "FRAGMENT_SPAN",
+          "severity": "error",
+          "message": "Fragment end must equal its declared span"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-gap.sfs",
+      "expected": "FRAGMENT_GAP",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "FRAGMENT_GAP",
+          "severity": "error",
+          "message": "Bound voice mel does not cover its complete span"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "path": "examples/sfs-invalid/fragment-undeclared-binding.sfs",
+      "expected": "VOICE_UNDECLARED",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "VOICE_UNDECLARED",
+          "severity": "error",
+          "message": "Undeclared voice unknown",
+          "line": 3
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "probe": "unequal_chord_durations_are_legal",
+      "expected_warning": null,
+      "passed": true,
+      "diagnostics": [],
+      "warnings": []
+    },
+    {
+      "probe": "written_duration_difference_is_preserved",
+      "expected_warning": "WRITTEN_DURATION_MISMATCH",
+      "passed": true,
+      "diagnostics": [],
+      "warnings": [
+        {
+          "code": "WRITTEN_DURATION_MISMATCH",
+          "severity": "warning",
+          "message": "Measured 1 differs from illustrative written calculation 2; both are preserved",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "probe": "normal_type_and_dots_remain_distinct",
+      "expected_warning": null,
+      "passed": true,
+      "diagnostics": [],
+      "warnings": []
+    }
+  ],
+  "auxiliary_cases": [
+    {
+      "path": "examples/auxiliary/valid/selection-time-range.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-measure-range.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-measure-count.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-geometry-resolution.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/selection-frozen.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/selection-floating-time.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "{'kind': 'time_range', 'clock_id': 'score', 'start': 0.0, 'end': '4', 'event_match': 'onset'} is not valid under any of the given schemas"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/selection-inclusive-end.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "{'kind': 'measure_range', 'scope': {'kind': 'part', 'part_id': 'part_p'}, 'start_measure_id': 'measure_p1', 'end_measure_id': 'measure_p3', 'end_exclusive': False} is not valid under any of the given schemas"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/selection-reversed-range.json",
+      "expected": "schema_valid_semantically_invalid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": [
+        {
+          "code": "AUX_RANGE_ORDER",
+          "severity": "error",
+          "message": "Span start must be before end"
+        }
+      ]
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/selection-unreduced-rational.json",
+      "expected": "schema_valid_semantically_invalid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": [
+        {
+          "code": "RATIONAL_NOT_CANONICAL",
+          "severity": "error",
+          "message": "'2/4' must be written '1/2'"
+        }
+      ]
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-set-pitch.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-set-duration.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-replace-range.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/edit-replace-and-retarget.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-caller-invented-actor.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "Additional properties are not allowed ('actor' was unexpected)"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-ripple-unsupported.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "{'op': 'replace_range', 'span': {'clock_id': 'score', 'start': '0', 'end': '4', 'voice_ids': ['voice_pr', 'voice_pl']}, 'fragment_sfs': '!fragment 1.1 unit=q span=4\\n@0\\nright C4:2 id=f1\\nleft C3:4 id=f2\\n.\\n@2\\nright G4:2 id=f3\\n.\\n!end at=4\\n', 'voice_bindings': [{'fragment_voice': 'right', 'voice_id': 'voice_pr'}, {'fragment_voice': 'left', 'voice_id': 'voice_pl'}], 'duration_policy': 'ripple', 'boundary_policy': 'reject_unresolved_crossings'} is not valid under any of the given schemas"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/edit-guessed-fragment-identity.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "{'op': 'retarget_relation', 'relation_id': 'tie_in', 'endpoint': 'end', 'target': {'kind': 'fragment', 'event_id': 'guessed_global_f1'}} is not valid under any of the given schemas"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/edit-selection-base-mismatch.json",
+      "expected": "schema_valid_semantically_invalid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": [
+        {
+          "code": "AUX_SELECTION_REVISION",
+          "severity": "error",
+          "message": "Frozen selection and edit base disagree"
+        }
+      ]
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/edit-replacement-length-mismatch.json",
+      "expected": "schema_valid_semantically_invalid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": [
+        {
+          "code": "FRAGMENT_GAP",
+          "severity": "error",
+          "message": "Bound voice left does not cover its complete span"
+        },
+        {
+          "code": "AUX_REPLACEMENT_LENGTH",
+          "severity": "error",
+          "message": "Fragment span differs from preserved target length"
+        }
+      ]
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-pinned-region.future.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-follow-events.future.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/valid/annotation-pinned-visual.future.json",
+      "expected": "schema_valid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-follow-time.future.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "{'mode': 'follow_identity', 'score_id': 'score_demo', 'origin_revision_id': 'rev_001', 'resolved_revision_id': 'rev_001', 'anchor': {'kind': 'score_region', 'clock_id': 'score', 'start': '0', 'end': '4'}} is not valid under any of the given schemas"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-follow-pixels.future.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "{'mode': 'follow_identity', 'score_id': 'score_demo', 'origin_revision_id': 'rev_001', 'resolved_revision_id': 'rev_001', 'anchor': {'kind': 'visual_snapshot', 'render_id': 'render_rev001_a', 'page_id': 'page_1', 'coordinate_space': 'page_viewbox', 'rectangle': {'x': 40, 'y': 90, 'width': 240, 'height': 100}}} is not valid under any of the given schemas"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/invalid/annotation-invalid-confidence.future.json",
+      "expected": "schema_invalid",
+      "passed": true,
+      "schema_errors": [
+        "1.2 is greater than the maximum of 1"
+      ],
+      "semantic_diagnostics": []
+    },
+    {
+      "path": "examples/auxiliary/semantic-invalid/annotation-render-revision-mismatch.future.json",
+      "expected": "schema_valid_semantically_invalid",
+      "passed": true,
+      "schema_errors": [],
+      "semantic_diagnostics": [
+        {
+          "code": "AUX_RENDER_REVISION",
+          "severity": "error",
+          "message": "Seeded render metadata disagrees with the pinned score"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "core_cases": 40,
+    "auxiliary_cases": 25,
+    "failed_cases": 0
+  },
+  "scope": "Bundled ordinary core examples, named negative fixtures and documented fixture-local checks only; see validation/README.md.",
+  "limitations": [
+    "Handwritten finite reader; the EBNF is recorded by hash, not compiled or proven equivalent.",
+    "Ordinary common-clock core only; no unknown-extension interpretation or full symbol/instrument catalog validation.",
+    "Written-duration arithmetic is an illustrative consistency warning, never silent correction or a universal rejection rule.",
+    "Tie pitch comparison is nominal and limited to fixtures without changing transposition/tuning context.",
+    "Auxiliary reference checks use explicit synthetic fixture context, not a live score/render database.",
+    "No MusicXML, renderer, editor, MCP transport, Rust, audio or annotation-store implementation is validated."
+  ],
+  "inputs_sha256": {
+    "examples/ast/ensemble.json": "44f4092c2dbd124bd73f10b4151cc93d5d8c77bc1e5d4209d3e32c50034e11f5",
+    "examples/ast/grace-percussion-cross-staff.json": "89120340353ee71894e6f58d30855417439de1e2103ea0fa06464791b30a11e4",
+    "examples/ast/replacement-fragment.json": "ed939331e9301b8bc2af8b913e88c1a107446380894a4c04c07143956827722c",
+    "examples/ast/tuplets-and-ties.json": "9f654182346d62760e9e49c8667f3126d85adf14043a3bfdd552cbdf59bfe5b6",
+    "examples/auxiliary/invalid/annotation-follow-pixels.future.json": "d9da9243a7b05305f24009e9e6987a686ad6150e6399b9392749b3991c0e18c5",
+    "examples/auxiliary/invalid/annotation-follow-time.future.json": "24a45702af236298708d7fa47042ec31bb15cb2076284b578b20ea619b6c5efc",
+    "examples/auxiliary/invalid/annotation-invalid-confidence.future.json": "416cc0f16088ae71eb575221c8e24535f9de942f480f49c452e0dfefab55611c",
+    "examples/auxiliary/invalid/edit-caller-invented-actor.json": "8046a5e709355e8791289a47b905f6f87f93aaa6bd5f55fa1aa7f1d4f7f443d1",
+    "examples/auxiliary/invalid/edit-guessed-fragment-identity.json": "22df73b2b0a7db634b56a31218aa22334864c4050d9fb55e9e9dd1b1f6518e20",
+    "examples/auxiliary/invalid/edit-ripple-unsupported.json": "cb6fbdfb17e7bac672e49f391814c0d32b3c7d9776be118384fc16e5cc69eb92",
+    "examples/auxiliary/invalid/selection-floating-time.json": "18f4c1d59005817a51ec33f5b4ea583aaf47c18a35bfbe11a1773844701d625a",
+    "examples/auxiliary/invalid/selection-inclusive-end.json": "48429b34349156824a1e8549cbbd184b7ee12a096b5ef0dc4f5a5c7412425fc1",
+    "examples/auxiliary/manifest.json": "74252958f4239b675d88ff375ed605165e57e5823199da35abd2119f4e5b8b81",
+    "examples/auxiliary/semantic-invalid/annotation-render-revision-mismatch.future.json": "89790a85756f5061c61975ca9baf6aa2ea0bb4bf90e94a81925ca7bfef294c8c",
+    "examples/auxiliary/semantic-invalid/edit-replacement-length-mismatch.json": "45086d2316b56041e9935a38fbe859e134c917bac9039a42c36bbf4448049ee4",
+    "examples/auxiliary/semantic-invalid/edit-selection-base-mismatch.json": "08e0d8fd4206e431e69be9ced79a91c242095754c23e9576f92f956267c1c7ea",
+    "examples/auxiliary/semantic-invalid/selection-reversed-range.json": "ca7d3c8af131adf296776fae6895af14653e70a19b59548e1c1b07fce4a0f605",
+    "examples/auxiliary/semantic-invalid/selection-unreduced-rational.json": "9ac8c6f04a7f7b439d558a5664b88368ac831b1e2dfeb2903ce1653d31819183",
+    "examples/auxiliary/valid/annotation-follow-events.future.json": "ed59deb9b6042d8c2cb42d9c84b4d21f5091e7c52b350b215be57cb796a1bab9",
+    "examples/auxiliary/valid/annotation-pinned-region.future.json": "b7fe4f83bd365d45ae16f10fb269bef717c192c3a70227ae3c523542ab0273fa",
+    "examples/auxiliary/valid/annotation-pinned-visual.future.json": "4c052520cb74712ebfac795f35866604d12f4ecbc5fec149b607945e5c8eae0f",
+    "examples/auxiliary/valid/edit-replace-and-retarget.json": "e6fbec68b6ffe231e0659296622656a31ebfe68f5f13abb5b9e0c959ab53d6b5",
+    "examples/auxiliary/valid/edit-replace-range.json": "e1c2cad2b7a0c164e8c98a3af15d69e6e5d1af70c8696b2df625f04d728e23ac",
+    "examples/auxiliary/valid/edit-set-duration.json": "b1497337e202e971bffc4cc06781c2eb66f46189978a853c3242ffd0fa992579",
+    "examples/auxiliary/valid/edit-set-pitch.json": "0cb795bfb5665a8ad75c84adf9cb4bcde065d9f20c297149d80511f8df6d820b",
+    "examples/auxiliary/valid/selection-frozen.json": "e6e1ef11677355f0a82f46559dce4686c695d49d8055904ee2e989e58fc6bde5",
+    "examples/auxiliary/valid/selection-geometry-resolution.json": "3273435a3362b40d9c397d2eff88ec2959bd3480144902cb4ccc634b8b0e46b1",
+    "examples/auxiliary/valid/selection-measure-count.json": "0070f89feb94ec6201b9fc7ecf22e0c53486e3dcc34dea9d37357e814ce07b74",
+    "examples/auxiliary/valid/selection-measure-range.json": "bfb12d07ac255e7de87eb7298d5adcb5e56fd9525d41671a937662a6f024f27b",
+    "examples/auxiliary/valid/selection-time-range.json": "413a87ff5c1e62564d514e9827b51a6b4c6c9ee859d419e5c59ca52110d12b74",
+    "examples/sfs-invalid/alias-namespace-collision.sfs": "2f4174c43ee49107abd45560ba021aad6f818402b674ad1a8be998bd383f1d64",
+    "examples/sfs-invalid/chord-different-onsets.sfs": "07c3dbccedcbaafd8ba74ed379c8aadacba6c2c26599423a5abcb682b8561874",
+    "examples/sfs-invalid/chord-different-voices.sfs": "455c3bfc8150d02929de9f6344c61e9b954a92b1b23a68ebe137f03e99e916dd",
+    "examples/sfs-invalid/decimal-position.sfs": "c9352a0b1a100e25c39ba95335fa87d237ca1bffd9325c784a4cdbd9483382c4",
+    "examples/sfs-invalid/duplicate-attribute.sfs": "8663ff40d218f801c2df254f0f5fd9f4b70b490a8c34a7f5d88c3b07e0d193d2",
+    "examples/sfs-invalid/duplicate-frame-time.sfs": "bf1642afd1c5e2b98bea39039dac0dbed28bb8b58bbbcd1003eb7fddd6e641f0",
+    "examples/sfs-invalid/duplicate-object-id.sfs": "64ec57de81d58ddffd082963309716fc2f53de3dacfd43eea58a0881257586cb",
+    "examples/sfs-invalid/fragment-gap.sfs": "959a5b2429b3a3b5f268194862b54a0fccf09b29a8e9a8e8e21fb964d39757c8",
+    "examples/sfs-invalid/fragment-global-state.sfs": "a41429618b111086a436915ccc075d9629f90bd1b01f9d636c8f59aa9a920dbd",
+    "examples/sfs-invalid/fragment-span-mismatch.sfs": "4164899b4fae047ac3eeb8fa299aec923be01285b38a57d5f7c045151c21d3c5",
+    "examples/sfs-invalid/fragment-undeclared-binding.sfs": "3bf97843c6b9dbef2ccbf608441676f2f7a4933cf2f4998e99fc50ebc7b22c55",
+    "examples/sfs-invalid/future-frame-reference.sfs": "a9071e02eef7c0085ab0d7b5bf6e4e2abf86543cc620be5e1ccac8f0c3db5355",
+    "examples/sfs-invalid/grace-anchor-other-frame.sfs": "4bfdef2394aaa8abf5fa15fa2d07c301efaacdbfda6c2ea955f9bcd142b6c5fa",
+    "examples/sfs-invalid/grace-duplicate-order.sfs": "ee600c66175af303fb06c497f88192d4b200e45191d6b7f54deab7de076f6371",
+    "examples/sfs-invalid/grace-missing-anchor.sfs": "56d4ceb37a9f2951480b6b55011f9b2f6da9d021858cc025c6e7f9add50b7fe6",
+    "examples/sfs-invalid/grace-zero-order.sfs": "f3ec7483e4d2a139c117c49ee76f8c3c9266498b49c78ad02292ae236b93f431",
+    "examples/sfs-invalid/invalid-time-modification.sfs": "d90987cdb928e58173336e62c5029071e8c1a9b9525600903bcf991ffde39ed2",
+    "examples/sfs-invalid/manifest.json": "ce5c372289f382f37d74f28b8aa8ef4068cd63ba92decdb30967a4767eca825d",
+    "examples/sfs-invalid/negative-dots.sfs": "7be5785e63e002cbafc78c000e74c5d28c71cd3bc73b92c3fda8e44596adf525",
+    "examples/sfs-invalid/out-of-range-staff.sfs": "ab9a1fd86b3794c09b049a8c21b31b8a260c0b3592e6f2ed9895affb5e46914c",
+    "examples/sfs-invalid/state-conflict.sfs": "32c550f23ce0a5225b8e03c047a917007fbaac77b181f61f255a49d506813c45",
+    "examples/sfs-invalid/state-wrong-scope.sfs": "8c566cf443fba005f43d794f11ff1dbb05acbae802b1bb011d2abc35db7ba0ac",
+    "examples/sfs-invalid/tie-gap.sfs": "9e984c20aba8bf4a6a3d2615f3e8b3208a344cfc3fa6655f40757d05fb625324",
+    "examples/sfs-invalid/tie-pitch-mismatch.sfs": "945ffd911e615e3a4da06785364940c6de4f249ecdb52f16788bdc97456173dd",
+    "examples/sfs-invalid/truncated-event.sfs": "40458488bf6e99a97cf57c3979e82775468857ad07a5c469b1b779202ead874d",
+    "examples/sfs-invalid/tuplet-different-voices.sfs": "455e0add300e6ae1ab3de4394da136448ae2d87936f70500530613cccb78ff11",
+    "examples/sfs-invalid/tuplet-end-without-start.sfs": "1cc154f47c4059c9995b1226bb51cb0617a3a58e6e8bf41109a2df8ae38c1d1f",
+    "examples/sfs-invalid/unclosed-relation.sfs": "9dfd1f1b43a21124f5d1914eed0b632ee9efdc219292eb3d2e4ceb3e296cae65",
+    "examples/sfs-invalid/uncommitted-frame.sfs": "2409bb263649f1644ff69cfb813962271c303ffed7fcde639de76667722a722c",
+    "examples/sfs-invalid/undeclared-voice.sfs": "2e603e146a91e82e5f4366720b282cc685b1c5defc1bb60549b182c004c4d74a",
+    "examples/sfs-invalid/unknown-event-field.sfs": "af739e532fa73fd31d3d057c2ae1e79944b3b94d47c8914aa2c001749dba5d5e",
+    "examples/sfs-invalid/unreduced-duration.sfs": "04a21c5bf9ba7dfc2db08b9a39ba895e610c6354488e2bb3dfd583d516533bc8",
+    "examples/sfs-invalid/unresolved-mark.sfs": "f0af5af889ca4fcc7d0858313c693279904e8d42f2fbbf10879174c89552a00c",
+    "examples/sfs-invalid/zero-duration.sfs": "3a85ef62730e8f1b6426c0a3866dd43df3b7c062994b2a07283a9755a8670ad5",
+    "examples/sfs/ensemble.sfs": "d8a91cd2cf27b9b1d160aa46c8a2cf2e8db77341ca7feb5b0338de85467df58e",
+    "examples/sfs/grace-percussion-cross-staff.sfs": "ee780c06c93b770b7ec1510713e70bab39681566b3164ff909155114a8535d56",
+    "examples/sfs/replacement-fragment.sfs": "13735538e8a3dc11720f25fbbf62903e421b44791738db5bd7e2eeea0747ada8",
+    "examples/sfs/tuplets-and-ties.sfs": "f872d495d12a189b82a07732838c88805d3b8b123d21425307307c32598ff9c7",
+    "schemas/annotation.future.schema.json": "52b3837271494a7ae6fcb615d3472417ef830d5518cec0228d76ad0d3e6d296a",
+    "schemas/common.schema.json": "16b0284d09620448e19e298921b02d943031907216bd5bb63fd8bd4c8f5b036e",
+    "schemas/edit.schema.json": "f2f259e829c6f80745612eb614428c589320fcdd486e9a136e250ea118867aec",
+    "schemas/format-reference.schema.json": "f40bda0e270c44ddd3a2b6ab87f1d2577e666192143b6b15a6d76d2e94385deb",
+    "schemas/job.schema.json": "ef1c3d3f9e0149814cec7977a6f387b36ace6872fc8a6787431c95982f3d7e93",
+    "schemas/mcp-contract.schema.json": "0e6aa42eeacc0d870cb388fc082eef45eba0bd5048ba71691fa3ffab8f6980f1",
+    "schemas/render.schema.json": "7f9866852026e9e7e3ac6022eedcff57a9ec38ad0e11a4f7650ab9e8d9cd29ee",
+    "schemas/scorestream-ast.schema.json": "364a38b2e6f83021d8b0311fb23898e59beffb1b7166b00a5d36ccfcfc5764ca",
+    "schemas/selection.schema.json": "3c7d62839bb08ca0d344c605f66a80c01a389b416ba7e2fe6eebeec70c3efad7",
+    "spec/scorestream-language.json": "a821c6f21e3f71fa01fda57f61018707f7d80fcd1ce218f64dda9053478494b3",
+    "spec/scorestream.ebnf": "9663881c6860c9110c309a4c4ef1daba234f178be15359c7926ccb38366539ec",
+    "tools/build_format_reference.py": "a3d04ec1ee5da2ff51a03e488bec81dcdd1613ef88df70f44297a8c201bd03d9",
+    "tools/validate_package.py": "c6358b33e069b751519eebe98060f5753237c5c5d4c3bc2ee2296bfaa81a4b8d",
+    "validation/README.md": "cb1b6d95c175fb0d1eabee6025f5a389eb5cdfdb29fa91df3d945e4cca5cda1d",
+    "validation/fixture-context.json": "f3d67de955a3e9c7892e6fea9d0bc58c809356848bf446edcbf3fb5d824631ed"
+  }
+}

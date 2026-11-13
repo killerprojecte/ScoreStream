@@ -1,0 +1,433 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_render:output:1.1",
+  "title": "Render notation for a pinned revision application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/render__RenderResult"
+            },
+            {
+              "$ref": "#/$defs/job__JobSubmission"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    },
+    "job__JobSubmission": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "application_job"
+        },
+        "job_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "score_import",
+            "score_export",
+            "score_render"
+          ]
+        },
+        "status_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "poll_after_ms": {
+          "type": "integer",
+          "minimum": 250,
+          "maximum": 60000
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "kind",
+        "job_id",
+        "operation",
+        "status_uri",
+        "poll_after_ms",
+        "expires_at"
+      ],
+      "additionalProperties": false,
+      "description": "A durable application job handle. job_id is not an MCP taskId; it is used only with application job tools/resources."
+    },
+    "render__Coverage": {
+      "type": "object",
+      "properties": {
+        "interpreted_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "preserved_only_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "unsupported_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "interpreted_features",
+        "preserved_only_features",
+        "unsupported_features",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "description": "Capability observations for this operation and revision, not a claim of universal MusicXML completeness. complete describes this bounded report, not total semantic coverage."
+    },
+    "render__Page": {
+      "type": "object",
+      "properties": {
+        "page_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "page_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "svg_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "mapping_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "coordinate_space": {
+          "const": "page_viewbox"
+        },
+        "view_box": {
+          "$ref": "#/$defs/selection__PageRectangle"
+        }
+      },
+      "required": [
+        "page_id",
+        "page_number",
+        "svg_uri",
+        "mapping_uri",
+        "coordinate_space",
+        "view_box"
+      ],
+      "additionalProperties": false,
+      "description": "Page numbering is presentation; page_id is scoped to render_id. The SVG and mapping are published together."
+    },
+    "render__RenderResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "render"
+        },
+        "render_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "options_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "renderer": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "projection_version": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "font_set_id": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "projection_version",
+            "font_set_id"
+          ],
+          "additionalProperties": false
+        },
+        "manifest_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "total_pages": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/render__Page"
+          },
+          "maxItems": 256,
+          "minItems": 1
+        },
+        "pages_complete": {
+          "type": "boolean"
+        },
+        "pages_continuation_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "coverage": {
+          "$ref": "#/$defs/render__Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "kind",
+        "render_id",
+        "score_id",
+        "revision_id",
+        "options_hash",
+        "renderer",
+        "manifest_uri",
+        "total_pages",
+        "pages",
+        "pages_complete",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "pages_complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "pages_continuation_uri"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "pages_continuation_uri"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "A derived immutable result for an exact score revision. Further immutable page-index resources bound a large result; stale UI views must not publish this result as another revision."
+    },
+    "selection__PageRectangle": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false,
+      "description": "Finite coordinates in the renderer's page viewBox, not viewport CSS pixels. Geometric coordinates may be floating point; musical time may not."
+    }
+  }
+}

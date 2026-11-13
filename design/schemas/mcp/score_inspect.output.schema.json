@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_inspect:output:1.1",
+  "title": "Inspect score identity and revision application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/mcp_contract__InspectResult"
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    },
+    "mcp_contract__InspectResult": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "head_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "format_version": {
+          "const": "1.1"
+        },
+        "profile": {
+          "const": "core-measured"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mcp_contract__PartSummary"
+          },
+          "maxItems": 256
+        },
+        "voices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mcp_contract__VoiceSummary"
+          },
+          "maxItems": 1024
+        },
+        "measure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "manifest_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "coverage": {
+          "$ref": "#/$defs/render__Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "score",
+        "head_revision_id",
+        "format_version",
+        "profile",
+        "parts",
+        "voices",
+        "measure_count",
+        "manifest_uri",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "mcp_contract__PartSummary": {
+      "type": "object",
+      "properties": {
+        "part_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "instrument": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "staff_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "part_id",
+        "alias",
+        "instrument",
+        "staff_ids"
+      ],
+      "additionalProperties": false
+    },
+    "mcp_contract__VoiceSummary": {
+      "type": "object",
+      "properties": {
+        "voice_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "part_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "default_staff_id": {
+          "$ref": "#/$defs/common__Id"
+        }
+      },
+      "required": [
+        "voice_id",
+        "alias",
+        "part_id",
+        "default_staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "render__Coverage": {
+      "type": "object",
+      "properties": {
+        "interpreted_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "preserved_only_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "unsupported_features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "maxItems": 256
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "interpreted_features",
+        "preserved_only_features",
+        "unsupported_features",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "description": "Capability observations for this operation and revision, not a claim of universal MusicXML completeness. complete describes this bounded report, not total semantic coverage."
+    }
+  }
+}

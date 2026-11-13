@@ -1,0 +1,49 @@
+{
+  "score_id": "score_demo",
+  "expected_revision_id": "rev_001",
+  "idempotency_key": "cmd_replace_retarget_001",
+  "selection": {
+    "selection_id": "sel_001",
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_001"
+    },
+    "selection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "operations": [
+    {
+      "op": "replace_range",
+      "span": {
+        "clock_id": "score",
+        "start": "0",
+        "end": "4",
+        "voice_ids": [
+          "voice_pr",
+          "voice_pl"
+        ]
+      },
+      "fragment_sfs": "!fragment 1.1 unit=q span=4\n@0\nright C4:2 id=f1\nleft C3:4 id=f2\n.\n@2\nright G4:2 id=f3\n.\n!end at=4\n",
+      "voice_bindings": [
+        {
+          "fragment_voice": "right",
+          "voice_id": "voice_pr"
+        },
+        {
+          "fragment_voice": "left",
+          "voice_id": "voice_pl"
+        }
+      ],
+      "duration_policy": "preserve",
+      "boundary_policy": "reject_unresolved_crossings"
+    },
+    {
+      "op": "retarget_relation",
+      "relation_id": "tie_in",
+      "endpoint": "end",
+      "target": {
+        "kind": "fragment",
+        "event_id": "guessed_global_f1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,530 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_apply_edit:input:1.1",
+  "title": "Commit an atomic score edit input",
+  "type": "object",
+  "properties": {
+    "score_id": {
+      "$ref": "#/$defs/common__Id"
+    },
+    "expected_revision_id": {
+      "$ref": "#/$defs/common__RevisionId"
+    },
+    "idempotency_key": {
+      "$ref": "#/$defs/common__Id"
+    },
+    "selection": {
+      "$ref": "#/$defs/selection__FrozenSelectionRef"
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edit__Operation"
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "score_id",
+    "expected_revision_id",
+    "idempotency_key",
+    "selection",
+    "operations"
+  ],
+  "additionalProperties": false,
+  "description": "One atomic compare-and-swap command shared by desktop and MCP. Authenticate the actor externally. Selection score/revision and expected_revision_id must agree and equal current head at commit. Resolve the immutable selection reference, never its original query against a new head. Apply operations to a private working revision and publish all or none. Unknown caller authority/provenance fields are rejected.",
+  "$defs": {
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__PositiveRational": {
+      "type": "string",
+      "pattern": "^(?:[1-9][0-9]*|[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+))$",
+      "description": "Strictly positive canonical rational; requires the same reduction check as Rational.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__Rational": {
+      "type": "string",
+      "pattern": "^(?:0|-?[1-9][0-9]*|-?[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+))$",
+      "description": "Exact canonical rational in quarter-note units where applicable. Integers have no denominator; fractions have positive denominator > 1. Semantic validation additionally requires gcd(abs(n), d)=1. JSON Schema alone cannot enforce reduction; 2/4 is rejected by the semantic validator. No floating-point JSON values, leading zeros, -0, 0/d, or n/1.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "common__TextIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+      "not": {
+        "pattern": "\\s"
+      },
+      "description": "SFS lexical identifier used for a fragment-local voice alias or event ID. It is distinct from an opaque external score/revision/object identifier. The parser and returned binding map establish correspondence."
+    },
+    "common__WrittenPitch": {
+      "type": "string",
+      "pattern": "^[A-G](?:#{1,2}|b{1,2}|\\([+-](?:[1-9][0-9]*(?:/(?:[2-9]|[1-9][0-9]+))?)\\))?(?:0|-?[1-9][0-9]*)$",
+      "description": "Canonical written pitch, e.g. C4, Db4, C##4, C(+1/2)4. Semantic checks enforce reduced alterations and the short forms for 0, +/-1 and +/-2 semitones. This is a spelling, not a printed accidental or a MIDI value.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "edit__DeleteEvents": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "delete_events"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "owned_marks": {
+          "const": "delete"
+        },
+        "relations": {
+          "const": "delete_internal_reject_crossing"
+        }
+      },
+      "required": [
+        "op",
+        "event_ids",
+        "owned_marks",
+        "relations"
+      ],
+      "additionalProperties": false,
+      "description": "Delete named events and score-owned attached marks. Delete a relation only when all of its referenced members are deleted. Any surviving dependent endpoint/member requires an explicit relation operation in this same transaction. Future knowledge annotations are not score-owned marks and are never deleted here."
+    },
+    "edit__IdentityReplacement": {
+      "type": "object",
+      "properties": {
+        "old_event_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "new_fragment_event_id": {
+          "$ref": "#/$defs/common__TextIdentifier"
+        }
+      },
+      "required": [
+        "old_event_id",
+        "new_fragment_event_id"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit replacement lineage, not a claim of unchanged semantic identity. Old and new IDs remain distinct. Future follow-identity annotations require review for a replacement even when lineage exists."
+    },
+    "edit__MoveEvent": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "move_event"
+        },
+        "event_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "onset": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "voice_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "staff_id": {
+          "$ref": "#/$defs/common__Id"
+        }
+      },
+      "required": [
+        "op",
+        "event_id",
+        "onset"
+      ],
+      "additionalProperties": false,
+      "description": "Move an existing event in its existing clock; optionally change voice/staff. Preserve identity, pitch and duration. The destination must be an explicitly selected scope, existing staff must belong to the destination part, and no dependent relation may be left unresolved. Cross-clock moves are unsupported."
+    },
+    "edit__Operation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/edit__SetPitch"
+        },
+        {
+          "$ref": "#/$defs/edit__SetDuration"
+        },
+        {
+          "$ref": "#/$defs/edit__MoveEvent"
+        },
+        {
+          "$ref": "#/$defs/edit__DeleteEvents"
+        },
+        {
+          "$ref": "#/$defs/edit__RemoveRelation"
+        },
+        {
+          "$ref": "#/$defs/edit__RetargetRelation"
+        },
+        {
+          "$ref": "#/$defs/edit__ReplaceRange"
+        }
+      ]
+    },
+    "edit__RelationTarget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "existing"
+            },
+            "event_id": {
+              "$ref": "#/$defs/common__Id"
+            }
+          },
+          "required": [
+            "kind",
+            "event_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "fragment"
+            },
+            "operation_index": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fragment_event_id": {
+              "$ref": "#/$defs/common__TextIdentifier"
+            }
+          },
+          "required": [
+            "kind",
+            "operation_index",
+            "fragment_event_id"
+          ],
+          "additionalProperties": false,
+          "description": "Reference an explicitly named event inside the replace_range operation at this zero-based index in the same transaction. The command authority allocates final identities and resolves this reference before final graph validation; never guess a future global ID."
+        }
+      ]
+    },
+    "edit__RemoveRelation": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "remove_relation"
+        },
+        "relation_id": {
+          "$ref": "#/$defs/common__Id"
+        }
+      },
+      "required": [
+        "op",
+        "relation_id"
+      ],
+      "additionalProperties": false,
+      "description": "Explicitly remove this score relation. It must be internal to, or appear in the frozen selection's touching context. Report impacts outside the selected notes; never infer this operation from a dangling endpoint."
+    },
+    "edit__ReplaceRange": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "replace_range"
+        },
+        "span": {
+          "$ref": "#/$defs/edit__ReplacementSpan"
+        },
+        "fragment_sfs": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1048576,
+          "pattern": "^!fragment 1\\.1 unit=q span="
+        },
+        "voice_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit__VoiceBinding"
+          },
+          "minItems": 1
+        },
+        "duration_policy": {
+          "const": "preserve"
+        },
+        "boundary_policy": {
+          "const": "reject_unresolved_crossings"
+        },
+        "identity_replacements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit__IdentityReplacement"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "op",
+        "span",
+        "fragment_sfs",
+        "voice_bindings",
+        "duration_policy",
+        "boundary_policy"
+      ],
+      "additionalProperties": false,
+      "description": "Replace selected voices only inside the frozen span. Parse !fragment 1.1 unit=q span=<length>, local committed @frames and !end at=<length>; no !part declarations. Span length equals end-start and is preserved exactly. Bind aliases explicitly. v1.1 fragments carry event/mark/relation edits only: they cannot introduce persistent state or change measure-boundary objects. Existing states and measure objects stay at their frozen positions; inserted events are validated against that preserved context at every onset. Notes crossing either outer boundary are rejected rather than silently cut. Untouched spanning relations remain intact; affected external endpoints/members need explicit relation operations in the same atomic transaction. Ripple is unsupported and not advertised."
+    },
+    "edit__ReplacementSpan": {
+      "type": "object",
+      "properties": {
+        "clock_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "start": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "end": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "voice_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "clock_id",
+        "start",
+        "end",
+        "voice_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Half-open target span. Must exactly match one frozen contiguous time/measure span and the explicitly affected voices. An arbitrary event-set bounding box is not replaceable. All selected local measure boundaries and unsupported state boundaries must be aligned or the operation is rejected."
+    },
+    "edit__RetargetRelation": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "retarget_relation"
+        },
+        "relation_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "endpoint": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/edit__RelationTarget"
+        }
+      },
+      "required": [
+        "op",
+        "relation_id",
+        "endpoint",
+        "target"
+      ],
+      "additionalProperties": false,
+      "description": "Explicitly retarget a registered endpoint role of an existing relation to an existing or same-transaction fragment event. Only relation kinds whose registry defines that endpoint role support this operation; non-binary/member-based relations require a dedicated future operation. Validate kind, scope, order and musical constraints against the final transaction graph."
+    },
+    "edit__SetDuration": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "set_duration"
+        },
+        "event_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "duration": {
+          "$ref": "#/$defs/common__PositiveRational"
+        },
+        "written": {
+          "$ref": "#/$defs/edit__WrittenDuration"
+        }
+      },
+      "required": [
+        "op",
+        "event_id",
+        "duration",
+        "written"
+      ],
+      "additionalProperties": false,
+      "description": "Change one ordinary timed note/rest/spacer duration and its explicitly supplied written-duration fields; no ripple and no automatic split. Grace and open-duration event kinds reject this operation. The event must remain within the frozen editing scope and score extent."
+    },
+    "edit__SetPitch": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "set_pitch"
+        },
+        "event_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "pitch": {
+          "$ref": "#/$defs/common__WrittenPitch"
+        },
+        "accidental_policy": {
+          "type": "string",
+          "enum": [
+            "preserve_if_consistent",
+            "recompute"
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "event_id",
+        "pitch",
+        "accidental_policy"
+      ],
+      "additionalProperties": false,
+      "description": "Change one pitched event's written pitch. Onset, duration, voice and staff are unchanged. preserve_if_consistent rejects contradictory existing explicit accidentals; recompute is an explicit engraving request and must report all resulting accidental-object changes. Tied endpoints and transposition-dependent constraints are validated at transaction end."
+    },
+    "edit__TimeModification": {
+      "type": "object",
+      "properties": {
+        "actual": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "normal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "normal_type": {
+          "$ref": "#/$defs/edit__WrittenType"
+        },
+        "normal_dots": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "actual",
+        "normal"
+      ],
+      "additionalProperties": false,
+      "description": "Per-event written time modification, distinct from visible tuplet relations. Optional normal_type/normal_dots are preserved when explicitly supplied."
+    },
+    "edit__VoiceBinding": {
+      "type": "object",
+      "properties": {
+        "fragment_voice": {
+          "$ref": "#/$defs/common__TextIdentifier"
+        },
+        "voice_id": {
+          "$ref": "#/$defs/common__Id"
+        }
+      },
+      "required": [
+        "fragment_voice",
+        "voice_id"
+      ],
+      "additionalProperties": false,
+      "description": "Map a fragment-local alias to one pre-existing logical voice identity in the selected revision. Use the returned mapping; never paste an opaque voice ID into SFS as if it were an alias."
+    },
+    "edit__WrittenDuration": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/edit__WrittenType"
+        },
+        "dots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "time_modification": {
+          "$ref": "#/$defs/edit__TimeModification"
+        }
+      },
+      "required": [
+        "type",
+        "dots"
+      ],
+      "additionalProperties": false,
+      "description": "Explicit replacement of this event's written duration fields. The engine verifies consistency with the requested exact duration; it never silently changes onsets, unrelated events or measure lengths."
+    },
+    "edit__WrittenType": {
+      "type": "string",
+      "enum": [
+        "maxima",
+        "long",
+        "breve",
+        "1",
+        "2",
+        "4",
+        "8",
+        "16",
+        "32",
+        "64",
+        "128",
+        "256",
+        "512",
+        "1024"
+      ]
+    },
+    "selection__FrozenSelectionRef": {
+      "type": "object",
+      "properties": {
+        "selection_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "selection_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "selection_id",
+        "score",
+        "selection_digest"
+      ],
+      "additionalProperties": false,
+      "description": "Reference to an immutable, server-resolved selection. All three components must agree. Never re-evaluate against a newer head."
+    }
+  }
+}

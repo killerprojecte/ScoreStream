@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:schema:job:1.1",
+  "title": "ScoreStream application job contract 1.1",
+  "$ref": "#/$defs/ApplicationJob",
+  "$defs": {
+    "DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "expected_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    },
+    "ArtifactRef": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "mime_type": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "uri",
+        "mime_type",
+        "size_bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "JobSubmission": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "application_job"
+        },
+        "job_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "score_import",
+            "score_export",
+            "score_render"
+          ]
+        },
+        "status_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "poll_after_ms": {
+          "type": "integer",
+          "minimum": 250,
+          "maximum": 60000
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "kind",
+        "job_id",
+        "operation",
+        "status_uri",
+        "poll_after_ms",
+        "expires_at"
+      ],
+      "additionalProperties": false,
+      "description": "A durable application job handle. job_id is not an MCP taskId; it is used only with application job tools/resources."
+    },
+    "ApplicationJob": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "score_import",
+            "score_export",
+            "score_render"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "cancel_requested",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "poll_after_ms": {
+          "type": "integer",
+          "minimum": 250,
+          "maximum": 60000
+        },
+        "source_score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "stage": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "progress": {
+          "type": "object",
+          "properties": {
+            "completed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "completed"
+          ],
+          "additionalProperties": false
+        },
+        "result_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "result_schema_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "error": {
+          "$ref": "urn:scorestream:schema:job:1.1#/$defs/DomainError"
+        }
+      },
+      "required": [
+        "job_id",
+        "operation",
+        "state",
+        "created_at",
+        "updated_at",
+        "expires_at",
+        "poll_after_ms"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "succeeded"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "result_uri",
+              "result_schema_uri"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "result_uri"
+                  ]
+                },
+                {
+                  "required": [
+                    "result_schema_uri"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "error"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      ],
+      "description": "Result resources contain the original tool's final application envelope and are validated by result_schema_uri. These application states are not MCP extension task states."
+    },
+    "JobQuery": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "additionalProperties": false
+    },
+    "JobCancelRequest": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "additionalProperties": false
+    },
+    "JobCancellation": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "cancel_requested",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "cancellation_requested": {
+          "type": "boolean"
+        },
+        "status_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "job_id",
+        "state",
+        "cancellation_requested",
+        "status_uri"
+      ],
+      "additionalProperties": false,
+      "description": "The observed result of a cooperative cancellation request. Terminal jobs may return cancellation_requested=false; no committed revision is undone."
+    }
+  }
+}

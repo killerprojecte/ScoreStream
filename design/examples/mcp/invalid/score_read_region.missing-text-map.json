@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "data": {
+    "selection": {
+      "selection_id": "sel_001",
+      "score": {
+        "score_id": "score_demo",
+        "revision_id": "rev_001"
+      },
+      "selection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "request": {
+        "score": {
+          "score_id": "score_demo",
+          "revision_id": "rev_001"
+        },
+        "selector": {
+          "kind": "time_range",
+          "clock_id": "score",
+          "start": "0",
+          "end": "4",
+          "event_match": "onset"
+        },
+        "filters": {
+          "voice_ids": [
+            "voice_pr",
+            "voice_pl"
+          ]
+        },
+        "policy": {
+          "grace": "with_principal",
+          "chords": "exact_members",
+          "ties": "exact_events"
+        }
+      },
+      "event_ids": [
+        "event_c4",
+        "event_e4"
+      ],
+      "measure_ids": [
+        "measure_p1"
+      ],
+      "resolved_spans": [
+        {
+          "clock_id": "score",
+          "start": "0",
+          "end": "4",
+          "voice_ids": [
+            "voice_pr",
+            "voice_pl"
+          ]
+        }
+      ],
+      "boundary_events": [],
+      "relations": {
+        "internal_ids": [],
+        "crossing_ids": [],
+        "spanning_ids": []
+      },
+      "diagnostics": []
+    },
+    "fragments": [
+      {
+        "span": {
+          "clock_id": "score",
+          "start": "0",
+          "end": "4",
+          "voice_ids": [
+            "voice_pr",
+            "voice_pl"
+          ]
+        },
+        "fragment_sfs": "!fragment 1.1 unit=q span=4\n@0\nright C4:4 id=event_c4\nleft E4:4 id=event_e4\n.\n!end at=4\n",
+        "voice_bindings": [
+          {
+            "fragment_voice": "right",
+            "voice_id": "voice_pr"
+          },
+          {
+            "fragment_voice": "left",
+            "voice_id": "voice_pl"
+          }
+        ],
+        "replacement_complete": true,
+        "context": {
+          "declarations_sfs": "!part p instrument=piano staves=2\n!voice right part=p staff=1\n!voice left part=p staff=2\n",
+          "entry_state_sfs": "= score tempo=q:120\n= p.s1 meter=4/4 key=0 clef=G2\n= p.s2 meter=4/4 key=0 clef=F4\n",
+          "continuing_event_ids": [],
+          "relation_ids": [],
+          "complete": true
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

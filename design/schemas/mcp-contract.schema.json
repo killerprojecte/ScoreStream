@@ -1,0 +1,908 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:schema:mcp-contract:1.1",
+  "title": "Auxiliary planned MCP data contracts 1.1",
+  "$ref": "#/$defs/FormatRequest",
+  "$defs": {
+    "QuickReference": {
+      "title": "Quick authoring reference returned by default",
+      "type": "object",
+      "required": [
+        "format",
+        "format_version",
+        "profile",
+        "records",
+        "semantic_rules",
+        "examples",
+        "validation_boundary",
+        "mcp_resources",
+        "common_attributes",
+        "core_shape",
+        "pitch",
+        "time"
+      ],
+      "properties": {
+        "format": {
+          "const": "ScoreStream"
+        },
+        "format_version": {
+          "const": "1.1"
+        },
+        "profile": {
+          "const": "core-measured"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prefix": {
+                "type": "string"
+              },
+              "syntax": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "prefix",
+              "syntax",
+              "purpose"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "semantic_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^S[0-9]{3}$"
+              },
+              "rule": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "rule"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "file",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "vocabulary": {
+          "type": "object"
+        },
+        "validation_boundary": {
+          "type": "string"
+        },
+        "mcp_resources": {
+          "type": "object"
+        },
+        "common_attributes": {
+          "type": "object"
+        },
+        "core_shape": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pitch": {
+          "type": "object"
+        },
+        "time": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "FormatRequest": {
+      "type": "object",
+      "properties": {
+        "format_version": {
+          "type": "string",
+          "const": "1.1",
+          "default": "1.1"
+        },
+        "profile": {
+          "type": "string",
+          "const": "core-measured",
+          "default": "core-measured"
+        },
+        "detail": {
+          "type": "string",
+          "enum": [
+            "quick",
+            "full"
+          ],
+          "default": "quick"
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "syntax",
+              "pitch",
+              "time",
+              "polyphony",
+              "state",
+              "marks",
+              "relations",
+              "editing",
+              "extensions",
+              "validation"
+            ]
+          },
+          "maxItems": 10,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Empty arguments return current quick syntax and examples inline. Topics add requested detail without omitting the minimum authoring contract. Selection of unsupported versions/profiles is an actionable tool error."
+    },
+    "FormatData": {
+      "anyOf": [
+        {
+          "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/QuickReference"
+        },
+        {
+          "$ref": "urn:scorestream:schema:format-reference:1.1"
+        }
+      ]
+    },
+    "ImportRequest": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "inline"
+                },
+                "format": {
+                  "type": "string",
+                  "enum": [
+                    "sfs",
+                    "musicxml"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1048576
+                }
+              },
+              "required": [
+                "kind",
+                "format",
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "asset"
+                },
+                "format": {
+                  "type": "string",
+                  "enum": [
+                    "sfs",
+                    "musicxml",
+                    "mxl"
+                  ]
+                },
+                "asset_id": {
+                  "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+                }
+              },
+              "required": [
+                "kind",
+                "format",
+                "asset_id"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "idempotency_key": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "profile": {
+          "const": "core-measured",
+          "default": "core-measured"
+        },
+        "fidelity_policy": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "preserve_uninterpreted"
+          ],
+          "default": "preserve_uninterpreted"
+        }
+      },
+      "required": [
+        "source",
+        "idempotency_key"
+      ],
+      "additionalProperties": false,
+      "description": "Text or registered assets only. No network fetch or caller-supplied filesystem path. Preserved source payload is explicitly distinguished from interpreted score semantics."
+    },
+    "ImportResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "imported_score"
+        },
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "format_version": {
+          "const": "1.1"
+        },
+        "profile": {
+          "const": "core-measured"
+        },
+        "manifest_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "source_asset_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "coverage": {
+          "$ref": "urn:scorestream:schema:render:1.1#/$defs/Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "kind",
+        "score",
+        "format_version",
+        "profile",
+        "manifest_uri",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "InspectRequest": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        }
+      },
+      "required": [
+        "score_id"
+      ],
+      "additionalProperties": false
+    },
+    "PartSummary": {
+      "type": "object",
+      "properties": {
+        "part_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "instrument": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "staff_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "part_id",
+        "alias",
+        "instrument",
+        "staff_ids"
+      ],
+      "additionalProperties": false
+    },
+    "VoiceSummary": {
+      "type": "object",
+      "properties": {
+        "voice_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "part_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "default_staff_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        }
+      },
+      "required": [
+        "voice_id",
+        "alias",
+        "part_id",
+        "default_staff_id"
+      ],
+      "additionalProperties": false
+    },
+    "InspectResult": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "head_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "format_version": {
+          "const": "1.1"
+        },
+        "profile": {
+          "const": "core-measured"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/PartSummary"
+          },
+          "maxItems": 256
+        },
+        "voices": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/VoiceSummary"
+          },
+          "maxItems": 1024
+        },
+        "measure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "manifest_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        },
+        "coverage": {
+          "$ref": "urn:scorestream:schema:render:1.1#/$defs/Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "score",
+        "head_revision_id",
+        "format_version",
+        "profile",
+        "parts",
+        "voices",
+        "measure_count",
+        "manifest_uri",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "RegionContext": {
+      "type": "object",
+      "properties": {
+        "declarations_sfs": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "entry_state_sfs": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "continuing_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "relation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "resource_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "declarations_sfs",
+        "entry_state_sfs",
+        "continuing_event_ids",
+        "relation_ids",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "resource_uri"
+            ]
+          }
+        }
+      ],
+      "description": "Read-only context, not edit authorization. Full referenced context must be fetched before an edit depending on it; missing context is never guessed."
+    },
+    "TextObjectBinding": {
+      "type": "object",
+      "properties": {
+        "text_field": {
+          "type": "string",
+          "enum": [
+            "fragment_sfs",
+            "declarations_sfs",
+            "entry_state_sfs"
+          ]
+        },
+        "object_kind": {
+          "type": "string",
+          "enum": [
+            "event",
+            "measure",
+            "relation",
+            "mark",
+            "chord",
+            "part",
+            "voice",
+            "staff"
+          ]
+        },
+        "object_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "text_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/TextIdentifier"
+        },
+        "line_1based": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "text_field",
+        "object_kind",
+        "object_id"
+      ],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "text_id"
+          ]
+        },
+        {
+          "required": [
+            "line_1based"
+          ]
+        }
+      ],
+      "description": "An explicit alias and/or source-line binding within the named snippet. A line is required when an object has no SFS alias, such as an unlabelled intrinsic mark. Optional lines count from one in that exact text field. Never infer an opaque object ID from event order or the spelling of a local alias."
+    },
+    "TextObjectMap": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/TextObjectBinding"
+          },
+          "maxItems": 20000
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "resource_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "score",
+        "entries",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "resource_uri"
+            ]
+          }
+        }
+      ],
+      "description": "Revision-bound mappings for fragment and context snippets, including every supplied referencable alias and relevant unlabelled object. The score must equal FrozenSelection.score. If incomplete, fetch the full map resource before identity-dependent edits; neither missing entries nor context bindings may be guessed."
+    },
+    "RegionFragment": {
+      "type": "object",
+      "properties": {
+        "span": {
+          "$ref": "urn:scorestream:schema:selection:1.1#/$defs/ResolvedSpan"
+        },
+        "fragment_sfs": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1048576
+        },
+        "voice_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:edit:1.1#/$defs/VoiceBinding"
+          },
+          "maxItems": 1024,
+          "minItems": 1
+        },
+        "replacement_complete": {
+          "type": "boolean"
+        },
+        "context": {
+          "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/RegionContext"
+        },
+        "text_map": {
+          "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/TextObjectMap"
+        }
+      },
+      "required": [
+        "span",
+        "fragment_sfs",
+        "voice_bindings",
+        "replacement_complete",
+        "context",
+        "text_map"
+      ],
+      "additionalProperties": false,
+      "description": "An inspection fragment normalized to local time. An event-only or boundary-crossing selection is not necessarily a complete replace_range payload; replacement_complete explicitly states that distinction."
+    },
+    "ReadRegionResult": {
+      "type": "object",
+      "properties": {
+        "selection": {
+          "$ref": "urn:scorestream:schema:selection:1.1#/$defs/FrozenSelection"
+        },
+        "fragments": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:mcp-contract:1.1#/$defs/RegionFragment"
+          },
+          "maxItems": 256
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "selection",
+        "fragments",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "The selection is frozen and never silently truncated or re-evaluated against a newer revision. Oversized selection/results return a resource_limit domain error, not incomplete edit authority."
+    },
+    "ValidateRequest": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "profile": {
+          "const": "core-measured",
+          "default": "core-measured"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "ValidateResult": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "valid": {
+          "const": true
+        },
+        "profile": {
+          "const": "core-measured"
+        },
+        "coverage": {
+          "$ref": "urn:scorestream:schema:render:1.1#/$defs/Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "score",
+        "valid",
+        "profile",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "PreviewRequest": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "expected_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "selection": {
+          "$ref": "urn:scorestream:schema:selection:1.1#/$defs/FrozenSelectionRef"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:edit:1.1#/$defs/Operation"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "score_id",
+        "expected_revision_id",
+        "selection",
+        "operations"
+      ],
+      "additionalProperties": false,
+      "description": "Validate an ephemeral candidate with the same selection/base/operations as EditRequest. No commit and no approval token is required. The referenced frozen selection and expected revision must agree."
+    },
+    "PreviewResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "preview"
+        },
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "expected_revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "would_commit": {
+          "const": true
+        },
+        "changed_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "deleted_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "planned_insertions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "affected_relation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "status",
+        "score_id",
+        "expected_revision_id",
+        "would_commit",
+        "changed_ids",
+        "deleted_ids",
+        "planned_insertions",
+        "affected_relation_ids",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "A pure validation/diff preview; no artifact or durable job is created by this MVP tool. It neither reserves new IDs nor changes head. Rendering a draft is a desktop application function."
+    },
+    "ExportRequest": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+        },
+        "revision_id": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/RevisionId"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "sfs",
+            "sfp",
+            "musicxml",
+            "mxl"
+          ]
+        },
+        "fidelity_policy": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "allow_reported_loss"
+          ],
+          "default": "strict"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id",
+        "format"
+      ],
+      "additionalProperties": false,
+      "description": "Export a pinned revision. Adapter availability comes from the deployed capability matrix; unsupported formats fail. Loss is allowed only when the request explicitly opts in."
+    },
+    "ExportResult": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "exported_score"
+        },
+        "score": {
+          "$ref": "urn:scorestream:schema:common:1.1#/$defs/ScoreRef"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "sfs",
+            "sfp",
+            "musicxml",
+            "mxl"
+          ]
+        },
+        "artifact": {
+          "$ref": "urn:scorestream:schema:job:1.1#/$defs/ArtifactRef"
+        },
+        "lossy": {
+          "type": "boolean"
+        },
+        "coverage": {
+          "$ref": "urn:scorestream:schema:render:1.1#/$defs/Coverage"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "kind",
+        "score",
+        "format",
+        "artifact",
+        "lossy",
+        "coverage",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

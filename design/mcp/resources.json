@@ -1,0 +1,54 @@
+{
+  "resultType": "complete",
+  "resources": [
+    {
+      "uri": "scorestream://formats",
+      "name": "scorestream-format-index",
+      "title": "ScoreStream format versions and profiles",
+      "description": "Supported format versions/profiles and links to their normative grammar, language descriptor, AST schema, agent reference, and examples. score_get_format returns the concise authoring contract directly. This packaged manifest is a design example, not a live endpoint.",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "scorestream://spec/1.1/agent-reference",
+      "name": "scorestream-agent-reference-1.1",
+      "title": "ScoreStream 1.1 agent authoring reference",
+      "description": "The versioned syntax and semantic rules referenced by score_get_format. The supported profile is declared in the document.",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "scorestream://spec/1.1/grammar",
+      "name": "scorestream-grammar-1.1",
+      "title": "ScoreStream 1.1 EBNF grammar",
+      "description": "The raw SFS text grammar, separate from JSON Schema validation of a parsed AST.",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "scorestream://spec/1.1/language",
+      "name": "scorestream-language-1.1",
+      "title": "ScoreStream 1.1 machine-readable language standard",
+      "description": "The complete format descriptor, including syntax templates, vocabulary, semantic rules, and complete examples.",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "scorestream://spec/1.1/ast-schema",
+      "name": "scorestream-ast-schema-1.1",
+      "title": "ScoreStream 1.1 parsed AST schema",
+      "description": "JSON Schema 2020-12 for the parsed core AST; it is not a substitute for parsing SFS and semantic validation.",
+      "mimeType": "application/schema+json"
+    },
+    {
+      "uri": "scorestream://spec/editing",
+      "name": "scorestream-editing-contract",
+      "title": "ScoreStream editing contract",
+      "description": "Region selection, revision preconditions, atomic edits, idempotency, and boundary behavior for the deployed server.",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "scorestream://capabilities",
+      "name": "scorestream-capability-matrix",
+      "title": "ScoreStream capability matrix",
+      "description": "The deployed semantic, preservation-only, import, export, rendering, schema, and job capabilities. Future annotation and playback features are not advertised as available.",
+      "mimeType": "application/json"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "ok": true,
+  "data": {
+    "status": "committed",
+    "score": {
+      "score_id": "score_demo",
+      "revision_id": "rev_002"
+    },
+    "parent_revision_id": "rev_001",
+    "command_id": "command_demo_001",
+    "actor": {
+      "kind": "agent",
+      "principal_id": "principal_demo"
+    },
+    "changed_ids": [
+      "event_c4"
+    ],
+    "created_ids": [],
+    "deleted_ids": [],
+    "lineage": [
+      {
+        "kind": "preserved",
+        "before_ids": [
+          "event_c4"
+        ],
+        "after_ids": [
+          "event_c4"
+        ]
+      }
+    ],
+    "invalidated_render_ids": [
+      "render_demo"
+    ],
+    "diagnostics": []
+  }
+}

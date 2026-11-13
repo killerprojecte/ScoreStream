@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:schema:common:1.1",
+  "title": "ScoreStream shared schema definitions 1.1",
+  "$ref": "#/$defs/ScoreRef",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "TextIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+      "not": {
+        "pattern": "\\s"
+      },
+      "description": "SFS lexical identifier used for a fragment-local voice alias or event ID. It is distinct from an opaque external score/revision/object identifier. The parser and returned binding map establish correspondence."
+    },
+    "RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "Rational": {
+      "type": "string",
+      "pattern": "^(?:0|-?[1-9][0-9]*|-?[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+))$",
+      "description": "Exact canonical rational in quarter-note units where applicable. Integers have no denominator; fractions have positive denominator > 1. Semantic validation additionally requires gcd(abs(n), d)=1. JSON Schema alone cannot enforce reduction; 2/4 is rejected by the semantic validator. No floating-point JSON values, leading zeros, -0, 0/d, or n/1.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "PositiveRational": {
+      "type": "string",
+      "pattern": "^(?:[1-9][0-9]*|[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+))$",
+      "description": "Strictly positive canonical rational; requires the same reduction check as Rational.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "NonNegativeRational": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*|[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+))$",
+      "description": "Nonnegative canonical rational; requires the same reduction check as Rational.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "WrittenPitch": {
+      "type": "string",
+      "pattern": "^[A-G](?:#{1,2}|b{1,2}|\\([+-](?:[1-9][0-9]*(?:/(?:[2-9]|[1-9][0-9]+))?)\\))?(?:0|-?[1-9][0-9]*)$",
+      "description": "Canonical written pitch, e.g. C4, Db4, C##4, C(+1/2)4. Semantic checks enforce reduced alterations and the short forms for 0, +/-1 and +/-2 semitones. This is a spelling, not a printed accidental or a MIDI value.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "ClockSpan": {
+      "type": "object",
+      "properties": {
+        "clock_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "start": {
+          "$ref": "#/$defs/Rational"
+        },
+        "end": {
+          "$ref": "#/$defs/Rational"
+        }
+      },
+      "required": [
+        "clock_id",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false,
+      "description": "Half-open [start,end), with start < end verified semantically in the named score clock."
+    },
+    "Actor": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "human",
+            "agent"
+          ]
+        },
+        "principal_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "kind",
+        "principal_id"
+      ],
+      "additionalProperties": false,
+      "description": "Output provenance derived from the authenticated desktop/MCP command context. Never accepted as caller-controlled mutation authority."
+    },
+    "Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:scorestream:schema:common:1.1#/$defs/Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

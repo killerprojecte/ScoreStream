@@ -1,0 +1,842 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:scorestream:tool:score_read_region:output:1.1",
+  "title": "Read and freeze a score region application result",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "data": {
+          "$ref": "#/$defs/mcp_contract__ReadRegionResult"
+        }
+      },
+      "required": [
+        "ok",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "$ref": "#/$defs/job__DomainError"
+        }
+      },
+      "required": [
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "description": "Exactly one application success or error branch. Protocol resultType/content/structuredContent/isError wrap this object; they are not fields inside it.",
+  "$defs": {
+    "common__Diagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "object_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "additionalProperties": false
+    },
+    "common__Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Opaque stable external identifier. A displayed measure number, staff number, or event ordinal is not an identifier. External IDs are not automatically legal SFS aliases: use the returned alias/reference map and TextIdentifier for fragment-local names.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__Rational": {
+      "type": "string",
+      "pattern": "^(?:0|-?[1-9][0-9]*|-?[1-9][0-9]*/(?:[2-9]|[1-9][0-9]+))$",
+      "description": "Exact canonical rational in quarter-note units where applicable. Integers have no denominator; fractions have positive denominator > 1. Semantic validation additionally requires gcd(abs(n), d)=1. JSON Schema alone cannot enforce reduction; 2/4 is rejected by the semantic validator. No floating-point JSON values, leading zeros, -0, 0/d, or n/1.",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "common__RevisionId": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/common__Id"
+        }
+      ],
+      "description": "Immutable score revision identifier; never the mutable alias latest."
+    },
+    "common__ScoreRef": {
+      "type": "object",
+      "properties": {
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        }
+      },
+      "required": [
+        "score_id",
+        "revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "common__TextIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+      "not": {
+        "pattern": "\\s"
+      },
+      "description": "SFS lexical identifier used for a fragment-local voice alias or event ID. It is distinct from an opaque external score/revision/object identifier. The parser and returned binding map establish correspondence."
+    },
+    "edit__VoiceBinding": {
+      "type": "object",
+      "properties": {
+        "fragment_voice": {
+          "$ref": "#/$defs/common__TextIdentifier"
+        },
+        "voice_id": {
+          "$ref": "#/$defs/common__Id"
+        }
+      },
+      "required": [
+        "fragment_voice",
+        "voice_id"
+      ],
+      "additionalProperties": false,
+      "description": "Map a fragment-local alias to one pre-existing logical voice identity in the selected revision. Use the returned mapping; never paste an opaque voice ID into SFS as if it were an alias."
+    },
+    "job__DomainError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        },
+        "score_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "expected_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "current_revision_id": {
+          "$ref": "#/$defs/common__RevisionId"
+        },
+        "details_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "An actionable application error, not a JSON-RPC error code. Diagnostics are bounded; additional details may be a resource."
+    },
+    "mcp_contract__ReadRegionResult": {
+      "type": "object",
+      "properties": {
+        "selection": {
+          "$ref": "#/$defs/selection__FrozenSelection"
+        },
+        "fragments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mcp_contract__RegionFragment"
+          },
+          "maxItems": 256
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "selection",
+        "fragments",
+        "diagnostics"
+      ],
+      "additionalProperties": false,
+      "description": "The selection is frozen and never silently truncated or re-evaluated against a newer revision. Oversized selection/results return a resource_limit domain error, not incomplete edit authority."
+    },
+    "mcp_contract__RegionContext": {
+      "type": "object",
+      "properties": {
+        "declarations_sfs": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "entry_state_sfs": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "continuing_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "relation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "maxItems": 4096,
+          "uniqueItems": true
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "resource_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "declarations_sfs",
+        "entry_state_sfs",
+        "continuing_event_ids",
+        "relation_ids",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "resource_uri"
+            ]
+          }
+        }
+      ],
+      "description": "Read-only context, not edit authorization. Full referenced context must be fetched before an edit depending on it; missing context is never guessed."
+    },
+    "mcp_contract__RegionFragment": {
+      "type": "object",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/selection__ResolvedSpan"
+        },
+        "fragment_sfs": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1048576
+        },
+        "voice_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit__VoiceBinding"
+          },
+          "maxItems": 1024,
+          "minItems": 1
+        },
+        "replacement_complete": {
+          "type": "boolean"
+        },
+        "context": {
+          "$ref": "#/$defs/mcp_contract__RegionContext"
+        },
+        "text_map": {
+          "$ref": "#/$defs/mcp_contract__TextObjectMap"
+        }
+      },
+      "required": [
+        "span",
+        "fragment_sfs",
+        "voice_bindings",
+        "replacement_complete",
+        "context",
+        "text_map"
+      ],
+      "additionalProperties": false,
+      "description": "An inspection fragment normalized to local time. An event-only or boundary-crossing selection is not necessarily a complete replace_range payload; replacement_complete explicitly states that distinction."
+    },
+    "mcp_contract__TextObjectBinding": {
+      "type": "object",
+      "properties": {
+        "text_field": {
+          "type": "string",
+          "enum": [
+            "fragment_sfs",
+            "declarations_sfs",
+            "entry_state_sfs"
+          ]
+        },
+        "object_kind": {
+          "type": "string",
+          "enum": [
+            "event",
+            "measure",
+            "relation",
+            "mark",
+            "chord",
+            "part",
+            "voice",
+            "staff"
+          ]
+        },
+        "object_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "text_id": {
+          "$ref": "#/$defs/common__TextIdentifier"
+        },
+        "line_1based": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "text_field",
+        "object_kind",
+        "object_id"
+      ],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "text_id"
+          ]
+        },
+        {
+          "required": [
+            "line_1based"
+          ]
+        }
+      ],
+      "description": "An explicit alias and/or source-line binding within the named snippet. A line is required when an object has no SFS alias, such as an unlabelled intrinsic mark. Optional lines count from one in that exact text field. Never infer an opaque object ID from event order or the spelling of a local alias."
+    },
+    "mcp_contract__TextObjectMap": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mcp_contract__TextObjectBinding"
+          },
+          "maxItems": 20000
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "resource_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^scorestream://",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "score",
+        "entries",
+        "complete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "resource_uri"
+            ]
+          }
+        }
+      ],
+      "description": "Revision-bound mappings for fragment and context snippets, including every supplied referencable alias and relevant unlabelled object. The score must equal FrozenSelection.score. If incomplete, fetch the full map resource before identity-dependent edits; neither missing entries nor context bindings may be guessed."
+    },
+    "selection__BoundaryEvent": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "selected": {
+          "type": "boolean"
+        },
+        "crosses_start": {
+          "type": "boolean"
+        },
+        "crosses_end": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "event_id",
+        "selected",
+        "crosses_start",
+        "crosses_end"
+      ],
+      "additionalProperties": false
+    },
+    "selection__EventSelector": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "events"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "event_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Select these exact event identities before explicitly requested expansions. Unknown IDs are an error, not an empty match."
+    },
+    "selection__Filters": {
+      "type": "object",
+      "properties": {
+        "part_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "voice_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "staff_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Intersect supplied filters. Omitted lists mean unrestricted; empty lists are not accepted. Staff means the event's resolved staff at its onset, including local overrides, not its voice's initial default."
+    },
+    "selection__FrozenSelection": {
+      "type": "object",
+      "properties": {
+        "selection_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "selection_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "request": {
+          "$ref": "#/$defs/selection__SelectionRequest"
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "measure_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "resolved_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/selection__ResolvedSpan"
+          },
+          "minItems": 0
+        },
+        "boundary_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/selection__BoundaryEvent"
+          },
+          "minItems": 0
+        },
+        "relations": {
+          "$ref": "#/$defs/selection__RelationContext"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Diagnostic"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "selection_id",
+        "score",
+        "selection_digest",
+        "request",
+        "event_ids",
+        "measure_ids",
+        "resolved_spans",
+        "boundary_events",
+        "relations",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "selection__MeasureRangeByCount": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "measure_range"
+        },
+        "scope": {
+          "$ref": "#/$defs/selection__MeasureScope"
+        },
+        "start_measure_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "kind",
+        "scope",
+        "start_measure_id",
+        "count"
+      ],
+      "additionalProperties": false,
+      "description": "Select count consecutive measures beginning with start_measure_id. A count is resolved only in the pinned revision. Overrun is an error; the result still freezes concrete IDs and boundaries."
+    },
+    "selection__MeasureRangeByEnd": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "measure_range"
+        },
+        "scope": {
+          "$ref": "#/$defs/selection__MeasureScope"
+        },
+        "start_measure_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "end_measure_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "end_exclusive": {
+          "const": true
+        }
+      },
+      "required": [
+        "kind",
+        "scope",
+        "start_measure_id",
+        "end_measure_id",
+        "end_exclusive"
+      ],
+      "additionalProperties": false,
+      "description": "Select from the start measure to, but not including, the end measure in one declared measure sequence. IDs are stable identities; no arithmetic on printed labels. Both endpoints must belong to the same scope and appear in that order."
+    },
+    "selection__MeasureScope": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "part"
+            },
+            "part_id": {
+              "$ref": "#/$defs/common__Id"
+            }
+          },
+          "required": [
+            "kind",
+            "part_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "staff"
+            },
+            "staff_id": {
+              "$ref": "#/$defs/common__Id"
+            }
+          },
+          "required": [
+            "kind",
+            "staff_id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "selection__RelationContext": {
+      "type": "object",
+      "properties": {
+        "internal_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "crossing_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "spanning_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "internal_ids",
+        "crossing_ids",
+        "spanning_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Context only, not automatic edit targets. internal references selected objects only; crossing has selected and unselected endpoint/member objects; spanning crosses the temporal region while its relevant endpoints remain outside. A relation can be reported in more than one applicable category."
+    },
+    "selection__ResolvedSpan": {
+      "type": "object",
+      "properties": {
+        "clock_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "start": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "end": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "voice_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/common__Id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "clock_id",
+        "start",
+        "end",
+        "voice_ids"
+      ],
+      "additionalProperties": false,
+      "description": "Concrete half-open temporal scope in the pinned revision. For event-ID selection these spans are descriptive and do not grant replacement permission over their gaps."
+    },
+    "selection__SelectionPolicy": {
+      "type": "object",
+      "properties": {
+        "grace": {
+          "type": "string",
+          "enum": [
+            "explicit_only",
+            "with_principal",
+            "by_anchor"
+          ]
+        },
+        "chords": {
+          "type": "string",
+          "enum": [
+            "exact_members",
+            "whole_chord"
+          ]
+        },
+        "ties": {
+          "type": "string",
+          "enum": [
+            "exact_events",
+            "whole_chain"
+          ]
+        }
+      },
+      "required": [
+        "grace",
+        "chords",
+        "ties"
+      ],
+      "additionalProperties": false,
+      "description": "Resolve the selector, intersect explicit filters, then apply the requested expansions. Expansions may intentionally extend beyond the original time interval, but must not escape explicit part/voice/staff filters: report a policy/filter conflict rather than silently truncate a whole chord/chain. explicit_only never adds grace notes but does not remove explicitly requested grace IDs. with_principal includes attached grace events when their principal is selected. by_anchor uses half-open temporal spans and is not accepted for an unbounded event-ID selector. Return expanded membership explicitly; it does not enlarge the permitted replace_range span."
+    },
+    "selection__SelectionRequest": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/common__ScoreRef"
+        },
+        "selector": {
+          "$ref": "#/$defs/selection__Selector"
+        },
+        "filters": {
+          "$ref": "#/$defs/selection__Filters"
+        },
+        "policy": {
+          "$ref": "#/$defs/selection__SelectionPolicy"
+        }
+      },
+      "required": [
+        "score",
+        "selector",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "selection__Selector": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/selection__EventSelector"
+        },
+        {
+          "$ref": "#/$defs/selection__MeasureRangeByEnd"
+        },
+        {
+          "$ref": "#/$defs/selection__MeasureRangeByCount"
+        },
+        {
+          "$ref": "#/$defs/selection__TimeRangeSelector"
+        }
+      ]
+    },
+    "selection__TimeRangeSelector": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "time_range"
+        },
+        "clock_id": {
+          "$ref": "#/$defs/common__Id"
+        },
+        "start": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "end": {
+          "$ref": "#/$defs/common__Rational"
+        },
+        "event_match": {
+          "type": "string",
+          "enum": [
+            "onset",
+            "overlap",
+            "contained"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "clock_id",
+        "start",
+        "end",
+        "event_match"
+      ],
+      "additionalProperties": false,
+      "description": "Half-open [start,end), start < end. Onset: start <= t < end. Overlap: t < end and t+duration > start. Contained: start <= t and t+duration <= end. Overlap selects the entire event, never an implicit clipped fragment. Grace handling is separate."
+    }
+  }
+}
