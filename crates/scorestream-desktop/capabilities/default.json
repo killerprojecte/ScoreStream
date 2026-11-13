@@ -1,0 +1,1 @@
+{"identifier":"default","description":"Desktop window lifecycle only. Files are selected through native Rust dialogs.","windows":["main"],"permissions":["core:default"]}

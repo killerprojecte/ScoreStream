@@ -1,0 +1,70 @@
+import type {View,ScoreEvent} from '../types';
+import {Q,rhythm} from './exact';
+const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
+export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.1';
+export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[]}{
+ if(!view.valid)throw Error('Only Rust-validated snapshots may be projected.');
+ if(!view.events.length)throw Error('No measured events to engrave yet.');
+ const warnings:string[]=[];const map:Record<string,string>={};
+ const frames=(view.document.frames??[]) as {records:{record:string}[]}[];
+ if(frames.some(f=>f.records.some(r=>['relation','mark','direction','text'].includes(r.record))))warnings.push('Marks and relationships are preserved in the source but not drawn in this preview.');
+ if(view.states.some(s=>s.time!=='0'))throw Error('Mid-score state changes are not yet supported by this preview. Your source is preserved.');
+ const staffDefs=view.parts.flatMap(p=>Array.from({length:p.staves},(_,i)=>({part:p.id,staff:i+1,instrument:p.instrument})));
+ const firstPart=view.parts[0]?.id;
+ const measures=view.measures.filter(m=>m.part===firstPart).sort((a,b)=>new Q(a.time).cmp(new Q(b.time)));
+ if(!measures.length)throw Error('Add explicit measure records to render this score.');
+ for(const part of view.parts){const own=view.measures.filter(m=>m.part===part.id);if(own.length!==measures.length||own.some((m,i)=>!new Q(m.time).eq(new Q(measures[i].time))||!new Q(m.length).eq(new Q(measures[i].length))))throw Error('This preview requires aligned measure boundaries across parts.');}
+ const used=new Set<string>();let next=0;
+ const eventXml=(e:ScoreEvent,withRhythm=true)=>{
+   if(!e.id)throw Error('Preview requires stable event IDs.');
+   if(e.duration==='?')throw Error('Grace-note layout is not yet supported.');
+   if(e.attributes?.tm)throw Error('Tuplet layout is not yet supported.');
+   const r=rhythm(new Q(e.duration));
+   if(e.written_duration && Number(e.written_duration)!==r.dur)throw Error('Written and actual rhythm differ; this preview cannot engrave that rhythm faithfully yet.');
+   const id=`ss-e${next++}`;map[id]=e.id;used.add(e.id);
+   const dur=withRhythm?` dur="${r.dur}" dots="${r.dots}"`:'';
+   if(e.pitch==='r'||e.pitch==='_')return `<${e.pitch==='r'?'rest':'space'} xml:id="${id}"${dur}/>`;
+   const p=/^([A-G])(#{1,2}|b{1,2})?(-?\d+)$/.exec(e.pitch);
+   if(!p)throw Error(`Pitch ${e.pitch} is preserved but not supported by this preview.`);
+   const acc:Record<string,string>={'#':'s','##':'ss',b:'f',bb:'ff'};
+   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}/>`;
+ };
+ const staffDefXml=staffDefs.map((s,i)=>{
+   const attrs=Object.assign({},...view.states.filter(x=>x.time==='0'&&[s.part,`${s.part}.s${s.staff}`,'score'].includes(x.scope)).map(x=>x.values));
+   for(const field of ['clef','meter','key'])if(attrs[field]===undefined)warnings.push(`${s.part}.s${s.staff}: ${field} is unset; preview uses ${field==='clef'?(s.staff===2?'F4':'G2'):field==='meter'?'4/4':'C major'} as a display default.`);
+   const clef=/^([GFC])(\d)$/.exec(String(attrs.clef??(s.staff===2?'F4':'G2')));
+   if(!clef)throw Error('Unsupported clef in preview.');
+   const meter=/^(\d+)\/(\d+)$/.exec(String(attrs.meter??'4/4'));
+   if(!meter)throw Error('Unsupported meter in preview.');
+   const key=Number(attrs.key??0);if(!Number.isInteger(key)||Math.abs(key)>7)throw Error('Unsupported key signature in preview.');
+   return `<staffDef n="${i+1}" lines="5" label="${esc(s.instrument)}${s.staff>1?' · bass':''}" clef.shape="${clef[1]}" clef.line="${clef[2]}" meter.count="${meter[1]}" meter.unit="${meter[2]}" key.sig="${Math.abs(key)}${key<0?'f':key>0?'s':''}"/>`;
+ }).join('');
+ const measureXml=measures.map((m,mi)=>{
+   const start=new Q(m.time),end=start.add(new Q(m.length));
+   return `<measure n="${esc(m.label??mi+1)}">${staffDefs.map((s,si)=>{
+     const voices=view.voices.filter(v=>v.part===s.part);
+     const relevant=view.events.filter(e=>e.staff===s.staff&&voices.some(v=>v.id===e.voice)&&new Q(e.time).cmp(start)>=0&&new Q(e.time).cmp(end)<0);
+     const active=voices.filter(v=>v.staff===s.staff||relevant.some(e=>e.voice===v.id));
+     if(!active.length)return `<staff n="${si+1}"><layer n="1"><mSpace/></layer></staff>`;
+     return `<staff n="${si+1}">${active.map((v,vi)=>{
+       let cursor=start;const events=relevant.filter(e=>e.voice===v.id).sort((a,b)=>new Q(a.time).cmp(new Q(b.time)));let content='';
+       for(let j=0;j<events.length;j++){
+         const e=events[j],time=new Q(e.time);
+         if(e.duration==='?')throw Error('Grace-note layout is not yet supported.');
+         const finish=time.add(new Q(e.duration));if(finish.cmp(end)>0)throw Error('Cross-bar events require a tie projection, which is not yet supported.');
+         if(time.cmp(cursor)<0)throw Error('Overlapping ungrouped events cannot be engraved by this preview.');
+         if(time.cmp(cursor)>0){const r=rhythm(time.sub(cursor));content+=`<space dur="${r.dur}" dots="${r.dots}"/>`;}
+         const chord=[e];if(e.chord)while(j+1<events.length&&events[j+1].chord===e.chord&&events[j+1].time===e.time)chord.push(events[++j]);
+         if(chord.some(c=>!new Q(c.duration).eq(new Q(e.duration))))throw Error('Unequal-duration chord members are not yet supported by the preview.');
+         if(chord.length>1){const r=rhythm(new Q(e.duration));content+=`<chord dur="${r.dur}" dots="${r.dots}">${chord.map(c=>eventXml(c,false)).join('')}</chord>`;}else content+=eventXml(e);
+         cursor=finish;
+       }
+       if(!events.length)content='<mSpace/>';
+       else if(cursor.cmp(end)<0){const r=rhythm(end.sub(cursor));content+=`<space dur="${r.dur}" dots="${r.dots}"/>`;}
+       return `<layer n="${vi+1}">${content}</layer>`;
+     }).join('')}</staff>`;
+   }).join('')}</measure>`;
+ }).join('');
+ if(used.size!==view.events.length)throw Error('Some events are outside the declared measures or staff mapping. Preview withheld to avoid hiding music.');
+ return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt><title>ScoreStream study</title></titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${staffDefXml}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings};
+}

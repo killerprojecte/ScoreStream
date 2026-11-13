@@ -1,0 +1,26 @@
+[package]
+name = "scorestream-desktop"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "ScoreStream native desktop score editor"
+
+[workspace]
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+smoke-test = []
+
+[build-dependencies]
+tauri-build = { version = "=2.5.3", features = [] }
+
+[dependencies]
+scorestream-app = { path = "../scorestream-app" }
+tauri = { version = "=2.9.4", features = [] }
+# Keep the runtime API compatible with Tauri 2.9 / tauri-runtime-wry 2.9.3.
+# Newer 2.11 runtime releases add trait methods absent in this Wry adapter.
+tauri-runtime = "=2.9.2"
+serde = { version = "1", features = ["derive"] }
+rfd = "=0.15.4"
+tempfile = "=3.23.0"
