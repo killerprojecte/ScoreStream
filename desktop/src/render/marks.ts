@@ -55,7 +55,11 @@ export function projectMarks(view:View,warnings:string[]){
       const beat=String(a.beat),base=beat.replace(/\.$/,'');if(!beats[base]||!new RegExp('^[whqes]\\.?$').test(beat))throw Error('unsupported metronome beat');
       const rate=String(a.bpm);if(!/^\d+(\/\d+)?$/.test(rate)||new Q(rate).cmp(new Q('0'))<=0)throw Error('unsupported metronome rate');
       // No midi.bpm: a printed metronome is independent from performance state.
-      xml+=`<tempo ${common} place="above">${a.text?`${esc(a.text)} `:''}<rend glyph.auth="smufl">${beats[base]}${beat.endsWith('.')?'\uECB7':''}</rend> = ${esc(rate)}</tempo>`;
+      // SMuFL text defaults to a full staff-sized glyph in Verovio (720 versus
+      // 405 for tempo text). Reduce it at the MEI boundary, before layout, so
+      // the beat and words share a readable scale and collision bounds. Keep
+      // the music font regular rather than inheriting the tempo's bold weight.
+      xml+=`<tempo ${common} place="above">${a.text?`${esc(a.text)} `:''}<rend glyph.auth="smufl" fontsize="60%" fontweight="normal">${beats[base]}${beat.endsWith('.')?'\uECB7':''}</rend> = ${esc(rate)}</tempo>`;
      }
      // Only event-anchored controls participate in existing event selection.
      if(event)map[id]=event.id;

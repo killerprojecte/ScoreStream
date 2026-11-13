@@ -7,7 +7,15 @@ const mark=(kind:string,target:string,attributes:MarkRecord['attributes']):MarkR
 const fixture=(marks:MarkRecord[]=[],time='0'):View=>({valid:true,diagnostics:[],source:'Never parse this SFS source',document:{frames:[{time,records:marks}]},revision_id:'r1',dirty:false,draft_seq:0,can_undo:false,can_redo:false,parts:[{id:'p',instrument:'Piano',staves:2}],voices:[{id:'rh',part:'p',staff:1},{id:'lh',part:'p',staff:2}],states:[{time:'0',scope:'score',values:{tempo:'q:104'}},{time:'0',scope:'p.s1',values:{meter:'4/4',clef:'G2',key:0}},{time:'0',scope:'p.s2',values:{meter:'4/4',clef:'F4',key:0}}],measures:[{id:'m',part:'p',time:'0',length:'4',label:'1'}],events:[{id:'n1',voice:'rh',pitch:'C4',time:'0',duration:'4',staff:1,chord:null,written_duration:null,dots:0,source_line:5},{id:'b1',voice:'lh',pitch:'C3',time:'0',duration:'4',staff:2,chord:null,written_duration:null,dots:0,source_line:6}]});
 describe('typed expressive marks',()=>{
  it('does not invent a printed metronome from scalar performance tempo',()=>{expect(project(fixture()).mei).not.toContain('<tempo');});
- it('engraves independent printed tempo, exact fractional rate, escaped text and dot',()=>{const r=project(fixture([mark('metronome','score',{beat:'q.',bpm:'209/2',text:'Calmo & dolce'})]));expect(r.mei).toContain('Calmo &amp; dolce');expect(r.mei).toContain('\uECA5\uECB7');expect(r.mei).toContain(' = 209/2</tempo>');expect(r.mei).not.toContain('midi.bpm');expect(r.mei.match(/<tempo/g)).toHaveLength(1);expect(r.warnings).toEqual([]);});
+ it('engraves independent printed tempo, exact fractional rate, escaped text and dot',()=>{const r=project(fixture([mark('metronome','score',{beat:'q.',bpm:'209/2',text:'Calmo & dolce'})]));expect(r.mei).toContain('Calmo &amp; dolce');expect(r.mei).toContain('<rend glyph.auth="smufl" fontsize="60%" fontweight="normal">\uECA5\uECB7</rend>');expect(r.mei).toContain(' = 209/2</tempo>');expect(r.mei).not.toContain('midi.bpm');expect(r.mei.match(/<tempo/g)).toHaveLength(1);expect(r.warnings).toEqual([]);});
+ it.each([['w','\uECA2'],['h','\uECA3'],['q','\uECA5'],['e','\uECA7'],['s','\uECA9']])('keeps %s beats, dots, and exact rates at text scale', (beat,glyph)=>{
+  for(const dotted of [false,true]){
+   const r=project(fixture([mark('metronome','score',{beat:beat+(dotted?'.':''),bpm:'209/2'})]));
+   expect(r.warnings).toEqual([]);
+   expect(r.mei).toContain(`<rend glyph.auth="smufl" fontsize="60%" fontweight="normal">${glyph}${dotted?'\uECB7':''}</rend> = 209/2</tempo>`);
+   expect(r.mei).not.toContain('midi.bpm');
+  }
+ });
  it('maps event dynamics to actual staff including cross-staff notation',()=>{const v=fixture([mark('dynamic','#n1',{value:'sfz',placement:'above'})]);v.events[0].staff=2;const r=project(v);expect(r.mei).toMatch(/<dynam xml:id="ss-mark0" staff="2" startid="#ss-e\d+" place="above">sfz<\/dynam>/);expect(r.map['ss-mark0']).toBe('n1');});
  it('maps scope marks to correct staff and exact metrical timestamp',()=>{const v=fixture([mark('dynamic','p.s2',{value:'pp'})],'3/2');v.states[2].values.meter='6/8';expect(project(v).mei).toContain('staff="2" tstamp="4" place="below">pp');});
  it('uses exact staff state without order-dependent score or part inheritance',()=>{
@@ -34,5 +42,13 @@ describe('typed expressive marks',()=>{
   const r=project(fixture([mark('metronome','score',{beat:'q.',bpm:'209/2',text:'Moderato'}),mark('dynamic','#n1',{value:'mp',placement:'below'}),mark('dynamic','p.s2',{value:'sfz',placement:'above'})]));
   expect(toolkit.loadData(r.mei)).toBeTruthy();const svg=toolkit.renderToSVG(1);
   expect(svg).toContain('class="tempo"');expect(svg).toContain('class="dynam"');expect(svg).toContain('Moderato');expect(svg).toContain('209/2');expect(svg).toContain('\uECA5\uECB7');expect(svg).toContain('font-family="Bravura"');expect(svg).toContain("format('woff2')");expect(svg).toMatch(/(?:href|xlink:href)="#E52C/);expect(svg).toMatch(/(?:href|xlink:href)="#E539/);
+  const tempo=svg.match(/<g id="ss-mark0" class="tempo">([\s\S]*?)<\/text>/)![1];
+  expect(tempo).toContain('font-weight="normal"');
+  expect(tempo).toContain('<tspan font-family="Bravura" font-size="432px">\uECA5\uECB7</tspan>');
+  // Verovio converts the separating spaces to NBSP. Keep them at the text
+  // size; they must not migrate into the SMuFL span or disappear in export.
+  expect(tempo).toContain('<tspan font-size="405px">Moderato\u00a0</tspan>');
+  expect(tempo).toContain('<tspan font-size="405px">\u00a0= 209/2</tspan>');
+
  },20000);
 });

@@ -87,6 +87,11 @@ export async function run(app:Workbench){const checks:string[]=[];const assert=(
  assert(!!tempo&&!!dynamic&&tempo.textContent?.includes('Moderato'),'Native SVG displays authored tempo and dynamics');
  const beat=tempo.querySelector('[font-family="Bravura"]');
  assert(!!beat&&beat.textContent?.includes('\uECA5')&&document.fonts.check('16px Bravura','\uECA5'),'Metronome uses loaded Bravura quarter-note glyph, not a text approximation');
+ const tempoSpans=[...tempo.querySelectorAll<SVGTextContentElement>('tspan[font-size]')];
+ const beatSpan=beat as SVGTextContentElement,words=tempoSpans[0],rate=tempoSpans[tempoSpans.length-1];
+ assert(Number.parseFloat(getComputedStyle(beatSpan).fontSize)<=Number.parseFloat(getComputedStyle(rate).fontSize)*1.1&&getComputedStyle(beatSpan).fontWeight==='400','Metronome beat is text-scale and does not inherit bold synthesis');
+ const wordEnd=words.getExtentOfChar(words.getNumberOfChars()-2),beatStart=beatSpan.getExtentOfChar(0),beatEnd=beatSpan.getExtentOfChar(beatSpan.getNumberOfChars()-1),equals=rate.getExtentOfChar(1);
+ assert(beatStart.x>wordEnd.x+wordEnd.width&&equals.x>beatEnd.x+beatEnd.width,'Printed tempo has visible spacing before the beat and before equals');
  assert(!!dynamic.querySelector('use'),'Dynamics use engraved music glyph paths');
  assert(document.querySelectorAll('#notation g.tempo').length===1,'Printed metronome is not duplicated');
  app.select('n1');assert(dynamic.classList.contains('selected-event'),'Event-anchored dynamic shares its note selection');
