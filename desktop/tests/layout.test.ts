@@ -28,8 +28,8 @@ describe('score workspace layout', () => {
   it('keeps musical context without adding demo promotional text to the paper', () => {
     const paper = shell.slice(shell.indexOf('<article id="paper"'), shell.indexOf('</article>'));
     expect(paper).toContain('id="score-title"');
-    expect(paper).toContain('id="tempo-text"');
-    expect(paper).toContain('id="instrument-names"');
+    expect(paper).not.toContain('id="tempo-text"');
+    expect(paper).not.toContain('id="instrument-names"');
     expect(paper).not.toMatch(/study no|shared musical|drafting room/i);
   });
 });

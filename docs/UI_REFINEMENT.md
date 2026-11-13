@@ -1,5 +1,7 @@
 # Desktop UI refinement
 
+This document records the first, natively verified UI pass. The later contextual-inspector/engraving candidate and its separate verification limits are in [Contextual refinement](UI_CONTEXTUAL_REFINEMENT.md). The screenshots below have not been relabelled as the later candidate.
+
 ## Intent
 
 The score and source are the work, not a landing page. This refinement follows the user's request for a quieter desktop workspace inspired by Codex App and Apple's desktop design principles. It does not imitate platform branding or claim to be a native AppKit interface.

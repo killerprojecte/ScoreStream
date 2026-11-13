@@ -1,6 +1,7 @@
 import type {Workbench} from './main';
 import {backend} from './bridge';
 import {invoke} from '@tauri-apps/api/core';
+import expressiveSource from '../../examples/first-light-expressive.sfs?raw';
 const delay=(ms:number)=>new Promise(r=>setTimeout(r,ms));
 async function until(predicate:()=>boolean,timeout=30000){const start=Date.now();while(!predicate()){if(Date.now()-start>timeout)throw Error('Timed out waiting for native UI state');await delay(50);}}
 export async function run(app:Workbench){const checks:string[]=[];const assert=(condition:unknown,name:string)=>{if(!condition)throw Error(name);checks.push(name);};try{
@@ -25,7 +26,7 @@ export async function run(app:Workbench){const checks:string[]=[];const assert=(
  const initialSource=app.current!.source;
  const initialSvg=document.querySelector('#notation svg');
  click('toggle-title');assert(get('score-heading').hidden&&get('toggle-title').getAttribute('aria-pressed')==='false','Page title can be hidden without hiding tempo or instrument');
- assert(!get('tempo-text').hidden&&!get('instrument-names').hidden&&document.querySelector('#notation svg')===initialSvg,'Title visibility leaves musical notation and metadata intact');
+ assert(!get('tempo-text')&&!get('instrument-names')&&document.querySelector('#notation svg')===initialSvg,'Title visibility leaves SVG notation intact without duplicate HTML musical labels');
  click('toggle-title');assert(!get('score-heading').hidden,'Page title is restored on repeated toggle');await delay(300);
  const splitWidth=get('canvas-scroll').clientWidth;
  let sequence=app.sequence;click('view-score');await until(()=>app.sequence>sequence&&app.phase==='ready');
@@ -53,6 +54,43 @@ export async function run(app:Workbench){const checks:string[]=[];const assert=(
  app.select(pitchEvent.id);(get('duration-input') as HTMLInputElement).value='2';await app.mutate('duration');await until(()=>app.phase==='ready');
  assert(app.current!.events.some(e=>e.id===pitchEvent.id&&e.duration==='2'),'Inspector commits typed duration edit through Rust');
  await app.history('undo');await until(()=>app.phase==='ready');assert(app.current!.source===initialSource,'Undo restores source after duration edit');
+ // Contextual inspector keyboard editing and recovery use the live Rust authority.
+ app.select(pitchEvent.id);
+ assert(get('inspector-title').textContent==='Note'&&get('event-measure').textContent==='1'&&get('event-beat').textContent==='1','Inspector shows contextual note location');
+ const pitch=get('pitch-input') as HTMLInputElement,duration=get('duration-input') as HTMLInputElement;
+ const input=(field:HTMLInputElement,value:string)=>{field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));};
+ const key=(field:Element,key:string)=>field.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true}));
+ const beforeKeyboard=app.current!.revision_id;
+ input(pitch,'G4');key(pitch,'Escape');
+ assert(pitch.value===app.selected!.pitch&&app.current!.revision_id===beforeKeyboard,'Escape discards an uncommitted property edit without changing source');
+ assert((get('set-pitch') as HTMLButtonElement).disabled,'Unchanged inspector property cannot create an empty revision');
+ input(duration,'3/2');input(pitch,'F4');pitch.focus();key(pitch,'Enter');
+ await until(()=>app.phase==='ready'&&!app.busy&&app.current!.events.some(e=>e.id===pitchEvent.id&&e.pitch==='F4'));
+ assert(app.selected?.id===pitchEvent.id&&!get('selection').hidden,'Enter commits pitch without losing the selected inspector');
+ assert(duration.value==='3/2','Committing pitch preserves an independently staged duration');
+ assert(document.activeElement===pitch,'Inspector keyboard focus returns after committed render');
+ key(duration,'Escape');await app.history('undo');await until(()=>app.phase==='ready');
+ assert(app.selected?.id===pitchEvent.id&&app.current!.source===initialSource,'Undo preserves selection and restores committed property values');
+ input(pitch,'not-a-pitch');await app.mutate('pitch');
+ assert(!get('inspector-feedback').hidden&&pitch.getAttribute('aria-invalid')==='true'&&app.current!.source===initialSource,'Rejected property edit shows local error without changing score');
+ key(pitch,'Escape');assert(get('inspector-feedback').hidden&&!pitch.hasAttribute('aria-invalid'),'Escape clears local property validation feedback');
+ click('paper');assert(get('inspector-title').textContent==='Document'&&!get('selection-empty').hidden,'Blank paper click returns to document properties');
+ const keyboardNote=document.querySelector<SVGElement>('#notation g.note')!;
+ assert(keyboardNote.getAttribute('tabindex')==='0'&&!!keyboardNote.getAttribute('aria-label'),'Engraved notes expose keyboard focus and accessible labels');
+ key(keyboardNote,'Enter');assert(!!app.selected,'Keyboard activation selects an engraved event');key(keyboardNote,'Escape');assert(!app.selected,'Escape returns from engraving selection to Document');
+ assert(get('performance-tempo').textContent==='104'&&!document.querySelector('#notation g.tempo'),'Scalar playback tempo is metadata, not an invented printed mark');
+ // Explicit printed tempo and dynamics retain their source semantics and SVG glyphs.
+ app.editor.value=expressiveSource;app.changed();await until(()=>app.phase==='ready');
+ assert(!!app.view?.valid&&!get('projection-warning').textContent,'Expressive fixture validates through Rust and projects without warnings');
+ await app.apply();await until(()=>app.phase==='ready');await document.fonts.ready;
+ const tempo=document.querySelector('#notation g.tempo')!,dynamic=document.querySelector('#notation g.dynam')!;
+ assert(!!tempo&&!!dynamic&&tempo.textContent?.includes('Moderato'),'Native SVG displays authored tempo and dynamics');
+ const beat=tempo.querySelector('[font-family="Bravura"]');
+ assert(!!beat&&beat.textContent?.includes('\uECA5')&&document.fonts.check('16px Bravura','\uECA5'),'Metronome uses loaded Bravura quarter-note glyph, not a text approximation');
+ assert(!!dynamic.querySelector('use'),'Dynamics use engraved music glyph paths');
+ assert(document.querySelectorAll('#notation g.tempo').length===1,'Printed metronome is not duplicated');
+ app.select('n1');assert(dynamic.classList.contains('selected-event'),'Event-anchored dynamic shares its note selection');
+ await app.history('undo');await until(()=>app.phase==='ready');assert(app.current!.source===initialSource,'Expressive preview round trip restores original same-example score');
  app.select('');app.editor.selectLine(1);
  const footer=document.querySelector('.statusbar')!.getBoundingClientRect();
  assert(footer.bottom<=innerHeight+1&&get('diagnostics').getBoundingClientRect().bottom<=footer.top+1,'Status and diagnostics stay inside native viewport without overlaying content');

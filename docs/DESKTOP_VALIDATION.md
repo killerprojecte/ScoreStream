@@ -1,5 +1,9 @@
 # Desktop validation checkpoint
 
+## Latest candidate status
+
+The second contextual-inspector/engraving refinement passes 33 frontend tests and Linux normal/smoke-feature executable builds, but its native runtime and screenshots are pending because desktop access is unavailable. The successful native evidence below belongs to the earlier baseline and first UI pass. See [Contextual refinement](UI_CONTEXTUAL_REFINEMENT.md) for the exact boundary.
+
 ## Updated bundled-runtime acceptance
 
 On 2026-11-13, the Linux x86_64 native application **ran successfully** using a self-contained AppDir with official Debian 13 WebKitGTK 2.52.6-1~deb13u1 libraries and matching helper processes. The desktop host has neither `/usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so*` nor the system `WebKitNetworkProcess`; process provenance confirms helpers ran from the AppDir. No system libraries/settings were changed and no sandbox-disable variable was set. This is not a complete sandbox security audit or a clean virtual-machine compatibility matrix.

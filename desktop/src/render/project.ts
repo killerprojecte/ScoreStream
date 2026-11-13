@@ -1,13 +1,13 @@
 import type {View,ScoreEvent} from '../types';
 import {Q,rhythm} from './exact';
+import {projectMarks} from './marks';
 const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.1';
 export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[]}{
  if(!view.valid)throw Error('Only Rust-validated snapshots may be projected.');
  if(!view.events.length)throw Error('No measured events to engrave yet.');
  const warnings:string[]=[];const map:Record<string,string>={};
- const frames=(view.document.frames??[]) as {records:{record:string}[]}[];
- if(frames.some(f=>f.records.some(r=>['relation','mark','direction','text'].includes(r.record))))warnings.push('Marks and relationships are preserved in the source but not drawn in this preview.');
+ const marks=projectMarks(view,warnings);
  if(view.states.some(s=>s.time!=='0'))throw Error('Mid-score state changes are not yet supported by this preview. Your source is preserved.');
  const staffDefs=view.parts.flatMap(p=>Array.from({length:p.staves},(_,i)=>({part:p.id,staff:i+1,instrument:p.instrument})));
  const firstPart=view.parts[0]?.id;
@@ -30,15 +30,17 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}/>`;
  };
  const staffDefXml=staffDefs.map((s,i)=>{
-   const attrs=Object.assign({},...view.states.filter(x=>x.time==='0'&&[s.part,`${s.part}.s${s.staff}`,'score'].includes(x.scope)).map(x=>x.values));
+   const attrs=Object.assign({},...view.states.filter(x=>x.time==='0'&&x.scope===`${s.part}.s${s.staff}`).map(x=>x.values));
    for(const field of ['clef','meter','key'])if(attrs[field]===undefined)warnings.push(`${s.part}.s${s.staff}: ${field} is unset; preview uses ${field==='clef'?(s.staff===2?'F4':'G2'):field==='meter'?'4/4':'C major'} as a display default.`);
    const clef=/^([GFC])(\d)$/.exec(String(attrs.clef??(s.staff===2?'F4':'G2')));
    if(!clef)throw Error('Unsupported clef in preview.');
    const meter=/^(\d+)\/(\d+)$/.exec(String(attrs.meter??'4/4'));
    if(!meter)throw Error('Unsupported meter in preview.');
    const key=Number(attrs.key??0);if(!Number.isInteger(key)||Math.abs(key)>7)throw Error('Unsupported key signature in preview.');
-   return `<staffDef n="${i+1}" lines="5" label="${esc(s.instrument)}${s.staff>1?' · bass':''}" clef.shape="${clef[1]}" clef.line="${clef[2]}" meter.count="${meter[1]}" meter.unit="${meter[2]}" key.sig="${Math.abs(key)}${key<0?'f':key>0?'s':''}"/>`;
- }).join('');
+   return `<staffDef n="${i+1}" lines="5" clef.shape="${clef[1]}" clef.line="${clef[2]}" meter.count="${meter[1]}" meter.unit="${meter[2]}" key.sig="${Math.abs(key)}${key<0?'f':key>0?'s':''}"/>`;
+ });
+ let staffOffset=0;
+ const groupedStaffDefs=view.parts.map(p=>{const defs=staffDefXml.slice(staffOffset,staffOffset+p.staves).join('');staffOffset+=p.staves;return `<staffGrp label="${esc(p.instrument)}"${p.staves>1?' symbol="brace" bar.thru="true"':''}>${defs}</staffGrp>`;}).join('');
  const measureXml=measures.map((m,mi)=>{
    const start=new Q(m.time),end=start.add(new Q(m.length));
    return `<measure n="${esc(m.label??mi+1)}">${staffDefs.map((s,si)=>{
@@ -63,8 +65,9 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
        else if(cursor.cmp(end)<0){const r=rhythm(end.sub(cursor));content+=`<space dur="${r.dur}" dots="${r.dots}"/>`;}
        return `<layer n="${vi+1}">${content}</layer>`;
      }).join('')}</staff>`;
-   }).join('')}</measure>`;
+   }).join('')}${marks.forMeasure(m,map)}</measure>`;
  }).join('');
+ marks.finish();
  if(used.size!==view.events.length)throw Error('Some events are outside the declared measures or staff mapping. Preview withheld to avoid hiding music.');
- return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt><title>ScoreStream study</title></titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${staffDefXml}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings};
+ return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt><title>ScoreStream study</title></titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${groupedStaffDefs}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings};
 }

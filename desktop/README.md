@@ -61,3 +61,5 @@ An opt-in `smoke-test` Cargo feature adds a test-only report command. Set `SCORE
 - `../crates/scorestream-desktop`: thin native command/dialog/lifecycle adapters over the shared Rust authority.
 
 Each pending preview is invalidated on **every** keystroke, even if the new source is invalid. Draft keys distinguish session, sequence, SHA-256 content hash, base revision and renderer/layout identity. Graphical mutations are disabled for dirty text. Save writes source only after Rust validation; no unrestricted filesystem API is exposed to the WebView. File opens are bounded to 4 MiB.
+
+The contextual inspector and explicit metronome/dynamics candidate are described in [Contextual refinement](../docs/UI_CONTEXTUAL_REFINEMENT.md). Its frontend/native build checks pass; fresh native visual acceptance is still pending.

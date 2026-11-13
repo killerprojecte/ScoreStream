@@ -137,7 +137,7 @@ fn main() {
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
             )
-            .title("ScoreStream · Drafting room")
+            .title("ScoreStream")
             .inner_size(1480.0, 960.0)
             .min_inner_size(1120.0, 700.0);
             #[cfg(feature = "smoke-test")]
