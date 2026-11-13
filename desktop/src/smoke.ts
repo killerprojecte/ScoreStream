@@ -18,5 +18,46 @@ export async function run(app:Workbench){const checks:string[]=[];const assert=(
  try{await backend.apply(original.source,original.revision_id);throw Error('Conflict was not rejected');}catch(e){assert(String(e).includes('REVISION_CONFLICT'),'Stale expected revision is rejected');}
  app.select(pitchEvent.id);(document.getElementById('pitch-input') as HTMLInputElement).value='F4';await app.mutate('pitch');await until(()=>app.phase==='ready');assert(app.current!.events.some(e=>e.id===pitchEvent.id&&e.pitch==='F4'),'Inspector commits typed pitch edit through Rust');
  await app.history('undo');await until(()=>app.phase==='ready');await app.history('undo');await until(()=>app.phase==='ready');app.select(pitchEvent.id,true);
- await invoke('report_smoke_test',{report:JSON.stringify({passed:true,checks,renderer:'Verovio 5.6.0',host:'Tauri / Linux WebKitGTK',notes:document.querySelectorAll('#notation g.note').length},null,2)});
+ // Layout controls operate in the real WebKit window, not a browser mock.
+ const get=(id:string)=>document.getElementById(id)!;
+ const click=(id:string)=>get(id).click();
+ const initialRevision=app.current!.revision_id;
+ const initialSource=app.current!.source;
+ const initialSvg=document.querySelector('#notation svg');
+ click('toggle-title');assert(get('score-heading').hidden&&get('toggle-title').getAttribute('aria-pressed')==='false','Page title can be hidden without hiding tempo or instrument');
+ assert(!get('tempo-text').hidden&&!get('instrument-names').hidden&&document.querySelector('#notation svg')===initialSvg,'Title visibility leaves musical notation and metadata intact');
+ click('toggle-title');assert(!get('score-heading').hidden,'Page title is restored on repeated toggle');await delay(300);
+ const splitWidth=get('canvas-scroll').clientWidth;
+ let sequence=app.sequence;click('view-score');await until(()=>app.sequence>sequence&&app.phase==='ready');
+ assert(get('canvas-scroll').clientWidth>splitWidth&&get('view-score').getAttribute('aria-pressed')==='true','Score focus expands and re-engraves the actual native pane');
+ sequence=app.sequence;click('view-split');await until(()=>app.sequence>sequence&&app.phase==='ready');
+ assert(get('canvas-scroll').clientWidth===splitWidth,'Split view restores the original pane width');
+ sequence=app.sequence;click('toggle-inspector');await until(()=>app.sequence>sequence&&app.phase==='ready');
+ assert(get('workspace').classList.contains('inspector-hidden'),'Inspector can be hidden for more score space');
+ sequence=app.sequence;click('toggle-inspector');await until(()=>app.sequence>sequence&&app.phase==='ready');
+ assert(get('canvas-scroll').clientWidth===splitWidth&&!get('workspace').classList.contains('inspector-hidden'),'Inspector restores without losing score layout');
+ const noteBeforeZoom=document.querySelector('#notation g.note')!.getBoundingClientRect().width;
+ const zoomSequence=app.sequence;
+ for(let i=0;i<14;i++)click('zoom-in');
+ assert(app.zoom===2&&(get('zoom-in') as HTMLButtonElement).disabled,'Repeated zoom-in stops at 200 percent');
+ await delay(500);
+ const noteAfterZoom=document.querySelector('#notation g.note')!.getBoundingClientRect().width;
+ assert(Math.abs(noteAfterZoom/noteBeforeZoom-2)<.04,'200 percent zoom doubles the rendered note width');
+ assert(get('canvas-scroll').scrollWidth>get('canvas-scroll').clientWidth,'Magnified notation remains horizontally scrollable');
+ assert(app.sequence===zoomSequence&&app.phase==='ready','Zoom settles without scrollbar-triggered re-engraving');
+ click('fit');assert(app.zoom===1&&get('zoom-level').textContent==='100%','Fit restores a stable 100 percent baseline');
+ for(let i=0;i<10;i++)click('zoom-out');
+ assert(app.zoom===.6&&(get('zoom-out') as HTMLButtonElement).disabled,'Repeated zoom-out stops at 60 percent');click('fit');
+ click('about');assert((get('about-dialog') as HTMLDialogElement).open,'About dialog opens');click('close-about');assert(!(get('about-dialog') as HTMLDialogElement).open,'About dialog closes and returns to the editor');
+ assert(app.current!.revision_id===initialRevision&&app.current!.source===initialSource,'View, title, zoom and inspector controls do not mutate the score');
+ app.select(pitchEvent.id);(get('duration-input') as HTMLInputElement).value='2';await app.mutate('duration');await until(()=>app.phase==='ready');
+ assert(app.current!.events.some(e=>e.id===pitchEvent.id&&e.duration==='2'),'Inspector commits typed duration edit through Rust');
+ await app.history('undo');await until(()=>app.phase==='ready');assert(app.current!.source===initialSource,'Undo restores source after duration edit');
+ app.select('');app.editor.selectLine(1);
+ const footer=document.querySelector('.statusbar')!.getBoundingClientRect();
+ assert(footer.bottom<=innerHeight+1&&get('diagnostics').getBoundingClientRect().bottom<=footer.top+1,'Status and diagnostics stay inside native viewport without overlaying content');
+ const firstNote=document.querySelector('#notation g.note')!.getBoundingClientRect();
+ const layout={viewport:[innerWidth,innerHeight],scorePaneWidth:splitWidth,firstNoteTop:Math.round(firstNote.top),firstNoteHeight:Math.round(firstNote.height),titleVisible:!get('score-heading').hidden};
+ await invoke('report_smoke_test',{report:JSON.stringify({passed:true,checks,layout,renderer:'Verovio 5.6.0',host:'Tauri / Linux WebKitGTK',notes:document.querySelectorAll('#notation g.note').length},null,2)});
+
  }catch(e){await invoke('report_smoke_test',{report:JSON.stringify({passed:false,checks,error:String(e)},null,2)});}}

@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "checks": [
+    "Native WebKit rendered Verovio SVG notes",
+    "SVG identity resolves selected note",
+    "Notation selection maps to Rust source line",
+    "Valid uncommitted source gets automatic live preview",
+    "Live preview does not commit a revision",
+    "Notation mutation disabled while draft is dirty",
+    "Last good SVG exists before invalid draft",
+    "Invalid draft retains the last good SVG",
+    "Invalid draft visibly marks stale preview",
+    "Obsolete pending draft cannot replace a newer invalid draft",
+    "Apply creates committed revision and clears dirty state",
+    "Committed undo restores original source",
+    "Committed redo restores edited source",
+    "Stale expected revision is rejected",
+    "Inspector commits typed pitch edit through Rust",
+    "Page title can be hidden without hiding tempo or instrument",
+    "Title visibility leaves musical notation and metadata intact",
+    "Page title is restored on repeated toggle",
+    "Score focus expands and re-engraves the actual native pane",
+    "Split view restores the original pane width",
+    "Inspector can be hidden for more score space",
+    "Inspector restores without losing score layout",
+    "Repeated zoom-in stops at 200 percent",
+    "200 percent zoom doubles the rendered note width",
+    "Magnified notation remains horizontally scrollable",
+    "Zoom settles without scrollbar-triggered re-engraving",
+    "Fit restores a stable 100 percent baseline",
+    "Repeated zoom-out stops at 60 percent",
+    "About dialog opens",
+    "About dialog closes and returns to the editor",
+    "View, title, zoom and inspector controls do not mutate the score",
+    "Inspector commits typed duration edit through Rust",
+    "Undo restores source after duration edit",
+    "Status and diagnostics stay inside native viewport without overlaying content"
+  ],
+  "layout": {
+    "viewport": [
+      1180,
+      812
+    ],
+    "scorePaneWidth": 628,
+    "firstNoteTop": 318,
+    "firstNoteHeight": 34,
+    "titleVisible": true
+  },
+  "renderer": "Verovio 5.6.0",
+  "host": "Tauri / Linux WebKitGTK",
+  "notes": 20
+}

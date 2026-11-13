@@ -71,3 +71,9 @@ SCORESTREAM_SMOKE_REPORT="$PWD/native-smoke.json" \
 ```
 
 Require `native-smoke.json` to contain `"passed": true`; retain its individual checks and a screenshot of the real native window. Repeat packaging and native runtime acceptance on Windows and macOS before claiming those platforms are tested.
+
+## UI refinement acceptance
+
+A subsequent source-only UI pass was built and run on the same Linux X11 / bundled WebKitGTK host. The redesigned editor passes **13 frontend tests** and **34 native WebKit smoke assertions**. This includes the original 15 editor checks plus layout controls, title preservation, actual SVG zoom geometry, horizontal scrolling, stable resize behavior, duration editing/undo, and visible footer bounds. The score pane is 628 pixels wide at the verified 1180 × 812 viewport (previously 554 pixels). Genuine same-viewport before/after captures were taken. Manual native note-click → pitch edit → Undo also passed.
+
+No AppImage was rebuilt or released in the UI pass. Windows/macOS and other native viewport sizes remain unverified. See [UI refinement](UI_REFINEMENT.md) for rationale, architecture, exact verification scope and known limits.

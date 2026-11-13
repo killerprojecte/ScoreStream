@@ -9,6 +9,7 @@ A native **Tauri 2 + Rust** application with a TypeScript/Monaco view layer. The
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
 - Bounded renderer queue: one running job and one replaceable pending job, off the UI thread.
+- Compact split/score views, optional page title, collapsible inspector, 60–200% zoom and width-aware engraving. These presentation controls never mutate score data. See [UI refinement](../docs/UI_REFINEMENT.md).
 
 The initial projection supports aligned measured staves, ordinary pitches, rests/spacers, equal-duration chords, basic clefs/key/meter, and ordinary/dotted durations. It rejects unsupported rhythmic/layout cases and reports omitted markings. It is **not MusicXML interchange** and not a full milestone D implementation. MEI projection currently lives in an isolated TypeScript adapter over Rust-typed DTOs; moving it into a Rust rendering crate is planned. No renderer output becomes authoritative score data.
 
