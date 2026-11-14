@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::BTreeMap;
 fn score(body: &str, end: &str) -> String {
     format!(
         "!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n@0\n| p m len={end}\n{body}\n!end at={end}\n"
@@ -109,4 +110,139 @@ fn ten_thousand_events_remain_bounded_and_no_clock_drift() {
     close(p.duration_seconds, 50.);
     // Deliberately generous regression guard on debug CI, not a real-time guarantee.
     assert!(start.elapsed().as_secs() < 20);
+}
+
+fn expression_value(source: &str, id: &str, at: &str) -> f64 {
+    let doc = scorestream_codec::parse(source).unwrap();
+    let model = lower_document(&doc).unwrap();
+    let expr = Expression::new(&model, &mut Diagnostics::default()).unwrap();
+    let event = model.events.iter().find(|e| e.id.0 == id).unwrap();
+    expr.value(event, &at.parse().unwrap())
+}
+#[test]
+fn scoped_sfz_preserves_prior_p_and_compounds_without_adding_levels() {
+    let s = score(
+        "+ v dynamic value=p\nv C4:1 id=a\n.\n@1\n+ v dynamic value=sfz\nv D4:1 id=b\n.\n@2\nv E4:1 id=c\n.",
+        "3",
+    );
+    let p = plan_source(&s).unwrap();
+    assert_eq!(
+        p.notes.iter().map(|n| n.velocity).collect::<Vec<_>>(),
+        [48, 112, 48]
+    );
+    close(p.notes[1].gain_envelope[1].gain, 48. / 112.);
+}
+#[test]
+fn narrower_event_assignment_ends_and_new_ancestor_takes_effect() {
+    let s = score(
+        "+ p dynamic value=mp\nv C4:2 id=a\n+ #a dynamic value=p\n.\n@1\n+ p dynamic value=f\n.\n@2\nv D4:1 id=b\n.",
+        "3",
+    );
+    assert_eq!(expression_value(&s, "a", "1"), 48.);
+    assert_eq!(expression_value(&s, "a", "2"), 96.);
+    assert_eq!(plan_source(&s).unwrap().notes[1].velocity, 96);
+}
+#[test]
+fn bounded_hairpin_does_not_leave_an_implicit_permanent_offset() {
+    let s = score(
+        "+ p dynamic value=p\nv C4:2 id=a\n~ crescendo h start=#a\n.\n@2\n+ p dynamic value=mf\nv D4:2 id=b\n.\n@4\nv E4:1 id=c\n~ crescendo h end=#c\n.",
+        "5",
+    );
+    close(expression_value(&s, "a", "1"), 54.);
+    close(expression_value(&s, "b", "3"), 66.);
+    close(expression_value(&s, "c", "4"), 80.);
+}
+#[test]
+fn same_scope_explicit_dynamic_truncates_ramp_and_terminal_is_excluded() {
+    let s = score(
+        "+ v dynamic value=p\nv C4:2 id=a\n~ crescendo h start=#a\n.\n@2\n+ v dynamic value=mf\nv D4:2 id=b\n.\n@4\n+ v dynamic value=f\nv E4:1 id=c\n~ crescendo h end=#c\n.",
+        "5",
+    );
+    close(expression_value(&s, "a", "1"), 60.);
+    close(expression_value(&s, "b", "2"), 80.);
+    close(expression_value(&s, "c", "4"), 96.);
+}
+#[test]
+fn event_override_shadows_voice_ramp_without_multiplying_it() {
+    let s = score(
+        "+ v dynamic value=p\nv C4:1 id=a\n~ crescendo h start=#a\n.\n@1\nv D4:1 id=b\n+ #b dynamic value=pp\n.\n@2\nv E4:2 id=c\n.\n@4\n+ v dynamic value=f\nv F4:1 id=d\n~ crescendo h end=#d\n.",
+        "5",
+    );
+    close(expression_value(&s, "b", "3/2"), 36.);
+    close(expression_value(&s, "c", "3"), 84.);
+}
+#[test]
+fn independent_gate_and_attack_domains_are_order_independent() {
+    let a = score(
+        "+ p dynamic value=p\nv C4:1 id=a\n+ #a articulation value=staccato\n+ #a articulation value=accent\n+ #a articulation value=strong-accent\n.",
+        "1",
+    );
+    let b = score(
+        "v C4:1 id=a\n+ #a articulation value=strong-accent\n+ #a articulation value=accent\n+ #a articulation value=staccato\n+ p dynamic value=p\n.",
+        "1",
+    );
+    let p = plan_source(&a).unwrap();
+    assert_eq!(p, plan_source(&b).unwrap());
+    assert_eq!(p.notes[0].velocity, 72);
+    close(p.notes[0].duration_seconds, 0.25);
+}
+
+#[test]
+fn plain_expression_words_are_typed_and_explicitly_not_guessed() {
+    let p = plan_source(&score(
+        "v C4:1 id=a\n+ #a words text=\"dolce\" id=word\n.",
+        "1",
+    ))
+    .unwrap();
+    assert_eq!(p.notes[0].velocity, 80);
+    assert!(p.diagnostics.iter().any(|d| d.code == "words_not_realized"
+        && d.object_id == "word"
+        && d.effect == RealizationEffect::NotationOnly));
+}
+#[test]
+fn registered_dynamic_levels_map_without_unknown_default_fallback() {
+    for (name, expected) in [
+        ("pppp", 16),
+        ("ppp", 24),
+        ("pp", 36),
+        ("p", 48),
+        ("mp", 64),
+        ("mf", 80),
+        ("f", 96),
+        ("ff", 112),
+        ("fff", 120),
+        ("ffff", 127),
+    ] {
+        let p = plan_source(&score(
+            &format!("v C4:1 id=a\n+ #a dynamic value={name}\n."),
+            "1",
+        ))
+        .unwrap();
+        assert_eq!(p.notes[0].velocity, expected, "{name}");
+    }
+}
+#[test]
+fn scope_study_has_expected_attacks_and_structured_interval_diagnostics() {
+    let p = plan_source(include_str!(
+        "../../../../examples/expression-scope-study.sfs"
+    ))
+    .unwrap();
+    let values: BTreeMap<_, _> = p
+        .notes
+        .iter()
+        .map(|n| (n.id.as_str(), n.velocity))
+        .collect();
+    assert_eq!(values["a"], 48);
+    assert_eq!(values["b"], 36);
+    assert_eq!(values["c"], 76);
+    assert_eq!(values["d"], 80);
+    assert_eq!(values["e"], 112);
+    assert_eq!(values["f"], 80);
+    assert_eq!(values["bass"], 64);
+    assert_eq!(values["bass2"], 96);
+    assert!(
+        p.diagnostics
+            .iter()
+            .any(|d| d.code == "hairpin_terminated" && d.object_id == "swell")
+    );
 }

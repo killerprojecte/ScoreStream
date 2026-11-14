@@ -2,6 +2,7 @@
 //! No UI, storage, network, or playback policy belongs in this crate.
 #![forbid(unsafe_code)]
 mod model;
+pub mod notation;
 mod rational;
 mod registry;
 mod validate;

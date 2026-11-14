@@ -1,0 +1,41 @@
+!score 1.1 unit=q
+!meta title="Expression scope study"
+!part piano instrument=piano staves=2
+!voice upper part=piano staff=1
+!voice lower part=piano staff=2
+@0
+= score tempo=q:120
+= piano.s1 clef=G2 key=0 meter=4/4
+= piano.s2 clef=F4 key=0 meter=4/4
+| piano m1 len=4
++ score dynamic value=mp id=globalStart
++ piano.s1 dynamic value=p id=staffQuiet
+upper C4:1 id=a
+lower C3:4 id=bass
+~ crescendo swell start=#a
+.
+@1
+upper D4:1 id=b
++ #b dynamic value=pp id=localQuiet
+.
+@2
++ score dynamic value=f id=globalLoud
+upper E4:1 id=c
++ #c articulation value=accent
++ #c articulation value=staccato
+.
+@3
++ upper dynamic value=mf id=voiceOverride
+upper F4:1 id=d
+.
+@4
+| piano m2 len=2
+upper G4:1 id=e
+lower G2:2 id=bass2
+~ crescendo swell end=#e
++ upper dynamic value=sfz id=attackOnly
+.
+@5
+upper C5:1 id=f
+.
+!end at=6
