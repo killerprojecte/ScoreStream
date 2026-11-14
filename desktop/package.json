@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:pcm": "node --experimental-strip-types --test tests/pcm-encoding.mjs",
+    "test:wav-render": "node --experimental-strip-types --test tests/offline-wav-render.mjs",
     "test:audio-render": "node tests/render-audio.mjs",
     "tauri": "tauri",
     "desktop:dev": "cd ../crates/scorestream-desktop && tauri dev",

@@ -1,5 +1,5 @@
 import type {EnvelopePoint, PlaybackNote} from './types';
-import {applyBuiltInTimbre} from './timbres';
+import {applyBuiltInTimbre} from './timbres.ts';
 
 export interface AudioOutput {
  readonly now:number;
@@ -63,6 +63,12 @@ export function scheduleBuiltInVoice(context:BaseAudioContext,destination:AudioN
  }catch(error){cancel();throw error;}
  return cancel;
 }
+/** Both outputs use the same compressor with unchanged Web Audio defaults. */
+export function createBuiltInMaster(context:BaseAudioContext):DynamicsCompressorNode {
+ const master=context.createDynamicsCompressor();
+ master.connect(context.destination);
+ return master;
+}
 /** Built-in synthesized tones, with all performance timing supplied by Rust. */
 export class WebAudioOutput implements AudioOutput {
  private context:AudioContext|null=null;
@@ -73,8 +79,7 @@ export class WebAudioOutput implements AudioOutput {
  async resume(){
   if(!this.context||this.context.state==='closed'){
    this.context=new AudioContext();
-   this.master=this.context.createDynamicsCompressor();
-   this.master.connect(this.context.destination);
+   this.master=createBuiltInMaster(this.context);
   }
   // Called synchronously from the user's Play gesture, before requesting a plan.
   await this.context.resume();

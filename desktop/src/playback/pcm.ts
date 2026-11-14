@@ -8,7 +8,7 @@ export const PCM16_WAV = Object.freeze({
  bytesPerFrame:4,
  headerBytes:44,
  maxScoreSeconds:120,
- // Reserved for a future offline graph to drain after the score, not note time.
+ // Reserved for the offline graph to drain after the score, not note time.
  tailSeconds:.25,
  maxVoices:4_096,
  maxExpressionPoints:32_768,
