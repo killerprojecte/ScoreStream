@@ -1,5 +1,7 @@
 # Source checkpoint: official desktop controls
 
+This document records the historical preview checkpoint. The later production integration restores `ScoreStream` / `io.scorestream.desktop` and uses [a separately gated QA identity](NATIVE_SMOKE.md); it does not publish the historical preview identity.
+
 This branch checkpoints the exact verified desktop source tree from 2026-11-14 on published commit `46c795fb9b69db3212212a58133d7e6635157b71`. It is independent of the SFS metadata and MusicXML branches and contains no new playback/audio/sampler implementation.
 
 The current status is described in [Official control checkpoint](SHADCN_OFFICIAL_CHECKPOINT.md). Older architecture documents describe earlier UI states; the current source and that checkpoint report take precedence. The preserved preview product name and application identifier remain `ScoreStream official controls` and `io.scorestream.shadcn-official`; no untested identity normalization was made.

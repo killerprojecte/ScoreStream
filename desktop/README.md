@@ -49,7 +49,7 @@ This desktop crate is deliberately a separate Cargo workspace so headless/core b
 
 `npm test -- --maxWorkers=1` tests exact projection, refusal of unsupported content, stable mapping, and stale-job rejection. `npm run build` typechecks and bundles locally pinned dependencies with no CDN runtime dependency.
 
-An opt-in `smoke-test` Cargo feature adds a test-only report command. Set `SCORESTREAM_SMOKE_REPORT` to an absolute writable JSON path and run the native executable built with `--features smoke-test`. The actual WebKit window exercises validation, live drafts, stale previews, apply, undo/redo, conflicts, selection, and typed property edits; the JSON report records observed assertions. This is not a browser-only mock. Normal builds do not register the report command or inject the smoke flag. Native file-picker cancellation/overwrite and OS packaging still need manual testing.
+An opt-in `smoke-test` Cargo feature adds a test-only report command. Native smoke runs also require the explicit Vite smoke mode and the isolated `io.scorestream.desktop.qa` configuration; a report request under the production identifier is rejected before profile access. Follow [the isolated native smoke build instructions](../docs/NATIVE_SMOKE.md). The real WebKit harness covers validation, drafts, previews, apply, undo/redo, conflicts, selection, and property edits. Ordinary builds contain neither the report command nor frontend smoke/observer entry points. Native file-picker cancellation/overwrite and OS packaging still need manual testing.
 
 ## Architecture
 

@@ -9,7 +9,9 @@
     "test": "vitest run",
     "tauri": "tauri",
     "desktop:dev": "cd ../crates/scorestream-desktop && tauri dev",
-    "desktop:build": "cd ../crates/scorestream-desktop && tauri build"
+    "desktop:build": "cd ../crates/scorestream-desktop && tauri build",
+    "dev:smoke": "vite --mode smoke --host 127.0.0.1",
+    "build:smoke": "tsc --noEmit && vite build --mode smoke"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "1.2.1",

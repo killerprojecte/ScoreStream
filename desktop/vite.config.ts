@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
-export default defineConfig({
+export default defineConfig(({mode})=>({
+ define:{__SCORESTREAM_QA_BUILD__:JSON.stringify(mode==='smoke')},
  plugins:[react()],resolve:{alias:{'@':fileURLToPath(new URL('./src',import.meta.url))}},
  clearScreen:false,server:{port:1420,strictPort:true},worker:{format:'es'},
  build:{target:'es2022',chunkSizeWarningLimit:700},
-});
+}));

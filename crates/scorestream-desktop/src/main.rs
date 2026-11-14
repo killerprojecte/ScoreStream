@@ -5,6 +5,8 @@ use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 mod mcp_service;
 mod window_chrome;
+#[cfg(feature = "smoke-test")]
+mod smoke_profile;
 use mcp_service::{McpService, McpSettings, McpStatus};
 type Authority = Arc<Mutex<Workspace>>;
 type McpHost = Mutex<McpService>;
@@ -163,6 +165,13 @@ fn main() {
     let builder = tauri::Builder::default()
         .manage(Arc::new(Mutex::new(authority)))
         .setup(|app| {
+            // Check before loading MCP settings or creating a WebView. An opt-in
+            // smoke run must never read or write the production application's profile.
+            #[cfg(feature = "smoke-test")]
+            if std::env::var_os("SCORESTREAM_SMOKE_REPORT").is_some() {
+                smoke_profile::ensure_isolated_identifier(&app.config().identifier)
+                    .map_err(std::io::Error::other)?;
+            }
             app.manage(Mutex::new(McpService::load(
                 app.path().app_config_dir()?.join("mcp-service.json"),
             )));
@@ -172,7 +181,7 @@ fn main() {
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
             )
-            .title("ScoreStream UI acceptance repair")
+            .title("ScoreStream")
             .inner_size(1280.0, 860.0)
             .min_inner_size(1120.0, 700.0)
             .shadow(true)

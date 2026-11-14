@@ -21,4 +21,4 @@ The playback planner exists in Rust but has no integrated audio adapter in this 
 
 ## Validation
 
-Run `cd desktop && npm test -- --maxWorkers=1` and `npm run build`. Native validation uses the existing `smoke-test` feature with `SCORESTREAM_SMOKE_REPORT` set to a writable report path. The React smoke harness checks the real native backend/rendering flow and geometric assertions after React commits. Browser fixtures, if used, validate layout only and are not native operation evidence.
+Run `cd desktop && npm test -- --maxWorkers=1` and `npm run build`. Native validation uses the [isolated smoke build flavor](NATIVE_SMOKE.md), including the `smoke-test` feature, explicit frontend smoke mode, separate QA identifier, and writable `SCORESTREAM_SMOKE_REPORT` path. The React smoke harness checks the real native backend/rendering flow and geometric assertions after React commits. Browser fixtures, if used, validate layout only and are not native operation evidence.

@@ -1,0 +1,17 @@
+{
+  "productName": "ScoreStream QA",
+  "identifier": "io.scorestream.desktop.qa",
+  "build": {
+    "beforeDevCommand": {
+      "script": "npm run dev:smoke",
+      "cwd": "../../desktop"
+    },
+    "beforeBuildCommand": {
+      "script": "npm run build:smoke",
+      "cwd": "../../desktop"
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}

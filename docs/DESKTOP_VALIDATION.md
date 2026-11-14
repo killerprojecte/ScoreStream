@@ -61,18 +61,7 @@ Consequently:
 
 ## Reproduce runtime acceptance on a provisioned Linux desktop
 
-Install the dependencies listed in `desktop/README.md` using the operating system's supported package manager. Then:
-
-```sh
-cd desktop
-npm ci
-npm test -- --maxWorkers=1
-npm run build
-cd ..
-cargo build --locked --manifest-path crates/scorestream-desktop/Cargo.toml --features smoke-test
-SCORESTREAM_SMOKE_REPORT="$PWD/native-smoke.json" \
-  crates/scorestream-desktop/target/debug/scorestream-desktop
-```
+Install the dependencies listed in `desktop/README.md` using the operating system's supported package manager, then follow [the isolated native smoke build instructions](NATIVE_SMOKE.md). The current QA workflow requires an explicit frontend smoke mode and a separate QA application identifier in addition to the Cargo feature. Do not reuse the historical production-profile launch commands.
 
 Require `native-smoke.json` to contain `"passed": true`; retain its individual checks and a screenshot of the real native window. Repeat packaging and native runtime acceptance on Windows and macOS before claiming those platforms are tested.
 
