@@ -237,7 +237,7 @@ describe('React Preferences', () => {
     await key(Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(option => option.textContent === '22')!, 'Enter');
     expect(get('pref-font').textContent).toContain('22');
     await act(async () => {get('preferences-tab-audio').focus();});
-    expect(get('audio-settings').textContent).toContain('when the audio engine is available');
+    expect(get('audio-settings').textContent).toContain('Built-in synthesized playback uses your system audio output');
     expect(get('audio-settings').querySelector('input,button')).toBeNull();
   });
 

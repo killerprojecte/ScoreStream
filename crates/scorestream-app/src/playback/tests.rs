@@ -246,3 +246,109 @@ fn scope_study_has_expected_attacks_and_structured_interval_diagnostics() {
             .any(|d| d.code == "hairpin_terminated" && d.object_id == "swell")
     );
 }
+
+#[test]
+fn written_timeline_integrates_tempo_changes_inside_notes_and_rests() {
+    let p = plan_source(&score(
+        "v C4:2 id=held\n+ #held articulation value=tenuto\n.\n@1\n= score tempo=q:60\n.\n@2\nv r:2 id=rest\n.\n@3\n= score tempo=q:120\n.\n@4\nv _:1 id=spacer\n.",
+        "5",
+    ))
+    .unwrap();
+    assert_eq!(p.notes.len(), 1);
+    assert_eq!(p.event_positions.len(), 3);
+    for (position, (id, start, end)) in p.event_positions.iter().zip([
+        ("held", 0., 1.5),
+        ("rest", 1.5, 3.),
+        ("spacer", 3., 3.5),
+    ]) {
+        assert_eq!(position.id, id);
+        close(position.start_seconds, start);
+        close(position.end_seconds, end);
+    }
+    close(p.notes[0].duration_seconds, 1.5);
+    close(p.duration_seconds, 3.5);
+    close(p.measures[0].end_seconds, p.duration_seconds);
+}
+
+#[test]
+fn tie_tail_has_its_own_written_interval_across_tempo_change() {
+    let p = plan_source(&score(
+        "v C4:1 id=head\n~ tie t start=#head\n.\n@1\n= score tempo=q:60\nv C4:2 id=tail\n~ tie t end=#tail\n+ #tail articulation value=tenuto\n.\n@2\n= score tempo=q:120\n.",
+        "3",
+    ))
+    .unwrap();
+    assert_eq!(p.notes.len(), 1);
+    assert_eq!(p.event_positions.len(), 2);
+    assert_eq!(p.event_positions[1].id, "tail");
+    close(p.event_positions[0].end_seconds, 0.5);
+    close(p.event_positions[1].start_seconds, 0.5);
+    close(p.event_positions[1].end_seconds, 2.);
+    close(p.notes[0].duration_seconds, 2.);
+    close(p.duration_seconds, 2.);
+}
+
+#[test]
+fn measures_keep_explicit_nonuniform_boundaries_and_labels() {
+    let source = "!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n@0\n| p pickup len=1 label=\"0\"\nv r:1 id=a\n.\n@1\n| p main len=3 label=\"1\"\nv r:3 id=b\n.\n@2\n= score tempo=q:60\n.\n@4\n| p last len=2\nv r:2 id=c\n.\n!end at=6\n";
+    let p = plan_source(source).unwrap();
+    assert!(p.notes.is_empty());
+    assert_eq!(p.measures.len(), 3);
+    for (measure, (id, label, start, end)) in p.measures.iter().zip([
+        ("pickup", Some("0"), 0., 0.5),
+        ("main", Some("1"), 0.5, 3.),
+        ("last", None, 3., 5.),
+    ]) {
+        assert_eq!(measure.id, id);
+        assert_eq!(measure.part, "p");
+        assert_eq!(measure.label.as_deref(), label);
+        close(measure.start_seconds, start);
+        close(measure.end_seconds, end);
+    }
+    close(p.duration_seconds, 5.);
+}
+
+#[test]
+fn written_intervals_do_not_inherit_articulation_gates_or_pedal() {
+    let p = plan_source(&score(
+        "v C4:1 id=a\n+ #a articulation value=staccato\n~ pedal ped start=#a\n.\n@1\nv r:1 id=rest\n.\n@2\nv D4:1 id=b\n~ pedal ped end=#b\n.",
+        "3",
+    ))
+    .unwrap();
+    close(p.event_positions[0].end_seconds, 0.5);
+    close(p.notes[0].duration_seconds, 1.);
+    close(p.event_positions[1].start_seconds, 0.5);
+    close(p.event_positions[1].end_seconds, 1.);
+    close(p.duration_seconds, 1.5);
+}
+
+#[test]
+fn older_serialized_plans_default_to_empty_timelines() {
+    let p: PlaybackPlan = serde_json::from_str(
+        r#"{"duration_seconds":0.0,"notes":[],"routes":[],"warnings":[]}"#,
+    )
+    .unwrap();
+    assert!(p.event_positions.is_empty());
+    assert!(p.measures.is_empty());
+    let current = plan_source(&score("v r:1 id=a\n.", "1")).unwrap();
+    let roundtrip: PlaybackPlan =
+        serde_json::from_str(&serde_json::to_string(&current).unwrap()).unwrap();
+    assert_eq!(current, roundtrip);
+}
+
+#[test]
+fn silent_cue_and_zero_duration_grace_keep_score_positions() {
+    let p = plan_source(&score(
+        "v E4:? id=grace kind=grace anchor=#cue order=-1\nv C4:1 id=cue kind=cue\n.",
+        "1",
+    ))
+    .unwrap();
+    assert!(p.notes.is_empty());
+    assert_eq!(p.event_positions.len(), 2);
+    let grace = p.event_positions.iter().find(|e| e.id == "grace").unwrap();
+    close(grace.start_seconds, 0.);
+    close(grace.end_seconds, 0.);
+    let cue = p.event_positions.iter().find(|e| e.id == "cue").unwrap();
+    close(cue.start_seconds, 0.);
+    close(cue.end_seconds, 0.5);
+    close(p.duration_seconds, 0.5);
+}

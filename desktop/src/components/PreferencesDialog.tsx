@@ -132,7 +132,7 @@ export function PreferencesDialog({open, onOpenChange, tab, onTabChange, value, 
           </TabsContent>
           <TabsContent id="preferences-audio" aria-labelledby="preferences-tab-audio" value="audio" className="preference-section">
             <div className="preference-section-heading"><h3>{t('Audio')}</h3></div>
-            <Empty id="audio-settings"><EmptyHeader><EmptyMedia variant="icon"><AudioLines aria-hidden="true" /></EmptyMedia><EmptyDescription>{t('Playback settings appear here when the audio engine is available.')}</EmptyDescription></EmptyHeader></Empty>
+            <Empty id="audio-settings"><EmptyHeader><EmptyMedia variant="icon"><AudioLines aria-hidden="true" /></EmptyMedia><EmptyDescription>{t('Built-in synthesized playback uses your system audio output. Use the score toolbar to play, pause, stop and seek.')}</EmptyDescription></EmptyHeader></Empty>
           </TabsContent>
           <TabsContent id="preferences-mcp" aria-labelledby="preferences-tab-mcp" value="mcp" className="preference-section">
             <div className="preference-section-heading"><h3>{t('MCP')}</h3></div><McpSettings controller={mcp} native={native} /></TabsContent>

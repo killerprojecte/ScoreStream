@@ -1,6 +1,6 @@
 # Playback engine: performance policy and limits
 
-`scorestream_app::playback::plan_source` validates the current SFS source and returns a deterministic, device-independent `PlaybackPlan`. It does not mutate workspace history, use a last-good snapshot for an invalid draft, open an audio device, or request MIDI access. This first slice supplies the Rust engine and fixture; desktop transport/output integration is a separate slice.
+`scorestream_app::playback::plan_source` validates the current SFS source and returns a deterministic, device-independent `PlaybackPlan`. It does not mutate workspace history, use a last-good snapshot for an invalid draft, open an audio device, or request MIDI access. The desktop transport consumes this plan through the asynchronous native `playback_plan` command. Built-in Web Audio synthesis schedules its notes against the audio clock.
 
 ## Implemented interpretation
 
@@ -21,7 +21,7 @@ The JSON contract contains duration in seconds; ordered notes (event identity, r
 
 ## Fixture and verification
 
-Open `examples/playback-expressive.sfs` after desktop transport integration. Its two parts are piano and violin. Quarter = 120 runs for four beats, then dotted-quarter = 60. Expected total duration is 5⅓ seconds, 11 sounding note attacks and two routes. Listen for the held violin swell and fade, the piano's pedal-release boundary at two seconds, one unbroken tied high C, short staccatissimo B, and fp decay. This fixture is a manual listening guide, not a claim of hardware verification.
+Use `examples/playback-expressive.sfs` to exercise the performance plan. The current engraver rejects mid-score state changes, so this fixture may retain the previous notation; use First Light or a constant-tempo fixture for cursor/follow/seek checks. Its two parts are piano and violin. Quarter = 120 runs for four beats, then dotted-quarter = 60. Expected total duration is 5⅓ seconds, 11 sounding note attacks and two routes. Listen for the held violin swell and fade, the piano's pedal-release boundary at two seconds, one unbroken tied high C, short staccatissimo B, and fp decay. This fixture is a manual listening guide, not a claim of hardware verification.
 
 Rust tests assert exact tempi, tie continuity, scope priority, articulations, held-note envelopes, pedal lift, fp, frame-wide changes, transposition/microtones, deterministic routes, invalid-input refusal, finite clock values, and 10,000 events without accumulated timing drift. Tests use no audio/MIDI devices. The performance assertion is a generous debug regression threshold, not a latency guarantee. Existing dependencies and lockfiles are unchanged.
 
@@ -30,3 +30,15 @@ Output adapters must schedule against their audio clock, cancel future events an
 ## Typed-model migration
 
 The playback compiler now consumes `scorestream_core::notation::ResolvedScore`, not wire attribute maps. SFS lowering, exact expression intervals, numeric expression policy, continuity/pedal realization, tempo integration and output DTOs are distinct modules. See [expression interval contract](EXPRESSION_INTERVALS.md) and [implemented model boundaries](SEMANTIC_MODEL.md). The output retains `warnings` and adds structured diagnostics with feature, object/source, effect and policy identity. This internal migration does not change SFS 1.1 syntax or its public AST schema.
+
+## Desktop transport and score position
+
+The plan adds `event_positions` (every written event, including rests, spacers and tied continuations) and `measures` (explicit measure IDs, parts, labels and boundaries). Their seconds come from the same Rust `TempoMap` as sounding notes. Written endpoints remain distinct from articulation and pedal releases. Old serialized plans deserialize with empty timeline arrays.
+
+The React score toolbar uses existing official shadcn Button/Input/Select controls for play, pause, stop, seconds and measure seeking. Space toggles playback outside editors, form controls, menus and dialogs. Clicking a note or rest selects it and seeks to its Rust start time. The cursor interpolates between engraved anchors within each system and follows new systems while playing. It appears only when the source and render sequence match, never on a retained invalid/older preview. Unsupported engraving can still play a valid source, but its retained score cannot seek or show a misleading cursor.
+
+The built-in output is a modest triangle-wave synthesizer, not sampled piano/strings or a SoundFont engine. All parts and voices sound concurrently with Rust frequencies, velocities, held-note envelopes, ties and pedal-adjusted release times. A short attack/release smooths oscillator boundaries. A 180 ms lookahead schedules audio; a 25 ms transport timer reads the audio clock, not a JS accumulated timeline. Pause/stop/seek/source edits cancel queued and active voices. Seeking into a tied or pedal-held note resumes its remaining duration and envelope without inventing another source attack. Every asynchronous plan/resume request is guarded against stale completion.
+
+### Restoration verification
+
+The restored source was based on GitHub commit `92e22d3582794e487c3b6088626ec983d04a05a4`. Frontend transport/audio tests use mocked clocks and nodes, and UI tests use DOM geometry fixtures. They do not claim native sound-device or platform verification. Rust workspace tests, formatting and native desktop builds must run in a Rust-capable environment; the restoration cloud workspace has no Cargo/Rust toolchain. No runtime capture instrumentation or file-dialog changes were added.

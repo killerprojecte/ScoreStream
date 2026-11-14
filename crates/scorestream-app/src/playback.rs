@@ -11,7 +11,7 @@ use diagnostic::Diagnostics;
 pub use diagnostic::{PerformanceDiagnostic, RealizationEffect};
 use expression::Expression;
 pub use plan::*;
-use scorestream_codec::{Duration, Rational, notation::*};
+use scorestream_codec::{Document, Duration, Rational, Record, Scalar, notation::*};
 use std::collections::BTreeSet;
 use tempo::TempoMap;
 
@@ -22,7 +22,7 @@ pub fn plan_source(source: &str) -> Result<PlaybackPlan, String> {
     }
     let doc = scorestream_codec::parse(source).map_err(format_diagnostics)?;
     let score = lower_document(&doc).map_err(format_diagnostics)?;
-    compile(&score)
+    compile(&score, &doc)
 }
 fn format_diagnostics(diagnostics: Vec<scorestream_codec::Diagnostic>) -> String {
     diagnostics
@@ -32,12 +32,45 @@ fn format_diagnostics(diagnostics: Vec<scorestream_codec::Diagnostic>) -> String
         .collect::<Vec<_>>()
         .join("\n")
 }
-fn compile(score: &ResolvedScore) -> Result<PlaybackPlan, String> {
+fn compile(score: &ResolvedScore, doc: &Document) -> Result<PlaybackPlan, String> {
     if score.events.len() > 100_000 {
         return Err("Playback is limited to 100,000 events per score".into());
     }
     let tempo = TempoMap::new(score);
     let mut duration_seconds = tempo.seconds(&score.end)?;
+    // Map every written event before continuity/audio policy can omit an attack.
+    // In particular, a tied continuation still owns its own score interval.
+    let event_positions = score
+        .events
+        .iter()
+        .map(|event| {
+            Ok(PlaybackEventPosition {
+                id: event.id.0.clone(),
+                start_seconds: tempo.seconds(&event.start)?,
+                end_seconds: tempo.seconds(&event.end())?,
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    // Measures live in the validated document rather than the performance model.
+    // Convert their explicit boundaries, never infer uniform lengths or BPM.
+    let mut measures = Vec::new();
+    for frame in &doc.frames {
+        for record in &frame.records {
+            if let Record::Measure(measure) = record {
+                measures.push(PlaybackMeasure {
+                    id: measure.id.clone(),
+                    part: measure.target.clone(),
+                    label: measure
+                        .attributes
+                        .get("label")
+                        .and_then(Scalar::as_str)
+                        .map(str::to_owned),
+                    start_seconds: tempo.seconds(&frame.time)?,
+                    end_seconds: tempo.seconds(&(&frame.time + &measure.length))?,
+                });
+            }
+        }
+    }
     let mut warnings = Diagnostics::default();
     let expression = Expression::new(score, &mut warnings)?;
     let continuity = Continuity::new(score, &expression, &mut warnings)?;
@@ -138,6 +171,8 @@ fn compile(score: &ResolvedScore) -> Result<PlaybackPlan, String> {
     Ok(PlaybackPlan {
         duration_seconds,
         notes,
+        event_positions,
+        measures,
         routes: routes.into_iter().collect(),
         warnings,
         diagnostics,

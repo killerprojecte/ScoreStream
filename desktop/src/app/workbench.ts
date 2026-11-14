@@ -1,4 +1,5 @@
-import { backend, native } from '../bridge';
+import {PlaybackTransport} from '../playback/transport';
+import { backend, native, playbackBackend } from '../bridge';
 import { clampZoom } from '../layout';
 import { project, RENDERER } from '../render/project';
 import { LatestOnly } from '../render/scheduler';
@@ -25,6 +26,7 @@ export class Workbench {
  private scheduler:LatestOnly|null=null;private worker:Worker|null=null;
  private confirmUnsaved:ConfirmUnsaved=async()=>false;private openPending=false;private lifecycle=0;
  editor:SourceEditor|null=null;
+ readonly playback=new PlaybackTransport(playbackBackend);
  constructor(private api=backend,private isNative=native){}
  subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>this.listeners.delete(listener);};
  getSnapshot=()=>this.state;
@@ -37,12 +39,12 @@ export class Workbench {
  attachEditor(editor:SourceEditor){this.editor=editor;if(this.state.source)editor.value=this.state.source;return()=>{if(this.editor===editor)this.editor=null;};}
  attachRenderer(worker:Worker){this.worker=worker;this.scheduler=new LatestOnly(worker,result=>this.publish(result));worker.onerror=e=>this.previewError(`Renderer failed: ${e.message}`);}
  bindConfirmation(confirm:ConfirmUnsaved){this.confirmUnsaved=confirm;return()=>{if(this.confirmUnsaved===confirm){this.confirmUnsaved=async()=>false;this.lifecycle++;}};}
- dispose(){this.lifecycle++;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.scheduler=null;this.listeners.clear();}
+ dispose(){this.playback.dispose();this.lifecycle++;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.scheduler=null;this.listeners.clear();}
  async start(){if(!this.isNative){this.previewError('Open the native desktop app. This UI intentionally has no JavaScript parser or mock Rust backend.');return;}try{const view=await this.api.current();this.set({initialSource:view.source});this.accept(view);}catch(e){this.previewError(describeError(e));}}
  message(message:string,messageValues:Record<string,string|number>={}){this.set({message,messageValues});}
  private invalidate(){clearTimeout(this.timer);const sequence=this.sequence+1;this.scheduler?.invalidate(sequence);this.snapshots.clear();this.set({sequence,phase:'pending'});return sequence;}
- changed(source=this.editor?.value??this.state.source){this.set({source,view:null,selected:null});const sequence=this.invalidate();this.timer=setTimeout(()=>void this.preview(sequence),280);}
- async preview(sequence=this.sequence){const source=this.state.source;try{const view=await this.api.preview(source);if(sequence!==this.sequence||source!==this.state.source)return;this.set({view});this.editor?.diagnostics(view.diagnostics);if(!view.valid){this.set({phase:'invalid'});return;}await this.render(view,sequence);}catch(e){if(sequence===this.sequence)this.previewError(describeError(e));}}
+ changed(source=this.editor?.value??this.state.source){this.playback.setSource(source);this.set({source,view:null,selected:null});const sequence=this.invalidate();this.timer=setTimeout(()=>void this.preview(sequence),280);}
+ async preview(sequence=this.sequence){const source=this.state.source;try{const view=await this.api.preview(source);if(sequence!==this.sequence||source!==this.state.source)return;this.set({view});this.editor?.diagnostics(view.diagnostics);if(!view.valid){this.set({phase:'invalid'});return;}if(this.isNative)void this.playback.prepareSource();await this.render(view,sequence);}catch(e){if(sequence===this.sequence)this.previewError(describeError(e));}}
  private async render(view:View,sequence:number){try{
   const projected=project(view);const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(view.source)))).map(x=>x.toString(16).padStart(2,'0')).join('');if(sequence!==this.sequence)return;
   const layout=`${this.width}:${RENDERER}`;const key:PreviewKey=view.dirty?{kind:'draft',session:this.session,sequence,hash,baseRevision:this.current!.revision_id,layout}:{kind:'committed',revision:view.revision_id,layout};
@@ -50,7 +52,7 @@ export class Workbench {
  }catch(e){if(sequence===this.sequence)this.previewError(describeError(e));}}
  private publish(result:RenderResult){if(result.requestId!==this.sequence)return;if(result.error){this.previewError(result.error);return;}const view=this.snapshots.get(result.requestId);if(!view||view.source!==this.state.source)return;this.set({published:view,renderedMap:result.map,renderedSequence:result.requestId,phase:'ready',pages:result.pages,elapsed:result.elapsed});}
  private previewError(message:string){this.set({phase:'unsupported',message});}
- private accept(view:View,selectedId?:string){this.editor&&(this.editor.value=view.source);this.editor?.diagnostics(view.diagnostics);this.set({current:view,view,source:view.source,selected:view.events.find(e=>e.id===selectedId)??null});const sequence=this.invalidate();void this.render(view,sequence);}
+ private accept(view:View,selectedId?:string){this.playback.setSource(view.source);if(this.isNative)void this.playback.prepareSource();this.editor&&(this.editor.value=view.source);this.editor?.diagnostics(view.diagnostics);this.set({current:view,view,source:view.source,selected:view.events.find(e=>e.id===selectedId)??null});const sequence=this.invalidate();void this.render(view,sequence);}
  async apply(){if(this.busy||!this.dirty||!this.canSave)return;await this.transaction(async()=>{this.accept(await this.api.apply(this.state.source,this.current!.revision_id));this.message('Draft applied. A new committed revision is ready.');});}
  async discard(){if(!this.current||this.busy)return;await this.transaction(async()=>{await this.api.preview(this.current!.source);this.accept(this.current!);this.message('Draft discarded. Showing the committed score.');});}
  async history(direction:'undo'|'redo'){if(this.dirty||this.busy)return;await this.transaction(async()=>{this.accept(await this.api[direction](),this.selected?.id);this.message(direction==='undo'?'Edit undone.':'Edit restored.');});}

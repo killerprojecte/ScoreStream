@@ -1,3 +1,6 @@
+import {PlaybackControls} from './PlaybackControls';
+import {ScorePlayhead} from './ScorePlayhead';
+import {native} from '../bridge';
 import {useEffect, useRef} from 'react';
 import {Minus, Plus, Maximize, FileMusic} from 'lucide-react';
 import {Button} from './ui/button';
@@ -48,7 +51,7 @@ export function ScorePane({controller, state, showTitle}: {controller: Workbench
       if (!node || !event) continue;
       node.setAttribute('tabindex', '0');
       node.setAttribute('role', 'button');
-      node.setAttribute('aria-label', t('{pitch}, duration {duration} quarter-note units. Select in inspector.', {pitch: t(event.pitch === 'r' ? 'Rest' : event.pitch === '_' ? 'Spacer' : event.pitch), duration: event.duration}));
+      node.setAttribute('aria-label', t('{pitch}, duration {duration} quarter-note units. Select in inspector and seek playback.', {pitch: t(event.pitch === 'r' ? 'Rest' : event.pitch === '_' ? 'Spacer' : event.pitch), duration: event.duration}));
       if (state.selected?.id === eventId) node.classList.add('selected-event');
     }
   }, [state.renderedMap, state.published, state.selected, state.pages, t('Note')]);
@@ -57,7 +60,7 @@ export function ScorePane({controller, state, showTitle}: {controller: Workbench
   const metadata = readMetadata(state.published?.document.metadata);
   const select = (target: Element | null) => {
     while (target && target !== notation.current) {
-      if (target.id && state.renderedMap[target.id]) {controller.select(state.renderedMap[target.id], true); return;}
+      if (target.id && state.renderedMap[target.id]) {const id=state.renderedMap[target.id];controller.select(id, true);if(state.phase==='ready'&&state.source===state.published?.source&&state.sequence===state.renderedSequence)void controller.playback.seekEvent(id);return;}
       target = target.parentElement;
     }
     controller.select('');
@@ -75,12 +78,13 @@ export function ScorePane({controller, state, showTitle}: {controller: Workbench
         <Tooltip><TooltipTrigger asChild><Button id="fit" variant="ghost" size="icon-sm" aria-label={t('Fit to width')} onClick={() => controller.setZoom(1)}><Maximize/></Button></TooltipTrigger><TooltipContent>{t('Fit to width')}</TooltipContent></Tooltip>
       </div>
     </header>
+    <PlaybackControls transport={controller.playback} enabled={native&&!!state.source}/>
     {stale && state.published && <Alert id="stale-banner" role="status"><AlertDescription>{t(state.phase === 'invalid' ? 'Source needs attention. Showing the last valid preview.' : state.phase === 'unsupported' ? 'This score exceeds the current preview scope. Last good notation retained.' : 'Updating the preview. The score below shows the previous snapshot.')}</AlertDescription></Alert>}
     {!!state.warnings.length && <Alert id="projection-warning"><AlertDescription>{state.warnings.join(' ')}</AlertDescription></Alert>}
     <div id="canvas-scroll" className="canvas-scroll" ref={canvas}>
       <div id="paper" className={'score-pages ' + (stale && state.published ? 'stale' : '')} style={{width: 'calc(' + state.zoom * 100 + '% - ' + 40 * (state.zoom - 1) + 'px)'}} onClick={event => {if (!(event.target as Element).closest('[role="button"]')) controller.select('');}}>
         <div id="notation" ref={notation} onClick={event => select(event.target as Element)} onKeyDown={event => {
-          if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); select(event.target as Element);}
+          if (event.key === 'Enter') {event.preventDefault(); select(event.target as Element);}
           else if (event.key === 'Escape') controller.select('');
         }}>
           {state.pages.map((svg, index) => <article className="score-paper glass glass--reading" key={index} aria-label={t('Page {number}', {number: index + 1})}>
@@ -90,6 +94,7 @@ export function ScorePane({controller, state, showTitle}: {controller: Workbench
             {metadata.footer && <div className="score-running-footer">{metadata.footer}</div>}
           </article>)}
           {!state.pages.length && <article className="score-paper glass glass--reading"><Empty><EmptyHeader><EmptyMedia variant="icon"><FileMusic/></EmptyMedia><EmptyTitle>{t(state.phase === 'unsupported' ? 'Preview unavailable' : 'Preparing')}</EmptyTitle>{state.phase === 'unsupported' && <EmptyDescription id="preview-error-text">{t(state.message)}</EmptyDescription>}</EmptyHeader></Empty></article>}
+          <ScorePlayhead transport={controller.playback} state={state} notation={notation} canvas={canvas}/>
         </div>
       </div>
     </div>

@@ -25,10 +25,29 @@ pub struct PlaybackRoute {
     pub part: String,
     pub instrument: String,
 }
+/// Written score intervals, independent of audible attacks, gates and pedal release.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct PlaybackEventPosition {
+    pub id: String,
+    pub start_seconds: f64,
+    pub end_seconds: f64,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct PlaybackMeasure {
+    pub id: String,
+    pub part: String,
+    pub label: Option<String>,
+    pub start_seconds: f64,
+    pub end_seconds: f64,
+}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlaybackPlan {
     pub duration_seconds: f64,
     pub notes: Vec<PlaybackNote>,
+    #[serde(default)]
+    pub event_positions: Vec<PlaybackEventPosition>,
+    #[serde(default)]
+    pub measures: Vec<PlaybackMeasure>,
     pub routes: Vec<PlaybackRoute>,
     pub warnings: Vec<String>,
     #[serde(default)]

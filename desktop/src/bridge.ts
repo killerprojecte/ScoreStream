@@ -19,3 +19,7 @@ export const mcpBackend = {
   start:(settings:McpSettings,token:string|null)=>invoke<McpStatus>('mcp_start',{settings,token}),
   stop:()=>invoke<McpStatus>('mcp_stop'),
 };
+
+export const playbackBackend = {
+  plan:(source:string)=>invoke<import('./playback/types').PlaybackPlan>('playback_plan',{source}),
+};

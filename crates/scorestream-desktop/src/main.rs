@@ -56,6 +56,13 @@ fn preview_source(source: String, state: State<'_, Authority>) -> Result<ViewRes
         .preview_source(&source))
 }
 #[tauri::command]
+async fn playback_plan(source: String) -> Result<scorestream_app::playback::PlaybackPlan, String> {
+    // Parsing and planning are CPU work; do not block the UI or async executor.
+    tauri::async_runtime::spawn_blocking(move || scorestream_app::playback::plan_source(&source))
+        .await
+        .map_err(|error| format!("Playback planning failed: {error}"))?
+}
+#[tauri::command]
 fn apply_source(
     source: String,
     expected_revision_id: String,
@@ -214,6 +221,7 @@ fn main() {
         current,
         open_demo,
         preview_source,
+        playback_plan,
         apply_source,
         undo,
         redo,
@@ -232,6 +240,7 @@ fn main() {
         current,
         open_demo,
         preview_source,
+        playback_plan,
         apply_source,
         undo,
         redo,

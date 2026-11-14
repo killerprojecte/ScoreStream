@@ -7,6 +7,7 @@ A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer 
 - Native SFS file picker, valid-source Save with destination picker, syntax-highlighted source editing and Rust diagnostics.
 - Automatic valid-draft preview, explicit Apply, expected-revision conflicts, session undo/redo.
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
+- Built-in synthesized Web Audio playback driven by the authoritative Rust performance plan: play/pause/stop, Space outside editing/modal controls, seconds and measure seeking, score-time cursor/following, and note/rest click-to-seek.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
 - Bounded renderer queue: one running job and one replaceable pending job, off the UI thread.
 - In-process HTTP + SSE MCP service with listen IP/port controls, an optional session-only key, start/stop/status, and a secret-free connection URL. MCP reads the same committed workspace as the editor; private drafts are excluded. See [MCP service](MCP.md).
@@ -14,7 +15,7 @@ A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer 
 
 The initial projection supports aligned measured staves, ordinary pitches, rests/spacers, equal-duration chords, basic clefs/key/meter, and ordinary/dotted durations. It rejects unsupported rhythmic/layout cases and reports omitted markings. It is **not MusicXML interchange** and not a full milestone D implementation. MEI projection currently lives in an isolated TypeScript adapter over Rust-typed DTOs; moving it into a Rust rendering crate is planned. No renderer output becomes authoritative score data.
 
-Session history is in memory. Save persists the SFS source, not revision history. No audio/playback, MCP score mutation, packaged installers, or complete notation editing is claimed. Native Windows/macOS verification remains pending unless recorded in a later test report.
+Session history is in memory. Save persists the SFS source, not revision history. No external MIDI, SoundFont/sample output, audio export, MCP score mutation, or complete notation editing is claimed. Built-in tones are not sampled instruments. Native Windows/macOS verification remains pending unless recorded in a later test report.
 
 See [React architecture and unchanged backend boundaries](../docs/REACT_DESKTOP.md) and [platform window chrome](../docs/WINDOW_CHROME.md).
 
@@ -53,6 +54,8 @@ An opt-in `smoke-test` Cargo feature adds a test-only report command. Native smo
 
 ## Architecture
 
+- `src/playback/`: cancellable audio-clock transport, bounded Web Audio scheduling and presentation of Rust timeline anchors.
+- `src/components/PlaybackControls.tsx` and `ScorePlayhead.tsx`: existing shadcn transport controls and a source/sequence-guarded score overlay.
 - `src/bridge.ts`: Tauri command boundary.
 - `src/editor/source.ts`: Monaco presentation and Rust diagnostics.
 - `src/render/project.ts`: bounded typed snapshot → MEI + identity map, no source parsing.
