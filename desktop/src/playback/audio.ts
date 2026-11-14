@@ -1,4 +1,5 @@
 import type {EnvelopePoint, PlaybackNote} from './types';
+import {applyBuiltInTimbre} from './timbres';
 
 export interface AudioOutput {
  readonly now:number;
@@ -20,6 +21,48 @@ export function gainAt(points:EnvelopePoint[], at:number):number {
  }
  return previous.gain;
 }
+function scheduleEnvelope(parameter:AudioParam,points:EnvelopePoint[],level:number,offset:number,duration:number,when:number,completeRamp=false){
+ parameter.setValueAtTime(level*gainAt(points,offset),when);
+ for(const point of points){
+  if(point.offset_seconds>offset&&point.offset_seconds<=duration)
+   parameter.linearRampToValueAtTime(level*point.gain,when+point.offset_seconds-offset);
+ }
+ // Preserve interpolation when a note ends between two envelope anchors.
+ if(completeRamp&&points.some(point=>point.offset_seconds>duration))
+  parameter.linearRampToValueAtTime(level*gainAt(points,duration),when+duration-offset);
+}
+/** Shared real-time/offline voice graph. Rust owns route, pitch and note timing. */
+export function scheduleBuiltInVoice(context:BaseAudioContext,destination:AudioNode,note:PlaybackNote,offset:number,when:number,onEnded:()=>void=()=>{}):(()=>void)|null {
+ const remaining=note.duration_seconds-offset;
+ if(remaining<=0)return null;
+ const oscillator=context.createOscillator(),expression=context.createGain(),gate=context.createGain(),color=context.createGain();
+ let disconnected=false;
+ const disconnect=()=>{
+  if(disconnected)return;
+  disconnected=true;oscillator.onended=null;
+  oscillator.disconnect();expression.disconnect();gate.disconnect();color.disconnect();onEnded();
+ };
+ const cancel=()=>{
+  if(disconnected)return;
+  gate.gain.cancelScheduledValues(context.currentTime);gate.gain.setValueAtTime(0,context.currentTime);
+  try{oscillator.stop();}catch{/* Already ended or not started. */}
+  disconnect();
+ };
+ try{
+  const envelope=applyBuiltInTimbre(context,oscillator,note.instrument);
+  oscillator.frequency.setValueAtTime(note.frequency_hz,when);
+  scheduleEnvelope(expression.gain,note.gain_envelope,.12*note.velocity/127,offset,note.duration_seconds,when);
+  scheduleEnvelope(color.gain,envelope,1,offset,note.duration_seconds,when,true);
+  const attack=Math.min(.008,remaining/3),release=Math.min(.012,remaining/3);
+  gate.gain.setValueAtTime(0,when);
+  gate.gain.linearRampToValueAtTime(1,when+attack);
+  gate.gain.setValueAtTime(1,when+remaining-release);
+  gate.gain.linearRampToValueAtTime(0,when+remaining);
+  oscillator.connect(color);color.connect(expression);expression.connect(gate);gate.connect(destination);
+  oscillator.onended=disconnect;oscillator.start(when);oscillator.stop(when+remaining);
+ }catch(error){cancel();throw error;}
+ return cancel;
+}
 /** Built-in synthesized tones, with all performance timing supplied by Rust. */
 export class WebAudioOutput implements AudioOutput {
  private context:AudioContext|null=null;
@@ -40,28 +83,9 @@ export class WebAudioOutput implements AudioOutput {
  schedule(note:PlaybackNote,offset:number,when:number){
   const context=this.context;
   if(!context||!this.master)throw new Error('Audio output is unavailable.');
-  const remaining=note.duration_seconds-offset;
-  if(remaining<=0)return;
-  const oscillator=context.createOscillator(),expression=context.createGain(),gate=context.createGain();
-  // A deliberately modest built-in timbre, not a sampled instrument claim.
-  oscillator.type='triangle';
-  oscillator.frequency.setValueAtTime(note.frequency_hz,when);
-  const level=.12*note.velocity/127;
-  expression.gain.setValueAtTime(level*gainAt(note.gain_envelope,offset),when);
-  for(const point of note.gain_envelope){
-   if(point.offset_seconds>offset&&point.offset_seconds<=note.duration_seconds)
-    expression.gain.linearRampToValueAtTime(level*point.gain,when+point.offset_seconds-offset);
-  }
-  const attack=Math.min(.008,remaining/3),release=Math.min(.012,remaining/3);
-  gate.gain.setValueAtTime(0,when);
-  gate.gain.linearRampToValueAtTime(1,when+attack);
-  gate.gain.setValueAtTime(1,when+remaining-release);
-  gate.gain.linearRampToValueAtTime(0,when+remaining);
-  oscillator.connect(expression);expression.connect(gate);gate.connect(this.master);
-  const disconnect=()=>{oscillator.disconnect();expression.disconnect();gate.disconnect();this.voices.delete(cancel);};
-  const cancel=()=>{gate.gain.cancelScheduledValues(context.currentTime);gate.gain.setValueAtTime(0,context.currentTime);try{oscillator.stop();}catch{/* Already ended. */}disconnect();};
-  this.voices.add(cancel);oscillator.onended=disconnect;
-  try{oscillator.start(when);oscillator.stop(when+remaining);}catch(error){cancel();throw error;}
+  let cancel:(()=>void)|null=null;
+  cancel=scheduleBuiltInVoice(context,this.master,note,offset,when,()=>{if(cancel)this.voices.delete(cancel);});
+  if(cancel)this.voices.add(cancel);
  }
  silence(){for(const cancel of [...this.voices])cancel();}
  dispose(){this.silence();const context=this.context;this.context=null;this.master=null;if(context&&context.state!=='closed')void context.close().catch(()=>{});}

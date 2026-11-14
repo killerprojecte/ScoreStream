@@ -8,6 +8,7 @@ A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer 
 - Automatic valid-draft preview, explicit Apply, expected-revision conflicts, session undo/redo.
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
 - Built-in synthesized Web Audio playback driven by the authoritative Rust performance plan: play/pause/stop, Space outside editing/modal controls, seconds and measure seeking, score-time cursor/following, and note/rest click-to-seek.
+- Distinct synthesized piano, flute and bowed-string timbres, selected by the note's exact instrument identifier. `cello`, `violin` and `strings` share the bowed-string profile; other identifiers use a neutral triangle tone. These are not recorded instrument samples.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
 - Bounded renderer queue: one running job and one replaceable pending job, off the UI thread.
 - In-process HTTP + SSE MCP service with listen IP/port controls, an optional session-only key, start/stop/status, and a secret-free connection URL. MCP reads the same committed workspace as the editor; private drafts are excluded. See [MCP service](MCP.md).
@@ -49,6 +50,8 @@ This desktop crate is deliberately a separate Cargo workspace so headless/core b
 ## Tests and native smoke
 
 `npm test -- --maxWorkers=1` tests exact projection, refusal of unsupported content, stable mapping, and stale-job rejection. `npm run build` typechecks and bundles locally pinned dependencies with no CDN runtime dependency.
+
+`npm run test:audio-render` is an optional real `OfflineAudioContext` signal regression using an already installed Chromium (`CHROMIUM_PATH` can specify its executable). It checks spectra, routing, gain, seek and note boundaries without opening an audio device or producing an audio file. It requires Chromium to run with its normal sandbox and does not install a browser. This test is separate from the mocked frontend suite; a browser-launch failure is not a signal-render pass.
 
 An opt-in `smoke-test` Cargo feature adds a test-only report command. Native smoke runs also require the explicit Vite smoke mode and the isolated `io.scorestream.desktop.qa` configuration; a report request under the production identifier is rejected before profile access. Follow [the isolated native smoke build instructions](../docs/NATIVE_SMOKE.md). The real WebKit harness covers validation, drafts, previews, apply, undo/redo, conflicts, selection, and property edits. Ordinary builds contain neither the report command nor frontend smoke/observer entry points. Native file-picker cancellation/overwrite and OS packaging still need manual testing.
 
