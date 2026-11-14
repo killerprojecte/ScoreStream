@@ -172,7 +172,7 @@ fn main() {
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
             )
-            .title("ScoreStream shadcn controls")
+            .title("ScoreStream UI acceptance repair")
             .inner_size(1280.0, 860.0)
             .min_inner_size(1120.0, 700.0)
             .shadow(true)

@@ -8,3 +8,5 @@
 .compact-workspace-layout>nav {padding:3px 12px;border-bottom:1px solid var(--hairline);}
 .compact-pane-content {flex:1;min-height:0;overflow:hidden;}
 @media(max-width:600px) {.workspace-tab-content {padding-top:32px;}}
+
+.workspace-panel-content {height:100%;min-height:0;min-width:0;}

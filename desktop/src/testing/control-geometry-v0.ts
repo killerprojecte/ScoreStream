@@ -16,9 +16,12 @@ export function observeControls() {
   };
   let pending:ReturnType<typeof setTimeout>;
   const capture=()=>{
-    const controls=Array.from(document.querySelectorAll('.workspace-controls [data-slot=toggle-group-item],.workspace-controls [data-slot=toggle],.workspace-controls [data-slot=button],.settings-row [data-slot=switch]')).map(read);
+    const controls=Array.from(document.querySelectorAll('.workspace-controls [data-slot=tabs-list],.workspace-controls [data-slot=tabs-trigger],.workspace-controls [data-slot=toggle],.workspace-controls [data-slot=button],.settings-row [data-slot=switch]')).map(read);
     const icons=Array.from(document.querySelectorAll('.settings-category-icon')).map(read);
-    history.push({at:new Date().toISOString(),viewport:[innerWidth,innerHeight],controls,icons});
+    const panels=Array.from(document.querySelectorAll('[data-slot=resizable-panel],[data-slot=resizable-handle]')).map(read);
+    const overview=Array.from(document.querySelectorAll('.property-entry')).map(el=>({box:box(el),children:Array.from(el.children).map(child=>{const range=document.createRange();range.selectNodeContents(child);return {tag:child.tagName,text:child.textContent,box:box(child),textBox:(()=>{const r=range.getBoundingClientRect();return {x:round(r.x),y:round(r.y),width:round(r.width),height:round(r.height)};})()};})}));
+    const preferences=Object.fromEntries(Object.entries(localStorage).filter(([key])=>/preference/i.test(key)));
+    history.push({at:new Date().toISOString(),viewport:[innerWidth,innerHeight],controls,icons,panels,overview,preferences});
     if(history.length>60)history.shift();
     void invoke('report_smoke_test',{report:JSON.stringify({kind:'native-v0-control-geometry',history},null,2)});
   };
