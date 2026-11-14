@@ -84,6 +84,9 @@ async fn legacy_sse_matches_stdio_and_isolates_sessions() {
             json!({"jsonrpc":"2.0","method":"notifications/initialized"}),
             json!({"jsonrpc":"2.0","id":id,"method":"tools/list"}),
             json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":"score_get_format","arguments":{}}}),
+            json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":"score_get_format","arguments":{"detail":"quick"}}}),
+            json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":"score_get_format","arguments":{"detail":"full"}}}),
+            json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":"score_get_format","arguments":{"topics":["time","relations"]}}}),
             json!({"jsonrpc":"2.0","id":id,"method":"resources/read","params":{"uri":"scorestream://spec/1.1/grammar"}}),
         ] {
             assert_eq!(send(&app, endpoint, &request).await, StatusCode::ACCEPTED);

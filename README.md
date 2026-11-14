@@ -18,6 +18,19 @@ cargo run -p scorestream-mcp
 
 The MCP binary defaults to newline-delimited JSON-RPC on stdin and writes responses only on stdout. It exposes `score_get_format` and a finite set of versioned language resources. It intentionally does not advertise unimplemented score editing, rendering or conversion tools.
 
+### Fast format discovery
+
+Call `score_get_format` with `{}` (or `{"detail":"quick"}`) for a compact ScoreStream authoring baseline: record syntax, pitch and exact-time rules, common event attributes, scope/lexical guidance, and a complete ensemble example. This teaches the score language, not the MCP request schema.
+
+- `{"topics":["time","relations"]}` adds only those sections and relevant examples while keeping the baseline. Available topics are `syntax`, `pitch`, `time`, `polyphony`, `state`, `marks`, `relations`, `editing`, `extensions`, and `validation`.
+- `{"topics":[]}` is identical to the default. Topic order does not change the response; shared examples and constraints are included once.
+- `{"detail":"full"}` returns the complete canonical language descriptor. If `topics` is also supplied, it is validated but does not narrow `full`.
+- `structuredContent` and the JSON text fallback contain the same selected application result, so text-only clients do not receive hidden/unrequested sections.
+
+The full descriptor remains at `scorestream://spec/1.1/language`, with `/grammar`, `/ast-schema`, and `/agent-reference` available independently. Every quick result includes these complete resource URIs. Editing-related language documentation does not advertise operational MCP score-edit tools.
+
+Run `python3 scripts/verify_format_reference.py` after building the MCP binary to validate the emitted quick/full/topic responses against the output schema and report serialized UTF-8 byte sizes. This optional acceptance check requires Python `jsonschema`; size reports are bytes, not model-token estimates.
+
 ### MCP over HTTP + SSE
 
 For clients configured with an SSE server URL, start the standalone server:

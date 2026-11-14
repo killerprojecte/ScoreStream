@@ -86,6 +86,14 @@ try:
         {'jsonrpc': '2.0', 'id': 4, 'method': 'resources/read', 'params': {'uri': 'scorestream://spec/1.1/grammar'}},
         {'jsonrpc': '2.0', 'id': 5, 'method': 'resources/read', 'params': {'uri': 'scorestream://workspace/current'}},
     ]
+    format_variants = [
+        {'detail': 'quick'}, {'detail': 'full'}, {'topics': []},
+        {'topics': ['time', 'relations']}, {'topics': ['editing']},
+        {'topics': ['unknown']},
+    ]
+    requests.extend({'jsonrpc': '2.0', 'id': 10 + index, 'method': 'tools/call',
+                     'params': {'name': 'score_get_format', 'arguments': args}}
+                    for index, args in enumerate(format_variants))
     baseline = subprocess.run([str(binary)], input='\n'.join(map(json.dumps, requests))+'\n', capture_output=True, text=True, check=True)
     expected = [json.loads(v) for v in baseline.stdout.splitlines()]
     for stream, endpoint in [(a, endpoint_a), (b, endpoint_b)]:
@@ -130,6 +138,7 @@ try:
         check.bind(('127.0.0.1', port))
     print(json.dumps({'status': 'PASS', 'transport': 'legacy HTTP+SSE', 'sessions': 2,
                       'stdio_parity': True, 'initialize_tools_resources': True,
+                      'additional_format_variants': len(format_variants),
                       'auth_and_origin': True, 'disconnect_cleanup': True,
                       'shutdown_with_active_stream': True, 'port_released': True,
                       'occupied_port_rejected': True, 'invalid_token_rejected': True,

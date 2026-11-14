@@ -1,6 +1,8 @@
 //! MCP format discovery and optional read-only access to the desktop authority.
 //! Stdio remains format-only. No score editing tools are advertised.
+mod format;
 pub mod sse;
+use format::result as format_result;
 use scorestream_app::Workspace;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, TryLockError};
@@ -9,62 +11,8 @@ const GRAMMAR: &str = include_str!("../../../design/spec/scorestream.ebnf");
 const LANGUAGE: &str = include_str!("../../../design/spec/scorestream-language.json");
 const AST: &str = include_str!("../../../design/schemas/scorestream-ast.schema.json");
 const INPUT: &str = include_str!("../../../design/schemas/mcp/score_get_format.input.schema.json");
-const FULL: &str =
-    include_str!("../../../design/examples/mcp/valid/score_get_format.full.structured.json");
-const TOPICS: &[&str] = &[
-    "syntax",
-    "pitch",
-    "time",
-    "polyphony",
-    "state",
-    "marks",
-    "relations",
-    "editing",
-    "extensions",
-    "validation",
-];
 fn error(id: Value, code: i32, message: &str) -> Value {
     json!({"jsonrpc":"2.0","id":id,"error":{"code":code,"message":message}})
-}
-fn tool_error(message: &str) -> Value {
-    json!({"content":[{"type":"text","text":message}],"isError":true})
-}
-fn format_result(args: &Value) -> Value {
-    if !args.is_object() {
-        return tool_error("Arguments must be an object");
-    }
-    for (key, value) in args.as_object().unwrap() {
-        let valid = match key.as_str() {
-            "format_version" => value == "1.1",
-            "profile" => value == "core-measured",
-            "detail" => value == "quick" || value == "full",
-            "topics" => value.as_array().is_some_and(|a| {
-                a.len() <= 10
-                    && a.iter()
-                        .all(|v| v.as_str().is_some_and(|s| TOPICS.contains(&s)))
-                    && a.iter().enumerate().all(|(i, v)| !a[..i].contains(v))
-            }),
-            _ => false,
-        };
-        if !valid {
-            return tool_error(&format!("Unsupported or invalid argument: {key}"));
-        }
-    }
-    let mut data: Value = serde_json::from_str(FULL).unwrap();
-    data["data"]["status"] = json!(
-        "format discovery implemented; desktop/core initial milestone; operational MCP score tools unavailable"
-    );
-    let full = args["detail"] == "full" || args.get("topics").is_some();
-    let text = if full {
-        format!(
-            "{}\n\nFull machine-readable format contract:\n{}",
-            REFERENCE,
-            serde_json::to_string_pretty(&data["data"]).unwrap()
-        )
-    } else {
-        REFERENCE.into()
-    };
-    json!({"content":[{"type":"text","text":text}],"structuredContent":data,"isError":false})
 }
 fn resources() -> Value {
     json!({"resources":[
@@ -116,7 +64,7 @@ fn handle_with_workspace(request: Value, workspace: Option<&Mutex<Workspace>>) -
         }
         "ping" => json!({}),
         "tools/list" => {
-            json!({"tools":[{"name":"score_get_format","description":"Learn the ScoreStream 1.1 notation syntax, exact-time rules, and examples.","inputSchema":serde_json::from_str::<Value>(INPUT).unwrap(),"annotations":{"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false}}]})
+            json!({"tools":[{"name":"score_get_format","description":"Learn ScoreStream 1.1 syntax, exact-time rules, and examples. Default/quick is a compact authoring baseline; topics adds selected detail; full returns the complete descriptor.","inputSchema":serde_json::from_str::<Value>(INPUT).unwrap(),"annotations":{"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false}}]})
         }
         "tools/call" => {
             if params["name"] != "score_get_format" {
