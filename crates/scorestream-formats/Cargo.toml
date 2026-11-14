@@ -1,0 +1,15 @@
+[package]
+name = "scorestream-formats"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+scorestream-core = { path = "../scorestream-core" }
+scorestream-codec = { path = "../scorestream-codec" }
+serde.workspace = true
+num-bigint.workspace = true
+num-traits.workspace = true
+quick-xml = "=0.38.4"
+
+[dev-dependencies]
+serde_json.workspace = true

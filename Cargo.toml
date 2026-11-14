@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/scorestream-core", "crates/scorestream-codec", "crates/scorestream-app", "crates/scorestream-cli", "crates/scorestream-mcp"]
+members = ["crates/scorestream-core", "crates/scorestream-codec", "crates/scorestream-app", "crates/scorestream-cli", "crates/scorestream-mcp", "crates/scorestream-formats"]
 exclude = ["crates/scorestream-desktop"]
 
 [workspace.package]

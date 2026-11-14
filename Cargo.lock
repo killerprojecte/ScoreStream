@@ -341,6 +341,7 @@ checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -394,6 +395,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.38.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b66c2058c55a409d601666cffe35f04333cf1013010882cec174a7467cd4e21c"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -436,6 +446,7 @@ version = "0.1.0"
 dependencies = [
  "scorestream-app",
  "scorestream-codec",
+ "scorestream-formats",
  "serde_json",
 ]
 
@@ -454,6 +465,19 @@ dependencies = [
  "num-bigint",
  "num-rational",
  "num-traits",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "scorestream-formats"
+version = "0.1.0"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "quick-xml",
+ "scorestream-codec",
+ "scorestream-core",
  "serde",
  "serde_json",
 ]

@@ -18,6 +18,15 @@ cargo run -p scorestream-mcp
 
 The MCP binary defaults to newline-delimited JSON-RPC on stdin and writes responses only on stdout. It exposes `score_get_format` and a finite set of versioned language resources. It intentionally does not advertise unimplemented score editing, rendering or conversion tools.
 
+### Strict format conversion
+
+A first MusicXML 4.0 score-partwise adapter now maps through the shared typed `ScoreDocument`, alongside an SFS adapter. This is a **limited conversion profile**, not complete MusicXML support. Unknown symbols/attributes block conversion with structured diagnostics; XML is never passed to a renderer. See [supported mappings, Chinese design and runnable examples](docs/FORMAT_ADAPTERS.md).
+
+```sh
+cargo run -p scorestream-cli -- inspect-format musicxml crates/scorestream-formats/tests/fixtures/two-staff.musicxml
+cargo run -p scorestream-cli -- convert musicxml sfs crates/scorestream-formats/tests/fixtures/two-staff.musicxml
+```
+
 ### Fast format discovery
 
 Call `score_get_format` with `{}` (or `{"detail":"quick"}`) for a compact ScoreStream authoring baseline: record syntax, pitch and exact-time rules, common event attributes, scope/lexical guidance, and a complete ensemble example. This teaches the score language, not the MCP request schema.

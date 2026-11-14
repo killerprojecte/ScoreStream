@@ -1,0 +1,878 @@
+//! Loss-aware bridge between the SFS 1.1 wire AST and the common score model.
+use crate::{Conversion, Format, MappingEffect, MappingReport, ScoreAdapter, validate_score};
+use scorestream_core::notation::{EventId, InstrumentId, PartId, VoiceId};
+use scorestream_core::score::*;
+use scorestream_core::{self as core, *};
+use std::collections::{BTreeMap, BTreeSet};
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct SfsAdapter;
+impl ScoreAdapter for SfsAdapter {
+    fn read(&self, source: &str) -> Result<Conversion<ScoreDocument>, MappingReport> {
+        let doc = scorestream_codec::parse(source).map_err(diagnostics)?;
+        from_document(&doc)
+    }
+    fn write(&self, score: &ScoreDocument) -> Result<Conversion<String>, MappingReport> {
+        let result = to_document(score)?;
+        Ok(Conversion {
+            value: scorestream_codec::canonical(&result.value),
+            report: result.report,
+        })
+    }
+}
+fn diagnostics(ds: Vec<Diagnostic>) -> MappingReport {
+    MappingReport {
+        diagnostics: ds
+            .into_iter()
+            .filter(|d| d.severity == Severity::Error)
+            .map(|d| crate::MappingDiagnostic {
+                format: Format::Sfs,
+                effect: MappingEffect::Invalid,
+                feature: d.code,
+                path: d.object_id.unwrap_or_default(),
+                message: d.message,
+                source: Some(d.source),
+            })
+            .collect(),
+    }
+}
+fn unsupported(r: &mut MappingReport, feature: &str, path: &str) {
+    r.push(
+        Format::Sfs,
+        MappingEffect::Unsupported,
+        feature,
+        path,
+        "Feature is not represented by the common conversion profile",
+    );
+}
+fn invalid(r: &mut MappingReport, feature: &str, path: &str) {
+    r.push(
+        Format::Sfs,
+        MappingEffect::Invalid,
+        feature,
+        path,
+        "Value cannot be represented without losing information",
+    );
+}
+fn attrs(r: &mut MappingReport, a: &Attributes, allowed: &[&str], path: &str) {
+    for key in a.keys() {
+        if !allowed.contains(&key.as_str()) {
+            unsupported(r, key, path);
+        }
+    }
+}
+fn text<'a>(a: &'a Attributes, key: &str) -> Option<&'a str> {
+    a.get(key).and_then(Scalar::as_str)
+}
+fn integer(a: &Attributes, key: &str) -> Option<i64> {
+    a.get(key).and_then(Scalar::as_i64)
+}
+fn unsigned(a: &Attributes, key: &str, r: &mut MappingReport, path: &str) -> u32 {
+    match integer(a, key) {
+        None => 0,
+        Some(n) => match u32::try_from(n) {
+            Ok(n) => n,
+            Err(_) => {
+                invalid(r, key, path);
+                0
+            }
+        },
+    }
+}
+fn note_type(s: &str) -> Option<NoteType> {
+    Some(match s {
+        "maxima" => NoteType::Maxima,
+        "long" => NoteType::Long,
+        "breve" => NoteType::Breve,
+        "1" => NoteType::Whole,
+        "2" => NoteType::Half,
+        "4" => NoteType::Quarter,
+        "8" => NoteType::Eighth,
+        "16" => NoteType::N16,
+        "32" => NoteType::N32,
+        "64" => NoteType::N64,
+        "128" => NoteType::N128,
+        "256" => NoteType::N256,
+        "512" => NoteType::N512,
+        "1024" => NoteType::N1024,
+        _ => return None,
+    })
+}
+fn note_text(n: NoteType) -> &'static str {
+    match n {
+        NoteType::Maxima => "maxima",
+        NoteType::Long => "long",
+        NoteType::Breve => "breve",
+        NoteType::Whole => "1",
+        NoteType::Half => "2",
+        NoteType::Quarter => "4",
+        NoteType::Eighth => "8",
+        NoteType::N16 => "16",
+        NoteType::N32 => "32",
+        NoteType::N64 => "64",
+        NoteType::N128 => "128",
+        NoteType::N256 => "256",
+        NoteType::N512 => "512",
+        NoteType::N1024 => "1024",
+    }
+}
+fn written(a: &Attributes, r: &mut MappingReport, path: &str) -> Option<WrittenDuration> {
+    let Some(kind) = text(a, "w").and_then(note_type) else {
+        if ["dots", "tm", "tm_normal_type", "tm_normal_dots"]
+            .iter()
+            .any(|k| a.contains_key(*k))
+        {
+            unsupported(r, "written_without_note_type", path);
+        }
+        return None;
+    };
+    let tm = text(a, "tm")
+        .and_then(|s| s.split_once(':'))
+        .and_then(|(x, y)| match (x.parse::<u32>(), y.parse::<u32>()) {
+            (Ok(actual), Ok(normal)) => Some(TimeModification {
+                actual,
+                normal,
+                normal_type: text(a, "tm_normal_type").and_then(note_type),
+                normal_dots: unsigned(a, "tm_normal_dots", r, path),
+            }),
+            _ => {
+                invalid(r, "time_modification_range", path);
+                None
+            }
+        });
+    Some(WrittenDuration {
+        note_type: kind,
+        dots: unsigned(a, "dots", r, path),
+        time_modification: tm,
+    })
+}
+/// Convert a validated SFS AST. Unsupported content is never silently discarded.
+pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, MappingReport> {
+    let mut report = diagnostics(core::validate(doc, None));
+    if report.has_errors() {
+        return Err(report);
+    }
+    if doc.document_kind != DocumentKind::Score {
+        unsupported(&mut report, "fragment", "document");
+    }
+    if doc.span.is_some() {
+        unsupported(&mut report, "span", "document");
+    }
+    if !doc.required_extensions.is_empty() {
+        unsupported(&mut report, "extensions", "document");
+    }
+    let mut score = ScoreDocument {
+        metadata: doc.metadata.clone(),
+        parts: vec![],
+    };
+    for p in &doc.parts {
+        score.parts.push(ScorePart {
+            id: PartId(p.id.clone()),
+            name: None,
+            instrument: Some(InstrumentId(p.instrument.clone())),
+            staves: p.staves,
+            voices: doc
+                .voices
+                .iter()
+                .filter(|v| v.part == p.id)
+                .map(|v| ScoreVoice {
+                    id: VoiceId(v.id.clone()),
+                    staff: v.staff,
+                })
+                .collect(),
+            measures: vec![],
+        });
+    }
+    // Measure declarations are collected first, independently of record ordering.
+    for frame in &doc.frames {
+        for record in &frame.records {
+            if let Record::Measure(m) = record {
+                attrs(&mut report, &m.attributes, &["label", "implicit"], &m.id);
+                if let Some(part) = score.parts.iter_mut().find(|p| p.id.0 == m.target) {
+                    part.measures.push(ScoreMeasure {
+                        id: m.id.clone(),
+                        label: text(&m.attributes, "label").unwrap_or(&m.id).into(),
+                        start: frame.time.clone(),
+                        length: m.length.clone(),
+                        implicit: m
+                            .attributes
+                            .get("implicit")
+                            .and_then(Scalar::as_bool)
+                            .unwrap_or(false),
+                        states: vec![],
+                        events: vec![],
+                    });
+                } else {
+                    unsupported(&mut report, "staff_measure", &m.id);
+                }
+            }
+        }
+    }
+    for p in &mut score.parts {
+        p.measures.sort_by(|a, b| a.start.cmp(&b.start));
+    }
+    let mut next_id = 0;
+    let mut used: BTreeSet<String> = doc
+        .events()
+        .filter_map(|(_, e)| e.id().map(str::to_owned))
+        .collect();
+    for frame in &doc.frames {
+        for record in &frame.records {
+            match record {
+                Record::Measure(_) => {}
+                Record::Mark(m) => unsupported(&mut report, &format!("mark:{}", m.kind), &m.target),
+                Record::Relation(rel) => {
+                    unsupported(&mut report, &format!("relation:{}", rel.kind), &rel.id)
+                }
+                Record::State(s) => {
+                    if s.attributes.is_empty() {
+                        invalid(&mut report, "empty_state", &s.target);
+                    }
+                    attrs(
+                        &mut report,
+                        &s.attributes,
+                        &["key", "meter", "clef"],
+                        &s.target,
+                    );
+                    let Some((part_id, staff)) = s
+                        .target
+                        .rsplit_once(".s")
+                        .and_then(|(p, n)| n.parse::<u32>().ok().map(|n| (p, n)))
+                    else {
+                        unsupported(&mut report, "state_scope", &s.target);
+                        continue;
+                    };
+                    let measure = score
+                        .parts
+                        .iter_mut()
+                        .find(|p| p.id.0 == part_id)
+                        .and_then(|p| p.measures.iter_mut().find(|m| m.start == frame.time));
+                    let Some(measure) = measure else {
+                        unsupported(&mut report, "state_inside_measure", &s.target);
+                        continue;
+                    };
+                    let mut state = StaffState {
+                        staff,
+                        clef: None,
+                        key: None,
+                        meter: None,
+                    };
+                    if s.attributes.contains_key("key") {
+                        match integer(&s.attributes, "key") {
+                            Some(fifths) => state.key = Some(KeySignature { fifths }),
+                            None => unsupported(&mut report, "key_unset", &s.target),
+                        }
+                    }
+                    if let Some(c) = text(&s.attributes, "clef") {
+                        state.clef = match c.as_bytes() {
+                            [sign, line] if b"GFC".contains(sign) && line.is_ascii_digit() => {
+                                Some(Clef {
+                                    sign: match sign {
+                                        b'G' => ClefSign::G,
+                                        b'F' => ClefSign::F,
+                                        _ => ClefSign::C,
+                                    },
+                                    line: line - b'0',
+                                })
+                            }
+                            _ => {
+                                unsupported(&mut report, "clef", &s.target);
+                                None
+                            }
+                        };
+                    }
+                    if let Some(m) = text(&s.attributes, "meter") {
+                        state.meter = m.split_once('/').and_then(|(n, d)| {
+                            Some(Meter {
+                                beats: n
+                                    .split('+')
+                                    .map(str::parse)
+                                    .collect::<Result<Vec<u32>, _>>()
+                                    .ok()?,
+                                beat_type: d.parse().ok()?,
+                            })
+                        });
+                        if state.meter.is_none() {
+                            unsupported(&mut report, "meter", &s.target);
+                        }
+                    }
+                    if let Some(old) = measure.states.iter_mut().find(|v| v.staff == staff) {
+                        if state.clef.is_some() {
+                            old.clef = state.clef;
+                        }
+                        if state.key.is_some() {
+                            old.key = state.key;
+                        }
+                        if state.meter.is_some() {
+                            old.meter = state.meter;
+                        }
+                    } else {
+                        measure.states.push(state);
+                    }
+                }
+                Record::Event(e) => {
+                    attrs(
+                        &mut report,
+                        &e.attributes,
+                        &[
+                            "id",
+                            "chord",
+                            "staff",
+                            "w",
+                            "dots",
+                            "tm",
+                            "tm_normal_type",
+                            "tm_normal_dots",
+                        ],
+                        e.id().unwrap_or(&e.voice),
+                    );
+                    let Some(duration) = e.duration.measured() else {
+                        unsupported(&mut report, "grace", &e.voice);
+                        continue;
+                    };
+                    if !matches!(e.pitch, Pitch::Pitched { .. } | Pitch::Rest) {
+                        unsupported(&mut report, "pitch_kind", &e.voice);
+                    }
+                    let Some(voice) = doc.voices.iter().find(|v| v.id == e.voice) else {
+                        invalid(&mut report, "voice", &e.voice);
+                        continue;
+                    };
+                    let measure = score
+                        .parts
+                        .iter_mut()
+                        .find(|p| p.id.0 == voice.part)
+                        .and_then(|p| {
+                            p.measures.iter_mut().find(|m| {
+                                m.start <= frame.time && frame.time < &m.start + &m.length
+                            })
+                        });
+                    let Some(measure) = measure else {
+                        unsupported(&mut report, "event_without_measure", &e.voice);
+                        continue;
+                    };
+                    let id = if let Some(id) = e.id() {
+                        id.to_owned()
+                    } else {
+                        loop {
+                            next_id += 1;
+                            let id = format!("event{next_id}");
+                            if used.insert(id.clone()) {
+                                break id;
+                            }
+                        }
+                    };
+                    let staff = if e.attributes.contains_key("staff") {
+                        unsigned(&e.attributes, "staff", &mut report, &id)
+                    } else {
+                        voice.staff
+                    };
+                    measure.events.push(ScoreEvent {
+                        id: EventId(id.clone()),
+                        voice: VoiceId(e.voice.clone()),
+                        staff,
+                        offset: &frame.time - &measure.start,
+                        duration: duration.clone(),
+                        pitch: e.pitch.clone(),
+                        chord: e.chord().map(str::to_owned),
+                        written: written(&e.attributes, &mut report, &id),
+                    });
+                }
+            }
+        }
+    }
+    let end = score
+        .parts
+        .iter()
+        .flat_map(|p| &p.measures)
+        .map(|m| &m.start + &m.length)
+        .max()
+        .unwrap_or_else(Rational::zero);
+    if end != doc.end {
+        unsupported(&mut report, "end_outside_measures", "document");
+    }
+    report
+        .diagnostics
+        .extend(validate_score(&score).diagnostics);
+    report.finish(score)
+}
+
+fn put(a: &mut Attributes, key: &str, value: impl Into<String>) {
+    a.insert(key.into(), Scalar::String(value.into()));
+}
+/// Allocate wire-safe IDs without collisions with either original or generated IDs.
+struct Ids {
+    used: BTreeSet<String>,
+    mapping: BTreeMap<String, String>,
+    prefix: &'static str,
+    next: usize,
+}
+impl Ids {
+    fn new(values: impl Iterator<Item = String>, prefix: &'static str) -> Self {
+        Self {
+            used: values.filter(|v| is_identifier(v)).collect(),
+            mapping: BTreeMap::new(),
+            prefix,
+            next: 0,
+        }
+    }
+    fn get(&mut self, id: &str, r: &mut MappingReport) -> String {
+        if is_identifier(id) {
+            return id.into();
+        }
+        if let Some(v) = self.mapping.get(id) {
+            return v.clone();
+        }
+        let out = loop {
+            self.next += 1;
+            let v = format!("{}{}", self.prefix, self.next);
+            if self.used.insert(v.clone()) {
+                break v;
+            }
+        };
+        r.push(
+            Format::Sfs,
+            MappingEffect::Normalized,
+            "identifier",
+            id,
+            format!("SFS identifier normalized to {out}"),
+        );
+        self.mapping.insert(id.into(), out.clone());
+        out
+    }
+}
+/// Export through the original codec after common and SFS semantic validation.
+pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, MappingReport> {
+    let mut report = validate_score(score);
+    if report.has_errors() {
+        return Err(report);
+    }
+    let mut doc = Document::new(DocumentKind::Score);
+    doc.metadata = score.metadata.clone();
+    let aliases: Vec<String> = score
+        .parts
+        .iter()
+        .flat_map(|p| {
+            std::iter::once(p.id.0.clone()).chain(p.voices.iter().map(|v| v.id.0.clone()))
+        })
+        .collect();
+    let mut parts = Ids::new(aliases.iter().cloned(), "part");
+    let mut voices = Ids::new(aliases.into_iter(), "voice");
+    let objects: Vec<String> = score
+        .parts
+        .iter()
+        .flat_map(|p| {
+            p.measures.iter().flat_map(|m| {
+                std::iter::once(m.id.clone()).chain(m.events.iter().map(|e| e.id.0.clone()))
+            })
+        })
+        .collect();
+    let mut measures = Ids::new(objects.iter().cloned(), "measure");
+    let mut events = Ids::new(objects.into_iter(), "event");
+    let mut chords = Ids::new(
+        score.parts.iter().flat_map(|p| {
+            p.measures
+                .iter()
+                .flat_map(|m| m.events.iter().filter_map(|e| e.chord.clone()))
+        }),
+        "chord",
+    );
+    let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
+    for p in &score.parts {
+        let pid = parts.get(&p.id.0, &mut report);
+        let instrument = match &p.instrument {
+            Some(i) => i.0.clone(),
+            None => {
+                if p.name.as_deref().is_some_and(|n| !n.is_empty()) {
+                    unsupported(&mut report, "part_display_name", &p.id.0);
+                }
+                report.push(
+                    Format::Sfs,
+                    MappingEffect::Normalized,
+                    "instrument",
+                    &p.id.0,
+                    "Missing instrument set to explicit unknown",
+                );
+                "unknown".into()
+            }
+        };
+        if p.name
+            .as_ref()
+            .is_some_and(|name| name != &instrument && (p.instrument.is_some() || !name.is_empty()))
+        {
+            unsupported(&mut report, "part_display_name", &p.id.0);
+        }
+        doc.parts.push(Part {
+            id: pid.clone(),
+            instrument,
+            staves: p.staves,
+            source: SourceRange::default(),
+        });
+        for v in &p.voices {
+            doc.voices.push(Voice {
+                id: voices.get(&v.id.0, &mut report),
+                part: pid.clone(),
+                staff: v.staff,
+                source: SourceRange::default(),
+            });
+        }
+        for m in &p.measures {
+            let mut a = Attributes::new();
+            put(&mut a, "label", m.label.clone());
+            a.insert("implicit".into(), Scalar::Boolean(m.implicit));
+            frames
+                .entry(m.start.clone())
+                .or_default()
+                .push(Record::Measure(Measure {
+                    target: pid.clone(),
+                    id: measures.get(&m.id, &mut report),
+                    length: m.length.clone(),
+                    attributes: a,
+                    source: SourceRange::default(),
+                }));
+            for s in &m.states {
+                if s.clef.is_none() && s.key.is_none() && s.meter.is_none() {
+                    invalid(&mut report, "empty_state", &m.id);
+                    continue;
+                }
+                let mut a = Attributes::new();
+                if let Some(k) = s.key {
+                    a.insert("key".into(), Scalar::Integer(k.fifths));
+                }
+                if let Some(c) = s.clef {
+                    put(
+                        &mut a,
+                        "clef",
+                        format!(
+                            "{}{}",
+                            match c.sign {
+                                ClefSign::G => 'G',
+                                ClefSign::F => 'F',
+                                ClefSign::C => 'C',
+                            },
+                            c.line
+                        ),
+                    );
+                }
+                if let Some(t) = &s.meter {
+                    put(
+                        &mut a,
+                        "meter",
+                        format!(
+                            "{}/{}",
+                            t.beats
+                                .iter()
+                                .map(u32::to_string)
+                                .collect::<Vec<_>>()
+                                .join("+"),
+                            t.beat_type
+                        ),
+                    );
+                }
+                frames
+                    .entry(m.start.clone())
+                    .or_default()
+                    .push(Record::State(State {
+                        target: format!("{pid}.s{}", s.staff),
+                        attributes: a,
+                        source: SourceRange::default(),
+                    }));
+            }
+            for e in &m.events {
+                if !matches!(e.pitch, Pitch::Pitched { .. } | Pitch::Rest) {
+                    unsupported(&mut report, "pitch_kind", &e.id.0);
+                    continue;
+                }
+                let mut a = Attributes::new();
+                put(&mut a, "id", events.get(&e.id.0, &mut report));
+                a.insert("staff".into(), Scalar::Integer(i64::from(e.staff)));
+                if let Some(c) = &e.chord {
+                    put(&mut a, "chord", chords.get(c, &mut report));
+                }
+                if let Some(w) = &e.written {
+                    put(&mut a, "w", note_text(w.note_type));
+                    a.insert("dots".into(), Scalar::Integer(i64::from(w.dots)));
+                    if let Some(t) = &w.time_modification {
+                        put(&mut a, "tm", format!("{}:{}", t.actual, t.normal));
+                        if let Some(n) = t.normal_type {
+                            put(&mut a, "tm_normal_type", note_text(n));
+                        }
+                        a.insert(
+                            "tm_normal_dots".into(),
+                            Scalar::Integer(i64::from(t.normal_dots)),
+                        );
+                    }
+                }
+                frames
+                    .entry(&m.start + &e.offset)
+                    .or_default()
+                    .push(Record::Event(Event {
+                        voice: voices.get(&e.voice.0, &mut report),
+                        pitch: e.pitch.clone(),
+                        duration: Duration::Measured(e.duration.clone()),
+                        attributes: a,
+                        source: SourceRange::default(),
+                    }));
+            }
+            let end = &m.start + &m.length;
+            if end > doc.end {
+                doc.end = end;
+            }
+        }
+    }
+    doc.frames = frames
+        .into_iter()
+        .map(|(time, records)| Frame {
+            time,
+            records,
+            source: SourceRange::default(),
+        })
+        .collect();
+    report
+        .diagnostics
+        .extend(diagnostics(core::validate(&doc, None)).diagnostics);
+    report.finish(doc)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const SOURCE: &str = "!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n@0\n| p m len=4 label=\"1\"\n= p.s1 key=0 meter=4/4 clef=G2\nv C4:1 id=e1 chord=c w=4 dots=0\nv E4:2 id=e2 chord=c w=2 dots=0\n.\n@2\nv r:2 id=e3 w=2\n.\n!end at=4\n";
+    #[test]
+    fn exact_chord_and_states_round_trip() {
+        let score = SfsAdapter.read(SOURCE).unwrap().value;
+        let m = &score.parts[0].measures[0];
+        assert_eq!(m.events[0].duration, Rational::one());
+        assert_eq!(m.events[1].duration, Rational::from_integer(2));
+        assert_eq!(m.events[2].offset, Rational::from_integer(2));
+        let output = SfsAdapter.write(&score).unwrap().value;
+        assert_eq!(score, SfsAdapter.read(&output).unwrap().value);
+    }
+    #[test]
+    fn independent_written_tuplet_fields_round_trip() {
+        let input = SOURCE.replace(
+            "C4:1 id=e1 chord=c w=4 dots=0",
+            "C4:1 id=e1 chord=c w=8 dots=1 tm=3:2 tm_normal_type=16 tm_normal_dots=2",
+        );
+        let score = SfsAdapter.read(&input).unwrap().value;
+        let w = score.parts[0].measures[0].events[0]
+            .written
+            .as_ref()
+            .unwrap();
+        assert_eq!(w.time_modification.as_ref().unwrap().normal_dots, 2);
+        assert_eq!(
+            score,
+            SfsAdapter
+                .read(&SfsAdapter.write(&score).unwrap().value)
+                .unwrap()
+                .value
+        );
+    }
+    #[test]
+    fn reject_unmapped_symbols_instead_of_dropping() {
+        for input in [
+            SOURCE.replace("id=e3 w=2", "id=e3 w=2 stem=up"),
+            SOURCE.replace("@2", "@2\n= p.s1 key=2"),
+            SOURCE.replace("id=e3 w=2", "id=e3 w=2\n+ score dynamic value=f"),
+        ] {
+            assert!(SfsAdapter.read(&input).is_err(), "{input}");
+        }
+    }
+    #[test]
+    fn reject_part_display_name_and_normalize_foreign_ids() {
+        let mut score = SfsAdapter.read(SOURCE).unwrap().value;
+        score.parts[0].name = Some("A beautiful piano".into());
+        assert!(
+            SfsAdapter
+                .write(&score)
+                .unwrap_err()
+                .diagnostics
+                .iter()
+                .any(|d| d.feature == "part_display_name")
+        );
+        score.parts[0].name = None;
+        score.parts[0].measures[0].id = "1".into();
+        let result = SfsAdapter.write(&score).unwrap();
+        assert!(
+            result
+                .report
+                .diagnostics
+                .iter()
+                .any(|d| d.effect == MappingEffect::Normalized)
+        );
+        assert!(SfsAdapter.read(&result.value).is_ok());
+    }
+    #[test]
+    fn unknown_instrument_requires_no_display_name() {
+        let mut score = SfsAdapter.read(SOURCE).unwrap().value;
+        score.parts[0].instrument = None;
+        let result = SfsAdapter.write(&score).unwrap();
+        assert!(result.value.contains("instrument=unknown"));
+        assert!(
+            result
+                .report
+                .diagnostics
+                .iter()
+                .any(|d| d.feature == "instrument")
+        );
+        score.parts[0].name = Some("Solo".into());
+        assert!(SfsAdapter.write(&score).is_err());
+    }
+    #[test]
+    fn preserves_measure_boundary_changes_and_additive_meter() {
+        let input=SOURCE.replace("!end at=4", "@4\n| p m2 len=3 label=\"2\" implicit=true\n= p.s1 key=-2 meter=2+1/4 clef=F4\nv r:3 id=e4\n.\n!end at=7");
+        let score = SfsAdapter.read(&input).unwrap().value;
+        assert_eq!(
+            score.parts[0].measures[1].states[0]
+                .meter
+                .as_ref()
+                .unwrap()
+                .beats,
+            vec![2, 1]
+        );
+        assert_eq!(
+            score,
+            SfsAdapter
+                .read(&SfsAdapter.write(&score).unwrap().value)
+                .unwrap()
+                .value
+        );
+    }
+    #[test]
+    fn rejects_out_of_range_written_fields() {
+        let input = SOURCE.replace("id=e3 w=2", "id=e3 w=2 dots=4294967296");
+        assert!(
+            SfsAdapter
+                .read(&input)
+                .unwrap_err()
+                .diagnostics
+                .iter()
+                .any(|d| d.effect == MappingEffect::Invalid)
+        );
+    }
+    #[test]
+    fn rejects_trailing_duration_and_unmeasured_events() {
+        assert!(
+            SfsAdapter
+                .read(&SOURCE.replace("!end at=4", "!end at=5"))
+                .unwrap_err()
+                .diagnostics
+                .iter()
+                .any(|d| d.feature == "end_outside_measures")
+        );
+        let input = SOURCE
+            .replace("| p m len=4 label=\"1\"\n", "")
+            .replace("= p.s1 key=0 meter=4/4 clef=G2\n", "");
+        assert!(
+            SfsAdapter
+                .read(&input)
+                .unwrap_err()
+                .diagnostics
+                .iter()
+                .any(|d| d.feature == "event_without_measure")
+        );
+    }
+    #[test]
+    fn metadata_text_authors_and_ast_provenance_are_preserved() {
+        let mut score = SfsAdapter.read(SOURCE).unwrap().value;
+        score.metadata = DocumentMetadata {
+            title: Some("标题 & <title>\nsecond line".into()),
+            description: Some("\u{0001}quoted \"description\"".into()),
+            header: Some("页首".into()),
+            footer: Some("页尾".into()),
+            subtitle: Some("subtitle".into()),
+            composer: Some("composer".into()),
+            lyricist: Some("lyricist".into()),
+            arranger: Some("arranger".into()),
+            work_number: Some("Op. 12".into()),
+            movement: Some("II".into()),
+            rights: Some("rights".into()),
+            language: Some("zh".into()),
+            authors: vec!["张三".into(), "A, B".into(), "张三".into()],
+            source: BTreeMap::from([("title".into(), SourceRange::line(17, 12))]),
+        };
+        let doc = to_document(&score).unwrap().value;
+        assert_eq!(doc.metadata, score.metadata);
+        assert_eq!(from_document(&doc).unwrap().value.metadata, score.metadata);
+        let result = SfsAdapter
+            .read(&SfsAdapter.write(&score).unwrap().value)
+            .unwrap()
+            .value;
+        // Source ranges describe the newly parsed text, not old source locations.
+        assert_eq!(
+            serde_json::to_value(result.metadata).unwrap(),
+            serde_json::to_value(score.metadata).unwrap()
+        );
+    }
+    #[test]
+    fn exported_identifiers_do_not_collide_with_original_other_kinds() {
+        let mut score = SfsAdapter.read(SOURCE).unwrap().value;
+        let part = &mut score.parts[0];
+        part.id = PartId("foreign part".into());
+        part.voices[0].id = VoiceId("part1".into());
+        for e in &mut part.measures[0].events {
+            e.voice = VoiceId("part1".into());
+        }
+        part.measures[0].id = "foreign measure".into();
+        part.measures[0].events[0].id = EventId("measure1".into());
+        for e in &mut part.measures[0].events[..2] {
+            e.chord = Some("foreign chord".into());
+        }
+        let result = SfsAdapter.write(&score).unwrap();
+        let parsed = SfsAdapter.read(&result.value).unwrap().value;
+        assert_eq!(parsed.parts[0].id.0, "part2");
+        assert_eq!(parsed.parts[0].measures[0].id, "measure2");
+        assert_eq!(parsed.parts[0].measures[0].events[0].id.0, "measure1");
+        assert_eq!(
+            parsed.parts[0].measures[0].events[0].chord,
+            Some("chord1".into())
+        );
+        assert_eq!(
+            parsed.parts[0].measures[0].events[1].chord,
+            Some("chord1".into())
+        );
+        assert_eq!(
+            result
+                .report
+                .diagnostics
+                .iter()
+                .filter(|d| d.effect == MappingEffect::Normalized)
+                .count(),
+            3
+        );
+    }
+    #[test]
+    fn rejects_empty_states_and_asymmetric_pitch_profiles() {
+        let mut score = SfsAdapter.read(SOURCE).unwrap().value;
+        score.parts[0].measures[0].states[0] = StaffState {
+            staff: 1,
+            clef: None,
+            key: None,
+            meter: None,
+        };
+        assert!(
+            SfsAdapter
+                .write(&score)
+                .unwrap_err()
+                .diagnostics
+                .iter()
+                .any(|d| d.feature == "empty_state" || d.feature == "state.empty")
+        );
+        score.parts[0].measures[0].states.clear();
+        for pitch in [Pitch::Spacer, Pitch::Unpitched("snare".into())] {
+            score.parts[0].measures[0].events[2].pitch = pitch;
+            assert!(
+                SfsAdapter
+                    .write(&score)
+                    .unwrap_err()
+                    .diagnostics
+                    .iter()
+                    .any(|d| d.feature == "pitch_kind")
+            );
+        }
+        let mut doc = scorestream_codec::parse(SOURCE).unwrap();
+        if let Record::State(state) = &mut doc.frames[0].records[1] {
+            state.attributes.clear();
+        }
+        assert!(from_document(&doc).is_err());
+    }
+}
