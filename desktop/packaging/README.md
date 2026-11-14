@@ -1,5 +1,9 @@
 # Linux bundles with WebKitGTK
 
+For the Windows/macOS/Linux x64 and ARM64 GitHub Actions matrix, temporary
+installer artifacts, and local build commands, see [Desktop CI installers](CI.md).
+Those CI outputs are unsigned testing builds, not release-qualified packages.
+
 ## Maintained release route
 
 Use `./desktop/packaging/build-appimage.sh` on an x86_64 Linux builder with the dependencies from `desktop/README.md` installed normally. It invokes the pinned Tauri CLI's AppImage bundler. Do not replace system libraries or disable the WebKit sandbox to make a build work.

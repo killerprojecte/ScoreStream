@@ -1,0 +1,151 @@
+name: Desktop bundles
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/desktop-bundles.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'crates/**'
+      - 'desktop/**'
+      - 'design/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/desktop-bundles.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'crates/**'
+      - 'desktop/**'
+      - 'design/**'
+
+# Build-only PR jobs never receive publishing permissions or signing secrets.
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-bundles-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTUP_TOOLCHAIN: '1.100.0'
+
+jobs:
+  bundle:
+    name: ${{ matrix.platform }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+            runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
+          - platform: linux
+            arch: arm64
+            runner: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            bundles: deb,appimage
+          - platform: macos
+            arch: x64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+            bundles: app,dmg
+          - platform: macos
+            arch: arm64
+            runner: macos-15
+            target: aarch64-apple-darwin
+            bundles: app,dmg
+          - platform: windows
+            arch: x64
+            runner: windows-2022
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+          - platform: windows
+            arch: arm64
+            runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            bundles: nsis
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned Node.js and lockfile-keyed npm cache
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.23.4'
+          architecture: ${{ matrix.arch }}
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Set up pinned native Rust toolchain
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal --no-self-update
+          rustup target add --toolchain "$RUSTUP_TOOLCHAIN" "$BUILD_TARGET"
+          rustc --version --verbose
+          cargo --version
+
+      - name: Install Linux system build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential pkg-config libssl-dev libwebkit2gtk-4.1-dev \
+            libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf libfuse2 file
+
+      - name: Install locked frontend dependencies
+        working-directory: desktop
+        run: npm ci --no-audit --no-fund
+
+      - name: Test bundle collection
+        run: node --test desktop/packaging/test-collect-bundles.mjs
+
+      - name: Test frontend
+        working-directory: desktop
+        run: npm test -- --maxWorkers=1
+
+      - name: Test headless Rust workspace
+        run: cargo test --workspace --locked
+
+      # This calls the committed npm CLI (2.9.4), not a downloaded global CLI.
+      # Tauri runs beforeBuildCommand to typecheck and bundle the frontend.
+      - name: Build native installers without signing
+        working-directory: desktop
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          BUNDLE_FORMATS: ${{ matrix.bundles }}
+          # Extract linuxdeploy's AppImage on hosted runners without requiring FUSE.
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: npm run desktop:build -- --ci --no-sign --target "$BUILD_TARGET" --bundles "$BUNDLE_FORMATS" -- --locked
+
+      - name: Check lockfiles were not changed
+        run: git diff --exit-code -- Cargo.lock crates/scorestream-desktop/Cargo.lock desktop/package-lock.json
+
+      - name: Collect every required installer and checksums
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          BUNDLE_OUTPUT: ${{ runner.temp }}/scorestream-bundles/${{ matrix.target }}
+        run: node desktop/packaging/collect-bundles.mjs "$BUILD_TARGET" "$BUNDLE_OUTPUT"
+
+      - name: Upload native installers
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: scorestream-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scorestream-bundles/${{ matrix.target }}/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
