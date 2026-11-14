@@ -3395,6 +3395,8 @@ dependencies = [
 name = "scorestream-desktop"
 version = "0.1.0"
 dependencies = [
+ "gtk",
+ "objc2-foundation",
  "rfd",
  "scorestream-app",
  "scorestream-mcp",

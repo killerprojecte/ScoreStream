@@ -26,3 +26,10 @@ tauri-runtime = "=2.9.2"
 serde = { version = "1", features = ["derive"] }
 rfd = "=0.15.4"
 tempfile = "=3.23.0"
+
+# Read desktop titlebar preferences; no setting is modified.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "=0.18.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSString", "NSUserDefaults"] }

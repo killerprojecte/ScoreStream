@@ -1,0 +1,23 @@
+/* Real AppKit buttons occupy this exact area; never draw fake traffic lights over them. */
+.native-traffic-light-space { width: 78px; min-width: 78px; height: 44px; flex: 0 0 78px; pointer-events: none; }
+.window-controls { position: relative; z-index: 60; pointer-events: auto; display: flex; align-items: center; align-self: stretch; flex: 0 0 auto; user-select: none; -webkit-user-select: none; }
+.window-controls-end { margin-left: 8px; }
+/* Button variant and focus state are official shadcn. Only OS caption hit areas differ. */
+.window-control { flex:none; -webkit-app-region:no-drag; }
+.window-controls-windows .window-control { width:46px; height:100%; min-height:44px; }
+.window-controls-linux { gap:6px; padding:0 10px; }
+.window-controls[data-window-focused="false"] { color: hsl(var(--muted-foreground)); }
+.window-control-error { position: fixed; top: 54px; right: 12px; z-index: 100; max-width: 420px; display: flex; align-items: start; gap: 12px; padding: 12px; border: 1px solid hsl(var(--destructive)); background: hsl(var(--popover)); color: hsl(var(--popover-foreground)); font-size: 12px; border-radius: 6px; }
+
+/* Linux undecorated windows do not have a reliable server-side resize border. Keep thin explicit edges. */
+.window-resize-edge { pointer-events: auto; position: fixed; z-index: 90; }
+.window-resize-north { top: 0; left: 7px; right: 7px; height: 3px; cursor: n-resize; }
+.window-resize-south { bottom: 0; left: 7px; right: 7px; height: 4px; cursor: s-resize; }
+.window-resize-east { top: 7px; bottom: 7px; right: 0; width: 4px; cursor: e-resize; }
+.window-resize-west { top: 7px; bottom: 7px; left: 0; width: 4px; cursor: w-resize; }
+.window-resize-northeast { top: 0; right: 0; width: 7px; height: 7px; cursor: ne-resize; }
+.window-resize-northwest { top: 0; left: 0; width: 7px; height: 7px; cursor: nw-resize; }
+.window-resize-southeast { bottom: 0; right: 0; width: 7px; height: 7px; cursor: se-resize; }
+.window-resize-southwest { bottom: 0; left: 0; width: 7px; height: 7px; cursor: sw-resize; }
+@media (forced-colors: active) { .window-control { border: 1px solid ButtonText; } .window-control:focus-visible { outline-color: Highlight; } }
+

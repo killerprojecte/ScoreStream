@@ -4,6 +4,7 @@ use std::io::Write;
 use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 mod mcp_service;
+mod window_chrome;
 use mcp_service::{McpService, McpSettings, McpStatus};
 type Authority = Arc<Mutex<Workspace>>;
 type McpHost = Mutex<McpService>;
@@ -171,12 +172,30 @@ fn main() {
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
             )
-            .title("ScoreStream")
-            .inner_size(1480.0, 960.0)
-            .min_inner_size(1120.0, 700.0);
+            .title("ScoreStream shadcn controls")
+            .inner_size(1280.0, 860.0)
+            .min_inner_size(1120.0, 700.0)
+            .shadow(true)
+            .initialization_script(window_chrome::initialization_script());
+            // macOS keeps AppKit traffic lights and native fullscreen/tiling. Other
+            // platforms use current-window controls inside the React application header.
+            #[cfg(target_os = "macos")]
+            {
+                window = window
+                    .decorations(true)
+                    .title_bar_style(tauri::TitleBarStyle::Overlay)
+                    .hidden_title(true)
+                    .traffic_light_position(tauri::LogicalPosition::new(12.0, 18.0));
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                window = window.decorations(false);
+            }
             #[cfg(feature = "smoke-test")]
             if std::env::var_os("SCORESTREAM_SMOKE_REPORT").is_some() {
-                window = window.initialization_script("window.__SCORESTREAM_SMOKE__ = true;");
+                window = window.initialization_script(if std::env::var_os("SCORESTREAM_V0_CONTROL_QA").is_some() {
+                    "window.__SCORESTREAM_V0_CONTROL_QA__ = true;"
+                } else { "window.__SCORESTREAM_SMOKE__ = true;" });
             }
             window.build()?;
             Ok(())

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampZoom, engravingWidth, engravingPageWidth } from '../src/layout';
-import { shell } from '../src/shell';
+import { fitPanes } from '../src/preferences-model';
 
 describe('score workspace layout', () => {
   it('measures the unzoomed canvas instead of the already magnified score', () => {
@@ -18,18 +18,10 @@ describe('score workspace layout', () => {
     expect(engravingPageWidth(900)).toBe(1890);
     expect(engravingPageWidth(200)).toBe(600);
   });
-  it('provides unique targets and accessible view controls', () => {
-    const ids = [...shell.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ['view-split', 'view-score', 'toggle-inspector', 'toggle-title']) {
-      expect(shell).toMatch(new RegExp(`id="${id}"[^>]*aria-pressed="(?:true|false)"`));
-    }
-  });
-  it('keeps musical context without adding demo promotional text to the paper', () => {
-    const paper = shell.slice(shell.indexOf('<article id="paper"'), shell.indexOf('</article>'));
-    expect(paper).toContain('id="score-title"');
-    expect(paper).not.toContain('id="tempo-text"');
-    expect(paper).not.toContain('id="instrument-names"');
-    expect(paper).not.toMatch(/study no|shared musical|drafting room/i);
+  it('fits sidebars while preserving a useful score width', () => {
+    const fit = fitPanes(1120,340,264);
+    expect(fit).toEqual({source:340,inspector:264});
+    expect(fitPanes(1120,680,440)).toEqual({source:348,inspector:440});
+    expect(fitPanes(1120,340,264,false,false)).toEqual({source:0,inspector:0});
   });
 });

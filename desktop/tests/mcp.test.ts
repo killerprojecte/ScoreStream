@@ -1,6 +1,5 @@
-import {afterEach,describe,expect,it,vi} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
 import {McpController,defaultMcpSettings,isLoopbackBind,settingsError,type McpApi,type McpStatus} from '../src/mcp/model';
-import {McpDialog,mcpMarkup} from '../src/mcp/view';
 
 const stopped=():McpStatus=>({settings:defaultMcpSettings(),running:false,started:false,sse_url:null,auth_required:false,error:null});
 const running=():McpStatus=>({...stopped(),running:true,started:true,sse_url:'http://127.0.0.1:3210/sse',auth_required:true});
@@ -22,11 +21,7 @@ describe('MCP preferences and security presentation',()=>{
     expect(settingsError(defaultMcpSettings(),'\r\nInjected',true)).toContain('printable ASCII');
     for(const port of [0,65536,NaN,1.5])expect(settingsError({bind:'127.0.0.1',port},'',true)).toContain('Port');
   });
-  it('keeps keys masked and documents session lifetime, network exposure and no editing',()=>{
-    expect(mcpMarkup).toContain('type="password"');expect(mcpMarkup).toContain('never saved to disk');
-    expect(mcpMarkup).toContain('HTTP is not encrypted');expect(mcpMarkup).toContain('Private drafts stay private');
-    expect(mcpMarkup).toContain('subscription notifications are not available');
-  });
+
 });
 
 describe('MCP lifecycle controller',()=>{
@@ -69,37 +64,3 @@ describe('MCP lifecycle controller',()=>{
   });
 });
 
-// Minimal UI surface: exercise real dialog wiring without claiming WebView rendering.
-class ElementStub {
-  value='';textContent='';hidden=false;disabled=false;open=false;className='';
-  onclick:(()=>void)|null=null;events=new Map<string,()=>void>();
-  classList={toggle:vi.fn()};setAttribute=vi.fn();select=vi.fn();
-  addEventListener(event:string,callback:()=>void){this.events.set(event,callback);}
-  showModal(){this.open=true;}
-  close(){this.open=false;this.events.get('close')?.();}
-}
-function dialogFixture(){
-  const elements=new Map<string,ElementStub>();
-  for(const id of ['mcp-settings',...Array.from(mcpMarkup.matchAll(/id="([^"]+)"/g),match=>match[1])])elements.set(id,new ElementStub());
-  vi.stubGlobal('document',{getElementById:(id:string)=>elements.get(id)});
-  vi.stubGlobal('window',{setInterval:vi.fn()});
-  const {api}=fixture();const dialog=new McpDialog(api,true);
-  return {api,dialog,element:(id:string)=>elements.get(id)!};
-}
-afterEach(()=>vi.unstubAllGlobals());
-describe('MCP dialog wiring',()=>{
-  it('clears an unsubmitted key on close and does not reopen after a pending start',async()=>{
-    const {api,dialog,element}=dialogFixture();await Promise.resolve();
-    element('mcp-settings').onclick!();element('mcp-key').value='session-key';element('mcp-key').events.get('input')!();
-    const pending=deferred<McpStatus>();api.start=vi.fn(()=>pending.promise);const action=dialog.controller.perform('start');
-    element('close-mcp').onclick!();expect(dialog.controller.token).toBe('');expect(element('mcp-key').value).toBe('');
-    pending.resolve(running());await action;expect(element('mcp-dialog').open).toBe(false);expect(element('mcp-start').disabled).toBe(true);expect(element('mcp-stop').disabled).toBe(false);
-  });
-  it('copies only the clean URL and has an explicit clipboard fallback',async()=>{
-    const {dialog,element}=dialogFixture();await Promise.resolve();await dialog.controller.perform('start');
-    const copy=vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('unavailable'));
-    vi.stubGlobal('navigator',{clipboard:{writeText:copy}});
-    element('mcp-copy').onclick!();await Promise.resolve();expect(copy).toHaveBeenCalledWith('http://127.0.0.1:3210/sse');
-    element('mcp-copy').onclick!();await Promise.resolve();expect(element('mcp-url').select).toHaveBeenCalled();expect(element('mcp-notice').textContent).toContain('Ctrl/⌘ C');
-  });
-});

@@ -1,0 +1,10 @@
+/* Application layout only. Official Tabs and Resizable own their states and handles. */
+.app-shell[data-slot=tabs] {gap:0;}
+.workspace-tab-content {min-height:0;overflow:hidden;}
+.app-workspace,.desktop-workspace-panels {height:100%;width:100%;min-height:0;min-width:0;overflow:hidden;}
+.app-workspace .pane,.app-workspace .source-slot {height:100%;width:100%;min-height:0;min-width:0;}
+.app-workspace .source-slot {display:flex;}
+.compact-workspace-layout {display:flex;flex-direction:column;height:100%;min-height:0;}
+.compact-workspace-layout>nav {padding:3px 12px;border-bottom:1px solid var(--hairline);}
+.compact-pane-content {flex:1;min-height:0;overflow:hidden;}
+@media(max-width:600px) {.workspace-tab-content {padding-top:32px;}}

@@ -1,0 +1,81 @@
+/* Adapt the portable material to real React/Radix surfaces. Native caption geometry
+   remains in window-controls.css. Text, Monaco and music are never backdrop-blurred. */
+:root {
+ --g-accent:0 84 180;--g-secondary-ink:69 77 90;
+ --background:220 30% 98%;--foreground:216 15% 13%;--muted-foreground:217 13% 31%;
+ --popover:220 30% 98%;--popover-foreground:216 15% 13%;--primary:212 100% 42%;--primary-foreground:0 0% 100%;
+ --accent:216 16% 88%;--accent-foreground:216 15% 13%;--secondary:215 30% 94%;--secondary-foreground:216 15% 13%;
+ --muted:215 30% 95%;--card:220 25% 99%;--card-foreground:216 15% 13%;--border:216 15% 84%;--input:216 13% 75%;--ring:212 100% 42%;
+ --destructive:359 67% 42%;--destructive-foreground:0 0% 100%;--score-selection:#005bb7;
+ --hairline:rgb(var(--g-edge) / var(--g-edge-alpha));--panel-bg:rgb(var(--g-tint) / .35);
+ --canvas-bg:transparent;--header-bg:transparent;--g-reading-alpha:.985;
+ --g-hover:232 238 247;--g-pressed:216 229 247;--g-editor:246 248 252;
+}
+:root[data-theme=dark] {
+ --background:219 24% 12%;--foreground:220 25% 95%;--muted-foreground:217 17% 79%;
+ --popover:219 22% 16%;--popover-foreground:220 25% 95%;--primary:211 100% 72%;--primary-foreground:214 54% 10%;
+ --accent:217 16% 28%;--accent-foreground:220 25% 95%;--secondary:218 21% 22%;--secondary-foreground:220 25% 95%;
+ --muted:219 22% 20%;--card:219 18% 18%;--card-foreground:220 25% 95%;--border:216 12% 29%;--input:216 12% 37%;--ring:211 100% 72%;
+ --destructive:359 100% 77%;--destructive-foreground:0 40% 10%;
+ --hairline:rgb(172 190 216 / .22);--panel-bg:rgb(var(--g-tint) / .35);
+ --canvas-bg:transparent;--header-bg:transparent;--g-hover:49 60 77;--g-pressed:57 80 110;--g-editor:28 35 47;
+}
+.app-shell {background:radial-gradient(ellipse at 12% 3%,rgb(172 204 248 / .62),transparent 62%),radial-gradient(ellipse at 92% 90%,rgb(197 188 232 / .45),transparent 62%),rgb(var(--g-canvas));}
+:root[data-theme=dark] .app-shell {background:radial-gradient(ellipse at 12% 3%,rgb(45 78 122 / .55),transparent 62%),radial-gradient(ellipse at 92% 90%,rgb(71 54 107 / .4),transparent 62%),rgb(var(--g-canvas));}
+.pane.glass {border-radius:var(--g-radius);}
+.source-slot {overflow:visible;}
+.pane-heading,.source-footer,.diagnostics {border-color:var(--hairline);}
+.canvas-scroll {padding:22px;}
+.score-paper.glass {color:rgb(var(--g-reading-ink));border-radius:6px;border:1px solid rgb(80 92 112 / .2);box-shadow:0 8px 24px rgb(20 28 48 / .12),inset 0 1px 0 white;}
+/* A stale banner communicates state; keep the previous notation fully legible. */
+.score-pages.stale .notation-page {opacity:1;}
+.score-running-header,.score-running-footer {color:#49515b;}
+.notation-page .selected-event {fill:var(--score-selection)!important;color:var(--score-selection)!important;}
+.notation-page [role=button]:focus-visible {outline:2px solid var(--score-selection);outline-offset:3px;filter:none;}
+.editor-host,.monaco-editor,.monaco-editor .margin {background-color:rgb(var(--g-editor));}
+.diagnostics,.diagnostic {color:rgb(var(--g-danger));}
+.preview-banner {color:rgb(var(--g-danger));background:rgb(var(--g-tint));}
+.projection-warning {color:rgb(var(--g-secondary-ink));background:rgb(var(--g-tint));}
+.empty-state,.empty-state h3 {color:rgb(var(--g-secondary-ink));}
+/* The titlebar itself MUST NOT create a stacking context: caption controls stay
+   above modal portals. Only this noninteractive sibling plane receives blur. */
+.glass-chrome {position:relative;background:transparent;}
+.glass-chrome::before {content:"";position:absolute;inset:0;pointer-events:none;background-color:rgb(var(--g-tint) / var(--g-chrome-alpha));background-image:var(--g-highlight);box-shadow:var(--g-reflection);-webkit-backdrop-filter:var(--g-backdrop);backdrop-filter:var(--g-backdrop);}
+.glass-chrome>div,.glass-chrome>span {position:relative;}
+.glass-chrome {color:rgb(var(--g-secondary-ink));}
+.app-titlebar {color:rgb(var(--g-ink));}
+[data-slot=select-content], [data-slot=menubar-content], [data-slot=menubar-sub-content] { background: rgb(var(--g-tint) / var(--g-popup-alpha)); color: hsl(var(--foreground)); border-color: var(--hairline); -webkit-backdrop-filter: var(--g-backdrop); backdrop-filter: var(--g-backdrop); }
+[data-slot=select-content] { max-height: var(--radix-select-content-available-height); transform-origin: var(--radix-select-content-transform-origin); }
+[data-slot=select-trigger] > [data-slot=select-value] { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-slot=menubar-content] { transform-origin: var(--radix-menubar-content-transform-origin); }
+
+[data-slot=dialog-overlay] { background: rgb(13 18 27 / .22); }
+.glass-dialog { position: fixed; }
+.preferences-dialog.glass { background-color: rgb(var(--g-tint) / var(--g-popup-alpha)); background-image: var(--g-highlight);  }
+/* Styling compatibility aliases for the installed Tailwind 3 toolchain. */
+.shadow-xs { box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
+.rounded-xs { border-radius: 2px; }
+:root[data-contrast=more] { --muted-foreground: var(--foreground); --hairline: hsl(var(--foreground)); }
+:root[data-reduced-motion=true] *, :root[data-reduced-motion=true] *::before, :root[data-reduced-motion=true] *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; }
+:root[data-material=solid] :is([data-slot=input],[data-slot=select-trigger]) {background:hsl(var(--background));}
+:root[data-material=solid] .score-paper {background:white;box-shadow:none;}
+:root[data-material=solid] [data-slot=dialog-overlay] {background:rgb(var(--g-canvas));}
+
+:root[data-contrast=more] {--muted-foreground:var(--foreground);--hairline:rgb(var(--g-secondary-ink));}
+:root[data-reduced-motion=true] *, :root[data-reduced-motion=true] *::before, :root[data-reduced-motion=true] *::after {animation:none!important;transition:none!important;scroll-behavior:auto!important;}
+@media(max-width:850px) {.canvas-scroll {padding:16px;}}
+@media(forced-colors:active) {
+ .app-shell,.glass,.glass-chrome::before,.preferences-dialog.glass,[data-slot=dialog-overlay] {background:Canvas;color:CanvasText;border-color:CanvasText;box-shadow:none;}
+ [data-slot=button],[data-slot=switch] {forced-color-adjust:auto;border:1px solid ButtonText;}
+ [data-slot=button][aria-pressed=true],[data-slot=button][data-variant=default],[data-slot=switch][data-state=checked],.preferences-tabs button[data-state=active],.glass-popup [data-highlighted] {background:Highlight;color:HighlightText;}
+ [data-slot=switch]>span {background:ButtonText;}[data-slot=switch][data-state=checked]>span {background:HighlightText;}
+ [data-slot=button]:focus-visible,:is([data-slot=input],[data-slot=select-trigger]):focus-visible {outline-color:Highlight;}
+ .score-paper.glass {forced-color-adjust:none;background:white;color:#14181d;}
+ .score-running-header,.score-running-footer {color:#49515b;}
+}
+
+/* Compatibility only for unchanged official v4 registry classes on Tailwind3. */
+:root { --spacing:.25rem; }
+.field-sizing-content { field-sizing:content; }
+[data-slot=tooltip-content] { transform-origin:var(--radix-tooltip-content-transform-origin); }
+[data-slot=alert].text-destructive > [data-slot=alert-description] { color:hsl(var(--destructive) / .9); }

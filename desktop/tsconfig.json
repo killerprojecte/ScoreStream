@@ -1,1 +1,34 @@
-{"compilerOptions":{"target":"ES2022","module":"ESNext","lib":["ES2022","DOM","DOM.Iterable","WebWorker"],"moduleResolution":"Bundler","strict":true,"isolatedModules":true,"esModuleInterop":true,"skipLibCheck":true,"noEmit":true,"types":["vite/client"]},"include":["src","tests","vite.config.ts"]}
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
+    ],
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": [
+      "vite/client"
+    ],
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "tests",
+    "vite.config.ts",
+    "tailwind.config.ts"
+  ]
+}

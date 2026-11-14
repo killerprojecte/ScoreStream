@@ -1,6 +1,7 @@
 import type {View,ScoreEvent} from '../types';
 import {Q,rhythm} from './exact';
 import {projectMarks} from './marks';
+import {readMetadata} from '../app/metadata';
 const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.1';
 export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[]}{
@@ -69,5 +70,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  }).join('');
  marks.finish();
  if(used.size!==view.events.length)throw Error('Some events are outside the declared measures or staff mapping. Preview withheld to avoid hiding music.');
- return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt><title>ScoreStream study</title></titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${groupedStaffDefs}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings};
+ const metadata=readMetadata(view.document.metadata);
+ const catalogTitle=metadata.title?`<title>${esc(metadata.title)}</title>`:'<title/>';
+ return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt>${catalogTitle}</titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${groupedStaffDefs}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings};
 }

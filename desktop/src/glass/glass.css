@@ -1,0 +1,126 @@
+/* Portable liquid-glass visual system. No operating-system gate; no AppKit claim.
+   One blur plane per surface. Descendant controls reuse tint, rim and highlight. */
+:root {
+  color-scheme: light;
+  --g-ink: 28 32 38;
+  --g-secondary-ink: 78 86 98;
+  --g-tint: 248 250 253;
+  --g-chrome-alpha: .76;
+  --g-panel-alpha: .82;
+  --g-popup-alpha: .9;
+  --g-reading-alpha: .96;
+  --g-control-alpha: .7;
+  --g-rim: 255 255 255;
+  --g-rim-alpha: .9;
+  --g-edge: 80 92 112;
+  --g-edge-alpha: .22;
+  --g-shadow: 37 49 72;
+  --g-shadow-alpha: .12;
+  --g-glint-alpha: .65;
+  --g-highlight-alpha: .33;
+  --g-accent: 0 100 214;
+  --g-on-accent: 255 255 255;
+  --g-danger: 178 35 38;
+  --g-canvas: 218 226 238;
+  --g-reading: 255 255 255;
+  --g-reading-ink: 20 24 29;
+  --g-blur: 18px;
+  --g-radius: 12px;
+  --g-control-radius: 7px;
+  --g-focus-width: 2px;
+  --g-duration: 120ms;
+  --g-backdrop: blur(var(--g-blur)) saturate(1.12);
+  --g-highlight: linear-gradient(145deg, rgb(var(--g-rim) / var(--g-highlight-alpha)), transparent 46%, rgb(var(--g-rim) / .07));
+  --g-reflection: inset 0 1px 0 rgb(var(--g-rim) / var(--g-glint-alpha)), inset 1px 0 0 rgb(var(--g-rim) / .18), inset 0 -1px 0 rgb(var(--g-edge) / .08);
+  --g-elevation: 0 5px 20px rgb(var(--g-shadow) / var(--g-shadow-alpha));
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --g-ink: 240 242 246;
+  --g-secondary-ink: 193 200 211;
+  --g-tint: 31 37 48;
+  --g-chrome-alpha: .83;
+  --g-panel-alpha: .87;
+  --g-popup-alpha: .94;
+  --g-control-alpha: .82;
+  --g-rim: 210 224 246;
+  --g-rim-alpha: .22;
+  --g-edge: 6 10 18;
+  --g-edge-alpha: .64;
+  --g-shadow: 0 0 0;
+  --g-shadow-alpha: .28;
+  --g-glint-alpha: .2;
+  --g-highlight-alpha: .1;
+  --g-accent: 111 180 255;
+  --g-on-accent: 12 24 40;
+  --g-danger: 255 135 137;
+  --g-canvas: 21 29 43;
+  /* Printed music remains neutral light paper, not inverted glyphs. */
+}
+
+.glass {
+  --g-surface-alpha: var(--g-panel-alpha);
+  position: relative;
+  color: rgb(var(--g-ink));
+  background-color: rgb(var(--g-tint) / var(--g-surface-alpha));
+  background-image: var(--g-highlight);
+  border: 1px solid rgb(var(--g-edge) / var(--g-edge-alpha));
+  border-top-color: rgb(var(--g-rim) / var(--g-rim-alpha));
+  border-radius: var(--g-radius);
+  box-shadow: var(--g-reflection), var(--g-elevation);
+}
+.glass--chrome { --g-surface-alpha: var(--g-chrome-alpha); }
+.glass--popup { --g-surface-alpha: var(--g-popup-alpha); --g-blur: 22px; }
+.glass--reading {
+  --g-surface-alpha: var(--g-reading-alpha);
+  color: rgb(var(--g-reading-ink));
+  background-color: rgb(var(--g-reading) / var(--g-reading-alpha));
+  background-image: linear-gradient(145deg, rgb(255 255 255 / .5), transparent 45%);
+}
+.glass--editor { --g-surface-alpha: .95; }
+.glass-plane {
+  -webkit-backdrop-filter: var(--g-backdrop);
+  backdrop-filter: var(--g-backdrop);
+}
+/* Nested surfaces get the same material language without more backdrop roots. */
+.glass-inset {
+  color: rgb(var(--g-ink));
+  background: rgb(var(--g-tint) / var(--g-control-alpha));
+  border: 1px solid rgb(var(--g-edge) / var(--g-edge-alpha));
+  border-radius: var(--g-control-radius);
+  box-shadow: var(--g-reflection);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.glass-divider { border: 0; border-top: 1px solid rgb(var(--g-edge) / var(--g-edge-alpha)); }
+.glass-muted { color: rgb(var(--g-secondary-ink)); }
+/* Interactive controls are supplied by official shadcn components. */
+
+/* Tier B: unsupported/disabled blur still has the same glass rims, tint and depth.
+   It does not fall back to an old OS-specific visual theme. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --g-chrome-alpha: .93; --g-panel-alpha: .95; --g-popup-alpha: .98; --g-backdrop: none; }
+}
+:root[data-glass-quality="layered"] { --g-chrome-alpha: .93; --g-panel-alpha: .95; --g-popup-alpha: .98; --g-backdrop: none; }
+/* Tier C: explicit accessibility choice or known unusable compositor. */
+:root[data-material="solid"] {
+  --g-chrome-alpha: 1; --g-panel-alpha: 1; --g-popup-alpha: 1; --g-reading-alpha: 1;
+  --g-control-alpha: 1; --g-backdrop: none; --g-highlight: none; --g-reflection: none;
+  --g-elevation: none; --g-rim-alpha: 0; --g-edge-alpha: .55;
+}
+:root[data-material="solid"] .glass--editor { --g-surface-alpha: 1; }
+:root[data-material="solid"] .glass--reading { background-image: none; }
+:root[data-contrast="more"] { --g-edge-alpha: .65; --g-focus-width: 3px; --g-secondary-ink: var(--g-ink); }
+:root[data-reduced-motion="true"] { --g-duration: 0ms; }
+@media (prefers-reduced-transparency: reduce) {
+  :root { --g-chrome-alpha: 1; --g-panel-alpha: 1; --g-popup-alpha: 1; --g-reading-alpha: 1; --g-control-alpha: 1; --g-backdrop: none; --g-highlight: none; --g-reflection: none; --g-elevation: none; --g-edge-alpha: .55; }
+  .glass--editor { --g-surface-alpha: 1; }
+  .glass--reading { background-image: none; }
+}
+@media (prefers-reduced-motion: reduce) { :root { --g-duration: 0ms; } }
+@media (prefers-contrast: more) { :root { --g-edge-alpha: .65; --g-focus-width: 3px; --g-secondary-ink: var(--g-ink); } }
+@media (forced-colors: active) {
+  .glass, .glass-inset { color: CanvasText; background: Canvas; border: 1px solid CanvasText; box-shadow: none; }
+  .glass-plane { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .glass-muted { color: CanvasText; }
+}

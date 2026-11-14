@@ -1,10 +1,10 @@
 # ScoreStream desktop editor
 
-A native **Tauri 2 + Rust** application with a TypeScript/Monaco view layer. The UI has no ScoreStream parser. Every live draft is validated by `scorestream-app`; only typed, validated snapshots enter the disposable MEI projection and pinned Verovio worker.
+A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer and Monaco source editor. The UI has no ScoreStream parser. Every live draft is validated by `scorestream-app`; only typed, validated snapshots enter the disposable MEI projection and pinned Verovio worker.
 
 ## What works in this slice
 
-- Native SFS file picker, valid-source Save As, syntax-highlighted source editing and Rust diagnostics.
+- Native SFS file picker, valid-source Save with destination picker, syntax-highlighted source editing and Rust diagnostics.
 - Automatic valid-draft preview, explicit Apply, expected-revision conflicts, session undo/redo.
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
@@ -14,9 +14,11 @@ A native **Tauri 2 + Rust** application with a TypeScript/Monaco view layer. The
 
 The initial projection supports aligned measured staves, ordinary pitches, rests/spacers, equal-duration chords, basic clefs/key/meter, and ordinary/dotted durations. It rejects unsupported rhythmic/layout cases and reports omitted markings. It is **not MusicXML interchange** and not a full milestone D implementation. MEI projection currently lives in an isolated TypeScript adapter over Rust-typed DTOs; moving it into a Rust rendering crate is planned. No renderer output becomes authoritative score data.
 
-Session history is in memory. Save As persists the SFS source, not revision history. No audio/playback, MCP score mutation, packaged installers, or complete notation editing is claimed. Native Windows/macOS verification remains pending unless recorded in a later test report.
+Session history is in memory. Save persists the SFS source, not revision history. No audio/playback, MCP score mutation, packaged installers, or complete notation editing is claimed. Native Windows/macOS verification remains pending unless recorded in a later test report.
 
-For the latest actual build/runtime results and blockers, see [desktop validation](../docs/DESKTOP_VALIDATION.md).
+See [React architecture and unchanged backend boundaries](../docs/REACT_DESKTOP.md) and [platform window chrome](../docs/WINDOW_CHROME.md).
+
+For historical build/runtime results and blockers, see [desktop validation](../docs/DESKTOP_VALIDATION.md).
 
 ## Requirements
 
@@ -58,10 +60,14 @@ An opt-in `smoke-test` Cargo feature adds a test-only report command. Set `SCORE
 - `src/render/worker.ts`: exclusive Verovio instance and full layout.
 - `src/render/scheduler.ts`: bounded latest-only publication.
 - `src/render/sanitize.ts`: inert SVG-only publication.
-- `src/main.ts`: editor-session state and UI orchestration.
-- `src/mcp/`: service settings dialog and a testable, stale-response-safe lifecycle controller.
+- `src/main.tsx` and `src/App.tsx`: React root and app-owned titlebar/pane/dialog composition.
+- `src/app/workbench.ts`: observable editor-session state and stale-safe async orchestration.
+- `src/components/`: React Inspector, Preferences, source/score panes, menus and OS window controls.
+- `src/components/ui/`: checked-in official shadcn components over Radix primitives.
+- `src/lib/window.ts`: platform-specific native window operations and state subscription.
+- `src/mcp/model.ts`: testable, stale-response-safe service lifecycle controller.
 - `../crates/scorestream-desktop`: thin native command/dialog/lifecycle adapters over the shared Rust authority.
 
 Each pending preview is invalidated on **every** keystroke, even if the new source is invalid. Draft keys distinguish session, sequence, SHA-256 content hash, base revision and renderer/layout identity. Graphical mutations are disabled for dirty text. Save writes source only after Rust validation; no unrestricted filesystem API is exposed to the WebView. File opens are bounded to 4 MiB.
 
-The contextual inspector and explicit metronome/dynamics candidate are described in [Contextual refinement](../docs/UI_CONTEXTUAL_REFINEMENT.md). Its frontend/native build checks pass; fresh native visual acceptance is still pending.
+The contextual inspector and explicit metronome/dynamics candidate are described in [Contextual refinement](../docs/UI_CONTEXTUAL_REFINEMENT.md). Those records describe the pre-React UI; consult the React migration validation record for current acceptance.

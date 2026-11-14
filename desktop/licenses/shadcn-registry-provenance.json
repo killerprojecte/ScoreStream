@@ -1,0 +1,146 @@
+{
+  "checked": "2026-11-14",
+  "style": "new-york-v4",
+  "files": [
+    {
+      "name": "dialog",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/dialog.json",
+      "source_sha256": "2ade6074e5fad0a4eb171ead44c43d3301a3c83d186d7236fb1fdbea80ee556b",
+      "local_sha256": "bca1e2b1a1f38e907b2878c0cc65b5a724986602c01efec4c808648c7a7379a3",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "menubar",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/menubar.json",
+      "source_sha256": "ca1a7f6775f9095183d63faadc6d4ed5ee2097139b4edeeefa60210379c47092",
+      "local_sha256": "7aef6b7b903413bc45fa8f7e7800be52db22a16628b42e08c50154b1566dcf7b",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "collapsible",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/collapsible.json",
+      "source_sha256": "c6598e5584f4258b5d9fefadbc5ad6a66888ad58729f4b634a0bb2d9c513188b",
+      "local_sha256": "c2c74dc3e99482d00a57de673b56920860c2ff4b330373d783843f505dc11dae",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "separator",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/separator.json",
+      "source_sha256": "ad7d5403fe337160e41dbf04147896e448ae3a747b8d06660d627d74d60021bc",
+      "local_sha256": "5c5bcf9e825734082df0f7d09a67e65b4fa37c367b7f2f7628380fc2c0130a54",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "label",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/label.json",
+      "source_sha256": "344bde38b8531615dbf8e14af3895517c24d8ef6ce56ddeda7e2e6fe4b5d0c00",
+      "local_sha256": "a01d6db6f3e6ce6015dcc7f05a17e6cd56def37e28dd2c6489e26f2b8cfd203a",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "toggle-group",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/toggle-group.json",
+      "source_sha256": "45186473eaa30a966adf16e2b0aa0d16522425fda0658e2c85b8dcb1b62956ef",
+      "local_sha256": "5d055235e347a1f4495c53a97bbe7d93ee25aab61844f4f0f660217b341f4382",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "tooltip",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/tooltip.json",
+      "source_sha256": "611e4305879b2773eafe76bf3c5caa69d8e47367fd97887a71634a27828f4433",
+      "local_sha256": "985a50a4ff1d76fc5eebb5f7a325d4206cdf98570c79d7db7488a5c20c86630c",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "select",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/select.json",
+      "source_sha256": "962830436bd0b7ee50e556f0747e277d6a86869ed27d167516346b15f26309d8",
+      "local_sha256": "0b3682308b61404e0cd61fbc92bb6e3e98c5632f3cbe7215bbefde6e2e8553e7",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "toggle",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/toggle.json",
+      "source_sha256": "28ae7d72730890a3ba6c668fd511c63a358ad26534c2c25d5922748d47e1fa99",
+      "local_sha256": "e807511a505b3ce7aad791f1b98dbdf56808e78919a631870a5a61717c92bd5e",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "tabs",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/tabs.json",
+      "source_sha256": "e1df6e2f95ece373ca909c1d54b8ba8cf4c47dd425c1784bbb9a01c38dd0936b",
+      "local_sha256": "f71883732b380ce24bc3eb611369b046abec61eaaf4d2f3120673b768ba4b356",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "input",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/input.json",
+      "source_sha256": "0c9457181f6ddc80969bcf854e92c362903a55b6e889fbef3fd85343ecc4af5b",
+      "local_sha256": "7bfd0eff6c53a38c99184394a09f55e7a86c725de12d6a300fa46b3765114091",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "button",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/button.json",
+      "source_sha256": "79dd6f75f8136394442202d6b8b922fb269eaad0a5dba579397c9d5b41f893bb",
+      "local_sha256": "24c542c620140e15eb624524100df02d33e17358c81a5ddb9f065d368895ffdd",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "switch",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/switch.json",
+      "source_sha256": "743676f33f823ffa8008bbd5eb94cb68e227599447d60e132a202291a395f8e4",
+      "local_sha256": "6afab4d6d631175a3d353744c87750263c35e277dddab532418840774e287d3b",
+      "adaptation": "Import paths only: cn, installed individual Radix packages, local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "empty",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/empty.json",
+      "source_sha256": "54f529ccf72c18c4b5abd5586a7cf1f2a4c8d207aac366029d66ed095cb2965d",
+      "local_sha256": "a506c7665171485de08aa790d8d05c56f00bbf2b85175026f26686feda4bb514",
+      "adaptation": "Import paths only: local cn helper and local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "spinner",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/spinner.json",
+      "source_sha256": "5d040fc49cb54c0296070644053b5a8840ddbfca89a430546bf308df3fffad65",
+      "local_sha256": "d07526a2f821962529e09e3b8dd55123eec0c753cced3983f8e1cbafcec7a737",
+      "adaptation": "Import paths only: local cn helper and local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "input-group",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/input-group.json",
+      "source_sha256": "e379899ac50d6cabc9d9eb1668f265176951c62b1fe83a6f23ee97fe8074d526",
+      "local_sha256": "3c7efabfb047063451f51f04a59a80a9018109b2e9035104c61bbfc557c2eddc",
+      "adaptation": "Import paths only: local cn helper and local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "textarea",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/textarea.json",
+      "source_sha256": "5cafcfeeee29534f449387a16b585f5923d2faab1a0cdc50a874416b175f59ce",
+      "local_sha256": "7c7122fc969c62228c691388aa1fe8b1eafe787ac25305a7a768f77d87d3c567",
+      "adaptation": "Import paths only: local cn helper and local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "alert",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/alert.json",
+      "source_sha256": "d03dcae5cdb63c381c1144ca9a0c49ba0e46466967d7deb94662034042acb034",
+      "local_sha256": "afeb8ee000195794ccffbf82ab1860bf083e61d355cbe1385fc6ad73fdecfae8",
+      "adaptation": "Import paths only: local cn helper and local component aliases. Component behavior and classes unchanged."
+    },
+    {
+      "name": "resizable",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/resizable.json",
+      "source_sha256": "aaf3ea20e8060c75dd86e06fedfca053d49f81071123ba647b5699efcbc010ea",
+      "local_sha256": "2de0b3a71b18e27a54a3564fcc66eb5c12c6ee25fd6a8436c9903e705b0cef28",
+      "adaptation": "Import path only: cn to the existing local utility. Component classes and behavior unchanged."
+    },
+    {
+      "name": "alert-dialog",
+      "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/alert-dialog.json",
+      "source_sha256": "b3dfb83e54ed8c82071df5289e5149628bf573458fc2da2d62f93f8380041b28",
+      "local_sha256": "1f93822b2ee90fda1440508e4e98db10afeed42088fa709a327fd937e9d2e539",
+      "adaptation": "Import paths only: local cn, local Button, and installed individual Radix AlertDialog namespace. Component classes and behavior unchanged."
+    }
+  ]
+}

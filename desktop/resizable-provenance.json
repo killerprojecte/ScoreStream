@@ -1,0 +1,7 @@
+{
+  "name": "resizable",
+  "registry_url": "https://ui.shadcn.com/r/styles/new-york-v4/resizable.json",
+  "source_sha256": "aaf3ea20e8060c75dd86e06fedfca053d49f81071123ba647b5699efcbc010ea",
+  "local_sha256": "2de0b3a71b18e27a54a3564fcc66eb5c12c6ee25fd6a8436c9903e705b0cef28",
+  "adaptation": "Import path only: cn to the existing local utility. Component classes and behavior unchanged."
+}
