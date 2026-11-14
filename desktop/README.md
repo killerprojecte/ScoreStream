@@ -51,6 +51,8 @@ This desktop crate is deliberately a separate Cargo workspace so headless/core b
 
 `npm test -- --maxWorkers=1` tests exact projection, refusal of unsupported content, stable mapping, and stale-job rejection. `npm run build` typechecks and bundles locally pinned dependencies with no CDN runtime dependency.
 
+`npm run test:pcm` uses standalone Node.js 22.6+ tests for the [bounded PCM16/WAV data preparation component](../docs/PCM_WAV.md). It validates a fixed 48 kHz stereo output budget and checks header/chunk bytes without a browser, audio renderer or file writer. This component does not enable desktop audio export.
+
 `npm run test:audio-render` is an optional real `OfflineAudioContext` signal regression using an already installed Chromium (`CHROMIUM_PATH` can specify its executable). It checks spectra, routing, gain, seek and note boundaries without opening an audio device or producing an audio file. It requires Chromium to run with its normal sandbox and does not install a browser. This test is separate from the mocked frontend suite; a browser-launch failure is not a signal-render pass.
 
 An opt-in `smoke-test` Cargo feature adds a test-only report command. Native smoke runs also require the explicit Vite smoke mode and the isolated `io.scorestream.desktop.qa` configuration; a report request under the production identifier is rejected before profile access. Follow [the isolated native smoke build instructions](../docs/NATIVE_SMOKE.md). The real WebKit harness covers validation, drafts, previews, apply, undo/redo, conflicts, selection, and property edits. Ordinary builds contain neither the report command nor frontend smoke/observer entry points. Native file-picker cancellation/overwrite and OS packaging still need manual testing.
