@@ -46,6 +46,10 @@ At `@0`, both instruments begin together. The violin continues through time 4; i
 
 Quote text using JSON rules: `text="dolce e cantabile"`. Whole-line comments begin with `;`. There are no inline comments; `#` belongs to pitches and references. Unknown unqualified fields are errors.
 
+## Score metadata
+
+Before frames, use `!meta title="Spring" description="A short study" authors=["Lin", "Alex"] header="Rehearsal" footer="Draft"`. Every field is optional. Authors are an ordered list of nonblank single-line names; the other fields are JSON-quoted plain text. The title is not a filename. Header/footer are separate running page text, without markup or template substitution. Description is editor/catalog context, not automatically printed. Legacy `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `rights` and `language` remain supported and are not inferred from authors. Repeated fields and metadata inside fragments fail. `topics=["syntax"]` includes the exact field types and a full metadata example.
+
 ## Rules to keep in context
 
 1. **Quarter note = 1.** Use reduced rational strings such as `1/3`; do not emit decimal timing or JSON floating-point time. Every ordinary event states its own positive duration.

@@ -33,7 +33,7 @@ pub fn canonical(document: &Document) -> String {
     }
     if !document.metadata.is_empty() {
         output.push_str("!meta");
-        write_attributes(&mut output, "metadata", "", &document.metadata);
+        output.push_str(&crate::metadata::write(&document.metadata));
         output.push('\n');
     }
     for extension in &document.required_extensions {

@@ -1,0 +1,89 @@
+{
+  "format": "ScoreStream",
+  "format_version": "1.1",
+  "time_unit": "quarter",
+  "parts": [
+    {
+      "id": "p",
+      "instrument": "piano",
+      "staves": 1
+    }
+  ],
+  "voices": [
+    {
+      "id": "v",
+      "part": "p",
+      "staff": 1
+    }
+  ],
+  "metadata": {
+    "title": "春日练习",
+    "description": "两位作者的短练习曲。",
+    "authors": [
+      "林青",
+      "Alex Chen"
+    ],
+    "header": "排练版",
+    "footer": "仅供学习 · 2026"
+  },
+  "required_extensions": [],
+  "frames": [
+    {
+      "time": "0",
+      "records": [
+        {
+          "record": "state",
+          "target": "score",
+          "attributes": {
+            "tempo": "q:100"
+          }
+        },
+        {
+          "record": "state",
+          "target": "p.s1",
+          "attributes": {
+            "meter": "4/4",
+            "key": 0,
+            "clef": "G2"
+          }
+        },
+        {
+          "record": "measure",
+          "target": "p",
+          "id": "m1",
+          "length": "4",
+          "attributes": {
+            "label": "1"
+          }
+        },
+        {
+          "record": "event",
+          "voice": "v",
+          "pitch": "C4",
+          "duration": "2",
+          "attributes": {
+            "id": "a",
+            "w": "2"
+          }
+        }
+      ]
+    },
+    {
+      "time": "2",
+      "records": [
+        {
+          "record": "event",
+          "voice": "v",
+          "pitch": "E4",
+          "duration": "2",
+          "attributes": {
+            "id": "b",
+            "w": "2"
+          }
+        }
+      ]
+    }
+  ],
+  "document_kind": "score",
+  "end": "4"
+}

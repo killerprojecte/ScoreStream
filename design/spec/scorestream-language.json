@@ -117,8 +117,8 @@
     },
     {
       "prefix": "!meta",
-      "syntax": "!meta title=\"Example\"",
-      "purpose": "Intrinsic score metadata only, not analytical knowledge annotations."
+      "syntax": "!meta title=\"Example\" authors=[\"A. Author\",\"B. Author\"] description=\"Study\" header=\"Rehearsal\" footer=\"Draft\"",
+      "purpose": "Optional plain score text; never a filename fallback or markup. Ordered authors use a JSON string array; legacy composer/lyricist/arranger remain distinct roles. Declare before frames; repeated fields fail."
     },
     {
       "prefix": "!requires",
@@ -586,31 +586,56 @@
     },
     "metadata": {
       "title": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Explicit score title. Never inferred from a filename, application name, header or description."
+      },
+      "description": {
+        "type": "string",
+        "meaning": "Catalog/editor description; not automatically printed as notation or a page title."
+      },
+      "header": {
+        "type": "string",
+        "meaning": "Optional running page-header text, independent of the title; no markup or template expansion."
+      },
+      "footer": {
+        "type": "string",
+        "meaning": "Optional running page-footer text; no markup or template expansion."
       },
       "subtitle": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "composer": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "lyricist": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "arranger": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "work_number": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "movement": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "rights": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
       "language": {
-        "type": "string"
+        "type": "string",
+        "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
+      },
+      "authors": {
+        "type": "string_list",
+        "meaning": "Ordered plain names. JSON string array; horizontal whitespace allowed inside the array. Nonblank single-line names without control characters. Empty or absent means none. Do not infer roles or merge with composer/lyricist/arranger."
       }
     },
     "measure": {
@@ -941,6 +966,11 @@
     "identity": "use returned score_id, revision_id, selection_id and object IDs"
   },
   "examples": [
+    {
+      "name": "document-metadata",
+      "file": "examples/sfs/document-metadata.sfs",
+      "source": "!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n!meta title=\"春日练习\" description=\"两位作者的短练习曲。\" authors=[\"林青\", \"Alex Chen\"]\n!meta header=\"排练版\" footer=\"仅供学习 · 2026\"\n@0\n= score tempo=q:100\n= p.s1 meter=4/4 key=0 clef=G2\n| p m1 len=4 label=\"1\"\nv C4:2 id=a w=2\n.\n@2\nv E4:2 id=b w=2\n.\n!end at=4\n"
+    },
     {
       "name": "ensemble",
       "file": "examples/sfs/ensemble.sfs",

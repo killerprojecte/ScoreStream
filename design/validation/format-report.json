@@ -14,6 +14,14 @@
   "descriptor_schema_errors": [],
   "core_cases": [
     {
+      "path": "examples/sfs/document-metadata.sfs",
+      "expected": "valid",
+      "passed": true,
+      "ast": "examples/ast/document-metadata.json",
+      "diagnostics": [],
+      "warnings": []
+    },
+    {
       "path": "examples/sfs/ensemble.sfs",
       "expected": "valid",
       "passed": true,
@@ -758,7 +766,7 @@
     }
   ],
   "summary": {
-    "core_cases": 40,
+    "core_cases": 41,
     "auxiliary_cases": 25,
     "failed_cases": 0
   },
@@ -772,6 +780,7 @@
     "No MusicXML, renderer, editor, MCP transport, Rust, audio or annotation-store implementation is validated."
   ],
   "inputs_sha256": {
+    "examples/ast/document-metadata.json": "0f2ab4aaa4e4ac6d62faf1bb7adf8f02246057e2ded0be60b8c703c05fd27f38",
     "examples/ast/ensemble.json": "44f4092c2dbd124bd73f10b4151cc93d5d8c77bc1e5d4209d3e32c50034e11f5",
     "examples/ast/grace-percussion-cross-staff.json": "89120340353ee71894e6f58d30855417439de1e2103ea0fa06464791b30a11e4",
     "examples/ast/replacement-fragment.json": "ed939331e9301b8bc2af8b913e88c1a107446380894a4c04c07143956827722c",
@@ -836,6 +845,7 @@
     "examples/sfs-invalid/unreduced-duration.sfs": "04a21c5bf9ba7dfc2db08b9a39ba895e610c6354488e2bb3dfd583d516533bc8",
     "examples/sfs-invalid/unresolved-mark.sfs": "f0af5af889ca4fcc7d0858313c693279904e8d42f2fbbf10879174c89552a00c",
     "examples/sfs-invalid/zero-duration.sfs": "3a85ef62730e8f1b6426c0a3866dd43df3b7c062994b2a07283a9755a8670ad5",
+    "examples/sfs/document-metadata.sfs": "32dd719c2e7756ee1e03792faf7aaef7fa610c64e9293d7c74d4c95508533abc",
     "examples/sfs/ensemble.sfs": "d8a91cd2cf27b9b1d160aa46c8a2cf2e8db77341ca7feb5b0338de85467df58e",
     "examples/sfs/grace-percussion-cross-staff.sfs": "ee780c06c93b770b7ec1510713e70bab39681566b3164ff909155114a8535d56",
     "examples/sfs/replacement-fragment.sfs": "13735538e8a3dc11720f25fbbf62903e421b44791738db5bd7e2eeea0747ada8",
@@ -847,13 +857,13 @@
     "schemas/job.schema.json": "ef1c3d3f9e0149814cec7977a6f387b36ace6872fc8a6787431c95982f3d7e93",
     "schemas/mcp-contract.schema.json": "0e6aa42eeacc0d870cb388fc082eef45eba0bd5048ba71691fa3ffab8f6980f1",
     "schemas/render.schema.json": "7f9866852026e9e7e3ac6022eedcff57a9ec38ad0e11a4f7650ab9e8d9cd29ee",
-    "schemas/scorestream-ast.schema.json": "364a38b2e6f83021d8b0311fb23898e59beffb1b7166b00a5d36ccfcfc5764ca",
+    "schemas/scorestream-ast.schema.json": "b2610ea5bdff51366e53e1d38531a380a01b231d20d1001eb39bdea81b80f8f4",
     "schemas/selection.schema.json": "3c7d62839bb08ca0d344c605f66a80c01a389b416ba7e2fe6eebeec70c3efad7",
-    "spec/scorestream-language.json": "a821c6f21e3f71fa01fda57f61018707f7d80fcd1ce218f64dda9053478494b3",
-    "spec/scorestream.ebnf": "9663881c6860c9110c309a4c4ef1daba234f178be15359c7926ccb38366539ec",
-    "tools/build_format_reference.py": "a3d04ec1ee5da2ff51a03e488bec81dcdd1613ef88df70f44297a8c201bd03d9",
-    "tools/validate_package.py": "c6358b33e069b751519eebe98060f5753237c5c5d4c3bc2ee2296bfaa81a4b8d",
+    "spec/scorestream-language.json": "1bf5e3dbfb43fb679c8f1bfbe3e556fd0cfa7ad0faad015b2da949585d016977",
+    "spec/scorestream.ebnf": "c193c9452e5fcc66957ad5693ec1ae535e55a6f7d04825ed08348e8eb610fe5d",
+    "tools/build_format_reference.py": "0b0cb9d0d144c1f4834143e50419146bf181771c41907571e4dc9e2b0afa5a54",
+    "tools/validate_package.py": "01dd07d561262f42e521b994bb0f488961e1b4443f10606741fe4f2af524a5aa",
     "validation/README.md": "cb1b6d95c175fb0d1eabee6025f5a389eb5cdfdb29fa91df3d945e4cca5cda1d",
-    "validation/fixture-context.json": "f3d67de955a3e9c7892e6fea9d0bc58c809356848bf446edcbf3fb5d824631ed"
+    "validation/fixture-context.json": "6db538061e995a439e062ba4ed0328907859e2115ee389578ecdf297eda2eda2"
   }
 }

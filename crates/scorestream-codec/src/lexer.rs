@@ -12,6 +12,9 @@ pub(crate) fn tokenize(line: &str, line_number: usize) -> Result<Vec<Token<'_>>,
     let mut start = None;
     let mut quote = false;
     let mut escaped = false;
+    let mut authors_array = false;
+    let metadata = line.trim_start_matches([' ', '\t']).starts_with("!meta ")
+        || line.trim_start_matches([' ', '\t']).starts_with("!meta\t");
     for (offset, c) in line.char_indices() {
         if c.is_control() && c != '\t' {
             return Err(Diagnostic::error(
@@ -20,7 +23,7 @@ pub(crate) fn tokenize(line: &str, line_number: usize) -> Result<Vec<Token<'_>>,
                 SourceRange::line(line_number, line.chars().count()),
             ));
         }
-        if !quote && (c == ' ' || c == '\t') {
+        if !quote && !authors_array && (c == ' ' || c == '\t') {
             if let Some(begin) = start.take() {
                 tokens.push(Token {
                     text: &line[begin..offset],
@@ -29,7 +32,7 @@ pub(crate) fn tokenize(line: &str, line_number: usize) -> Result<Vec<Token<'_>>,
             }
             continue;
         }
-        if !quote && c.is_whitespace() {
+        if !quote && c.is_whitespace() && !(authors_array && matches!(c, ' ' | '\t')) {
             return Err(Diagnostic::error(
                 "lexical_whitespace",
                 "Use spaces or tabs between fields",
@@ -37,6 +40,15 @@ pub(crate) fn tokenize(line: &str, line_number: usize) -> Result<Vec<Token<'_>>,
             ));
         }
         start.get_or_insert(offset);
+        if !quote
+            && metadata
+            && c == '['
+            && start.is_some_and(|begin| &line[begin..offset] == "authors=")
+        {
+            authors_array = true;
+        } else if !quote && c == ']' {
+            authors_array = false;
+        }
         if quote && escaped {
             escaped = false;
         } else if quote && c == '\\' {
@@ -49,6 +61,13 @@ pub(crate) fn tokenize(line: &str, line_number: usize) -> Result<Vec<Token<'_>>,
         return Err(Diagnostic::error(
             "string_unclosed",
             "Unclosed JSON string; physical newlines are not allowed",
+            SourceRange::line(line_number, line.chars().count()),
+        ));
+    }
+    if authors_array {
+        return Err(Diagnostic::error(
+            "metadata_authors_type",
+            "Unclosed authors array",
             SourceRange::line(line_number, line.chars().count()),
         ));
     }

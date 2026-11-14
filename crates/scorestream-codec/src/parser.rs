@@ -197,23 +197,7 @@ fn read(source: &str) -> ParseResult<Document> {
                     });
                 }
                 "!meta" => {
-                    let attrs = attributes("metadata", "", &tokens[1..], location)?;
-                    if attrs.is_empty() {
-                        return Err(Diagnostic::error(
-                            "field_required",
-                            "Metadata record requires attributes",
-                            location,
-                        ));
-                    }
-                    for (key, value) in attrs {
-                        if doc.metadata.insert(key.clone(), value).is_some() {
-                            return Err(Diagnostic::error(
-                                "attribute_duplicate",
-                                format!("Repeated metadata field {key}"),
-                                location,
-                            ));
-                        }
-                    }
+                    crate::metadata::read(&mut doc.metadata, &tokens[1..], location)?;
                 }
                 "!requires" => {
                     if words.len() != 2 {
@@ -386,7 +370,7 @@ fn read(source: &str) -> ParseResult<Document> {
     }
     document.ok_or_else(|| Diagnostic::error("header_required", "Document is empty", last_source))
 }
-fn raw_attributes(
+pub(crate) fn raw_attributes(
     tokens: &[Token<'_>],
     source: SourceRange,
 ) -> ParseResult<BTreeMap<String, String>> {

@@ -76,6 +76,7 @@ def tokens(line, number):
     if line[:1] in (" ", "\t") or line[-1:] in (" ", "\t"):
         fail("LINE_WHITESPACE", "Non-trivia fixture lines have no outer whitespace", number)
     out, current, quoted, escaped = [], [], False, False
+    authors_array = False
     for char in line:
         if ord(char) < 32 and char != "\t":
             fail("CONTROL_CHARACTER", "Control character in a physical source line", number)
@@ -90,12 +91,18 @@ def tokens(line, number):
         elif char == '"':
             quoted = True
             current.append(char)
-        elif char in (" ", "\t"):
+        elif char in (" ", "\t") and not authors_array:
             if current:
                 out.append("".join(current))
                 current = []
         else:
+            if line.startswith("!meta ") and char == "[" and "".join(current) == "authors=":
+                authors_array = True
+            elif char == "]":
+                authors_array = False
             current.append(char)
+    if authors_array:
+        fail("METADATA_AUTHORS_TYPE", "Unclosed authors array", number)
     if quoted:
         fail("STRING_UNTERMINATED", "JSON string is not closed on this line", number)
     if current:
@@ -114,7 +121,14 @@ def attrs(items, number, context):
         if key in result:
             fail("ATTRIBUTE_DUPLICATE", f"Repeated attribute {key}", number)
         quoted = raw.startswith('"')
-        if quoted:
+        if context == "metadata" and key == "authors":
+            try:
+                value = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                fail("METADATA_AUTHORS_TYPE", str(exc), number)
+            if not isinstance(value, list) or any(not isinstance(name, str) for name in value):
+                fail("METADATA_AUTHORS_TYPE", "Expected a JSON string array", number)
+        elif quoted:
             try:
                 value = json.loads(raw)
             except json.JSONDecodeError as exc:

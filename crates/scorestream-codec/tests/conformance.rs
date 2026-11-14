@@ -28,6 +28,7 @@ fn has_error(source: &str, code: &str) {
 #[test]
 fn all_supplied_valid_fixtures_match_ast_and_roundtrip() {
     for name in [
+        "document-metadata",
         "ensemble",
         "tuplets-and-ties",
         "replacement-fragment",

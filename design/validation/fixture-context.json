@@ -19,6 +19,10 @@
     "grace-percussion-cross-staff": {
       "events": 5,
       "frames": 3
+    },
+    "document-metadata": {
+      "events": 2,
+      "frames": 2
     }
   },
   "render_records": {

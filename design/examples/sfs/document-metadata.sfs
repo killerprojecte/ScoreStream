@@ -1,0 +1,15 @@
+!score 1.1 unit=q
+!part p instrument=piano staves=1
+!voice v part=p staff=1
+!meta title="春日练习" description="两位作者的短练习曲。" authors=["林青", "Alex Chen"]
+!meta header="排练版" footer="仅供学习 · 2026"
+@0
+= score tempo=q:100
+= p.s1 meter=4/4 key=0 clef=G2
+| p m1 len=4 label="1"
+v C4:2 id=a w=2
+.
+@2
+v E4:2 id=b w=2
+.
+!end at=4

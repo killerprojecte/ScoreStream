@@ -17,7 +17,7 @@ def run(*args):
     return subprocess.run([str(cli), *map(str,args)], capture_output=True, text=True, cwd=root, check=False)
 
 results = []
-for name in ['ensemble', 'tuplets-and-ties', 'grace-percussion-cross-staff']:
+for name in ['document-metadata', 'ensemble', 'tuplets-and-ties', 'grace-percussion-cross-staff']:
     source=root/'design/examples/sfs'/f'{name}.sfs'
     actual=run('inspect', source)
     assert actual.returncode == 0, (name,actual.stderr)

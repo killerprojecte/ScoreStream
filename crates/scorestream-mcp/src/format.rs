@@ -55,7 +55,7 @@ const SECTIONS: &[Topic] = &[
             "vocabulary/metadata",
         ],
         rules: &[],
-        examples: &[],
+        examples: &["document-metadata"],
         constraints: &[],
     },
     Topic {

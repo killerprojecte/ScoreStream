@@ -89,7 +89,11 @@ Authoring a new complete score may omit event IDs. Import assigns them and retur
 
 `instrument` is a symbolic instrument identity or catalog key. It is not an implicit MIDI program, transposition, tuning, staff type, or percussion map. Those properties must be explicitly represented in supported domain fields/extensions. No convention silently turns `clarinet` into a B-flat transposition.
 
-Core metadata fields are string-valued `title`, `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `rights`, and `language`. More than one attribution or a richer source catalog requires a registered metadata extension. Analytical prose is not score metadata.
+All metadata fields are optional. String-valued fields are `title`, `description`, `header`, `footer`, `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `rights`, and `language`. `authors` is an ordered JSON array of plain names, for example `!meta title="Spring" authors=["Lin", "Alex"]`. Authors must be nonblank, single-line strings without control characters. Existing role fields stay independent; never infer a role from the author list or duplicate a composer into it.
+
+`title` is the explicit score title, never a filename or product-name fallback. `description` is catalog/editor context and is not automatically printed. `header` and `footer` are deliberate running page text, distinct from title and with no template interpolation. Every text field is plain Unicode text, not raw HTML, XML, MEI or formatting instructions. Consumers escape for their output format. Strings may be empty. Legacy JSON-escaped text remains readable: control characters other than tab/LF/CR are preserved with a portability warning, and renderers/exporters must diagnose characters they cannot represent instead of silently dropping them. Missing fields remain absent; an empty `authors` list means none and is omitted canonically. There is no placeholder title.
+
+Metadata must precede frames and is forbidden in fragments. Multiple `!meta` lines are accepted, but each field may occur only once, even if identical. Canonical output uses one `!meta` line with lexically ordered fields, JSON-escaped strings and a compact author array preserving order. Per-field source ranges are retained internally for diagnostics, not inserted into the wire AST. This is an explicitly approved development-stage extension of **1.1**, not a new format version. Analytical prose about musical passages remains separate.
 
 ## 4. Frames and stream completion
 

@@ -113,8 +113,8 @@
       },
       {
         "prefix": "!meta",
-        "syntax": "!meta title=\"Example\"",
-        "purpose": "Intrinsic score metadata only, not analytical knowledge annotations."
+        "syntax": "!meta title=\"Example\" authors=[\"A. Author\",\"B. Author\"] description=\"Study\" header=\"Rehearsal\" footer=\"Draft\"",
+        "purpose": "Optional plain score text; never a filename fallback or markup. Ordered authors use a JSON string array; legacy composer/lyricist/arranger remain distinct roles. Declare before frames; repeated fields fail."
       },
       {
         "prefix": "!requires",

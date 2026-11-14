@@ -258,3 +258,36 @@ fn advertised_input_schema_matches_runtime_topic_selection() {
         json!(["quick", "full"])
     );
 }
+
+#[test]
+fn syntax_topic_teaches_typed_metadata_without_polluting_other_topics() {
+    let selected = data(json!({"topics":["syntax"]}));
+    assert_eq!(
+        selected["vocabulary"]["metadata"]["authors"]["type"],
+        "string_list"
+    );
+    for name in ["title", "description", "header", "footer"] {
+        assert_eq!(selected["vocabulary"]["metadata"][name]["type"], "string");
+    }
+    assert!(
+        selected["examples"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|example| example["name"] == "document-metadata")
+    );
+    assert!(
+        data(json!({"topics":["pitch"]}))["vocabulary"]
+            .get("metadata")
+            .is_none()
+    );
+    let base = data(json!({}));
+    assert!(
+        base["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|record| record["prefix"] == "!meta"
+                && record["syntax"].as_str().unwrap().contains("authors=["))
+    );
+}

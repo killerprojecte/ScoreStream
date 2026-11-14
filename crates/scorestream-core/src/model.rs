@@ -1,4 +1,4 @@
-use crate::{Rational, RationalError};
+use crate::{DocumentMetadata, Rational, RationalError};
 use num_bigint::BigInt;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{collections::BTreeMap, fmt, str::FromStr};
@@ -115,7 +115,7 @@ pub struct Document {
     pub time_unit: String,
     pub parts: Vec<Part>,
     pub voices: Vec<Voice>,
-    pub metadata: Attributes,
+    pub metadata: DocumentMetadata,
     pub required_extensions: Vec<String>,
     pub frames: Vec<Frame>,
     pub end: Rational,
@@ -135,7 +135,7 @@ impl Document {
             time_unit: "quarter".into(),
             parts: vec![],
             voices: vec![],
-            metadata: Attributes::new(),
+            metadata: DocumentMetadata::default(),
             required_extensions: vec![],
             frames: vec![],
             end: Rational::zero(),

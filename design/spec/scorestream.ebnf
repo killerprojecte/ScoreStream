@@ -17,7 +17,12 @@ part_decl = "!part", ws, identifier, ws, "instrument=", atom,
             ws, "staves=", positive_integer, nl ;
 voice_decl = "!voice", ws, identifier, ws, "part=", identifier,
              ws, "staff=", positive_integer, nl ;
-metadata_decl = "!meta", ws, attributes, nl ;
+metadata_decl = "!meta", ws, metadata_field, { ws, metadata_field }, nl ;
+metadata_field = metadata_text_name, "=", quoted_string | "authors=", author_list ;
+metadata_text_name = "title" | "description" | "header" | "footer" | "subtitle"
+                   | "composer" | "lyricist" | "arranger" | "work_number"
+                   | "movement" | "rights" | "language" ;
+author_list = "[", [ ws ], [ quoted_string, { [ ws ], ",", [ ws ], quoted_string } ], [ ws ], "]" ;
 requirement_decl = "!requires", ws, namespace, "@", version, nl ;
 
 frame = "@", nonnegative_rational, nl, { trivia | record }, ".", nl ;
@@ -77,5 +82,9 @@ comment_line = [ ws ], ";", { non_newline_character }, nl ;
 
 (* Canonical writers emit one space between fields, LF newlines,
    reduced rationals, and no trailing whitespace. Comments are source
-   trivia, not musical annotations. Production readers use a real lexer:
+   trivia, not musical annotations. Metadata fields occur at most once across
+   all !meta declarations. Canonical metadata keys are lexical; author order
+   is retained and the JSON array has no whitespace outside its strings.
+   Empty authors is omitted. Metadata plain text is never markup.
+   Production readers use a real lexer:
    splitting on '#' would corrupt pitch spellings and references. *)

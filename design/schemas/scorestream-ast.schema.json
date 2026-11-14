@@ -33,7 +33,7 @@
       }
     },
     "metadata": {
-      "$ref": "#/$defs/Attributes"
+      "$ref": "#/$defs/DocumentMetadata"
     },
     "required_extensions": {
       "type": "array",
@@ -115,6 +115,77 @@
         "$ref": "#/$defs/Scalar"
       },
       "description": "Flat values. The language registry checks names, types, scopes and extension requirements. Unknown unqualified fields fail semantic validation."
+    },
+    "DocumentMetadata": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "description": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "header": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "footer": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "composer": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "lyricist": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "arranger": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "work_number": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "movement": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "rights": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "language": {
+          "type": "string",
+          "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "allOf": [
+              {
+                "pattern": "\\S"
+              },
+              {
+                "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F\\u2028\\u2029]*$"
+              }
+            ]
+          },
+          "description": "Ordered plain author names. Empty or absent means no generic author list; legacy role fields remain separate."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
     },
     "Part": {
       "type": "object",

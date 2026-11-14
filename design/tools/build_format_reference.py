@@ -35,6 +35,9 @@ defs={
  'Scalar':{'type':['string','integer','boolean']},
  'Attributes':{'type':'object','propertyNames':{'pattern':r'^[A-Za-z][A-Za-z0-9_.-]*$'},'additionalProperties':ref('Scalar'),'description':'Flat values. The language registry checks names, types, scopes and extension requirements. Unknown unqualified fields fail semantic validation.'},
 }
+metadata_text=s(description='Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text.')
+metadata_fields=['title','description','header','footer','subtitle','composer','lyricist','arranger','work_number','movement','rights','language']
+defs['DocumentMetadata']=obj({**{name:metadata_text for name in metadata_fields},'authors':arr(s(minLength=1, allOf=[{'pattern':r'\S'},{'pattern':r'^[^\u0000-\u001F\u007F-\u009F\u2028\u2029]*$'}]), description='Ordered plain author names. Empty or absent means no generic author list; legacy role fields remain separate.')}, [])
 defs['Part']=obj({'id':ref('Identifier'),'instrument':s(minLength=1),'staves':{'type':'integer','minimum':1}})
 defs['Voice']=obj({'id':ref('Identifier'),'part':ref('Identifier'),'staff':{'type':'integer','minimum':1}})
 defs['Event']=obj({'record':{'const':'event'},'voice':ref('Identifier'),
@@ -49,7 +52,7 @@ defs['Measure']=obj({'record':{'const':'measure'},'target':ref('Scope'),'id':ref
 defs['Record']={'oneOf':[ref(n) for n in ['Event','State','Mark','Relation','Measure']]}
 defs['Frame']=obj({'time':ref('NonNegativeRational'),'records':arr(ref('Record'))})
 props={'format':{'const':'ScoreStream'},'format_version':{'const':'1.1'},'document_kind':{'enum':['score','fragment']},'time_unit':{'const':'quarter'},
- 'parts':arr(ref('Part')),'voices':arr(ref('Voice')),'metadata':ref('Attributes'),'required_extensions':arr(s(minLength=1),uniqueItems=True),
+ 'parts':arr(ref('Part')),'voices':arr(ref('Voice')),'metadata':ref('DocumentMetadata'),'required_extensions':arr(s(minLength=1),uniqueItems=True),
  'frames':arr(ref('Frame')),'end':ref('NonNegativeRational'),'span':ref('PositiveRational')}
 schema={'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'urn:scorestream:schema:ast:1.1',
  'title':'ScoreStream 1.1 parsed core AST','description':'Validates parsed structure, not the raw SFS text. A semantic validator is still required.',
@@ -63,7 +66,7 @@ records=[
  {'prefix':'!fragment','syntax':'!fragment 1.1 unit=q span=4','purpose':'Start a bounded local-time replacement. Voice bindings come from the edit request; no part/voice declarations inside.'},
  {'prefix':'!part','syntax':'!part p instrument=piano staves=2','purpose':'Declare a part and its staff count.'},
  {'prefix':'!voice','syntax':'!voice pr part=p staff=1','purpose':'Declare a stable voice alias and its default display staff.'},
- {'prefix':'!meta','syntax':'!meta title="Example"','purpose':'Intrinsic score metadata only, not analytical knowledge annotations.'},
+ {'prefix':'!meta','syntax':'!meta title="Example" authors=["A. Author","B. Author"] description="Study" header="Rehearsal" footer="Draft"','purpose':'Optional plain score text; never a filename fallback or markup. Ordered authors use a JSON string array; legacy composer/lyricist/arranger remain distinct roles. Declare before frames; repeated fields fail.'},
  {'prefix':'!requires','syntax':'!requires vendor.feature@1','purpose':'Declare a mandatory extension. Unknown mandatory semantics cannot be executed as core.'},
  {'prefix':'@','syntax':'@1/3','purpose':'Open a shared-score-time frame; quarter-note unit; exact rational.'},
  {'prefix':'event','syntax':'pr C#4:1 id=n1 w=4','purpose':'One event per line; duration is explicit; no pitch or duration inheritance.'},
@@ -124,7 +127,12 @@ attrs={
 # Detailed field definitions complement the compact attribute-name lists.
 # Keeping names in one registry lets the future Rust implementation generate
 # language help and semantic validation from the same versioned source.
-attrs['metadata']={name:{'type':'string'} for name in ['title','subtitle','composer','lyricist','arranger','work_number','movement','rights','language']}
+attrs['metadata']={name:{'type':'string','meaning':'Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it.'} for name in metadata_fields}
+attrs['metadata']['title']['meaning']='Explicit score title. Never inferred from a filename, application name, header or description.'
+attrs['metadata']['description']['meaning']='Catalog/editor description; not automatically printed as notation or a page title.'
+attrs['metadata']['header']['meaning']='Optional running page-header text, independent of the title; no markup or template expansion.'
+attrs['metadata']['footer']['meaning']='Optional running page-footer text; no markup or template expansion.'
+attrs['metadata']['authors']={'type':'string_list','meaning':'Ordered plain names. JSON string array; horizontal whitespace allowed inside the array. Nonblank single-line names without control characters. Empty or absent means none. Do not infer roles or merge with composer/lyricist/arranger.'}
 attrs['measure']={'label':{'type':'string','meaning':'Display label, never identity'},'implicit':{'type':'boolean','default':False}}
 attrs['common_mark_attributes']={'id':{'type':'identifier','meaning':'Stable text mark identity; map to opaque object ID in API responses'}}
 for fields in attrs['marks'].values():
@@ -280,7 +288,8 @@ pr C4:2 id=b staff=2 w=2
 .
 !end at=4
 '''
-examples=[('ensemble',basic),('tuplets-and-ties',triplet),('replacement-fragment',fragment),('grace-percussion-cross-staff',grace)]
+metadata='!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n!meta title="春日练习" description="两位作者的短练习曲。" authors=["林青", "Alex Chen"]\n!meta header="排练版" footer="仅供学习 · 2026"\n@0\n= score tempo=q:100\n= p.s1 meter=4/4 key=0 clef=G2\n| p m1 len=4 label="1"\nv C4:2 id=a w=2\n.\n@2\nv E4:2 id=b w=2\n.\n!end at=4\n'
+examples=[('document-metadata',metadata),('ensemble',basic),('tuplets-and-ties',triplet),('replacement-fragment',fragment),('grace-percussion-cross-staff',grace)]
 for name,body in examples: (ROOT/f'examples/sfs/{name}.sfs').write_text(body)
 guide={
  'format':'ScoreStream','format_version':'1.1','status':'design-contract; no product implementation bundled',
@@ -322,7 +331,7 @@ descriptor_schema={'$schema':'https://json-schema.org/draft/2020-12/schema','$id
   'vocabulary':{'type':'object'},'validation_boundary':s(),'mcp_resources':{'type':'object'}},'additionalProperties':True}
 write('schemas/format-reference.schema.json',descriptor_schema)
 quick={k:v for k,v in guide.items() if k not in ['vocabulary','examples','authoritative_files']}
-quick['examples']=[guide['examples'][0],guide['examples'][2]]
+quick['examples']=[next(example for example in guide['examples'] if example['name']==name) for name in ['ensemble','replacement-fragment']]
 quick['common_attributes']={k:attrs['event'][k] for k in ['id','staff','chord','w','dots','tm','kind','anchor','order']}
 write('mcp/examples/score_get_format.structured.json',{'ok':True,'data':quick})
-print('Wrote grammar companion schemas, language descriptor and four complete SFS fixtures.')
+print('Wrote grammar companion schemas, language descriptor and complete SFS fixtures.')

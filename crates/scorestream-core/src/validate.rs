@@ -27,7 +27,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             doc.source,
         ));
     }
-    validate_attributes("metadata", "", &doc.metadata, doc.source, &mut out);
+    out.extend(doc.metadata.validate(doc.source));
     let mut parts: BTreeMap<&str, u32> = BTreeMap::new();
     let mut voices: BTreeMap<&str, (&str, u32)> = BTreeMap::new();
     let mut aliases = BTreeSet::new();
