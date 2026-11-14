@@ -1,6 +1,8 @@
 //! Shared application authority for the first single-process desktop milestone.
 //! Private drafts never enter committed history. Every accepted history action
 //! receives a fresh revision, including undo/redo, so stale edits stay stale.
+pub mod playback;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};

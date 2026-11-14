@@ -1,0 +1,64 @@
+!score 1.1 unit=q
+!meta title="Playback study" composer="ScoreStream"
+!part piano instrument=piano staves=1
+!part strings instrument=violin staves=1
+!voice keys part=piano staff=1
+!voice bow part=strings staff=1
+@0
+= score tempo=q:120
+= piano.s1 meter=4/4 key=0 clef=G2
+= strings.s1 meter=4/4 key=0 clef=G2
+| piano m1 len=4
+| strings s1 len=4
++ piano dynamic value=p
++ strings dynamic value=p
+keys C4:1 id=p1
+bow G4:4 id=v1
+~ pedal sustain start=#p1
+~ crescendo swell start=#v1
+.
+@1
+keys E4:1 id=p2
++ #p2 articulation value=staccato
+.
+@2
+keys G4:1 id=p3
++ #p3 articulation value=accent
+.
+@3
+keys C5:1 id=p4
+~ tie hold start=#p4
+.
+@4
+= score tempo=q.:60
+| piano m2 len=4
+| strings s2 len=4
++ strings dynamic value=f
+keys C5:1 id=p5
+bow A4:4 id=v2
+~ tie hold end=#p5
+~ pedal sustain end=#p5
+~ crescendo swell end=#v2
+~ diminuendo fade start=#v2
+.
+@5
+keys B4:1 id=p6
++ #p6 articulation value=staccatissimo
+.
+@6
+keys G4:1 id=p7
++ #p7 dynamic value=fp
+.
+@7
+keys E4:1 id=p8
++ #p8 articulation value=tenuto
+.
+@8
+| piano m3 len=1
+| strings s3 len=1
++ strings dynamic value=p
+keys C4:1 id=p9
+bow G4:1 id=v3
+~ diminuendo fade end=#v3
+.
+!end at=9
