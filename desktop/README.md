@@ -8,6 +8,7 @@ A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer 
 - Automatic valid-draft preview, explicit Apply, expected-revision conflicts, session undo/redo.
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
 - Built-in synthesized Web Audio playback driven by the authoritative Rust performance plan: play/pause/stop, Space outside editing/modal controls, seconds and measure seeking, score-time cursor/following, and note/rest click-to-seek.
+- **File → Export WAV…** renders the click-time source through the built-in synth to 48 kHz stereo PCM16. The native save dialog chooses a new destination; existing files are not replaced. Export is bounded to 120 seconds, is cancellable before finalization, and never applies a draft or changes SFS save/undo state. See [desktop WAV export](../docs/DESKTOP_WAV_EXPORT.md).
 - Distinct synthesized piano, flute and bowed-string timbres, selected by the note's exact instrument identifier. `cello`, `violin` and `strings` share the bowed-string profile; other identifiers use a neutral triangle tone. These are not recorded instrument samples.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
 - Bounded renderer queue: one running job and one replaceable pending job, off the UI thread.
@@ -16,7 +17,7 @@ A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer 
 
 The initial projection supports aligned measured staves, ordinary pitches, rests/spacers, equal-duration chords, basic clefs/key/meter, and ordinary/dotted durations. It rejects unsupported rhythmic/layout cases and reports omitted markings. It is **not MusicXML interchange** and not a full milestone D implementation. MEI projection currently lives in an isolated TypeScript adapter over Rust-typed DTOs; moving it into a Rust rendering crate is planned. No renderer output becomes authoritative score data.
 
-Session history is in memory. Save persists the SFS source, not revision history. No external MIDI, SoundFont/sample output, audio export, MCP score mutation, or complete notation editing is claimed. Built-in tones are not sampled instruments. Native Windows/macOS verification remains pending unless recorded in a later test report.
+Session history is in memory. Save persists the SFS source, not revision history. No external MIDI, SoundFont/sample output, MCP score mutation, or complete notation editing is claimed. Built-in tones are not sampled instruments. Native Windows/macOS verification remains pending unless recorded in a later test report.
 
 See [React architecture and unchanged backend boundaries](../docs/REACT_DESKTOP.md) and [platform window chrome](../docs/WINDOW_CHROME.md).
 
@@ -51,9 +52,11 @@ This desktop crate is deliberately a separate Cargo workspace so headless/core b
 
 `npm test -- --maxWorkers=1` tests exact projection, refusal of unsupported content, stable mapping, and stale-job rejection. `npm run build` typechecks and bundles locally pinned dependencies with no CDN runtime dependency.
 
-`npm run test:pcm` uses standalone Node.js 22.6+ tests for the [bounded PCM16/WAV data preparation component](../docs/PCM_WAV.md). It validates a fixed 48 kHz stereo output budget and checks header/chunk bytes without a browser, audio renderer or file writer. This component does not enable desktop audio export.
+`npm run test:pcm` uses standalone Node.js 22.6+ tests for the [bounded PCM16/WAV data preparation component](../docs/PCM_WAV.md). It validates a fixed 48 kHz stereo output budget and checks header/chunk bytes without a browser, audio renderer or file writer. The desktop export controller reuses this component without allocating a second whole-file buffer.
 
-`npm run test:wav-render` checks the [offline WAV rendering API](../docs/OFFLINE_WAV_RENDER.md) using injected fake audio contexts and sinks in standalone Node.js 22.6+. It checks shared live/offline graph scheduling, leading rests, ordered bounded byte delivery, backpressure, cancellation and failure cleanup. The API is not wired to a menu, native writer or save dialog. These mocks do not validate real offline audio, hardware or desktop export.
+`npm run test:wav-render` checks the [offline WAV rendering API](../docs/OFFLINE_WAV_RENDER.md) using injected fake audio contexts and sinks in standalone Node.js 22.6+. It checks shared live/offline graph scheduling, leading rests, ordered bounded byte delivery, backpressure, cancellation and failure cleanup. The desktop export controller connects this API to the existing shadcn menu/dialog and a session-bound native sink. These mocks do not validate real offline audio, hardware or desktop export.
+
+`npm run test:wav-export` checks click-time source capture, repeated starts, binary IPC shape, backpressure, cancellation, finalization, cleanup and safe localized errors with fake native commands/rendering in standalone Node.js. It does not launch a native picker, WebView, browser or Vite, and does not verify native file persistence.
 
 `npm run test:audio-render` is an optional real `OfflineAudioContext` signal regression using an already installed Chromium (`CHROMIUM_PATH` can specify its executable). It checks spectra, routing, gain, seek and note boundaries without opening an audio device or producing an audio file. It requires Chromium to run with its normal sandbox and does not install a browser. This test is separate from the mocked frontend suite; a browser-launch failure is not a signal-render pass.
 

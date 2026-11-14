@@ -1,5 +1,6 @@
 import {PlaybackTransport} from '../playback/transport';
-import { backend, native, playbackBackend } from '../bridge';
+import {WavExportController} from './wav-export';
+import { backend, native, playbackBackend, wavExportBackend } from '../bridge';
 import { clampZoom } from '../layout';
 import { project, RENDERER } from '../render/project';
 import { LatestOnly } from '../render/scheduler';
@@ -27,6 +28,7 @@ export class Workbench {
  private confirmUnsaved:ConfirmUnsaved=async()=>false;private openPending=false;private lifecycle=0;
  editor:SourceEditor|null=null;
  readonly playback=new PlaybackTransport(playbackBackend);
+ readonly wavExport=new WavExportController(wavExportBackend);
  constructor(private api=backend,private isNative=native){}
  subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>this.listeners.delete(listener);};
  getSnapshot=()=>this.state;
@@ -35,11 +37,13 @@ export class Workbench {
  get sequence(){return this.state.sequence;} get renderedSequence(){return this.state.renderedSequence;} get phase(){return this.state.phase;} get busy(){return this.state.busy;} get zoom(){return this.state.zoom;}
  get dirty(){return !!this.current&&this.state.source!==this.current.source;}
  get unsaved(){return this.state.source!==(this.state.fileSource??this.state.initialSource);}
+ get canExportWav(){return this.isNative&&!this.busy&&!this.wavExport.busy&&!!this.state.source.trim();}
+ exportWav(){if(this.canExportWav)return this.wavExport.start(this.state.source);return Promise.resolve();}
  get canSave(){return !this.busy&&!!this.view?.valid&&this.view.source===this.state.source;}
  attachEditor(editor:SourceEditor){this.editor=editor;if(this.state.source)editor.value=this.state.source;return()=>{if(this.editor===editor)this.editor=null;};}
  attachRenderer(worker:Worker){this.worker=worker;this.scheduler=new LatestOnly(worker,result=>this.publish(result));worker.onerror=e=>this.previewError(`Renderer failed: ${e.message}`);}
  bindConfirmation(confirm:ConfirmUnsaved){this.confirmUnsaved=confirm;return()=>{if(this.confirmUnsaved===confirm){this.confirmUnsaved=async()=>false;this.lifecycle++;}};}
- dispose(){this.playback.dispose();this.lifecycle++;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.scheduler=null;this.listeners.clear();}
+ dispose(){this.wavExport.dispose();this.playback.dispose();this.lifecycle++;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.scheduler=null;this.listeners.clear();}
  async start(){if(!this.isNative){this.previewError('Open the native desktop app. This UI intentionally has no JavaScript parser or mock Rust backend.');return;}try{const view=await this.api.current();this.set({initialSource:view.source});this.accept(view);}catch(e){this.previewError(describeError(e));}}
  message(message:string,messageValues:Record<string,string|number>={}){this.set({message,messageValues});}
  private invalidate(){clearTimeout(this.timer);const sequence=this.sequence+1;this.scheduler?.invalidate(sequence);this.snapshots.clear();this.set({sequence,phase:'pending'});return sequence;}

@@ -1,4 +1,5 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import {createWavExportBridge} from './app/wav-export-bridge';
 import type { View } from './types';
 import type { McpSettings, McpStatus } from './mcp/model';
 export const native = isTauri();
@@ -23,3 +24,5 @@ export const mcpBackend = {
 export const playbackBackend = {
   plan:(source:string)=>invoke<import('./playback/types').PlaybackPlan>('playback_plan',{source}),
 };
+
+export const wavExportBackend=createWavExportBridge(invoke);

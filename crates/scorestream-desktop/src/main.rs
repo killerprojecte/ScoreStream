@@ -5,6 +5,8 @@ use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 mod mcp_service;
 mod window_chrome;
+mod wav_export;
+use wav_export::WavExports;
 #[cfg(feature = "smoke-test")]
 mod smoke_profile;
 use mcp_service::{McpService, McpSettings, McpStatus};
@@ -171,6 +173,21 @@ fn main() {
     let authority = Workspace::demo().expect("embedded demo must validate");
     let builder = tauri::Builder::default()
         .manage(Arc::new(Mutex::new(authority)))
+        .manage(WavExports::default())
+        .on_page_load(|webview, payload| {
+            if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+                if let Some(state) = webview.try_state::<WavExports>() {
+                    wav_export::discard_window(state.inner(), webview.label());
+                }
+            }
+        })
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                if let Some(state) = window.try_state::<WavExports>() {
+                    wav_export::discard_window(state.inner(), window.label());
+                }
+            }
+        })
         .setup(|app| {
             // Check before loading MCP settings or creating a WebView. An opt-in
             // smoke run must never read or write the production application's profile.
@@ -229,6 +246,10 @@ fn main() {
         set_event_duration,
         open_source_file,
         save_source_file,
+        wav_export::wav_export_begin,
+        wav_export::wav_export_write,
+        wav_export::wav_export_finish,
+        wav_export::wav_export_abort,
         mcp_status,
         mcp_save_settings,
         mcp_start,
@@ -248,6 +269,10 @@ fn main() {
         set_event_duration,
         open_source_file,
         save_source_file,
+        wav_export::wav_export_begin,
+        wav_export::wav_export_write,
+        wav_export::wav_export_finish,
+        wav_export::wav_export_abort,
         mcp_status,
         mcp_save_settings,
         mcp_start,
@@ -258,6 +283,9 @@ fn main() {
         .expect("failed to build ScoreStream")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
+                if let Some(state) = app.try_state::<WavExports>() {
+                    wav_export::discard_all(state.inner());
+                }
                 if let Some(state) = app.try_state::<McpHost>() {
                     if let Ok(mut service) = state.lock() {
                         let _ = service.stop();

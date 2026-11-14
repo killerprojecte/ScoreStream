@@ -2,6 +2,7 @@
 //! Private drafts never enter committed history. Every accepted history action
 //! receives a fresh revision, including undo/redo, so stale edits stay stale.
 pub mod playback;
+pub mod wav;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
