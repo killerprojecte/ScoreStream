@@ -1,0 +1,3 @@
+# Preserve the exact upstream-derived bytes checked by registry-provenance.test.ts,
+# including on Windows checkouts with core.autocrlf=true.
+/desktop/src/components/ui/*.tsx text eol=lf
