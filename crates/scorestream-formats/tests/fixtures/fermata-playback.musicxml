@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic source-to-playback regression, not an original Beethoven excerpt. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <sound tempo="120"/>
+    <sound dynamics="50"/>
+    <note id="start"><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><tie type="start"/><voice>1</voice><notations><tied type="start"/><fermata type="upright"/></notations></note>
+    <sound dynamics="100"/>
+    <note id="stop"><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><tie type="stop"/><voice>1</voice><notations><tied type="stop"/><fermata type="upright" default-y="0.04" relative-y="5"/></notations></note>
+    <note id="rest"><rest/><duration>8</duration><voice>1</voice><notations><fermata type="inverted">square</fermata></notations></note>
+  </measure></part>
+</score-partwise>

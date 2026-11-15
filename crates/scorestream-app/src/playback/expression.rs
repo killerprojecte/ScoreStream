@@ -1,8 +1,8 @@
 //! Numeric realization of typed expression intervals. No SFS attribute decoding.
 use super::{
     EnvelopePoint,
+    clock::PlaybackClock,
     diagnostic::{Diagnostics, RealizationEffect},
-    tempo::TempoMap,
 };
 use scorestream_codec::{Rational, notation::*};
 use std::collections::{BTreeMap, BTreeSet};
@@ -184,7 +184,7 @@ impl Expression {
         segments: &[&ResolvedEvent],
         release: &Rational,
         initial: u8,
-        tempo: &TempoMap,
+        tempo: &PlaybackClock<'_>,
     ) -> Result<Vec<EnvelopePoint>, String> {
         if let Some(numeric) = &self.numeric {
             return numeric.envelope(segments, release, initial, tempo);

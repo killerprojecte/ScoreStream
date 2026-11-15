@@ -76,20 +76,42 @@ pub fn perform_document(
     if !errors.is_empty() {
         return Err(errors);
     }
-    perform(doc, limits).map_err(|e| vec![e])
+    perform(doc, limits, lower::LoweringProfile::Navigation, None).map_err(|e| vec![e])
 }
-fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> {
-    if doc
-        .required_extensions
-        .iter()
-        .any(|e| e == crate::fermata_extension::EXTENSION)
+pub(super) fn perform(
+    doc: &Document,
+    limits: PerformanceLimits,
+    profile: lower::LoweringProfile,
+    maximum_timing_bits: Option<u64>,
+) -> Result<PerformedScore> {
+    let fermatas = profile == lower::LoweringProfile::ExplicitFermatas;
+    if !fermatas
+        && doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::fermata_extension::EXTENSION)
     {
         let mut d = error("fermata.performance_unsupported", "Authored fermatas require an explicit hold-duration policy; performed repeats cannot drop their holds");
         d.source = doc.source;
         return Err(d);
     }
-    if doc.required_extensions.as_slice() != [ext::EXTENSION] {
-        return Err(error("navigation.performance_capability", "Performed navigation requires exactly the supported navigation capability; other required semantics cannot be ignored"));
+    let supported = if fermatas {
+        doc.required_extensions
+            .iter()
+            .any(|e| e == crate::fermata_extension::EXTENSION)
+            && doc
+                .required_extensions
+                .iter()
+                .all(|e| e == crate::fermata_extension::EXTENSION || e == ext::EXTENSION)
+    } else {
+        doc.required_extensions.as_slice() == [ext::EXTENSION]
+    };
+    if !supported {
+        return Err(if fermatas {
+            error("fermata.performance_capability", "Qualified fermata projection requires fermata@1 and optionally navigation@1; other required semantics cannot be ignored")
+        } else {
+            error("navigation.performance_capability", "Performed navigation requires exactly the supported navigation capability; other required semantics cannot be ignored")
+        });
     }
     let mut parts: Vec<_> = doc
         .parts
@@ -151,7 +173,7 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
             format!("Closed ordinary route rejected: {e:?}; no missing ending is inferred"),
         )
     })?;
-    let written = lower::lower(doc, true)?;
+    let written = lower::lower(doc, profile)?;
     if written
         .events
         .iter()
@@ -290,7 +312,11 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
                 }
                 previous_measure = Some(*i);
                 let m = &measures[*i];
+                // Reject rational growth on the qualified route before allocating
+                // this occurrence. Discovery shares this guard without a clock.
+                check_timing_bits(&at, maximum_timing_bits)?;
                 let end = &at + &m.length;
+                check_timing_bits(&end, maximum_timing_bits)?;
                 if result
                     .measures
                     .len()
@@ -328,7 +354,11 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
                         "Performed control budget exceeded before allocation",
                     ));
                 }
-                let shift = |t: &Rational| &at + &(t - &m.start);
+                let shift = |t: &Rational| -> Result<Rational> {
+                    let shifted = &at + &(t - &m.start);
+                    check_timing_bits(&shifted, maximum_timing_bits)?;
+                    Ok(shifted)
+                };
                 // Controls at a boundary belong to the following measure. Checkpoint
                 // capture occurs before these writes; a skipped interval executes none.
                 for frame in &frames[*i] {
@@ -390,7 +420,8 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
                             .settings
                             .resolve_event(&mut e, explicit_staff[&original.id.0]);
                         e.id = occurrence_id(*occurrence_index, &original.id);
-                        e.start = shift(&original.start);
+                        e.start = shift(&original.start)?;
+                        check_timing_bits(&e.end(), maximum_timing_bits)?;
                         result.events.push(EventOccurrence {
                             id: e.id.clone(),
                             written_id: original.id.clone(),
@@ -404,7 +435,7 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
                     if t.at > m.start {
                         state.tempo = Some((*t).clone());
                         let mut t = (*t).clone();
-                        t.at = shift(&t.at);
+                        t.at = shift(&t.at)?;
                         result.score.tempos.push(t);
                     }
                 }
@@ -417,7 +448,7 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
                         }
                     }
                     let mut d = (*d).clone();
-                    d.at = shift(&d.at);
+                    d.at = shift(&d.at)?;
                     if numeric {
                         d.end = Some(end.clone());
                     }
@@ -456,6 +487,7 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
         &event_measure,
         &mut result,
         limits.maximum_controls,
+        maximum_timing_bits,
     )?;
     for d in traversal.diagnostics {
         let (code,message) = match d {
@@ -469,6 +501,15 @@ fn perform(doc: &Document, limits: PerformanceLimits) -> Result<PerformedScore> 
     }
     Ok(result)
 }
+fn check_timing_bits(at: &Rational, maximum: Option<u64>) -> Result<()> {
+    if maximum.is_some_and(|bits| at.numerator().bits() > bits || at.denominator().bits() > bits) {
+        return Err(error(
+            "fermata.rational_budget",
+            "Qualified performed time exceeds the rational bit budget before occurrence allocation",
+        ));
+    }
+    Ok(())
+}
 fn occurrence_id(index: usize, written: &EventId) -> EventId {
     EventId(format!("occ{index}:{}", written.0))
 }
@@ -479,6 +520,7 @@ fn project_ties(
     event_measure: &BTreeMap<EventId, usize>,
     out: &mut PerformedScore,
     budget: usize,
+    maximum_timing_bits: Option<u64>,
 ) -> Result<()> {
     let mut runs = BTreeMap::<usize, BTreeMap<usize, &Occurrence>>::new();
     for o in occurrences {
@@ -537,6 +579,7 @@ fn project_ties(
                 let o = map[&mi];
                 a.event = occurrence_id(o.index, &a.event);
                 a.at = &o.start + &(&a.at - &measures[mi].start);
+                check_timing_bits(&a.at, maximum_timing_bits)?;
             }
             out.score.relations.push(relation);
         }

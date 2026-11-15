@@ -1,20 +1,24 @@
 //! Compile the shared typed notation model into an immutable output plan.
 //! SFS parsing/lowering, expression policy, continuity, and tempo conversion are
 //! distinct modules. No UI, audio devices, markup or wire attributes enter here.
+mod clock;
 mod continuity;
 mod diagnostic;
 mod expression;
+mod fermata;
 mod numeric;
 mod plan;
 mod tempo;
+use clock::PlaybackClock;
 use continuity::Continuity;
 use diagnostic::Diagnostics;
 pub use diagnostic::{PerformanceDiagnostic, RealizationEffect};
 use expression::Expression;
+pub use fermata::*;
 pub use plan::*;
+use scorestream_codec::fermata_timing::TimingProjection;
 use scorestream_codec::{Document, Duration, Rational, Record, Scalar, notation::*};
 use std::collections::{BTreeMap, BTreeSet};
-use tempo::TempoMap;
 
 /// Invalid drafts never play a last-good snapshot. This has no workspace effects.
 pub fn plan_source(source: &str) -> Result<PlaybackPlan, String> {
@@ -29,7 +33,7 @@ pub fn plan_source(source: &str) -> Result<PlaybackPlan, String> {
     {
         let performed =
             perform_document(&doc, PerformanceLimits::default()).map_err(format_diagnostics)?;
-        compile_performed(&performed.score, &doc, Some(&performed))
+        compile_performed(&performed.score, &doc, Some(&performed), None)
     } else {
         let score = lower_document(&doc).map_err(format_diagnostics)?;
         compile(&score, &doc)
@@ -44,17 +48,18 @@ fn format_diagnostics(diagnostics: Vec<scorestream_codec::Diagnostic>) -> String
         .join("\n")
 }
 fn compile(score: &ResolvedScore, doc: &Document) -> Result<PlaybackPlan, String> {
-    compile_performed(score, doc, None)
+    compile_performed(score, doc, None, None)
 }
 fn compile_performed(
     score: &ResolvedScore,
     doc: &Document,
     performed: Option<&PerformedScore>,
+    timing: Option<&TimingProjection>,
 ) -> Result<PlaybackPlan, String> {
     if score.events.len() > 100_000 {
         return Err("Playback is limited to 100,000 events per score".into());
     }
-    let tempo = TempoMap::new(score);
+    let tempo = PlaybackClock::new(score, timing)?;
     let mut duration_seconds = tempo.seconds(&score.end)?;
     let written_ids: BTreeMap<_, _> = performed
         .into_iter()
@@ -128,6 +133,11 @@ fn compile_performed(
     }
     let expression = Expression::new(score, &mut warnings)?;
     let continuity = Continuity::new(score, &expression, &mut warnings)?;
+    let held_tails = if let Some(timing) = timing {
+        fermata::validate_sound_policy(score, &continuity, timing, &mut warnings)?
+    } else {
+        BTreeSet::new()
+    };
     for direction in &score.directions {
         match &direction.kind {
             DirectionKind::Words {..} => warnings.add("words_not_realized", "direction.words", RealizationEffect::NotationOnly, &direction.origin, "Text is represented in the shared model; no musical effect is guessed from arbitrary words."),
@@ -186,7 +196,11 @@ fn compile_performed(
         }
         let chain = continuity.chain(index)?;
         let tail = *chain.last().unwrap();
-        let release = continuity.release(&score.events[tail], tail);
+        let release = if held_tails.contains(&tail) {
+            score.events[tail].end()
+        } else {
+            continuity.release(&score.events[tail], tail)
+        };
         let start = tempo.seconds(&event.start)?;
         let end = tempo.seconds(&release)?;
         let duration = end - start;

@@ -1,5 +1,5 @@
 //! Exact explicit sound controls. Symbolic expression policy cannot override them.
-use super::{EnvelopePoint, tempo::TempoMap};
+use super::{EnvelopePoint, clock::PlaybackClock};
 use scorestream_codec::{Rational, notation::*};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -106,7 +106,7 @@ impl NumericDynamics {
         segments: &[&ResolvedEvent],
         release: &Rational,
         initial: u8,
-        tempo: &TempoMap,
+        tempo: &PlaybackClock<'_>,
     ) -> Result<Vec<EnvelopePoint>, String> {
         let start = &segments[0].start;
         let start_seconds = tempo.seconds(start)?;

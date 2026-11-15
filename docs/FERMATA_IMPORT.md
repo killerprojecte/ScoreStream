@@ -1,6 +1,6 @@
 # Authored fermatas without invented performance timing
 
-This bounded slice retains source fermata signs through MusicXML → shared model → SFS → MusicXML. It **does not realize holds, create audio, or complete full original Beethoven import**. A fermata is not an authored number of seconds or a tempo multiplier. Playback explicitly rejects the required capability instead of playing the written timeline without it.
+This bounded slice retains source fermata signs through MusicXML → shared model → SFS → MusicXML. It **does not realize holds, create audio, or complete full original Beethoven import**. A fermata is not an authored number of seconds or a tempo multiplier. Ordinary playback explicitly rejects the required capability instead of playing the written timeline without it. A separate opt-in source-qualified playback API is described below.
 
 ## Typed profile
 
@@ -26,7 +26,7 @@ Barline/grace/spacer anchors, multiple signs on one event, source IDs, x positio
 
 The mark frame must be the referenced event's exact onset. All mark fields are optional, preserving authored absence; arbitrary timing fields are not accepted. Capability declaration is mandatory, unique and requires at least one sign. Unknown versions, undeclared/wrong-time anchors, fragments and duplicate signs reject in both text and AST validation. Older readers reject the required capability rather than overlooking the sign.
 
-Strict adapters report `fermata.authored_only`; core inspection warns `fermata.realization_unavailable`; generic notation/playback lowering returns `fermata.performance_unsupported`. No preview engraving or sound realization is claimed. A new performed-replay entry point must reject this capability too until it implements an explicit global timing policy. Ordinary scores without fermatas retain existing behavior.
+Strict adapters report `fermata.authored_only`; core inspection warns `fermata.realization_unavailable`; generic notation/playback lowering returns `fermata.performance_unsupported`. No preview engraving or sound realization is claimed. Any performed-replay entry point without an explicit global timing and sound policy must reject this capability too. Ordinary scores without fermatas retain existing behavior.
 
 ## Untouched Beethoven source evidence
 
@@ -45,9 +45,11 @@ The tests preserve these incompatible interval patterns without choosing a synch
 
 Neither equal-onset nor equal-end grouping is a universal interpretation of these signs. The four-file audit is evidence for authored mapping, not full-score import or an auditory test. Integration/CLI fixtures are explicitly synthetic; no original is sanitized to claim success.
 
-## Later performance policy
+## Separate explicit performance policy
 
-A future interpreter must expose and report its hold/breath policy separately from authored data. It must operate on performed event occurrences after repeat traversal, retain written references, handle tied sounding intervals and rest anchors, reconcile simultaneous/unequal part annotations deliberately, and advance one global performance clock. It must not add one independent pause per staff copy, silently move tie-stop signs, infer an unbounded hold, or apply skipped/repeated controls on the wrong visit. Unsupported groups require an explicit diagnostic. Hold seconds, tempo warps, breaths and boundary ownership need direct scheduler/offline tests before any audio claim.
+The [exact clock and source-qualified playback API](FERMATA_TIMING_PROTOTYPE.md) are separate from authored import. The bare `fermata_timing::interpret` API still requires a correct supplied performed snapshot and does not itself realize sound. `plan_source_with_explicit_fermatas` now privately projects unchanged validated source, requires complete explicit occurrence groups and exact hold seconds, and applies the explicitly selected `SustainSelectedAnchors` sound profile to produce a real `PlaybackPlan`. Ordinary `lower_document`, `perform_document` and `plan_source` guards remain in place. There is no UI/CLI policy editor, complete original-score import, or audition claim.
+
+Any interpreter must expose and report its hold/breath policy separately from authored data. It must operate on performed event occurrences after repeat traversal, retain written references, handle tied sounding intervals and rest anchors, reconcile simultaneous/unequal part annotations deliberately, and advance one global performance clock. It must not add one independent pause per staff copy, silently move tie-stop signs, infer an unbounded hold, or apply skipped/repeated controls on the wrong visit. Unsupported groups require an explicit diagnostic. Hold seconds, tempo warps, breaths and boundary ownership need direct scheduler/offline tests before any audio claim.
 
 ## Checks
 

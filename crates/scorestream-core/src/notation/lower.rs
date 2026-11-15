@@ -199,9 +199,17 @@ pub fn lower_document(doc: &Document) -> std::result::Result<ResolvedScore, Vec<
     if !errors.is_empty() {
         return Err(errors);
     }
-    lower(doc, false).map_err(|e| vec![e])
+    lower(doc, LoweringProfile::Written).map_err(|e| vec![e])
 }
-pub(super) fn lower(doc: &Document, navigation: bool) -> Result<ResolvedScore> {
+/// Private profiles: only the qualified source-to-clock constructor may consume
+/// fermata marks, retaining them in its typed sidecar before returning a result.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum LoweringProfile {
+    Written,
+    Navigation,
+    ExplicitFermatas,
+}
+pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
     if doc
         .required_extensions
         .iter()
@@ -213,10 +221,13 @@ pub(super) fn lower(doc: &Document, navigation: bool) -> Result<ResolvedScore> {
             doc.source,
         ));
     }
-    if doc
-        .required_extensions
-        .iter()
-        .any(|e| e == crate::fermata_extension::EXTENSION)
+    let navigation = profile != LoweringProfile::Written;
+    let fermatas = profile == LoweringProfile::ExplicitFermatas;
+    if !fermatas
+        && doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::fermata_extension::EXTENSION)
     {
         return Err(Diagnostic::error(
             "fermata.performance_unsupported",
@@ -373,6 +384,9 @@ pub(super) fn lower(doc: &Document, navigation: bool) -> Result<ResolvedScore> {
                 }
                 Record::Mark(mark)
                     if navigation && mark.kind == crate::navigation_extension::KIND => {}
+                // Authored signs are decoded and retained by the qualified
+                // constructor, then every visited sign must pass its clock policy.
+                Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) => {
                     let a = &mark.attributes;
                     let s = mark.source;

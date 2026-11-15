@@ -1,0 +1,135 @@
+{
+  "diagnostics": [
+    {
+      "code": "fermata.explicit_policy_hold",
+      "effect": "policy",
+      "feature": "fermata.hold",
+      "message": "Added 1/4 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+      "object_id": "explicit-0",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 27,
+        "end_line": 10,
+        "line": 10
+      }
+    },
+    {
+      "code": "fermata.explicit_policy_hold",
+      "effect": "policy",
+      "feature": "fermata.hold",
+      "message": "Added 1/2 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+      "object_id": "explicit-1",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 26,
+        "end_line": 16,
+        "line": 16
+      }
+    },
+    {
+      "code": "fermata.explicit_policy_hold",
+      "effect": "policy",
+      "feature": "fermata.hold",
+      "message": "Added 3/4 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+      "object_id": "explicit-2",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 25,
+        "end_line": 21,
+        "line": 21
+      }
+    },
+    {
+      "code": "fermata.terminal_gate_override",
+      "effect": "policy",
+      "feature": "fermata.sustain",
+      "message": "Explicit sustain-selected-anchor policy replaces the ordinary terminal gate with the exact written endpoint and includes its hold; ties remain one attack.",
+      "object_id": "stop",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 26,
+        "end_line": 16,
+        "line": 16
+      }
+    }
+  ],
+  "duration_seconds": 3.5,
+  "event_positions": [
+    {
+      "end_seconds": 0.75,
+      "id": "start",
+      "occurrence_id": "occ0:start",
+      "start_seconds": 0.0
+    },
+    {
+      "end_seconds": 1.75,
+      "id": "stop",
+      "occurrence_id": "occ0:stop",
+      "start_seconds": 0.75
+    },
+    {
+      "end_seconds": 3.5,
+      "id": "rest",
+      "occurrence_id": "occ0:rest",
+      "start_seconds": 1.75
+    }
+  ],
+  "measures": [
+    {
+      "end_seconds": 3.5,
+      "id": "m",
+      "label": "1",
+      "occurrence_index": 0,
+      "part": "p",
+      "start_seconds": 0.0
+    }
+  ],
+  "notes": [
+    {
+      "duration_seconds": 1.75,
+      "frequency_hz": 391.99543598174927,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.75
+        },
+        {
+          "gain": 2.0,
+          "offset_seconds": 0.75
+        },
+        {
+          "gain": 2.0,
+          "offset_seconds": 1.75
+        }
+      ],
+      "id": "occ0:start",
+      "instrument": "piano",
+      "midi_note": 67.0,
+      "part": "p",
+      "start_seconds": 0.0,
+      "velocity": 45,
+      "voice": "v1_1",
+      "written_id": "start"
+    }
+  ],
+  "routes": [
+    {
+      "instrument": "piano",
+      "part": "p"
+    }
+  ],
+  "warnings": [
+    "fermata.explicit_policy_hold [explicit-0]: Added 1/4 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+    "fermata.explicit_policy_hold [explicit-1]: Added 1/2 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+    "fermata.explicit_policy_hold [explicit-2]: Added 3/4 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+    "fermata.terminal_gate_override [stop]: Explicit sustain-selected-anchor policy replaces the ordinary terminal gate with the exact written endpoint and includes its hold; ties remain one attack."
+  ]
+}
