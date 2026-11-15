@@ -1,12 +1,13 @@
 import type {EventPosition} from './types';
 export interface ScoreAnchor extends EventPosition {node:Element;system:Element}
 export function scoreAnchors(host:Element,map:Record<string,string>,positions:EventPosition[]):ScoreAnchor[]{
- const events=new Map(positions.map(position=>[position.id,position]));
+ const events=new Map<string,EventPosition[]>();
+ for(const position of positions){const visits=events.get(position.id)??[];visits.push(position);events.set(position.id,visits);}
  const anchors:ScoreAnchor[]=[];
  for(const [svgId,id] of Object.entries(map)){
-  const position=events.get(id),node=host.querySelector(`[id="${CSS.escape(svgId)}"]`);
-  if(!position||!node)continue;
-  anchors.push({...position,node,system:node.closest('.system')??node.closest('svg')??node});
+  const visits=events.get(id),node=host.querySelector(`[id="${CSS.escape(svgId)}"]`);
+  if(!visits||!node)continue;
+  for(const position of visits)anchors.push({...position,node,system:node.closest('.system')??node.closest('svg')??node});
  }
  return anchors.sort((a,b)=>a.start_seconds-b.start_seconds);
 }

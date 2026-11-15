@@ -395,7 +395,7 @@ fn display_only_and_unrelated_parts_preserve_existing_playback() {
 }
 
 #[test]
-fn numeric_dynamics_cannot_bypass_authored_navigation_playback_guard() {
+fn numeric_dynamics_use_performed_navigation_not_linear_playback() {
     let xml = include_str!("fixtures/navigation-closed.musicxml").replacen(
         "<attributes>",
         "<sound dynamics=\"44.44\"/><attributes>",
@@ -407,8 +407,16 @@ fn numeric_dynamics_cannot_bypass_authored_navigation_playback_guard() {
     let sfs = SfsAdapter.write(&model).unwrap().value;
     assert!(sfs.contains("!requires scorestream.navigation@1"));
     assert!(sfs.contains("sound_dynamics=1111/25"));
-    assert!(
-        scorestream_app::playback::plan_source(&sfs).is_err(),
-        "Numeric dynamics must not turn repeat-aware scores into linear playback"
+    let p = scorestream_app::playback::plan_source(&sfs).unwrap();
+    assert_eq!(
+        p.event_positions
+            .iter()
+            .map(|e| e.id.as_str())
+            .collect::<Vec<_>>(),
+        ["a", "b", "a", "c", "d"]
+    );
+    assert_eq!(
+        p.notes.iter().map(|n| n.velocity).collect::<Vec<_>>(),
+        [40, 40, 40, 40, 40]
     );
 }

@@ -7,7 +7,7 @@ import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from './ui/se
 import {Tooltip,TooltipContent,TooltipTrigger} from './ui/tooltip';
 import {Alert,AlertDescription} from './ui/alert';
 import {Spinner} from './ui/spinner';
-import {displayMeasures,formatTime,measureAt,parseSeconds} from '../playback/timeline';
+import {displayMeasures,formatTime,measureAt,measureKey,parseSeconds} from '../playback/timeline';
 import type {PlaybackTransport} from '../playback/transport';
 import {t} from '../i18n';
 
@@ -29,7 +29,7 @@ export function PlaybackControls({transport,enabled}:{transport:PlaybackTranspor
    <output id="playback-time" className="text-xs tabular-nums" aria-label={t('Playback time')}>{formatTime(state.position)} / {formatTime(duration)}</output>
    {plan&&<>
     <Label htmlFor="playback-seconds" className="text-xs">{t('Seconds')}</Label><SecondsField position={state.position} duration={duration} onSeek={seconds=>transport.seek(seconds)}/>
-    {!!measures.length&&<><Label htmlFor="playback-measure" className="text-xs">{t('Measure')}</Label><Select value={measure?.id??''} onValueChange={id=>{const target=measures.find(item=>item.id===id);if(target)transport.seek(target.start_seconds);}}><SelectTrigger id="playback-measure" size="sm" className="w-24"><SelectValue placeholder="—"/></SelectTrigger><SelectContent>{measures.map((item,index)=><SelectItem key={item.id} value={item.id}>{item.label??String(index+1)}</SelectItem>)}</SelectContent></Select></>}
+    {!!measures.length&&<><Label htmlFor="playback-measure" className="text-xs">{t('Measure')}</Label><Select value={measure?measureKey(measure):''} onValueChange={id=>{const target=measures.find(item=>measureKey(item)===id);if(target)transport.seek(target.start_seconds);}}><SelectTrigger id="playback-measure" size="sm" className="w-24"><SelectValue placeholder="—"/></SelectTrigger><SelectContent>{measures.map((item,index)=><SelectItem key={measureKey(item)} value={measureKey(item)}>{item.label??String(index+1)}{item.occurrence_index!==undefined?` · ${formatTime(item.start_seconds)}`:''}</SelectItem>)}</SelectContent></Select></>}
    </>}
    <span className="ml-auto text-xs text-muted-foreground">{t('Built-in synth')}</span>
   </div>

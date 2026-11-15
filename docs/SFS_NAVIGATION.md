@@ -1,6 +1,6 @@
 # Authored SFS navigation capability
 
-The required capability `scorestream.navigation@1` enables typed barline and ending interchange in SFS 1.1. This slice supports XML → common score → SFS → common score → XML roundtrip for the supported ordinary closed-repeat profile. It preserves authored notes and controls once, not an expanded performance. Old readers reject the unknown mandatory capability; current performed-notation lowering explicitly returns `navigation.replay_unsupported`. Repeat engraving is not implemented and codec inspection reports that limitation. CLI validate, canonical and inspect print structured warnings on stderr even when authored syntax is valid.
+The required capability `scorestream.navigation@1` enables typed barline and ending interchange in SFS 1.1. This slice supports XML → common score → SFS → common score → XML roundtrip for the supported ordinary closed-repeat profile. It preserves authored notes and controls once, not an expanded performance. Old readers reject the unknown mandatory capability. Ordinary `lower_document` refuses once-through lowering; `perform_document` and application playback use the supported occurrence projection described below. Repeat engraving is not implemented and codec inspection reports that limitation. CLI validate, canonical and inspect print structured warnings on stderr even when authored syntax is valid.
 
 ```text
 !requires scorestream.navigation@1
@@ -31,15 +31,23 @@ The SFS common-model bridge reconciles per-part navigation and validates the ord
 
 Absent repeat count and absent forward sign remain absent in the authored data. When the supported route uses a two-pass or movement-entry convention, the conversion report names that inference. No new glyph, count or ending endpoint is inserted.
 
-## Rigorous performed replay work still required
+## Bounded performed projection
 
-The next performance slice must consume one original common/notation model plus the exact occurrence plan. It must not use pre-expanded copies as a second source of truth.
+`notation::perform_document` consumes the original validated SFS document and the shared score-wide route reconciler. It returns a derived `PerformedScore`; it does not serialize expanded SFS or replace the authoring model. Application playback automatically uses this path for navigation-capable scores. The format adapter and performer now share the same reconciliation code in core; app dependencies and all lockfiles are unchanged.
 
-1. Build a scoped written-control index. Store checkpoint state before entry controls: tempo, instrument/transposition, numeric dynamics, pedal and other supported persistent controls. Restore the whole supported scope state at backward edges, then replay authored entry controls in order.
-2. Project controls only from visited measure intervals onto exact performed quarter positions. Skip edges apply no notes or controls from excluded endings. Explicit final-boundary controls need a documented half-open ownership rule rather than being attached twice.
-3. Create performed event identities `(movement, occurrence, written event)` while retaining written event references for selection. Recompute sounding pitch from the state active on that occurrence exactly once.
-4. Rebind and validate ties and other spans across actual performed adjacency. Never stretch a written tie across a nonmatching jump or silently reattack a continuation. Unsupported per-pass controls and conditional relations must remain diagnostics.
-5. Build the tempo clock from projected performed controls, then realize durations and policies such as fermatas. Test tempo changes inside held notes and skipped endings, all restored scopes, repeated source positions, budget limits and deterministic rendering.
-6. Keep movement identity separate from local part IDs. III→IV attacca adds no pause but does not reuse instrument/tempo state or manufacture cross-file ties. Tail overlap/truncation requires a deliberate audio policy.
+Supported behavior:
 
-Acceptance requires actual XML/MXL import through the common model, matching closed source traversal and state traces, no once-through fallback, then identical scheduler/offline timing. Full Beethoven import still has other unsupported semantics and the irregular 10-quarter cadenza measure; this capability does not bypass those blockers or produce the requested complete audio.
+- Closed ordinary repeats, explicit counts and the existing closed first/final ending profile. Absent-count and absent-forward conventions remain explicit returned policy diagnostics. An unclosed final ending still rejects with no continuation override.
+- Exact rational performed quarter positions. Measure intervals are half-open: controls at a boundary belong to the following measure, and skipped intervals execute no controls. A meaningful control at final EOF is explicitly rejected because there is no following measure to own it.
+- Checkpoints capture before entry controls. Tempo, part instruments, voice default staffs and part/staff transposition maps restore together. Authored entry controls then execute again. Sounding pitch is recomputed from the written pitch exactly once per occurrence using the shared state reducer.
+- Explicit numeric dynamics restore by scope, including absence of an assignment. Projected assignments have finite performed-measure intervals, so a first-ending-only staff override cannot leak into the final pass. Printed `sound=false` dynamics remain display-only. Tempo changes inside a held note are projected before the existing exact tempo clock converts to seconds.
+- Ordinary ties rebind within contiguous performed runs, including ties across sequential measures inside a repeat. Any tie partially present across a backward/skip edge rejects. Other spans, sounding symbolic dynamics, grace timing and measured events extending beyond their authored measure remain explicitly unsupported in this navigation profile. Additional required capabilities, including unresolved fermata timing, reject before projection.
+- Performed event IDs are occurrence-qualified; `Origin.object_id` and `EventOccurrence.written_id` retain the written identity. Playback notes expose `written_id`, event positions retain written `id` plus `occurrence_id`, and measure positions retain written ID plus `occurrence_index`. Playback selection/playhead code keeps every visit instead of overwriting repeated written IDs. Clicking a written note seeks its first performed visit; the measure picker distinguishes later visits by their time.
+
+Default budgets are 100,000 performed measures, 100,000 events, and 1,000,000 projected controls/relation anchors or part-measure references. Checks precede each bounded allocation; failure returns no partial playback plan. Written input is indexed once, navigation uses the shared bounded traversal, and ties are considered only in contiguous runs visiting their anchors rather than a full routes×relations scan.
+
+The synthetic `navigation-performed.musicxml` fixture is an actual complete XML → common model → SFS → PlaybackPlan test, not a replacement for Beethoven. Its five authored notes yield six performed occurrences and exactly 5.5 seconds with restored tempo, numeric dynamics and transposition. Further tests cover restored defaults, staff/instrument changes, held-note tempo changes, tied visits, cross-jump rejection, policy diagnostics and budgets. The original four scores still have independent import blockers; no full-score audio or native listening acceptance is claimed.
+
+## Remaining fidelity work
+
+Fermata durations, symbolic dynamics/hairpin/pedal checkpoint policy, conditional cross-jump relations, grace timing, engraving and irregular-measure import remain separate explicit work. Movement IDs and local part IDs must stay distinct; III→IV attacca adds no pause but cannot carry instrument/tempo state or manufacture cross-file ties. Tail overlap/truncation needs a deliberate audio policy. Full original MusicXML/MXL import, native preview and complete-score listening remain required before claiming the requested Beethoven audio is finished.

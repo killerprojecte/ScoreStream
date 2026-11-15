@@ -17,3 +17,8 @@ export function parseSeconds(text:string,duration:number):number|null {
  const value=Number(text);
  return Number.isFinite(value)&&value>=0&&value<=duration?value:null;
 }
+
+/** Stable selector key for a performed visit; authored ids still drive notation. */
+export function measureKey(measure:PlaybackMeasure):string {
+ return measure.occurrence_index===undefined?measure.id:`occ${measure.occurrence_index}:${measure.id}`;
+}

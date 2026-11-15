@@ -56,10 +56,12 @@ fn actual_xml_common_sfs_common_xml_preserves_closed_authored_repeat() {
             .iter()
             .any(|d| d.code == "navigation.replay_unsupported")
     );
-    assert!(
+    assert_eq!(
         scorestream_app::playback::plan_source(&written.value)
-            .unwrap_err()
-            .contains("navigation.replay_unsupported")
+            .unwrap()
+            .event_positions
+            .len(),
+        5
     );
 }
 #[test]

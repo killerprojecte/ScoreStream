@@ -45,7 +45,7 @@ pub(crate) fn check_profile(score: &ScoreDocument, report: &mut MappingReport) {
             message,
         );
     }
-    report.push(Format::Sfs,MappingEffect::Normalized,"navigation.authored_only","/barlines","Authored boundaries roundtrip through the required navigation capability; repeat engraving and performed playback remain unsupported");
+    report.push(Format::Sfs,MappingEffect::Normalized,"navigation.authored_only","/barlines","Authored boundaries roundtrip through the required navigation capability; repeat engraving is unavailable and performed playback requires the separate supported closed-route projection");
 }
 pub(crate) fn read_mark(mark: &Mark, score: &mut ScoreDocument, report: &mut MappingReport) {
     match ext::decode(mark) {

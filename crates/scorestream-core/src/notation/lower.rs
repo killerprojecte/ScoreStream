@@ -127,6 +127,67 @@ fn scope(
     Err(error(format!("Unresolved scope {target}"), source))
 }
 
+/// The shared written-state reducer. A performed traversal checkpoints this exact
+/// state before entry controls rather than loading a later written snapshot.
+#[derive(Clone)]
+pub(super) struct PersistentState {
+    pub parts: BTreeMap<String, InstrumentId>,
+    pub voices: BTreeMap<String, (PartId, u32)>,
+    transpositions: BTreeMap<String, Rational>,
+}
+impl PersistentState {
+    pub fn new(doc: &Document) -> Self {
+        Self {
+            parts: doc
+                .parts
+                .iter()
+                .map(|p| (p.id.clone(), InstrumentId(p.instrument.clone())))
+                .collect(),
+            voices: doc
+                .voices
+                .iter()
+                .map(|v| (v.id.clone(), (PartId(v.part.clone()), v.staff)))
+                .collect(),
+            transpositions: BTreeMap::new(),
+        }
+    }
+    pub fn apply(&mut self, state: &crate::State) {
+        if let Some(value) = text(&state.attributes, "instrument") {
+            self.parts
+                .insert(state.target.clone(), InstrumentId(value.into()));
+        }
+        if let (Some(staff), Some((_, current))) = (
+            state.attributes.get("staff").and_then(Scalar::as_i64),
+            self.voices.get_mut(&state.target),
+        ) {
+            *current = staff as u32;
+        }
+        if let Some(value) = rational(&state.attributes, "transpose_chromatic") {
+            let octaves = Rational::from_integer(number(&state.attributes, "transpose_octaves", 0));
+            self.transpositions.insert(
+                state.target.clone(),
+                &value + &(&octaves * &Rational::from_integer(12)),
+            );
+        }
+    }
+    pub fn resolve_event(&self, event: &mut ResolvedEvent, explicit_staff: Option<u32>) {
+        let (part, default_staff) = &self.voices[&event.voice.0];
+        event.part = part.clone();
+        event.staff = StaffId {
+            part: part.clone(),
+            number: explicit_staff.unwrap_or(*default_staff),
+        };
+        event.instrument = self.parts[&part.0].clone();
+        let transpose = self
+            .transpositions
+            .get(&format!("{}.s{}", part.0, event.staff.number))
+            .or_else(|| self.transpositions.get(&part.0))
+            .cloned()
+            .unwrap_or_default();
+        event.sounding_pitch = event.written_pitch.semitones().map(|p| &p + &transpose);
+    }
+}
+
 /// Lower validated SFS wire data without changing its public JSON or text schema.
 /// Direct callers also receive semantic validation, so future format adapters do
 /// not accidentally bypass cross-reference/range checks by constructing an AST.
@@ -138,9 +199,9 @@ pub fn lower_document(doc: &Document) -> std::result::Result<ResolvedScore, Vec<
     if !errors.is_empty() {
         return Err(errors);
     }
-    lower(doc).map_err(|e| vec![e])
+    lower(doc, false).map_err(|e| vec![e])
 }
-fn lower(doc: &Document) -> Result<ResolvedScore> {
+pub(super) fn lower(doc: &Document, navigation: bool) -> Result<ResolvedScore> {
     if doc
         .required_extensions
         .iter()
@@ -148,18 +209,19 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
     {
         return Err(Diagnostic::error(
             "fermata.performance_unsupported",
-            "Authored fermatas have no defined hold duration or performance policy; silently playing through them is not allowed",
+            "Authored fermatas require an explicit hold-duration policy; playing through them without a hold is not allowed",
             doc.source,
         ));
     }
-    if doc
-        .required_extensions
-        .iter()
-        .any(|e| e == crate::navigation_extension::EXTENSION)
+    if !navigation
+        && doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::navigation_extension::EXTENSION)
     {
         return Err(Diagnostic::error(
             "navigation.replay_unsupported",
-            "Authored repeats require occurrence-based control and relation replay; playing the written sequence once is not allowed",
+            "Authored repeats require perform_document occurrence projection; once-through lower_document is not allowed",
             doc.source,
         ));
     }
@@ -169,17 +231,7 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
             doc.source,
         ));
     }
-    let mut parts: BTreeMap<String, InstrumentId> = doc
-        .parts
-        .iter()
-        .map(|p| (p.id.clone(), InstrumentId(p.instrument.clone())))
-        .collect();
-    let mut voices: BTreeMap<String, (PartId, u32)> = doc
-        .voices
-        .iter()
-        .map(|v| (v.id.clone(), (PartId(v.part.clone()), v.staff)))
-        .collect();
-    let mut transpositions = BTreeMap::<String, Rational>::new();
+    let mut persistent = PersistentState::new(doc);
     let mut score = ResolvedScore {
         end: doc.end.clone(),
         events: vec![],
@@ -190,23 +242,7 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
     for frame in &doc.frames {
         for record in &frame.records {
             if let Record::State(state) = record {
-                if let Some(value) = text(&state.attributes, "instrument") {
-                    parts.insert(state.target.clone(), InstrumentId(value.into()));
-                }
-                if let (Some(staff), Some((_, current))) = (
-                    state.attributes.get("staff").and_then(Scalar::as_i64),
-                    voices.get_mut(&state.target),
-                ) {
-                    *current = staff as u32;
-                }
-                if let Some(value) = rational(&state.attributes, "transpose_chromatic") {
-                    let octaves =
-                        Rational::from_integer(number(&state.attributes, "transpose_octaves", 0));
-                    transpositions.insert(
-                        state.target.clone(),
-                        &value + &(&octaves * &Rational::from_integer(12)),
-                    );
-                }
+                persistent.apply(state);
                 if let Some(value) = text(&state.attributes, "tempo") {
                     let (unit, bpm) = value
                         .split_once(':')
@@ -238,16 +274,18 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                         })?
                         .into(),
                 );
-                let (part, default_staff) = voices
+                let (part, default_staff) = persistent
+                    .voices
                     .get(&event.voice)
                     .ok_or_else(|| error("Unresolved voice", event.source))?;
                 let staff = StaffId {
                     part: part.clone(),
                     number: number(&event.attributes, "staff", i64::from(*default_staff)) as u32,
                 };
-                let transposition = transpositions
+                let transposition = persistent
+                    .transpositions
                     .get(&format!("{}.s{}", part.0, staff.number))
-                    .or_else(|| transpositions.get(&part.0))
+                    .or_else(|| persistent.transpositions.get(&part.0))
                     .cloned()
                     .unwrap_or_default();
                 let sounding_pitch = event.pitch.semitones().map(|p| &p + &transposition);
@@ -274,7 +312,7 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                     voice: VoiceId(event.voice.clone()),
                     part: part.clone(),
                     staff,
-                    instrument: parts[&part.0].clone(),
+                    instrument: persistent.parts[&part.0].clone(),
                     start: frame.time.clone(),
                     duration: event.duration.clone(),
                     written_pitch: event.pitch.clone(),
@@ -307,7 +345,13 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                     score.directions.push(Direction {
                         at: frame.time.clone(),
                         end: None,
-                        scope: scope(&state.target, &events, &parts, &voices, state.source)?,
+                        scope: scope(
+                            &state.target,
+                            &events,
+                            &persistent.parts,
+                            &persistent.voices,
+                            state.source,
+                        )?,
                         kind: DirectionKind::SoundDynamics { percent },
                         placement: None,
                         origin: origin(
@@ -316,6 +360,8 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                         ),
                     });
                 }
+                Record::Mark(mark)
+                    if navigation && mark.kind == crate::navigation_extension::KIND => {}
                 Record::Mark(mark) => {
                     let a = &mark.attributes;
                     let s = mark.source;
@@ -382,7 +428,13 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                     score.directions.push(Direction {
                         at: frame.time.clone(),
                         end: None,
-                        scope: scope(&mark.target, &events, &parts, &voices, s)?,
+                        scope: scope(
+                            &mark.target,
+                            &events,
+                            &persistent.parts,
+                            &persistent.voices,
+                            s,
+                        )?,
                         kind,
                         placement,
                         origin: origin(object_id, s),

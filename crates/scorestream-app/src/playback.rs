@@ -13,7 +13,7 @@ pub use diagnostic::{PerformanceDiagnostic, RealizationEffect};
 use expression::Expression;
 pub use plan::*;
 use scorestream_codec::{Document, Duration, Rational, Record, Scalar, notation::*};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use tempo::TempoMap;
 
 /// Invalid drafts never play a last-good snapshot. This has no workspace effects.
@@ -22,8 +22,18 @@ pub fn plan_source(source: &str) -> Result<PlaybackPlan, String> {
         return Err("Playback accepts score sources up to 4 MiB".into());
     }
     let doc = scorestream_codec::parse(source).map_err(format_diagnostics)?;
-    let score = lower_document(&doc).map_err(format_diagnostics)?;
-    compile(&score, &doc)
+    if doc
+        .required_extensions
+        .iter()
+        .any(|e| e == scorestream_codec::navigation_extension::EXTENSION)
+    {
+        let performed =
+            perform_document(&doc, PerformanceLimits::default()).map_err(format_diagnostics)?;
+        compile_performed(&performed.score, &doc, Some(&performed))
+    } else {
+        let score = lower_document(&doc).map_err(format_diagnostics)?;
+        compile(&score, &doc)
+    }
 }
 fn format_diagnostics(diagnostics: Vec<scorestream_codec::Diagnostic>) -> String {
     diagnostics
@@ -34,11 +44,22 @@ fn format_diagnostics(diagnostics: Vec<scorestream_codec::Diagnostic>) -> String
         .join("\n")
 }
 fn compile(score: &ResolvedScore, doc: &Document) -> Result<PlaybackPlan, String> {
+    compile_performed(score, doc, None)
+}
+fn compile_performed(
+    score: &ResolvedScore,
+    doc: &Document,
+    performed: Option<&PerformedScore>,
+) -> Result<PlaybackPlan, String> {
     if score.events.len() > 100_000 {
         return Err("Playback is limited to 100,000 events per score".into());
     }
     let tempo = TempoMap::new(score);
     let mut duration_seconds = tempo.seconds(&score.end)?;
+    let written_ids: BTreeMap<_, _> = performed
+        .into_iter()
+        .flat_map(|p| p.events.iter().map(|e| (&e.id, &e.written_id)))
+        .collect();
     // Map every written event before continuity/audio policy can omit an attack.
     // In particular, a tied continuation still owns its own score interval.
     let event_positions = score
@@ -46,7 +67,11 @@ fn compile(score: &ResolvedScore, doc: &Document) -> Result<PlaybackPlan, String
         .iter()
         .map(|event| {
             Ok(PlaybackEventPosition {
-                id: event.id.0.clone(),
+                id: written_ids
+                    .get(&event.id)
+                    .map(|id| id.0.clone())
+                    .unwrap_or_else(|| event.id.0.clone()),
+                occurrence_id: performed.map(|_| event.id.0.clone()),
                 start_seconds: tempo.seconds(&event.start)?,
                 end_seconds: tempo.seconds(&event.end())?,
             })
@@ -55,24 +80,52 @@ fn compile(score: &ResolvedScore, doc: &Document) -> Result<PlaybackPlan, String
     // Measures live in the validated document rather than the performance model.
     // Convert their explicit boundaries, never infer uniform lengths or BPM.
     let mut measures = Vec::new();
-    for frame in &doc.frames {
-        for record in &frame.records {
-            if let Record::Measure(measure) = record {
-                measures.push(PlaybackMeasure {
-                    id: measure.id.clone(),
-                    part: measure.target.clone(),
-                    label: measure
-                        .attributes
-                        .get("label")
-                        .and_then(Scalar::as_str)
-                        .map(str::to_owned),
-                    start_seconds: tempo.seconds(&frame.time)?,
-                    end_seconds: tempo.seconds(&(&frame.time + &measure.length))?,
-                });
+    if let Some(performed) = performed {
+        for m in &performed.measures {
+            measures.push(PlaybackMeasure {
+                id: m.written_id.clone(),
+                occurrence_index: Some(m.occurrence_index),
+                part: m.part.0.clone(),
+                label: Some(m.label.clone()),
+                start_seconds: tempo.seconds(&m.start)?,
+                end_seconds: tempo.seconds(&(&m.start + &m.length))?,
+            });
+        }
+    } else {
+        for frame in &doc.frames {
+            for record in &frame.records {
+                if let Record::Measure(measure) = record {
+                    measures.push(PlaybackMeasure {
+                        id: measure.id.clone(),
+                        occurrence_index: None,
+                        part: measure.target.clone(),
+                        label: measure
+                            .attributes
+                            .get("label")
+                            .and_then(Scalar::as_str)
+                            .map(str::to_owned),
+                        start_seconds: tempo.seconds(&frame.time)?,
+                        end_seconds: tempo.seconds(&(&frame.time + &measure.length))?,
+                    });
+                }
             }
         }
     }
     let mut warnings = Diagnostics::default();
+    if let Some(performed) = performed {
+        for d in &performed.diagnostics {
+            warnings.add(
+                &d.code,
+                "navigation.repeat",
+                RealizationEffect::Policy,
+                &Origin {
+                    object_id: "document".into(),
+                    source: d.source,
+                },
+                &d.message,
+            );
+        }
+    }
     let expression = Expression::new(score, &mut warnings)?;
     let continuity = Continuity::new(score, &expression, &mut warnings)?;
     for direction in &score.directions {
@@ -150,6 +203,7 @@ fn compile(score: &ResolvedScore, doc: &Document) -> Result<PlaybackPlan, String
         duration_seconds = duration_seconds.max(end);
         notes.push(PlaybackNote {
             id: event.id.0.clone(),
+            written_id: written_ids.get(&event.id).map(|id| id.0.clone()),
             part: event.part.0.clone(),
             instrument: event.instrument.0.clone(),
             voice: event.voice.0.clone(),

@@ -1,4 +1,4 @@
-//! Authored-only SFS navigation capability. This is not performed note lowering.
+//! Authored SFS navigation capability. Performed projection is a separate API.
 // Match the inline fail-fast diagnostic convention of the codec and notation lowerer.
 #![allow(clippy::result_large_err)]
 use crate::{
@@ -227,7 +227,7 @@ pub fn decode(mark: &Mark) -> Result<ScoreBarline, Diagnostic> {
     })
 }
 /// Structural capability validation only. Route closure is checked by the
-/// common-score conversion profile; performance lowering always rejects here.
+/// common-score conversion profile; performed projection applies its own stricter route and relation checks.
 pub(crate) fn validate(doc: &Document, out: &mut Vec<Diagnostic>) {
     let enabled = doc.required_extensions.iter().any(|s| s == EXTENSION);
     let bars: Vec<_> = doc
@@ -355,5 +355,5 @@ pub(crate) fn validate(doc: &Document, out: &mut Vec<Diagnostic>) {
     for ((part, passes), source) in open {
         out.push(Diagnostic::warning("navigation.unclosed_ending", format!("Part {part} ending {passes:?} has no authored endpoint; no final-pass continuation policy is inferred"), source));
     }
-    out.push(Diagnostic::warning("navigation.realization_unavailable","Authored repeat notation is preserved; repeat engraving and performed playback are not implemented",SourceRange::default()));
+    out.push(Diagnostic::warning("navigation.realization_unavailable","Authored repeat notation is preserved; repeat engraving is unavailable. Playback uses a separate closed-route projection and rejects unsupported controls or spans",SourceRange::default()));
 }

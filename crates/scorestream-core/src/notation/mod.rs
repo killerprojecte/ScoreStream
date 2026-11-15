@@ -4,6 +4,9 @@
 mod intervals;
 mod lower;
 mod model;
+mod perform;
 pub use intervals::*;
 pub use lower::lower_document;
 pub use model::*;
+
+pub use perform::*;

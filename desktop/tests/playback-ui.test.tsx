@@ -6,7 +6,7 @@ import {ScorePane} from '../src/components/ScorePane';
 import {TooltipProvider} from '../src/components/ui/tooltip';
 import {PlaybackTransport,isPlaybackShortcut} from '../src/playback/transport';
 import {anchorIndex,playheadGeometry,scoreAnchors} from '../src/playback/playhead';
-import {displayMeasures,formatTime,measureAt,parseSeconds} from '../src/playback/timeline';
+import {displayMeasures,formatTime,measureAt,measureKey,parseSeconds} from '../src/playback/timeline';
 import type {PlaybackPlan} from '../src/playback/types';
 import type {Workbench,WorkbenchState} from '../src/app/workbench';
 import type {View} from '../src/types';
@@ -80,6 +80,20 @@ describe('timeline and keyboard boundaries',()=>{
   expect(playheadGeometry(notation,anchors,.5)!.left).toBe(80);
   expect(anchorIndex([{id:'a',start_seconds:0,end_seconds:2},{id:'b',start_seconds:0,end_seconds:1},{id:'c',start_seconds:1,end_seconds:2}],.5)).toBe(0);
   expect(playheadGeometry(notation,[],2)).toBeNull();
+ });
+ it('assigns distinct selector keys to repeated measures while retaining written labels',()=>{
+  const first={...plan.measures[0],occurrence_index:0},again={...plan.measures[0],occurrence_index:2,start_seconds:2,end_seconds:3};
+  expect(measureKey(first)).not.toBe(measureKey(again));
+  expect(measureAt([first,again],2)).toBe(again);
+  expect(measureKey(plan.measures[0])).toBe('m1');
+ });
+ it('retains every performed visit to the same written SVG anchor',()=>{
+  const notation=host.querySelector('#notation')!;
+  const positions=[{id:'n1',occurrence_id:'occ0:n1',start_seconds:0,end_seconds:1},{id:'tie-tail',occurrence_id:'occ1:tie-tail',start_seconds:1,end_seconds:2},{id:'n1',occurrence_id:'occ2:n1',start_seconds:2,end_seconds:3}];
+  const anchors=scoreAnchors(notation,{note:'n1',tail:'tie-tail'},positions);
+  expect(anchors.map(a=>a.occurrence_id)).toEqual(['occ0:n1','occ1:tie-tail','occ2:n1']);
+  expect(anchors[0].node).toBe(anchors[2].node);
+  expect(anchorIndex(anchors,2)).toBe(2);
  });
  it('ignores empty spacer geometry in a polyphonic onset and as the next interpolation target',()=>{
   const notation=host.querySelector('#notation')!,space=document.createElementNS('http://www.w3.org/2000/svg','g');

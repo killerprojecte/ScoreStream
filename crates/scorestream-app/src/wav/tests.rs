@@ -6,7 +6,7 @@ fn plan() -> PlaybackPlan {
     PlaybackPlan {
         duration_seconds: 1.0,
         notes: vec![PlaybackNote {
-            id: "note".into(), part: "part".into(), voice: "voice".into(), instrument: "piano".into(),
+            id: "note".into(), written_id: None, part: "part".into(), voice: "voice".into(), instrument: "piano".into(),
             start_seconds: 0.25, duration_seconds: 0.75, midi_note: 69.0,
             frequency_hz: 440.0, velocity: 64,
             gain_envelope: vec![EnvelopePoint { offset_seconds: 0.0, gain: 1.0 }],

@@ -5,6 +5,7 @@ pub mod fermata_extension;
 pub mod instruments;
 mod metadata;
 mod model;
+pub mod navigation;
 pub mod navigation_extension;
 pub mod notation;
 mod rational;

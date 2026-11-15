@@ -1,8 +1,8 @@
 //! Reconcile authored per-part signs into one bounded score-wide replay route.
 //! This is not an audio renderer: controls and relations remain in the source score.
 use crate::{Format, MappingEffect, MappingReport, validate_score};
-use scorestream_core::{Rational, notation::PartId, repeat_traversal as route, score::*};
-use std::collections::{BTreeMap, BTreeSet};
+use scorestream_core::{Rational, repeat_traversal as route, score::*};
+use std::collections::BTreeSet;
 
 fn issue(report: &mut MappingReport, feature: &str, path: &str, message: &str) {
     report.push(
@@ -93,13 +93,32 @@ pub(crate) fn validate_barlines(score: &ScoreDocument, report: &mut MappingRepor
         }
     }
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Navigation {
-    pub movement: route::Movement,
-    /// Parts containing the complete agreeing repeat-sign sequence.
-    pub repeat_parts: Vec<PartId>,
-    /// Parts containing the complete agreeing ending-sign sequence.
-    pub ending_parts: Vec<PartId>,
+pub use scorestream_core::navigation::Navigation;
+/// Preserve omitted part markings; share one reconciliation with performed lowering.
+pub fn from_score(score: &ScoreDocument, movement_id: &str) -> Result<Navigation, MappingReport> {
+    let report = validate_score(score);
+    if report.has_errors() {
+        return Err(report);
+    }
+    let parts = score
+        .parts
+        .iter()
+        .map(|p| scorestream_core::navigation::Part {
+            id: p.id.clone(),
+            measures: p
+                .measures
+                .iter()
+                .map(|m| scorestream_core::navigation::Measure {
+                    id: m.id.clone(),
+                    label: m.label.clone(),
+                    start: m.start.clone(),
+                    length: m.length.clone(),
+                })
+                .collect(),
+        })
+        .collect::<Vec<_>>();
+    scorestream_core::navigation::reconcile(&parts, &score.barlines, movement_id)
+        .map_err(|e| unsupported(&e.code, &e.message))
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReplayOccurrence {
@@ -117,225 +136,6 @@ pub struct ScoreReplayPlan {
     /// References the original aligned measures, without copying notes or state.
     pub occurrences: Vec<ReplayOccurrence>,
     pub duration_quarters: Rational,
-}
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct RepeatMark {
-    at: usize,
-    direction: RepeatDirection,
-    times: Option<u32>,
-}
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct EndingMark {
-    at: usize,
-    phase: EndingPhase,
-    passes: Vec<u32>,
-}
-
-fn reconcile<T: Eq>(
-    canonical: &mut Option<Vec<T>>,
-    source: Vec<T>,
-    feature: &str,
-) -> Result<bool, MappingReport> {
-    if source.is_empty() {
-        return Ok(false);
-    }
-    if canonical.as_ref().is_some_and(|c| *c != source) {
-        return Err(unsupported(
-            feature,
-            "Nonempty part navigation sequences disagree; no conductor part is guessed",
-        ));
-    }
-    if canonical.is_none() {
-        *canonical = Some(source);
-    }
-    Ok(true)
-}
-/// Preserve omitted per-part markings, while requiring every nonempty sequence
-/// within each navigation family to agree. Display labels never locate boundaries.
-pub fn from_score(score: &ScoreDocument, movement_id: &str) -> Result<Navigation, MappingReport> {
-    let report = validate_score(score);
-    if report.has_errors() {
-        return Err(report);
-    }
-    let first = &score.parts[0];
-    if score.parts.iter().skip(1).any(|p| {
-        p.measures.len() != first.measures.len()
-            || p.measures
-                .iter()
-                .zip(&first.measures)
-                .any(|(a, b)| a.start != b.start || a.length != b.length)
-    }) {
-        return Err(unsupported(
-            "navigation.part_alignment",
-            "Navigation requires exactly aligned partwise measure times and lengths",
-        ));
-    }
-    let mut grouped: BTreeMap<&PartId, Vec<&ScoreBarline>> = BTreeMap::new();
-    for b in &score.barlines {
-        grouped.entry(&b.part).or_default().push(b);
-    }
-    let (mut repeats, mut endings) = (None, None);
-    let (mut repeat_parts, mut ending_parts) = (vec![], vec![]);
-    for part in &score.parts {
-        let indices: BTreeMap<_, _> = part
-            .measures
-            .iter()
-            .enumerate()
-            .map(|(i, m)| (m.id.as_str(), i))
-            .collect();
-        let (mut rs, mut es) = (vec![], vec![]);
-        for b in grouped.get(&part.id).into_iter().flatten() {
-            let at =
-                indices[b.measure.as_str()] + usize::from(b.location == BarlineLocation::Right);
-            if let Some(r) = &b.repeat {
-                rs.push(RepeatMark {
-                    at,
-                    direction: r.direction,
-                    times: r.times,
-                });
-            }
-            if let Some(e) = &b.ending {
-                let mut passes = e.passes.clone();
-                passes.sort_unstable();
-                es.push(EndingMark {
-                    at,
-                    phase: e.phase,
-                    passes,
-                });
-            }
-        }
-        rs.sort();
-        es.sort();
-        if reconcile(&mut repeats, rs, "navigation.repeat_conflict")? {
-            repeat_parts.push(part.id.clone());
-        }
-        if reconcile(&mut endings, es, "navigation.ending_conflict")? {
-            ending_parts.push(part.id.clone());
-        }
-    }
-    let mut regions = vec![];
-    let mut opened = None;
-    for mark in repeats.unwrap_or_default() {
-        match mark.direction {
-            RepeatDirection::Forward => {
-                if opened.replace(mark.at).is_some() {
-                    return Err(unsupported(
-                        "navigation.nested_repeat",
-                        "Nested forward repeats require a later profile",
-                    ));
-                }
-            }
-            RepeatDirection::Backward => {
-                regions.push(route::RepeatRegion {
-                    id: format!("repeat{}", regions.len() + 1),
-                    start: opened
-                        .take()
-                        .map(|at| route::RepeatStart::Explicit(route::Boundary(at)))
-                        .unwrap_or(route::RepeatStart::ImplicitMovementStart),
-                    backward: route::Boundary(mark.at),
-                    times: mark.times,
-                    endings: vec![],
-                });
-            }
-        }
-    }
-    if opened.is_some() {
-        return Err(unsupported(
-            "navigation.unmatched_forward",
-            "Forward repeat has no backward endpoint",
-        ));
-    }
-    let mut spans = vec![];
-    let mut active: Option<route::Ending> = None;
-    for mark in endings.unwrap_or_default() {
-        match mark.phase {
-            EndingPhase::Start => {
-                if active.is_some() {
-                    return Err(unsupported(
-                        "navigation.ending_overlap",
-                        "Ending starts before the preceding ending closes",
-                    ));
-                }
-                active = Some(route::Ending {
-                    passes: mark.passes,
-                    start: route::Boundary(mark.at),
-                    end: route::EndingEnd::Unclosed,
-                });
-            }
-            EndingPhase::Stop | EndingPhase::Discontinue => {
-                let Some(mut e) = active.take() else {
-                    return Err(unsupported(
-                        "navigation.ending_endpoint",
-                        "Ending endpoint has no matching start",
-                    ));
-                };
-                if e.passes != mark.passes || e.start.0 >= mark.at {
-                    return Err(unsupported(
-                        "navigation.ending_endpoint",
-                        "Ending endpoint pass numbers or ordering conflict with its start",
-                    ));
-                }
-                e.end = route::EndingEnd::Closed {
-                    at: route::Boundary(mark.at),
-                    closure: if mark.phase == EndingPhase::Stop {
-                        route::EndingClosure::Stop
-                    } else {
-                        route::EndingClosure::Discontinue
-                    },
-                };
-                spans.push(e);
-            }
-        }
-    }
-    if let Some(e) = active {
-        spans.push(e);
-    }
-    let mut closed_at = BTreeMap::new();
-    for (index, ending) in spans.iter().enumerate() {
-        if let route::EndingEnd::Closed { at, .. } = ending.end
-            && closed_at.insert(at, index).is_some()
-        {
-            return Err(unsupported(
-                "navigation.ending_shape",
-                "Multiple endings meet the same boundary",
-            ));
-        }
-    }
-    let mut used = BTreeSet::new();
-    for r in &mut regions {
-        if let Some(index) = closed_at.get(&r.backward) {
-            let first = &spans[*index];
-            let next = index + 1;
-            let Some(last) = spans.get(next).filter(|e| e.start == r.backward) else {
-                return Err(unsupported(
-                    "navigation.ending_shape",
-                    "A first ending requires an adjacent final ending",
-                ));
-            };
-            if !used.insert(*index) || !used.insert(next) {
-                return Err(unsupported(
-                    "navigation.ending_shape",
-                    "Ending is shared by conflicting repeats",
-                ));
-            }
-            r.endings = vec![first.clone(), last.clone()];
-        }
-    }
-    if used.len() != spans.len() {
-        return Err(unsupported(
-            "navigation.ending_shape",
-            "Ending cannot be assigned to an ordinary two-ending repeat",
-        ));
-    }
-    Ok(Navigation {
-        movement: route::Movement {
-            id: movement_id.into(),
-            measure_labels: first.measures.iter().map(|m| m.label.clone()).collect(),
-            repeats: regions,
-        },
-        repeat_parts,
-        ending_parts,
-    })
 }
 /// Compile exact written-quarter references plus checkpoint/replay instructions.
 /// No seconds, tempo policy, note duplication or sounding relation realization occurs.

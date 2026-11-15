@@ -80,10 +80,12 @@ fn ordinary_xml_model_roundtrip_and_exact_replay() {
         .value;
     assert_eq!(s.barlines, again.barlines);
     assert_eq!(s.parts[0].measures, again.parts[0].measures);
-    assert!(
+    assert_eq!(
         scorestream_app::playback::plan_source(&SfsAdapter.write(&s).unwrap().value)
-            .unwrap_err()
-            .contains("navigation.replay_unsupported")
+            .unwrap()
+            .event_positions
+            .len(),
+        8
     );
 }
 #[test]
@@ -376,10 +378,12 @@ fn real_tempo_controls_follow_checkpoint_and_skip_contract_without_source_rewrit
         .value;
     assert_eq!(score.barlines, again.barlines);
     assert_eq!(score.tempos, again.tempos);
-    assert!(
+    assert_eq!(
         scorestream_app::playback::plan_source(&SfsAdapter.write(&score).unwrap().value)
-            .unwrap_err()
-            .contains("navigation.replay_unsupported")
+            .unwrap()
+            .measures
+            .len(),
+        6
     );
 }
 #[test]

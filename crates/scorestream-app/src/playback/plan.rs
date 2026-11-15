@@ -10,6 +10,9 @@ pub struct EnvelopePoint {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlaybackNote {
     pub id: String,
+    /// Authored selection identity; id is unique per performed occurrence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub written_id: Option<String>,
     pub part: String,
     pub instrument: String,
     pub voice: String,
@@ -28,13 +31,18 @@ pub struct PlaybackRoute {
 /// Written score intervals, independent of audible attacks, gates and pedal release.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlaybackEventPosition {
+    /// Authored identity, repeated across performed visits.
     pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence_id: Option<String>,
     pub start_seconds: f64,
     pub end_seconds: f64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlaybackMeasure {
     pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence_index: Option<usize>,
     pub part: String,
     pub label: Option<String>,
     pub start_seconds: f64,

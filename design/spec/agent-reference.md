@@ -104,7 +104,7 @@ Part display labels: `!part f1 instrument=flute staves=1 display_name="Flute 1"`
 
 ## Authored navigation capability
 
-`!requires scorestream.navigation@1` enables `+ <part> scorestream.barline measure=<measure-id> side=left|right` with typed style, repeat/count and ending/pass/display fields from the descriptor. The frame must equal that measure's exact boundary. This is authored-only interchange: current playback lowering rejects, and inspection warns that engraving/replay is unavailable. Strict conversion supports ordinary closed repeats; an unclosed ending is preserved for inspection with an explicit diagnostic, never silently closed or played once.
+`!requires scorestream.navigation@1` enables `+ <part> scorestream.barline measure=<measure-id> side=left|right` with typed style, repeat/count and ending/pass/display fields from the descriptor. The frame must equal that measure's exact boundary. This is authored-only interchange. A separate bounded performed projection supports closed navigation with exact state restoration and occurrence identities; ordinary once-through lowering rejects, and inspection warns that engraving is unavailable. Strict conversion supports ordinary closed repeats; an unclosed ending is preserved for inspection with an explicit diagnostic, never silently closed or played once.
 
 ## Explicit numeric dynamics
 
