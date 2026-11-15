@@ -782,13 +782,12 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
             "rest" | "chord" | "dot" | "normal-dot" | "beat-unit-dot" => {
                 (&[], &[], &[], &[], false)
             }
+            "type" => (&["size"], &[], &[], &[], true),
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
             | "instrument-name" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
-            | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "type"
-            | "staff" | "actual-notes" | "normal-notes" | "normal-type" | "diatonic"
-            | "chromatic" | "octave-change" | "beat-unit" | "per-minute" => {
-                (&[], &[], &[], &[], true)
-            }
+            | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "staff"
+            | "actual-notes" | "normal-notes" | "normal-type" | "diatonic" | "chromatic"
+            | "octave-change" | "beat-unit" | "per-minute" => (&[], &[], &[], &[], true),
             _ => {
                 n.error(
                     report,

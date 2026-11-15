@@ -332,3 +332,13 @@ The primary format artifacts are `spec/scorestream.ebnf`, `spec/scorestream-lang
 ### Registered authored navigation capability
 
 `scorestream.navigation@1` registers the namespaced `scorestream.barline` mark. Its part target and `measure`/`side` fields locate an authored boundary exactly; optional typed style, repeat/count and ending/pass/display fields preserve its meaning. The normative field registry and `docs/SFS_NAVIGATION.md` define field pairing, identity, limits and failure behavior. Unknown readers must reject the mandatory capability. Current conversion supports ordinary closed-repeat roundtrip; a separate bounded performed projection realizes the supported closed-route profile, while ordinary once-through lowering rejects. An unclosed source ending remains unclosed and requires a separate explicit continuation decision, not a default import repair.
+
+#### Graphic size and irregular measured extents
+
+An event may specify `note_size=full|cue|grace-cue|large` with explicit `w`.
+This is graphical notation only; `kind` independently determines normal, silent
+cue or grace semantics. Preserve absent size separately from explicit `full`.
+The actual measure `len` is independent of inherited staff `meter`, including
+intentional irregular bars. Changing length does not imply hidden numbering or
+an implicit measure. Importers must not infer an irregular-measure exception
+from an overfull timeline without a deliberate supported policy.

@@ -28,6 +28,8 @@ pub enum MappingEffect {
     Invalid,
     ResourceLimit,
     Normalized,
+    /// A deliberate caller policy was applied without discarding source semantics.
+    PolicyApplied,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MappingDiagnostic {
@@ -76,7 +78,10 @@ impl MappingReport {
                         .into(),
                     source: None,
                 });
-            } else if effect != MappingEffect::Normalized {
+            } else if !matches!(
+                effect,
+                MappingEffect::Normalized | MappingEffect::PolicyApplied
+            ) {
                 self.diagnostics[LIMIT - 1].effect = effect;
             }
             return;
@@ -103,9 +108,12 @@ impl MappingReport {
         }
     }
     pub fn has_errors(&self) -> bool {
-        self.diagnostics
-            .iter()
-            .any(|d| d.effect != MappingEffect::Normalized)
+        self.diagnostics.iter().any(|d| {
+            !matches!(
+                d.effect,
+                MappingEffect::Normalized | MappingEffect::PolicyApplied
+            )
+        })
     }
     pub fn finish<T>(self, value: T) -> Result<Conversion<T>, Self> {
         if self.has_errors() {

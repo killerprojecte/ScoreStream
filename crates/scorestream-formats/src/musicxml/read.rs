@@ -149,7 +149,22 @@ pub fn read(source: &str) -> Result<Conversion<ScoreDocument>> {
 /// Two incremental passes preserve forward ID references and declaration order without a DOM.
 /// Pass one validates each released fragment and indexes IDs; pass two maps one measure at a time.
 /// The shared score and its identity index necessarily scale with the musical content.
-pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDocument>> {
+pub fn read_reader<R: BufRead + Seek>(input: R) -> Result<Conversion<ScoreDocument>> {
+    read_reader_with_options(input, &super::MusicXmlOptions::default())
+}
+
+/// Explicit exact-measure contracts; all other strict mapping rules still apply.
+pub fn read_with_options(
+    source: &str,
+    options: &super::MusicXmlOptions,
+) -> Result<Conversion<ScoreDocument>> {
+    read_reader_with_options(Cursor::new(source.as_bytes()), options)
+}
+pub fn read_reader_with_options<R: BufRead + Seek>(
+    mut input: R,
+    options: &super::MusicXmlOptions,
+) -> Result<Conversion<ScoreDocument>> {
+    options.validate()?;
     let beginning = input.stream_position().map_err(io_error)?;
     let mut headers = Vec::new();
     let mut root = None;
@@ -327,7 +342,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             active
                 .as_mut()
                 .ok_or_else(|| error(node, "part.reference", "Measure outside an active part"))?
-                .measure(node, &mut object_ids, &mut report)?;
+                .measure(node, &mut object_ids, &mut report, options)?;
         } else if node.name == "part" && parent.is_some_and(|p| p.name == "score-partwise") {
             let mut reader = active
                 .take()
@@ -406,6 +421,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
     crate::fermatas::sort(&mut score);
     crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
+    options.complete(&score, &mut report);
     report.append(validate_score(&score));
     report.finish(score)
 }
@@ -475,6 +491,7 @@ impl PartReader {
         measure: &Node,
         object_ids: &mut BTreeSet<String>,
         report: &mut MappingReport,
+        options: &super::MusicXmlOptions,
     ) -> Result<()> {
         let Self {
             part_index,
@@ -806,6 +823,7 @@ impl PartReader {
                             .transpose()?;
                         Some(WrittenDuration {
                             note_type,
+                            size: note_size(n)?,
                             dots: n.children_named("dot").count() as u32,
                             time_modification,
                         })
@@ -885,29 +903,15 @@ impl PartReader {
                 }
             }
         }
-        let nominal = meters.values().next().map(Meter::quarters);
-        if nominal
-            .as_ref()
-            .is_some_and(|first| meters.values().any(|m| m.quarters() != *first))
-        {
-            return Err(unsupported(
-                measure,
-                "meter.polymeter",
-                "Unequal staff meter lengths require a later profile",
-            ));
-        }
-        m.length = if implicit {
-            extent.clone()
-        } else {
-            nominal.unwrap_or_else(|| extent.clone())
-        };
-        if extent > m.length {
-            return Err(error(
-                measure,
-                "measure.overfull",
-                "Notes or forward extend beyond the meter boundary",
-            ));
-        }
+        m.length = super::extent::read_length(
+            measure,
+            mi + 1,
+            &extent,
+            part.staves,
+            meters,
+            options,
+            report,
+        )?;
         if !m.length.is_positive() {
             return Err(error(
                 measure,
@@ -991,4 +995,15 @@ fn fresh_id(mut proposed: String, ids: &mut BTreeSet<String>) -> String {
         proposed.push('_');
     }
     proposed
+}
+
+/// Graphic size is independent of <cue>, grace and sounding duration.
+pub(super) fn note_size(n: &Node) -> Result<Option<NoteSize>> {
+    n.child("type")
+        .and_then(|t| t.attr("size"))
+        .map(|size| {
+            NoteSize::from_name(size)
+                .ok_or_else(|| error(n, "note.size", "Unknown graphic note size"))
+        })
+        .transpose()
 }

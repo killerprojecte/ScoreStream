@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import {describe,it,expect} from 'vitest';
 import createVerovioModule from 'verovio/wasm';
 import {VerovioToolkit} from 'verovio/esm';
@@ -57,4 +58,29 @@ describe('latest-only renderer scheduling',()=>{
   scheduler.invalidate(4);finish(3);expect(published).toEqual([]);
   scheduler.submit(request(4));finish(4);expect(published.map(x=>x.requestId)).toEqual([4]);
  });
+});
+
+describe('irregular extents and graphic note size',()=>{
+ it('keeps written meter while marking a ten-quarter measure metrically irregular',()=>{
+  const v=fixture();v.states[0].values.meter='2/4';v.measures[0].length='10';
+  v.events=Array.from({length:10},(_,i)=>({...v.events[0],id:`n${i}`,time:String(i),duration:'1',written_duration:'4',attributes:{note_size:'cue'}}));
+  const result=project(v);expect(result.mei).toContain('meter.count="2" meter.unit="4"');expect(result.mei).toContain('<measure n="1" metcon="false">');
+  expect(result.mei.match(/cue="true"/g)).toHaveLength(10);expect(Object.keys(result.map)).toHaveLength(10);expect(result.warnings.some(w=>w.includes('actual length 10'))).toBe(true);
+ });
+ it('rejects unimplemented graphic sizes and mixed chord sizes without losing them',()=>{
+  for(const size of ['grace-cue','large','tiny']) { const v=fixture();v.events[0].attributes={note_size:size};expect(()=>project(v)).toThrow('graphic note size'); }
+  const v=fixture();v.events[0].attributes={note_size:'cue'};v.events[0].chord='c';v.events[1]={...v.events[0],id:'other',pitch:'E4',attributes:{note_size:'full'}};expect(()=>project(v)).toThrow('Mixed graphic sizes');
+ });
+ it('renders smaller normal-note glyphs with real Verovio and retains all event IDs',async()=>{
+  const toolkit=new VerovioToolkit(await createVerovioModule());
+  toolkit.setOptions({pageWidth:2100,pageHeight:2600,scale:40,adjustPageHeight:true,header:'none',footer:'none',font:'Bravura'});
+  const v=fixture();v.states[0].values.meter='2/4';v.measures[0].length='10';
+  v.events=Array.from({length:10},(_,i)=>({...v.events[0],id:`n${i}`,time:String(i),pitch:'D5',duration:'1',written_duration:'4',attributes:i?{note_size:'cue'}:{note_size:'full'}}));
+  const projected=project(v);expect(toolkit.loadData(projected.mei)).toBeTruthy();const svg=toolkit.renderToSVG(1);
+  const dom=new DOMParser().parseFromString(svg,'image/svg+xml');
+  const scale=(id:string)=>dom.querySelector(`[id="${id}"] .notehead use`)?.getAttribute('transform')?.match(/scale\(([^,)]+)/)?.[1];
+  const normal=Number(scale('ss-e0')),cue=Number(scale('ss-e1'));
+  expect(normal).toBeGreaterThan(0);expect(cue).toBeGreaterThan(0);expect(cue).toBeLessThan(normal);
+  for(const id of Object.keys(projected.map))expect(dom.querySelector(`[id="${id}"]`)).not.toBeNull();
+ },10000);
 });

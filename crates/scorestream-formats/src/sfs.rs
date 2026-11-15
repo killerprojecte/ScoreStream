@@ -117,9 +117,15 @@ fn note_text(n: NoteType) -> &'static str {
 }
 fn written(a: &Attributes, r: &mut MappingReport, path: &str) -> Option<WrittenDuration> {
     let Some(kind) = text(a, "w").and_then(note_type) else {
-        if ["dots", "tm", "tm_normal_type", "tm_normal_dots"]
-            .iter()
-            .any(|k| a.contains_key(*k))
+        if [
+            "dots",
+            "tm",
+            "tm_normal_type",
+            "tm_normal_dots",
+            "note_size",
+        ]
+        .iter()
+        .any(|k| a.contains_key(*k))
         {
             unsupported(r, "written_without_note_type", path);
         }
@@ -141,6 +147,7 @@ fn written(a: &Attributes, r: &mut MappingReport, path: &str) -> Option<WrittenD
         });
     Some(WrittenDuration {
         note_type: kind,
+        size: text(a, "note_size").and_then(NoteSize::from_name),
         dots: unsigned(a, "dots", r, path),
         time_modification: tm,
     })
@@ -422,6 +429,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             "tm",
                             "tm_normal_type",
                             "tm_normal_dots",
+                            "note_size",
                         ],
                         e.id().unwrap_or(&e.voice),
                     );
@@ -721,6 +729,9 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 }
                 if let Some(w) = &e.written {
                     put(&mut a, "w", note_text(w.note_type));
+                    if let Some(size) = w.size {
+                        put(&mut a, "note_size", size.name());
+                    }
                     a.insert("dots".into(), Scalar::Integer(i64::from(w.dots)));
                     if let Some(t) = &w.time_modification {
                         put(&mut a, "tm", format!("{}:{}", t.actual, t.normal));

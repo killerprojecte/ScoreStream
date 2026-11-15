@@ -22,16 +22,21 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    if(!e.id)throw Error('Preview requires stable event IDs.');
    if(e.duration==='?')throw Error('Grace-note layout is not yet supported.');
    if(e.attributes?.tm)throw Error('Tuplet layout is not yet supported.');
+   const noteSize=e.attributes?.note_size;
+   if(noteSize!==undefined&&noteSize!=='full'&&noteSize!=='cue')throw Error('This graphic note size is preserved but not yet supported by the preview.');
+   if(noteSize!==undefined&&e.pitch==='_')throw Error('Graphic note size on a space cannot be engraved faithfully.');
+   const size=noteSize==='cue'?' cue="true"':'';
    const r=rhythm(new Q(e.duration));
    if(e.written_duration && Number(e.written_duration)!==r.dur)throw Error('Written and actual rhythm differ; this preview cannot engrave that rhythm faithfully yet.');
    const id=`ss-e${next++}`;map[id]=e.id;used.add(e.id);
    const dur=withRhythm?` dur="${r.dur}" dots="${r.dots}"`:'';
-   if(e.pitch==='r'||e.pitch==='_')return `<${e.pitch==='r'?'rest':'space'} xml:id="${id}"${dur}/>`;
+   if(e.pitch==='r'||e.pitch==='_')return `<${e.pitch==='r'?'rest':'space'} xml:id="${id}"${dur}${size}/>`;
    const p=/^([A-G])(#{1,2}|b{1,2})?(-?\d+)$/.exec(e.pitch);
    if(!p)throw Error(`Pitch ${e.pitch} is preserved but not supported by this preview.`);
    const acc:Record<string,string>={'#':'s','##':'ss',b:'f',bb:'ff'};
-   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}/>`;
+   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}/>`;
  };
+ const nominalLengths:Q[]=[];
  const staffDefXml=staffDefs.map((s,i)=>{
    const attrs=Object.assign({},...view.states.filter(x=>x.time==='0'&&x.scope===`${s.part}.s${s.staff}`).map(x=>x.values));
    for(const field of ['clef','meter','key'])if(attrs[field]===undefined)warnings.push(`${s.part}.s${s.staff}: ${field} is unset; preview uses ${field==='clef'?(s.staff===2?'F4':'G2'):field==='meter'?'4/4':'C major'} as a display default.`);
@@ -39,6 +44,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    if(!clef)throw Error('Unsupported clef in preview.');
    const meter=/^(\d+)\/(\d+)$/.exec(String(attrs.meter??'4/4'));
    if(!meter)throw Error('Unsupported meter in preview.');
+   nominalLengths.push(new Q(4n*BigInt(meter[1]),BigInt(meter[2])));
    const key=Number(attrs.key??0);if(!Number.isInteger(key)||Math.abs(key)>7)throw Error('Unsupported key signature in preview.');
    return `<staffDef n="${i+1}" lines="5" clef.shape="${clef[1]}" clef.line="${clef[2]}" meter.count="${meter[1]}" meter.unit="${meter[2]}" key.sig="${Math.abs(key)}${key<0?'f':key>0?'s':''}"/>`;
  });
@@ -46,7 +52,9 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  const groupedStaffDefs=view.parts.map(p=>{const defs=staffDefXml.slice(staffOffset,staffOffset+p.staves).join('');staffOffset+=p.staves;return `<staffGrp${p.staves>1?' symbol="brace" bar.thru="true"':''}><label>${labelEsc(p.display_name??p.instrument)}</label>${defs}</staffGrp>`;}).join('');
  const measureXml=measures.map((m,mi)=>{
    const start=new Q(m.time),end=start.add(new Q(m.length));
-   return `<measure n="${esc(m.label??mi+1)}">${staffDefs.map((s,si)=>{
+   const irregular=nominalLengths.some(n=>!n.eq(new Q(m.length)));
+   if(irregular)warnings.push(`Measure ${m.label??mi+1}: actual length ${m.length} quarters differs from the written meter; engraving preserves both.`);
+   return `<measure n="${esc(m.label??mi+1)}"${irregular?' metcon="false"':''}>${staffDefs.map((s,si)=>{
      const voices=view.voices.filter(v=>v.part===s.part);
      const relevant=view.events.filter(e=>e.staff===s.staff&&voices.some(v=>v.id===e.voice)&&new Q(e.time).cmp(start)>=0&&new Q(e.time).cmp(end)<0);
      const active=voices.filter(v=>v.staff===s.staff||relevant.some(e=>e.voice===v.id));
@@ -61,7 +69,8 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
          if(time.cmp(cursor)>0){const r=rhythm(time.sub(cursor));content+=`<space dur="${r.dur}" dots="${r.dots}"/>`;}
          const chord=[e];if(e.chord)while(j+1<events.length&&events[j+1].chord===e.chord&&events[j+1].time===e.time)chord.push(events[++j]);
          if(chord.some(c=>!new Q(c.duration).eq(new Q(e.duration))))throw Error('Unequal-duration chord members are not yet supported by the preview.');
-         if(chord.length>1){const r=rhythm(new Q(e.duration));content+=`<chord dur="${r.dur}" dots="${r.dots}">${chord.map(c=>eventXml(c,false)).join('')}</chord>`;}else content+=eventXml(e);
+         if(chord.some(c=>(c.attributes?.note_size??'full')!==(e.attributes?.note_size??'full')))throw Error('Mixed graphic sizes within a chord are preserved but not yet supported by the preview.');
+         if(chord.length>1){const r=rhythm(new Q(e.duration));content+=`<chord dur="${r.dur}" dots="${r.dots}"${e.attributes?.note_size==='cue'?' cue="true"':''}>${chord.map(c=>eventXml(c,false)).join('')}</chord>`;}else content+=eventXml(e);
          cursor=finish;
        }
        if(!events.length)content='<mSpace/>';

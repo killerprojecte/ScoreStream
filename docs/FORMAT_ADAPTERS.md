@@ -86,3 +86,52 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 - [attributes 的作用时间](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/attributes/)
 
 Fermatas now use a separate authored-only event lane and mandatory SFS capability. Exact forms, optional vertical placement and tie-stop/rest anchors roundtrip, but playback explicitly rejects pending a global interpretation policy. See [Fermata import](FERMATA_IMPORT.md).
+
+### Exact irregular-measure contracts and graphic note size
+
+`ScoreMeasure.length` is the actual elapsed quarter-note extent. The inherited
+`StaffState.meter` is the written meter; neither implies the other. SFS already
+stores these independently as `| ... len=10` and `= ... meter=2/4`. A nonstandard
+extent does not set `implicit` or change the source measure label.
+
+Strict MusicXML import and export still reject an overfull non-implicit measure
+by default. `musicxml::read_with_options`, `read_reader_with_options`, and
+`write_with_options` accept `MusicXmlOptions` with exact `IrregularMeasure`
+contracts: a one-based measure ordinal, exact source label, exact written
+`Meter`, and positive actual length greater than the meter. Every declared part
+and staff must match. Duplicate, missing, stale, short-measure or implicit-measure
+contracts fail. A contract does not apply to the next bar. No arbitrary max-length,
+auto-shortening, padding correction or new time signature is inferred. For MXL,
+pass the integrity-checked `MxlRoot::into_reader()` to the same explicit API.
+Each accepted contract emits `policy_applied / measure.irregular_extent` with
+source location on import. This non-error effect is distinct from normalization;
+unsupported/invalid/resource-limit errors remain blocking, including after report
+truncation. A caller must retain the same deliberate contract for XML reimport:
+MusicXML has no standard attribute that directly records this authorization.
+There is not yet a CLI or desktop selector for these API options.
+
+Graphic MusicXML `<type size="cue">` maps to typed `WrittenDuration.size` and SFS
+`note_size=cue`, which requires explicit `w`. Missing and explicit `full` are
+preserved separately. `full`, `cue`, `grace-cue`, and `large` are typed graphic
+values; none changes measured duration, event role, pitch or sound. This does not
+add support for MusicXML `<cue>` (silent) or `<grace>`. The preview supports full
+and cue sizing for ordinary notes/rests and uniform-size chords, keeps the
+written meter, and marks metrically irregular MEI measures `metcon="false"`.
+Other graphic sizes or mixed-size chords explicitly withhold preview, without
+changing the stored source. Audio remains derived from Rust notation, not MEI.
+
+The pinned original Beethoven I (SHA-256
+`5de9f153c72b3831757d43584c5d5ec792510d36cc5a389a4160aa90697fc17b`)
+has measure ordinal/label 268, written 2/4 and exactly 10 encoded quarters in all
+18 parts. An ignored corpus test applies the production extent and size decoders
+to untouched original fragments, confirming the oboe's 11 written notes and 10
+cue-size sounding notes at exact offsets. This is not whole-score import:
+other source metadata, symbols and layout still reject. End-to-end roundtrip,
+playback and pinned-Verovio checks use separately identified small fixtures;
+no original is stripped, rewritten or substituted to claim success. Fermata
+hold durations remain a separate performance policy.
+
+Sources: [MusicXML graphic type](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/type/),
+[silent cue](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/cue/),
+[measure numbering and implicit](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/measure-partwise/),
+[MEI measure metrical conformance](https://music-encoding.org/guidelines/v5/elements/measure.html).

@@ -283,6 +283,16 @@
       "slash": {
         "type": "boolean",
         "meaning": "Grace slash notation."
+      },
+      "note_size": {
+        "type": "enum",
+        "values": [
+          "full",
+          "cue",
+          "grace-cue",
+          "large"
+        ],
+        "meaning": "Graphic size of explicit w; independent of sounding kind and measured duration."
       }
     },
     "state": {

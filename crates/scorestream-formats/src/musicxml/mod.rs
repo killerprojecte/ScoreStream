@@ -1,6 +1,8 @@
 //! Small strict MusicXML 4.0 score-partwise profile; not complete MusicXML support.
 mod barlines;
 mod dynamics;
+mod extent;
+pub use extent::{IrregularMeasure, MusicXmlOptions};
 mod fermatas;
 mod read;
 mod tempo;
@@ -8,9 +10,9 @@ mod ties;
 mod write;
 mod xml;
 use crate::{Conversion, MappingReport, ScoreAdapter};
-pub use read::{read, read_reader};
+pub use read::{read, read_reader, read_reader_with_options, read_with_options};
 use scorestream_core::score::{NoteType, ScoreDocument};
-pub use write::write;
+pub use write::{write, write_with_options};
 pub use xml::{ScanSummary, scan};
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MusicXml;

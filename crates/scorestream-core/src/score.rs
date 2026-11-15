@@ -131,6 +131,8 @@ pub struct ScoreMeasure {
     pub id: String,
     pub label: String,
     pub start: Rational,
+    /// Actual elapsed quarter-note extent, independent of the inherited written meter.
+    /// An irregular authored bar never rewrites the meter or implies hidden numbering.
     pub length: Rational,
     pub implicit: bool,
     /// Changes at this measure's start. Later measures inherit preceding state.
@@ -225,6 +227,9 @@ pub enum NoteType {
 #[serde(deny_unknown_fields)]
 pub struct WrittenDuration {
     pub note_type: NoteType,
+    /// Graphic size only. Cue size does not create a silent cue or a grace event.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<NoteSize>,
     pub dots: u32,
     pub time_modification: Option<TimeModification>,
 }
@@ -300,4 +305,33 @@ pub struct EndingSign {
     pub text: String,
     /// Exact authored vertical placement in tenths, not a performance control.
     pub default_y: Option<Rational>,
+}
+
+/// MusicXML graphic note size; deliberately independent of event sounding role.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NoteSize {
+    Full,
+    Cue,
+    GraceCue,
+    Large,
+}
+impl NoteSize {
+    pub fn from_name(value: &str) -> Option<Self> {
+        match value {
+            "full" => Some(Self::Full),
+            "cue" => Some(Self::Cue),
+            "grace-cue" => Some(Self::GraceCue),
+            "large" => Some(Self::Large),
+            _ => None,
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Full => "full",
+            Self::Cue => "cue",
+            Self::GraceCue => "grace-cue",
+            Self::Large => "large",
+        }
+    }
 }

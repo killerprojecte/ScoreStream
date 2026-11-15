@@ -95,10 +95,21 @@ pub(super) fn decimal(value: &Rational) -> Option<String> {
     ))
 }
 pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport> {
+    write_with_options(score, &super::MusicXmlOptions::default())
+}
+
+/// Export an explicitly authorized irregular bar without inventing a time signature
+/// or changing numbering. Reimporting its XML requires the same exact contract.
+pub fn write_with_options(
+    score: &ScoreDocument,
+    options: &super::MusicXmlOptions,
+) -> Result<Conversion<String>, MappingReport> {
+    options.validate()?;
     let mut report = validate_score(score);
     if report.has_errors() {
         return Err(report);
     }
+    super::extent::validate_export(score, options, &mut report);
     super::tempo::validate_export(score, &mut report);
     let tempo_index = super::tempo::Export::new(score);
     let dynamics_index = super::dynamics::Export::new(score, &mut report);
@@ -200,7 +211,10 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                     );
                 }
             }
-            if !m.implicit && meters.values().any(|meter| meter.quarters() != m.length) {
+            if !m.implicit
+                && options.at(measure_index + 1).is_none()
+                && meters.values().any(|meter| meter.quarters() != m.length)
+            {
                 issue(
                     &mut report,
                     "measure.length",
@@ -525,7 +539,12 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                     }
                     writeln!(out, "        <voice>{}</voice>", escape(&v.id.0)).unwrap();
                     if let Some(w) = &e.written {
-                        writeln!(out, "        <type>{}</type>", type_name(w.note_type)).unwrap();
+                        let size = w
+                            .size
+                            .map(|s| format!(" size=\"{}\"", s.name()))
+                            .unwrap_or_default();
+                        writeln!(out, "        <type{size}>{}</type>", type_name(w.note_type))
+                            .unwrap();
                         for _ in 0..w.dots {
                             out.push_str("        <dot/>\n");
                         }

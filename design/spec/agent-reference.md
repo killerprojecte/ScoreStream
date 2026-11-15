@@ -113,3 +113,11 @@ Use `= part[.sN] sound_dynamics=1111/25` for exact playback percentage of forte 
 ## Authored fermata capability
 
 `!requires scorestream.fermata@1` enables `+ #event scorestream.fermata` at the exact onset of a measured note/rest. Optional shape, orientation and exact default_y/relative_y retain authored signs and placement, including omitted values. One sign per event; all distinct part/event copies remain distinct. No hold seconds, synchronized pauses or engraving are inferred. Current playback explicitly rejects. See the fermata import documentation for source evidence and unsupported cases.
+
+Graphic note size: optional `note_size=full|cue|grace-cue|large` requires explicit
+written type `w`. It never sets `kind=cue`, creates grace timing, mutes a note, or
+changes actual duration. Absence and explicit `full` remain distinct. Preview
+currently supports full/cue only and rejects mixed-size chords. Measure `len`
+is actual elapsed time, separate from written `meter`; do not resize a cadenza
+to its nominal time signature. MusicXML irregular-bar admission requires the
+adapter's exact caller contract, not a blanket permissive import.

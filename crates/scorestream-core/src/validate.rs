@@ -593,6 +593,13 @@ fn validate_rhythm(e: &Event, out: &mut Vec<Diagnostic>) {
             e.source,
         ));
     }
+    if e.attributes.contains_key("note_size") && !e.attributes.contains_key("w") {
+        out.push(Diagnostic::error(
+            "note_size.written_type",
+            "Graphic note size requires an explicit written type w",
+            e.source,
+        ));
+    }
     if (e.attributes.contains_key("tm_normal_type") || e.attributes.contains_key("tm_normal_dots"))
         && !e.attributes.contains_key("tm")
     {

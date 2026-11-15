@@ -85,6 +85,7 @@ attrs={
   'staff':{'type':'positive_integer','meaning':'This event only; does not change voice default.'},
   'chord':{'type':'identifier','meaning':'Membership in a notated chord; members keep independent durations. First member in declared member order is the head.'},
   'w':{'type':'note_type','values':['1','2','4','8','16','32','64','128','256','512','1024','breve','long','maxima'],'meaning':'Written note type; independent of actual duration.'},
+  'note_size':{'type':'enum','values':['full','cue','grace-cue','large'],'meaning':'Graphic size of explicit w; independent of sounding kind and measured duration.'},
   'dots':{'type':'nonnegative_integer','meaning':'Written augmentation dots.'},
   'tm':{'type':'positive_integer:positive_integer','meaning':'Actual:normal time modification, such as 3:2. Tuplet graphics are separate relations.'},
   'tm_normal_type':{'type':'note_type','values':['1','2','4','8','16','32','64','128','256','512','1024','breve','long','maxima'],'meaning':'Optional explicitly notated normal note type; maps to written.time_modification.normal_type in typed edits.'},
