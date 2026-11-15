@@ -342,3 +342,18 @@ The actual measure `len` is independent of inherited staff `meter`, including
 intentional irregular bars. Changing length does not imply hidden numbering or
 an implicit measure. Importers must not infer an irregular-measure exception
 from an overfull timeline without a deliberate supported policy.
+
+### Required imported-grace fidelity
+
+`!requires scorestream.grace@1` narrows the existing grace syntax for loss-aware
+import. Each pitched `:? kind=grace anchor=#principal order=-N..-1` has exactly
+one `+ #grace scorestream.grace` mark in the same frame, including an empty mark
+when authored timing is absent. The principal is a measured pitched non-chord
+note in the same voice/staff. Optional `slash` remains distinct when omitted.
+Optional mark fields `steal_previous` and `steal_following` are exact rational
+percentages in [0,100]; `make_time` is exact nonnegative quarter-equivalent timing
+intent, never measured duration. Written rhythm remains independent. Unknown
+fields and unmatched capability/marks reject. This capability requires a complete
+score; fragments cannot introduce it. Performance explicitly rejects until a
+supported grace policy exists. Legacy SFS grace without this capability keeps its
+existing behavior. See [the conversion boundary](../../docs/GRACE_IMPORT.md).

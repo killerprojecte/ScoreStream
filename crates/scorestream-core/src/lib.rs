@@ -2,6 +2,7 @@
 //! No UI, storage, network, or playback policy belongs in this crate.
 #![forbid(unsafe_code)]
 pub mod fermata_extension;
+pub mod grace_extension;
 pub mod instruments;
 mod metadata;
 mod model;

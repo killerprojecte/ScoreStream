@@ -34,6 +34,7 @@ fn divisions(
     tempo_index: &super::tempo::Export<'_>,
     dynamics_index: &super::dynamics::Export<'_>,
     part: &ScorePart,
+    graces: &super::graces::Export<'_>,
 ) -> Option<u64> {
     let mut n = 1;
     let offsets = tempo_index.positions(part, m);
@@ -42,6 +43,7 @@ fn divisions(
         .chain(m.events.iter().flat_map(|e| [&e.offset, &e.duration]))
         .chain(offsets.iter())
         .chain(dynamics_offsets.iter())
+        .chain(graces.make_times(m))
     {
         let d = value.denominator().to_u64()?;
         n = (n / gcd(n, d)).checked_mul(d)?;
@@ -155,6 +157,7 @@ pub fn write_with_options(
         }
     }
     let mut xml_ids = BTreeSet::new();
+    let graces = super::graces::Export::new(score, &mut xml_ids, &mut report);
     for part in &score.parts {
         if !xml_id(&part.id.0) {
             issue(
@@ -187,7 +190,9 @@ pub fn write_with_options(
                     "Invalid or duplicate XML ID",
                 );
             }
-            if divisions(m, &tempo_index, &dynamics_index, part).is_none() {
+            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces) {
+                graces.validate_make_times(m, div, &mut report);
+            } else {
                 issue(
                     &mut report,
                     "divisions.limit",
@@ -428,7 +433,7 @@ pub fn write_with_options(
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
-            let div = divisions(m, &tempo_index, &dynamics_index, p).unwrap();
+            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces).unwrap();
             writeln!(
                 out,
                 "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\">",
@@ -515,6 +520,7 @@ pub fn write_with_options(
                     if !is_chord && cursor < e.offset {
                         writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&e.offset - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                     }
+                    graces.write_before(e, &v.id.0, div, &mut out);
                     writeln!(out, "      <note id=\"{}\">", escape(&e.id.0)).unwrap();
                     if is_chord {
                         out.push_str("        <chord/>\n");

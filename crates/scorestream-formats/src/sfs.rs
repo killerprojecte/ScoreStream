@@ -165,7 +165,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         unsupported(&mut report, "span", "document");
     }
     if doc.required_extensions.iter().any(|e| {
-        e != core::navigation_extension::EXTENSION && e != core::fermata_extension::EXTENSION
+        e != core::navigation_extension::EXTENSION
+            && e != core::fermata_extension::EXTENSION
+            && e != core::grace_extension::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -178,8 +180,21 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         dynamics: vec![],
         sound_dynamics: vec![],
         fermatas: vec![],
+        graces: vec![],
         barlines: vec![],
     };
+    let grace_metadata: BTreeMap<_, _> = doc
+        .frames
+        .iter()
+        .flat_map(|f| &f.records)
+        .filter_map(|r| match r {
+            Record::Mark(m) if m.kind == core::grace_extension::KIND => Some((
+                m.target.trim_start_matches('#'),
+                core::grace_extension::decode(m).expect("validated grace timing"),
+            )),
+            _ => None,
+        })
+        .collect();
     for p in &doc.parts {
         score.parts.push(ScorePart {
             id: PartId(p.id.clone()),
@@ -266,6 +281,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
                     crate::sfs_navigation::read_mark(m, &mut score, &mut report);
                 }
+                Record::Mark(m) if m.kind == core::grace_extension::KIND => {}
                 Record::Mark(m) if m.kind == core::fermata_extension::KIND => {
                     crate::fermatas::read_mark(m, &mut score, &mut report);
                 }
@@ -417,6 +433,55 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     }
                 }
                 Record::Event(e) => {
+                    if e.is_grace() {
+                        attrs(
+                            &mut report,
+                            &e.attributes,
+                            &[
+                                "id",
+                                "staff",
+                                "w",
+                                "dots",
+                                "tm",
+                                "tm_normal_type",
+                                "tm_normal_dots",
+                                "note_size",
+                                "kind",
+                                "anchor",
+                                "order",
+                                "slash",
+                            ],
+                            e.id().unwrap_or(&e.voice),
+                        );
+                        if !doc
+                            .required_extensions
+                            .iter()
+                            .any(|x| x == core::grace_extension::EXTENSION)
+                        {
+                            unsupported(
+                                &mut report,
+                                "grace.required_fidelity",
+                                e.id().unwrap_or(&e.voice),
+                            );
+                            continue;
+                        }
+                        let id = e.id().expect("validated grace metadata target");
+                        score.graces.push(ScoreGraceNote {
+                            id: EventId(id.into()),
+                            anchor: EventId(
+                                text(&e.attributes, "anchor")
+                                    .unwrap()
+                                    .trim_start_matches('#')
+                                    .into(),
+                            ),
+                            order: integer(&e.attributes, "order").unwrap(),
+                            pitch: e.pitch.clone(),
+                            written: written(&e.attributes, &mut report, id),
+                            slash: e.attributes.get("slash").and_then(Scalar::as_bool),
+                            timing: grace_metadata[id].clone(),
+                        });
+                        continue;
+                    }
                     attrs(
                         &mut report,
                         &e.attributes,
@@ -510,6 +575,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     crate::tempo::normalize(&mut score.tempos, &mut report, Format::Sfs);
     crate::dynamics::normalize(&mut score, &mut report, Format::Sfs);
     crate::fermatas::sort(&mut score);
+    crate::graces::sort(&mut score);
+    crate::graces::authored_only(&score, Format::Sfs, &mut report);
     crate::fermatas::authored_only(&score, Format::Sfs, &mut report);
     report.append(validate_score(&score));
     crate::sfs_navigation::sort_barlines(&mut score);
@@ -579,6 +646,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             .push(core::fermata_extension::EXTENSION.into());
         crate::fermatas::authored_only(score, Format::Sfs, &mut report);
     }
+    if !score.graces.is_empty() {
+        doc.required_extensions
+            .push(core::grace_extension::EXTENSION.into());
+        crate::graces::authored_only(score, Format::Sfs, &mut report);
+    }
     if !score.barlines.is_empty() {
         doc.required_extensions
             .push(core::navigation_extension::EXTENSION.into());
@@ -603,6 +675,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         })
         .collect();
     objects.extend(score.barlines.iter().filter_map(|b| b.id.clone()));
+    objects.extend(score.graces.iter().map(|g| g.id.0.clone()));
     let mut measures = Ids::new(objects.iter().cloned(), "measure");
     let mut events = Ids::new(objects.into_iter(), "event");
     let mut chords = Ids::new(
@@ -760,6 +833,73 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 doc.end = end;
             }
         }
+    }
+    let grace_anchors = crate::ties::event_index(score);
+    for g in &score.graces {
+        let anchor = &grace_anchors[&g.anchor];
+        let id = events.get(&g.id.0, &mut report);
+        let mut a = Attributes::new();
+        put(&mut a, "id", id.clone());
+        put(&mut a, "kind", "grace");
+        put(
+            &mut a,
+            "anchor",
+            format!("#{}", events.get(&g.anchor.0, &mut report)),
+        );
+        a.insert("order".into(), Scalar::Integer(g.order));
+        a.insert(
+            "staff".into(),
+            Scalar::Integer(i64::from(anchor.event.staff)),
+        );
+        if let Some(slash) = g.slash {
+            a.insert("slash".into(), Scalar::Boolean(slash));
+        }
+        if let Some(w) = &g.written {
+            put(&mut a, "w", note_text(w.note_type));
+            a.insert("dots".into(), Scalar::Integer(i64::from(w.dots)));
+            if let Some(size) = w.size {
+                put(&mut a, "note_size", size.name());
+            }
+            if let Some(t) = &w.time_modification {
+                put(&mut a, "tm", format!("{}:{}", t.actual, t.normal));
+                if let Some(n) = t.normal_type {
+                    put(&mut a, "tm_normal_type", note_text(n));
+                }
+                a.insert(
+                    "tm_normal_dots".into(),
+                    Scalar::Integer(i64::from(t.normal_dots)),
+                );
+            }
+        }
+        frames
+            .entry(anchor.start.clone())
+            .or_default()
+            .push(Record::Event(Event {
+                voice: voices.get(&anchor.event.voice.0, &mut report),
+                pitch: g.pitch.clone(),
+                duration: Duration::Grace,
+                attributes: a,
+                source: SourceRange::default(),
+            }));
+        let mut timing = Attributes::new();
+        for (key, value) in [
+            ("steal_previous", &g.timing.steal_previous),
+            ("steal_following", &g.timing.steal_following),
+            ("make_time", &g.timing.make_time_quarters),
+        ] {
+            if let Some(v) = value {
+                put(&mut timing, key, v.to_string());
+            }
+        }
+        frames
+            .entry(anchor.start.clone())
+            .or_default()
+            .push(Record::Mark(Mark {
+                target: format!("#{id}"),
+                kind: core::grace_extension::KIND.into(),
+                attributes: timing,
+                source: SourceRange::default(),
+            }));
     }
     if !score.ties.is_empty() {
         let index = crate::ties::event_index(score);

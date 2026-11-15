@@ -205,6 +205,17 @@ pub(super) fn lower(doc: &Document, navigation: bool) -> Result<ResolvedScore> {
     if doc
         .required_extensions
         .iter()
+        .any(|e| e == crate::grace_extension::EXTENSION)
+    {
+        return Err(Diagnostic::error(
+            "grace.performance_unsupported",
+            "Authored grace timing requires an explicit supported realization; grace attacks must not be omitted or played as ordinary notes",
+            doc.source,
+        ));
+    }
+    if doc
+        .required_extensions
+        .iter()
         .any(|e| e == crate::fermata_extension::EXTENSION)
     {
         return Err(Diagnostic::error(

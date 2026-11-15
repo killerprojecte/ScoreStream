@@ -367,6 +367,7 @@ pub fn read_reader_with_options<R: BufRead + Seek>(
             score.dynamics.append(&mut reader.dynamics);
             score.sound_dynamics.append(&mut reader.sound_dynamics);
             score.fermatas.append(&mut reader.fermatas);
+            score.graces.append(&mut reader.graces);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -419,7 +420,9 @@ pub fn read_reader_with_options<R: BufRead + Seek>(
     crate::dynamics::normalize(&mut score, &mut report, crate::Format::MusicXml);
     crate::tempo::normalize(&mut score.tempos, &mut report, crate::Format::MusicXml);
     crate::fermatas::sort(&mut score);
+    crate::graces::sort(&mut score);
     crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
+    crate::graces::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
@@ -443,6 +446,7 @@ struct PartReader {
     dynamics: Vec<ScoreDynamic>,
     sound_dynamics: Vec<ScoreSoundDynamics>,
     fermatas: Vec<ScoreFermata>,
+    graces: Vec<ScoreGraceNote>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -483,6 +487,7 @@ impl PartReader {
             dynamics: vec![],
             sound_dynamics: vec![],
             fermatas: vec![],
+            graces: vec![],
             barlines: vec![],
         })
     }
@@ -507,6 +512,7 @@ impl PartReader {
             dynamics,
             sound_dynamics,
             fermatas,
+            graces,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -535,7 +541,15 @@ impl PartReader {
         let mut moved = false;
         let mut attributes_seen = false;
         let mut previous: Option<usize> = None;
+        let mut pending_graces = Vec::<super::graces::Pending>::new();
         for n in &measure.children {
+            if !pending_graces.is_empty() && n.name != "note" {
+                return Err(unsupported(
+                    n,
+                    "grace.anchor_interruption",
+                    "A grace group must be followed immediately by its same-voice principal; intervening controls are not reordered",
+                ));
+            }
             match n.name.as_str() {
                 "barline" => {
                     previous = None;
@@ -746,14 +760,19 @@ impl PartReader {
                 }
                 "note" => {
                     moved = true;
-                    let div = divisions.as_ref().ok_or_else(|| {
-                        error(
-                            n,
-                            "divisions.missing",
-                            "Note duration requires explicit divisions",
-                        )
-                    })?;
-                    let duration = &positive(child(n, "duration")?)? / div;
+                    let grace = n.child("grace").is_some();
+                    let duration = if grace {
+                        None
+                    } else {
+                        let div = divisions.as_ref().ok_or_else(|| {
+                            error(
+                                n,
+                                "divisions.missing",
+                                "Note duration requires explicit divisions",
+                            )
+                        })?;
+                        Some(&positive(child(n, "duration")?)? / div)
+                    };
                     let staff = staff_number(n, part.staves, false)?;
                     let v = voice(n, part_index, voice_map, &mut part.voices, staff, report)?;
                     if n.child("pitch").is_some() == n.child("rest").is_some() {
@@ -837,6 +856,25 @@ impl PartReader {
                         }
                         None
                     };
+                    if grace {
+                        *note_counter += 1;
+                        let id = n
+                            .attr("id")
+                            .map(String::from)
+                            .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
+                        pending_graces.push(super::graces::read(
+                            n,
+                            EventId(id),
+                            pitch,
+                            written,
+                            v,
+                            staff,
+                            divisions.as_ref(),
+                        )?);
+                        previous = None;
+                        continue;
+                    }
+                    let duration = duration.expect("ordinary duration was checked");
                     let mut offset = cursor.clone();
                     let mut chord = None;
                     if n.child("chord").is_some() {
@@ -883,7 +921,7 @@ impl PartReader {
                     if let Some(endpoints) = super::ties::read_endpoints(n)? {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);
                     }
-                    m.events.push(ScoreEvent {
+                    let event = ScoreEvent {
                         id: EventId(id),
                         voice: v,
                         staff,
@@ -892,7 +930,9 @@ impl PartReader {
                         pitch,
                         chord,
                         written,
-                    });
+                    };
+                    super::graces::attach(&mut pending_graces, &event, graces)?;
+                    m.events.push(event);
                 }
                 _ => {
                     return Err(unsupported(
@@ -902,6 +942,13 @@ impl PartReader {
                     ));
                 }
             }
+        }
+        if let Some(g) = pending_graces.first() {
+            return Err(unsupported(
+                g.source,
+                "grace.anchor_missing",
+                "Grace has no following principal in its measure",
+            ));
         }
         m.length = super::extent::read_length(
             measure,

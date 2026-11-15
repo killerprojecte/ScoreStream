@@ -31,6 +31,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
         }
         if requirement != crate::navigation_extension::EXTENSION
             && requirement != crate::fermata_extension::EXTENSION
+            && requirement != crate::grace_extension::EXTENSION
         {
             out.push(Diagnostic::error(
                 "extension_unsupported",
@@ -440,6 +441,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     }
     crate::navigation_extension::validate(doc, &mut out);
     crate::fermata_extension::validate(doc, &mut out);
+    crate::grace_extension::validate(doc, &mut out);
     validate_measures(&measures, &parts, &mut out);
     validate_references(doc, &events, &parts, &voices, &mut out);
     if doc.document_kind == DocumentKind::Fragment {

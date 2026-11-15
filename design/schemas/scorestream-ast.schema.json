@@ -472,6 +472,38 @@
             },
             "description": "Requires scorestream.navigation@1; exact ownership/time, field pairing and route restrictions are checked semantically."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.grace"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "steal_previous": {
+                    "$ref": "#/$defs/NonNegativeRational"
+                  },
+                  "steal_following": {
+                    "$ref": "#/$defs/NonNegativeRational"
+                  },
+                  "make_time": {
+                    "$ref": "#/$defs/NonNegativeRational"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "description": "Requires scorestream.grace@1 and a pitched unmeasured grace anchor. Exact ranges, same-frame placement, group order and one mark per grace are validated semantically."
+          }
         }
       ]
     },

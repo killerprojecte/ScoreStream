@@ -737,6 +737,7 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
             "note" => (
                 &["id"],
                 &[
+                    "grace",
                     "chord",
                     "pitch",
                     "rest",
@@ -750,7 +751,19 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                     "staff",
                 ],
                 &["dot", "tie", "notations"],
-                &["duration"],
+                &[],
+                false,
+            ),
+            "grace" => (
+                &[
+                    "slash",
+                    "steal-time-previous",
+                    "steal-time-following",
+                    "make-time",
+                ],
+                &[],
+                &[],
+                &[],
                 false,
             ),
             "tie" => (&["type", "time-only"], &[], &[], &[], false),
@@ -798,6 +811,14 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 return;
             }
         };
+    if n.name == "note" && (n.child("grace").is_some() == n.child("duration").is_some()) {
+        n.error(
+            report,
+            MappingEffect::Invalid,
+            "grace.duration_choice",
+            "A grace note must omit duration; every ordinary note must have duration",
+        );
+    }
     if matches!(n.name.as_str(), "direction-type" | "dynamics") && n.children.len() != 1 {
         n.error(report, MappingEffect::Unsupported, "dynamics.composite", "Exactly one typed metronome or dynamic symbol is supported; combined directions and compound dynamics are not discarded");
     }

@@ -30,6 +30,9 @@ pub struct ScoreDocument {
     /// Authored note/rest signs only. No hold duration or playback policy is inferred.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fermatas: Vec<ScoreFermata>,
+    /// Authored unmeasured notes, not zero-length ordinary events or silent cues.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub graces: Vec<ScoreGraceNote>,
 }
 /// One authored fermata on a measured note or rest. The supported profile permits
 /// one sign per event and retains every distinct event's sign without coalescing.
@@ -333,5 +336,42 @@ impl NoteSize {
             Self::GraceCue => "grace-cue",
             Self::Large => "large",
         }
+    }
+}
+
+/// A pitched grace before a measured, non-chord principal in the same voice/staff.
+/// Its written position is the principal onset; order -N..-1 is source order.
+/// There is deliberately no measured duration. No performance is inferred.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreGraceNote {
+    pub id: EventId,
+    pub anchor: EventId,
+    pub order: i64,
+    pub pitch: Pitch,
+    pub written: Option<WrittenDuration>,
+    /// None, explicit no, and yes remain distinct authored states.
+    pub slash: Option<bool>,
+    pub timing: GraceTiming,
+}
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GraceTiming {
+    pub steal_previous: Option<Rational>,
+    pub steal_following: Option<Rational>,
+    /// Exact make-time amount scaled from the active MusicXML divisions.
+    /// This is timing intent, not a measured duration or realized seconds.
+    pub make_time_quarters: Option<Rational>,
+}
+impl GraceTiming {
+    pub fn valid(&self) -> bool {
+        [&self.steal_previous, &self.steal_following]
+            .into_iter()
+            .flatten()
+            .all(|r| !r.is_negative() && *r <= Rational::from_integer(100))
+            && self
+                .make_time_quarters
+                .as_ref()
+                .is_none_or(|r| !r.is_negative())
     }
 }

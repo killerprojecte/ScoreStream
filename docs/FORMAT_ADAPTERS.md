@@ -47,7 +47,7 @@ MusicXML 的声轨编号是声部局部的，不等于 SFS 全局身份。MusicX
 
 ## 明确的拒绝，不静默删掉
 
-当前所有未实现元素和属性都造成失败，包括简单数字 metronome 和受支持单个力度符号以外的 direction、普通延音线以外的连线/装饰 notations、歌词、和声、反复、打击乐、倚音、cue、谱面布局与外部资源。SFS 侧无法进入公共转换模型的 marks/relations/state/event 属性同样失败。因此 `ScoreDocument` 目前是第一批转换域模型，**尚不是**所有音乐符号的完整作者模型。既有 SFS 播放方向类型仍在 notation 模块中，不会因为转换器未映射而被删掉或绕过。
+当前所有未实现元素和属性都造成失败，包括简单数字 metronome 和受支持单个力度符号以外的 direction、普通延音线以外的连线/装饰 notations、歌词、和声、反复、打击乐、受支持的普通有音高前倚音组以外的倚音、cue、谱面布局与外部资源。SFS 侧无法进入公共转换模型的 marks/relations/state/event 属性同样失败。因此 `ScoreDocument` 目前是第一批转换域模型，**尚不是**所有音乐符号的完整作者模型。既有 SFS 播放方向类型仍在 notation 模块中，不会因为转换器未映射而被删掉或绕过。
 
 共享元数据中的 description、header、footer、subtitle、language 在 SFS → 模型 → SFS 中保留；当前没有可证明无损的 MusicXML 导出映射，所以只在导出 XML 时明确失败。未知 creator 角色、缺少角色的 creator、多个 composer 等不能用现有单字符串字段表达，也不会合并丢失身份。XML 不允许的控制字符不会被清洗后假装成功。
 
@@ -114,7 +114,8 @@ Graphic MusicXML `<type size="cue">` maps to typed `WrittenDuration.size` and SF
 `note_size=cue`, which requires explicit `w`. Missing and explicit `full` are
 preserved separately. `full`, `cue`, `grace-cue`, and `large` are typed graphic
 values; none changes measured duration, event role, pitch or sound. This does not
-add support for MusicXML `<cue>` (silent) or `<grace>`. The preview supports full
+add support for MusicXML `<cue>` (silent); genuine `<grace>` uses the separate
+[typed unmeasured grace bridge](GRACE_IMPORT.md), not graphic size. The preview supports full
 and cue sizing for ordinary notes/rests and uniform-size chords, keeps the
 written meter, and marks metrically irregular MEI measures `metcon="false"`.
 Other graphic sizes or mixed-size chords explicitly withhold preview, without
@@ -135,3 +136,8 @@ Sources: [MusicXML graphic type](https://www.w3.org/2021/06/musicxml40/musicxml-
 [silent cue](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/cue/),
 [measure numbering and implicit](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/measure-partwise/),
 [MEI measure metrical conformance](https://music-encoding.org/guidelines/v5/elements/measure.html).
+
+Genuine pitched before-principal grace groups now use a separate unmeasured lane
+and required SFS fidelity capability. Source slash absence, order, written rhythm
+and exact timing intent roundtrip; exact playback and unsupported preview remain
+blocked. Legacy native SFS grace playback is unchanged. See [Grace import](GRACE_IMPORT.md).

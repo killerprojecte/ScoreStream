@@ -4,6 +4,7 @@ mod dynamics;
 mod extent;
 pub use extent::{IrregularMeasure, MusicXmlOptions};
 mod fermatas;
+mod graces;
 mod read;
 mod tempo;
 mod ties;

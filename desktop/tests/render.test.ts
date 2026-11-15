@@ -84,3 +84,16 @@ describe('irregular extents and graphic note size',()=>{
   for(const id of Object.keys(projected.map))expect(dom.querySelector(`[id="${id}"]`)).not.toBeNull();
  },10000);
 });
+
+
+describe('authored grace fidelity boundary',()=>{
+ it('withholds preview rather than omitting or measuring imported grace events',()=>{
+  const v=fixture();
+  v.document.required_extensions=['scorestream.grace@1'];
+  v.events.push({...v.events[0],id:'g',pitch:'D5',duration:'?',written_duration:'16',attributes:{kind:'grace',anchor:'#n1',order:-1,slash:false}});
+  v.document.frames=[{time:'0',records:[{record:'mark',kind:'scorestream.grace',target:'#g',attributes:{steal_following:'25/2'}}]}];
+  const before=JSON.stringify(v);
+  expect(()=>project(v)).toThrow('Grace-note layout is not yet supported');
+  expect(JSON.stringify(v)).toBe(before);
+ });
+});

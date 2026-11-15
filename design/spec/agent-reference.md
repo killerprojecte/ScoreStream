@@ -121,3 +121,14 @@ currently supports full/cue only and rejects mixed-size chords. Measure `len`
 is actual elapsed time, separate from written `meter`; do not resize a cadenza
 to its nominal time signature. MusicXML irregular-bar admission requires the
 adapter's exact caller contract, not a blanket permissive import.
+
+## Authored grace fidelity capability
+
+`!requires scorestream.grace@1` uses existing `:? kind=grace` events with one
+`+ #grace scorestream.grace` mark each, including empty marks for absent timing.
+Preserve principal identity, same frame/voice/staff, consecutive negative order,
+pitch, optional written rhythm and slash absence. Optional exact rational fields
+are `steal_previous`, `steal_following` (0–100 percent), and `make_time`
+(nonnegative quarter-equivalent intent). Never turn them into measured duration
+or infer a playing policy. Conversion and exact playback fail closed where
+unsupported; legacy unmarked SFS grace behavior is unchanged.

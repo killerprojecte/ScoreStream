@@ -416,6 +416,11 @@
         "bass",
         "text",
         "id"
+      ],
+      "scorestream.grace": [
+        "steal_previous",
+        "steal_following",
+        "make_time"
       ]
     },
     "relations": {
@@ -1012,6 +1017,28 @@
         },
         "required_extension": "scorestream.fermata@1",
         "meaning": "Authored-only measured event annotation; target is #note-or-rest at its exact onset. One sign per event. No duration, global hold, repeat projection or silent once-through approximation."
+      },
+      "scorestream.grace": {
+        "targets": [
+          "event"
+        ],
+        "required": [],
+        "fields": {
+          "steal_previous": {
+            "type": "nonnegative_rational",
+            "meaning": "Exact authored percent from the preceding note, 0 through 100; not realized."
+          },
+          "steal_following": {
+            "type": "nonnegative_rational",
+            "meaning": "Exact authored percent from the following note, 0 through 100; not realized."
+          },
+          "make_time": {
+            "type": "nonnegative_rational",
+            "meaning": "Exact nonnegative quarter-equivalent amount scaled from MusicXML divisions; timing intent, not measured duration."
+          }
+        },
+        "required_extension": "scorestream.grace@1",
+        "meaning": "One metadata record per authored pitched grace event, including empty timing intent. Requires duration=?, kind=grace, same-frame/voice/staff non-chord pitched principal, consecutive order=-N..-1; slash absence is retained. Performance rejects rather than omitting attacks."
       }
     }
   },
@@ -1112,6 +1139,13 @@
           "scorestream.fermata"
         ],
         "required_behavior": "Exactly one capability with at least one anchored sign. Measured notes/rests only; grace/spacer/barline anchors and multiple signs per event reject. Timing and engraving unavailable. Playback rejects until explicit global interpretation policy exists."
+      },
+      "scorestream.grace@1": {
+        "status": "authored grace roundtrip; performance unavailable",
+        "mark_kinds": [
+          "scorestream.grace"
+        ],
+        "required_behavior": "One capability and one metadata record per grace event. Only pitched before-principal non-chord groups. All timing values are retained without inference. Legacy SFS grace without this capability is unchanged."
       }
     }
   },

@@ -186,6 +186,7 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
     crate::tempo::validate(score, &mut report);
     crate::dynamics::validate(score, &mut report);
     crate::fermatas::validate(score, &mut report);
+    crate::graces::validate(score, &mut report);
     crate::navigation::validate_barlines(score, &mut report);
     report
 }

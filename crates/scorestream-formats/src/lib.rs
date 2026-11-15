@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 mod dynamics;
 mod fermatas;
+mod graces;
 pub mod musicxml;
 pub mod mxl;
 pub mod navigation;
@@ -30,6 +31,8 @@ pub enum MappingEffect {
     Normalized,
     /// A deliberate caller policy was applied without discarding source semantics.
     PolicyApplied,
+    /// Typed authored data is retained; any unimplemented realization is stated.
+    Preserved,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MappingDiagnostic {
@@ -80,7 +83,7 @@ impl MappingReport {
                 });
             } else if !matches!(
                 effect,
-                MappingEffect::Normalized | MappingEffect::PolicyApplied
+                MappingEffect::Normalized | MappingEffect::PolicyApplied | MappingEffect::Preserved
             ) {
                 self.diagnostics[LIMIT - 1].effect = effect;
             }
@@ -111,7 +114,7 @@ impl MappingReport {
         self.diagnostics.iter().any(|d| {
             !matches!(
                 d.effect,
-                MappingEffect::Normalized | MappingEffect::PolicyApplied
+                MappingEffect::Normalized | MappingEffect::PolicyApplied | MappingEffect::Preserved
             )
         })
     }
