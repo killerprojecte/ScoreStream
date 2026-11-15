@@ -12,6 +12,27 @@ pub struct ScoreDocument {
     /// Ordinary printed and sounding ties. Written notes remain separate events.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ties: Vec<ScoreTie>,
+    /// Explicit, score-wide sounding quarter-note BPM, independent of printed marks.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tempos: Vec<ScoreTempo>,
+    /// Printed numeric metronome marks. These never implicitly change playback tempo.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub metronomes: Vec<ScoreMetronome>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreTempo {
+    pub at: Rational,
+    pub quarter_bpm: Rational,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreMetronome {
+    pub at: Rational,
+    pub part: PartId,
+    /// None means a part direction, not an inferred staff or score-wide mark.
+    pub staff: Option<u32>,
+    pub value: crate::notation::Tempo,
 }
 /// A typed chain of distinct measured notes, with stable notation identity.
 /// This conversion profile does not yet represent print-only, sound-only,

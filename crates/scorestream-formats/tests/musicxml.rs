@@ -68,9 +68,10 @@ fn unsupported_paths_are_reported_and_no_document_returned() {
         .read(include_str!("fixtures/unsupported.musicxml"))
         .unwrap_err();
     assert!(
-        report.diagnostics.iter().any(
-            |d| d.feature == "element.direction" && d.path.contains("/measure[1]/direction[1]")
-        )
+        report
+            .diagnostics
+            .iter()
+            .any(|d| d.feature == "element.words" && d.path.contains("/measure[1]/direction[1]"))
     );
     assert!(
         report

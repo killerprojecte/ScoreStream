@@ -15,12 +15,12 @@ use std::{
 };
 
 type Result<T> = std::result::Result<T, MappingReport>;
-fn error(n: &Node, feature: &str, message: impl Into<String>) -> MappingReport {
+pub(super) fn error(n: &Node, feature: &str, message: impl Into<String>) -> MappingReport {
     let mut r = MappingReport::default();
     n.error(&mut r, MappingEffect::Invalid, feature, message);
     r
 }
-fn unsupported(n: &Node, feature: &str, message: impl Into<String>) -> MappingReport {
+pub(super) fn unsupported(n: &Node, feature: &str, message: impl Into<String>) -> MappingReport {
     let mut r = MappingReport::default();
     n.error(&mut r, MappingEffect::Unsupported, feature, message);
     r
@@ -31,7 +31,7 @@ fn required_attr<'a>(n: &'a Node, key: &str) -> Result<&'a str> {
         .ok_or_else(|| error(n, "required.attribute", format!("Missing {key}")))
 }
 /// XML decimal lexical space to exact reduced rational, never via floating point.
-fn decimal(n: &Node) -> Result<Rational> {
+pub(super) fn decimal(n: &Node) -> Result<Rational> {
     let value = n.text.trim();
     if value.len() > 64 {
         return Err(unsupported(
@@ -79,11 +79,11 @@ fn uint(n: &Node) -> Result<u32> {
         .filter(|n| *n > 0)
         .ok_or_else(|| error(n, "number.positive_integer", "Expected positive integer"))
 }
-fn child<'a>(n: &'a Node, name: &str) -> Result<&'a Node> {
+pub(super) fn child<'a>(n: &'a Node, name: &str) -> Result<&'a Node> {
     n.child(name)
         .ok_or_else(|| error(n, "required.element", format!("Missing {name}")))
 }
-fn bool_attr(n: &Node, key: &str) -> Result<bool> {
+pub(super) fn bool_attr(n: &Node, key: &str) -> Result<bool> {
     match n.attr(key) {
         None | Some("no") => Ok(false),
         Some("yes") => Ok(true),
@@ -346,6 +346,8 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
                 });
             }
             tie_endpoints.append(&mut reader.tie_endpoints);
+            score.tempos.append(&mut reader.tempos);
+            score.metronomes.append(&mut reader.metronomes);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -380,6 +382,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             }
         }
     }
+    crate::tempo::normalize(&mut score.tempos, &mut report, crate::Format::MusicXml);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
     report.append(validate_score(&score));
     report.finish(score)
@@ -397,6 +400,8 @@ struct PartReader {
     start: Rational,
     note_counter: usize,
     tie_endpoints: BTreeMap<EventId, super::ties::Endpoints>,
+    tempos: Vec<ScoreTempo>,
+    metronomes: Vec<ScoreMetronome>,
 }
 impl PartReader {
     fn new(
@@ -431,6 +436,8 @@ impl PartReader {
             start: Rational::zero(),
             note_counter,
             tie_endpoints: BTreeMap::new(),
+            tempos: vec![],
+            metronomes: vec![],
         })
     }
     fn measure(
@@ -448,6 +455,8 @@ impl PartReader {
             start,
             note_counter,
             tie_endpoints,
+            tempos,
+            metronomes,
         } = self;
         let part_index = *part_index;
         let mi = part.measures.len();
@@ -465,6 +474,8 @@ impl PartReader {
             states: vec![],
             events: vec![],
         };
+        let tempo_start = tempos.len();
+        let metronome_start = metronomes.len();
         let mut cursor = Rational::zero();
         let mut extent = Rational::zero();
         let mut moved = false;
@@ -622,6 +633,19 @@ impl PartReader {
                             }
                         }
                     }
+                }
+                "direction" | "sound" => {
+                    previous = None;
+                    super::tempo::read(
+                        n,
+                        part,
+                        start,
+                        &cursor,
+                        divisions.as_ref(),
+                        tempos,
+                        metronomes,
+                        report,
+                    )?;
                 }
                 "backup" | "forward" => {
                     previous = None;
@@ -841,7 +865,21 @@ impl PartReader {
                 "Cannot infer a positive length for an empty measure without meter",
             ));
         }
-        *start = &*start + &m.length;
+        let end = &*start + &m.length;
+        if tempos[tempo_start..]
+            .iter()
+            .any(|t| t.at < *start || t.at >= end)
+            || metronomes[metronome_start..]
+                .iter()
+                .any(|t| t.at < *start || t.at >= end)
+        {
+            return Err(unsupported(
+                measure,
+                "tempo.measure_boundary",
+                "Tempo and metronome offsets must stay inside their measure; cross-measure positions are not guessed",
+            ));
+        }
+        *start = end;
         part.measures.push(m);
         Ok(())
     }

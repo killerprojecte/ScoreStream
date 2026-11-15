@@ -645,11 +645,42 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
             "part" => (&["id"], &["measure"], &["measure"], &["measure"], false),
             "measure" => (
                 &["number", "implicit", "id"],
-                &["attributes", "note", "backup", "forward"],
-                &["attributes", "note", "backup", "forward"],
+                &[
+                    "attributes",
+                    "note",
+                    "backup",
+                    "forward",
+                    "direction",
+                    "sound",
+                ],
+                &[
+                    "attributes",
+                    "note",
+                    "backup",
+                    "forward",
+                    "direction",
+                    "sound",
+                ],
                 &[],
                 false,
             ),
+            "direction" => (
+                &[],
+                &["direction-type", "offset", "staff", "sound"],
+                &[],
+                &["direction-type"],
+                false,
+            ),
+            "direction-type" => (&[], &["metronome"], &[], &["metronome"], false),
+            "metronome" => (
+                &[],
+                &["beat-unit", "beat-unit-dot", "per-minute"],
+                &["beat-unit-dot"],
+                &["beat-unit", "per-minute"],
+                false,
+            ),
+            "sound" => (&["tempo"], &["offset"], &[], &[], false),
+            "offset" => (&["sound"], &[], &[], &[], true),
             "attributes" => (
                 &[],
                 &["divisions", "key", "time", "staves", "clef", "transpose"],
@@ -723,12 +754,16 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 &["duration"],
                 false,
             ),
-            "rest" | "chord" | "dot" | "normal-dot" => (&[], &[], &[], &[], false),
+            "rest" | "chord" | "dot" | "normal-dot" | "beat-unit-dot" => {
+                (&[], &[], &[], &[], false)
+            }
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
             | "instrument-name" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
             | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "type"
             | "staff" | "actual-notes" | "normal-notes" | "normal-type" | "diatonic"
-            | "chromatic" | "octave-change" => (&[], &[], &[], &[], true),
+            | "chromatic" | "octave-change" | "beat-unit" | "per-minute" => {
+                (&[], &[], &[], &[], true)
+            }
             _ => {
                 n.error(
                     report,

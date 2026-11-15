@@ -97,6 +97,7 @@ pub enum BeatUnit {
     Sixteenth,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Beat {
     pub unit: BeatUnit,
     pub dotted: bool,
@@ -120,6 +121,7 @@ impl Beat {
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Tempo {
     pub beat: Beat,
     pub bpm: Rational,

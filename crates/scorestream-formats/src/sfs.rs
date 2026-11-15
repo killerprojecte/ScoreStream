@@ -164,6 +164,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         metadata: doc.metadata.clone(),
         parts: vec![],
         ties: vec![],
+        tempos: vec![],
+        metronomes: vec![],
     };
     for p in &doc.parts {
         score.parts.push(ScorePart {
@@ -221,6 +223,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         for record in &frame.records {
             match record {
                 Record::Measure(_) => {}
+                Record::Mark(m) if m.kind == "metronome" => {
+                    crate::tempo::read_mark(m, &frame.time, &mut score, &mut report);
+                }
                 Record::Mark(m) => unsupported(&mut report, &format!("mark:{}", m.kind), &m.target),
                 Record::Relation(rel) => {
                     if rel.kind != "tie" {
@@ -237,6 +242,21 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         .entry(&rel.id)
                         .or_default()
                         .push((&frame.time, rel));
+                }
+                Record::State(s) if s.target == "score" && s.attributes.contains_key("tempo") => {
+                    attrs(&mut report, &s.attributes, &["tempo"], &s.target);
+                    let (beat, rate) = text(&s.attributes, "tempo")
+                        .unwrap()
+                        .split_once(':')
+                        .unwrap();
+                    let value = crate::tempo::parse_beat(beat).unwrap();
+                    if beat != "q" {
+                        report.push(Format::Sfs, MappingEffect::Normalized, "tempo.unit", frame.time.to_string(), "Playback tempo converted exactly to quarter-note BPM; printed metronome notation is independent");
+                    }
+                    score.tempos.push(ScoreTempo {
+                        at: frame.time.clone(),
+                        quarter_bpm: &value.quarters() * &rate.parse::<Rational>().unwrap(),
+                    });
                 }
                 Record::State(s) => {
                     if s.attributes.is_empty() {
@@ -433,6 +453,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     if end != doc.end {
         unsupported(&mut report, "end_outside_measures", "document");
     }
+    crate::tempo::normalize(&mut score.tempos, &mut report, Format::Sfs);
     report.append(validate_score(&score));
     report.finish(score)
 }
@@ -687,6 +708,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     }));
             }
         }
+    }
+    crate::tempo::write_tempos(score, &mut frames);
+    for mark in &score.metronomes {
+        let part = parts.get(&mark.part.0, &mut report);
+        crate::tempo::write_mark(mark, &part, &mut frames);
     }
     doc.frames = frames
         .into_iter()

@@ -47,7 +47,7 @@ fn failed_mapping_never_prints_partial_output() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|d| d["feature"] == "element.direction")
+            .any(|d| d["feature"] == "element.words")
     );
 }
 #[test]
@@ -180,7 +180,7 @@ fn compressed_musicxml_uses_the_same_scanner_and_semantic_adapter() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|d| d["feature"] == "element.direction")
+            .any(|d| d["feature"] == "element.words")
     );
 }
 
