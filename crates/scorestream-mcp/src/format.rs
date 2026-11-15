@@ -118,7 +118,7 @@ const SECTIONS: &[Topic] = &[
         ],
         rules: &["S015"],
         examples: &[],
-        constraints: &[3, 7],
+        constraints: &[3, 7, 8],
     },
     Topic {
         name: "relations",
@@ -139,14 +139,14 @@ const SECTIONS: &[Topic] = &[
         paths: &["extensions"],
         rules: &[],
         examples: &[],
-        constraints: &[5, 6],
+        constraints: &[5, 6, 8],
     },
     Topic {
         name: "validation",
         paths: &["authoritative_files"],
         rules: &["S011", "S013", "S014", "S015", "S017", "S018"],
         examples: &[],
-        constraints: &[0, 1, 2, 3, 4, 5, 6, 7],
+        constraints: &[0, 1, 2, 3, 4, 5, 6, 7, 8],
     },
 ];
 

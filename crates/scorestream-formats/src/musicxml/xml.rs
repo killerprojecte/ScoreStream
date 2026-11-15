@@ -754,7 +754,8 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 false,
             ),
             "tie" => (&["type", "time-only"], &[], &[], &[], false),
-            "notations" => (&[], &["tied"], &["tied"], &[], false),
+            "notations" => (&[], &["tied", "fermata"], &["tied", "fermata"], &[], false),
+            "fermata" => (&["type", "default-y", "relative-y"], &[], &[], &[], true),
             "tied" => (&["type", "number"], &[], &[], &[], false),
             "pitch" => (
                 &[],

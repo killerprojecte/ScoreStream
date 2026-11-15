@@ -68,7 +68,8 @@
     "Fragments carry local event IDs, no declarations/state/measure mutations, and no new required extensions; only external voice bindings and supplied context apply.",
     "Unknown extension interpretation must never be inferred from raw-source preservation.",
     "scorestream.barline requires scorestream.navigation@1, a declared part target and exact referenced measure boundary; fragments cannot introduce navigation. Authored-only validation reports unavailable engraving/replay; sounding lowering rejects.",
-    "sound_dynamics is an exact nonnegative percentage of forte velocity 90. The bounded numeric playback profile rejects mixtures with sounding symbolic dynamics, hairpins, or attack-changing accents; it never substitutes printed labels."
+    "sound_dynamics is an exact nonnegative percentage of forte velocity 90. The bounded numeric playback profile rejects mixtures with sounding symbolic dynamics, hairpins, or attack-changing accents; it never substitutes printed labels.",
+    "scorestream.fermata requires scorestream.fermata@1 and a measured note/rest anchor at the exact onset. Keep all distinct part/event copies, authored shape/orientation absence and exact y placement. No hold duration or synchronization is inferred; playback rejects."
   ],
   "pitch": {
     "canonical": "Written pitch spelling",
@@ -961,6 +962,46 @@
         },
         "required_extension": "scorestream.navigation@1",
         "meaning": "Authored-only per-part boundary. Frame equals referenced measure start/end. Scope is a declared part; neither score nor staff/voice/event. Duplicate part/measure/side fails; generic mark id is unsupported. Ending data requires ending and passes; times requires backward repeat. Playback lowering rejects until performed replay exists."
+      },
+      "scorestream.fermata": {
+        "targets": [
+          "event"
+        ],
+        "required": [],
+        "fields": {
+          "shape": {
+            "type": "enum",
+            "values": [
+              "normal",
+              "angled",
+              "square",
+              "double-angled",
+              "double-square",
+              "double-dot",
+              "half-curve",
+              "curlew"
+            ],
+            "meaning": "Absent preserves empty MusicXML normal shape; explicit normal remains explicit."
+          },
+          "orientation": {
+            "type": "enum",
+            "values": [
+              "upright",
+              "inverted"
+            ],
+            "meaning": "Absent preserves the implicit upright default, not a duration or staff placement."
+          },
+          "default_y": {
+            "type": "rational",
+            "meaning": "Exact authored vertical position in tenths."
+          },
+          "relative_y": {
+            "type": "rational",
+            "meaning": "Exact authored vertical adjustment in tenths."
+          }
+        },
+        "required_extension": "scorestream.fermata@1",
+        "meaning": "Authored-only measured event annotation; target is #note-or-rest at its exact onset. One sign per event. No duration, global hold, repeat projection or silent once-through approximation."
       }
     }
   },
@@ -1054,6 +1095,13 @@
           "scorestream.barline"
         ],
         "required_behavior": "Exactly one capability declaration with at least one boundary. Unknown versions reject. Conversion supports ordinary closed routes; unclosed final endings fail without a separate explicit policy. No silent once-through playback or invented ending closure."
+      },
+      "scorestream.fermata@1": {
+        "status": "authored event annotation roundtrip; no performed realization",
+        "mark_kinds": [
+          "scorestream.fermata"
+        ],
+        "required_behavior": "Exactly one capability with at least one anchored sign. Measured notes/rests only; grace/spacer/barline anchors and multiple signs per event reject. Timing and engraving unavailable. Playback rejects until explicit global interpretation policy exists."
       }
     }
   },

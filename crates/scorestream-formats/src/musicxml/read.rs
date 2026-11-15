@@ -351,6 +351,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             score.metronomes.append(&mut reader.metronomes);
             score.dynamics.append(&mut reader.dynamics);
             score.sound_dynamics.append(&mut reader.sound_dynamics);
+            score.fermatas.append(&mut reader.fermatas);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -402,6 +403,8 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
     super::dynamics::report_unassigned_initial(&score, &mut report);
     crate::dynamics::normalize(&mut score, &mut report, crate::Format::MusicXml);
     crate::tempo::normalize(&mut score.tempos, &mut report, crate::Format::MusicXml);
+    crate::fermatas::sort(&mut score);
+    crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
     report.append(validate_score(&score));
     report.finish(score)
@@ -423,6 +426,7 @@ struct PartReader {
     metronomes: Vec<ScoreMetronome>,
     dynamics: Vec<ScoreDynamic>,
     sound_dynamics: Vec<ScoreSoundDynamics>,
+    fermatas: Vec<ScoreFermata>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -462,6 +466,7 @@ impl PartReader {
             metronomes: vec![],
             dynamics: vec![],
             sound_dynamics: vec![],
+            fermatas: vec![],
             barlines: vec![],
         })
     }
@@ -484,6 +489,7 @@ impl PartReader {
             metronomes,
             dynamics,
             sound_dynamics,
+            fermatas,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -855,6 +861,7 @@ impl PartReader {
                         .attr("id")
                         .map(String::from)
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
+                    fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     if let Some(endpoints) = super::ties::read_endpoints(n)? {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);
                     }

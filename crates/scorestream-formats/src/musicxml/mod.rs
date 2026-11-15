@@ -1,6 +1,7 @@
 //! Small strict MusicXML 4.0 score-partwise profile; not complete MusicXML support.
 mod barlines;
 mod dynamics;
+mod fermatas;
 mod read;
 mod tempo;
 mod ties;

@@ -157,11 +157,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     if doc.span.is_some() {
         unsupported(&mut report, "span", "document");
     }
-    if doc
-        .required_extensions
-        .iter()
-        .any(|e| e != core::navigation_extension::EXTENSION)
-    {
+    if doc.required_extensions.iter().any(|e| {
+        e != core::navigation_extension::EXTENSION && e != core::fermata_extension::EXTENSION
+    }) {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
@@ -172,6 +170,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         metronomes: vec![],
         dynamics: vec![],
         sound_dynamics: vec![],
+        fermatas: vec![],
         barlines: vec![],
     };
     for p in &doc.parts {
@@ -259,6 +258,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Measure(_) => {}
                 Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
                     crate::sfs_navigation::read_mark(m, &mut score, &mut report);
+                }
+                Record::Mark(m) if m.kind == core::fermata_extension::KIND => {
+                    crate::fermatas::read_mark(m, &mut score, &mut report);
                 }
                 Record::Mark(m) if m.kind == "dynamic" => {
                     crate::dynamics::read_mark(m, &frame.time, &mut score, &mut report);
@@ -499,6 +501,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     }
     crate::tempo::normalize(&mut score.tempos, &mut report, Format::Sfs);
     crate::dynamics::normalize(&mut score, &mut report, Format::Sfs);
+    crate::fermatas::sort(&mut score);
+    crate::fermatas::authored_only(&score, Format::Sfs, &mut report);
     report.append(validate_score(&score));
     crate::sfs_navigation::sort_barlines(&mut score);
     if !report.has_errors() {
@@ -562,6 +566,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     }
     let mut doc = Document::new(DocumentKind::Score);
     doc.metadata = score.metadata.clone();
+    if !score.fermatas.is_empty() {
+        doc.required_extensions
+            .push(core::fermata_extension::EXTENSION.into());
+        crate::fermatas::authored_only(score, Format::Sfs, &mut report);
+    }
     if !score.barlines.is_empty() {
         doc.required_extensions
             .push(core::navigation_extension::EXTENSION.into());
@@ -794,6 +803,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     for d in &score.sound_dynamics {
         let part = parts.get(&d.scope.part.0, &mut report);
         crate::dynamics::write_state(d, &part, &mut frames);
+    }
+    let fermata_positions = crate::fermatas::positions(score);
+    for f in &score.fermatas {
+        let event = events.get(&f.event.0, &mut report);
+        crate::fermatas::write_mark(f, event, fermata_positions[&f.event].clone(), &mut frames);
     }
     crate::tempo::write_tempos(score, &mut frames);
     for mark in &score.metronomes {

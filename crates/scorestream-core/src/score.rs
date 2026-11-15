@@ -27,6 +27,40 @@ pub struct ScoreDocument {
     /// Authored per-part boundary signs. Performance navigation is derived separately.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub barlines: Vec<ScoreBarline>,
+    /// Authored note/rest signs only. No hold duration or playback policy is inferred.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fermatas: Vec<ScoreFermata>,
+}
+/// One authored fermata on a measured note or rest. The supported profile permits
+/// one sign per event and retains every distinct event's sign without coalescing.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreFermata {
+    pub event: EventId,
+    /// None preserves an empty MusicXML fermata, distinct from explicit "normal".
+    pub shape: Option<FermataShape>,
+    /// None preserves an absent orientation, whose MusicXML default is upright.
+    pub orientation: Option<FermataOrientation>,
+    pub default_y: Option<Rational>,
+    pub relative_y: Option<Rational>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FermataShape {
+    Normal,
+    Angled,
+    Square,
+    DoubleAngled,
+    DoubleSquare,
+    DoubleDot,
+    HalfCurve,
+    Curlew,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FermataOrientation {
+    Upright,
+    Inverted,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

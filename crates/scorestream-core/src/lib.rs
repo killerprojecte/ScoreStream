@@ -1,6 +1,7 @@
 //! Exact musical domain values, the normalized 1.1 AST, and semantic validation.
 //! No UI, storage, network, or playback policy belongs in this crate.
 #![forbid(unsafe_code)]
+pub mod fermata_extension;
 pub mod instruments;
 mod metadata;
 mod model;

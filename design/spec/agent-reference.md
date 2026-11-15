@@ -109,3 +109,7 @@ Part display labels: `!part f1 instrument=flute staves=1 display_name="Flute 1"`
 ## Explicit numeric dynamics
 
 Use `= part[.sN] sound_dynamics=1111/25` for exact playback percentage of forte velocity 90. Printed `+ part dynamic value=p sound=false` is independent; sf spelling remains distinct from sfz. Numeric playback rejects mixtures with sounding symbolic dynamics, hairpins or attack-changing accents in the current profile. See the repository dynamics import documentation for scope, offsets and renderer limits.
+
+## Authored fermata capability
+
+`!requires scorestream.fermata@1` enables `+ #event scorestream.fermata` at the exact onset of a measured note/rest. Optional shape, orientation and exact default_y/relative_y retain authored signs and placement, including omitted values. One sign per event; all distinct part/event copies remain distinct. No hold seconds, synchronized pauses or engraving are inferred. Current playback explicitly rejects. See the fermata import documentation for source evidence and unsupported cases.

@@ -144,6 +144,17 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
     if doc
         .required_extensions
         .iter()
+        .any(|e| e == crate::fermata_extension::EXTENSION)
+    {
+        return Err(Diagnostic::error(
+            "fermata.performance_unsupported",
+            "Authored fermatas have no defined hold duration or performance policy; silently playing through them is not allowed",
+            doc.source,
+        ));
+    }
+    if doc
+        .required_extensions
+        .iter()
         .any(|e| e == crate::navigation_extension::EXTENSION)
     {
         return Err(Diagnostic::error(

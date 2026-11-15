@@ -84,3 +84,5 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 - [backup / 多声轨与谱表](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/backup/)
 - [transpose 的书写音高到实际音高语义](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/transpose/)
 - [attributes 的作用时间](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/attributes/)
+
+Fermatas now use a separate authored-only event lane and mandatory SFS capability. Exact forms, optional vertical placement and tie-stop/rest anchors roundtrip, but playback explicitly rejects pending a global interpretation policy. See [Fermata import](FERMATA_IMPORT.md).

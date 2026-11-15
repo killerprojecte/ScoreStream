@@ -102,6 +102,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
     super::tempo::validate_export(score, &mut report);
     let tempo_index = super::tempo::Export::new(score);
     let dynamics_index = super::dynamics::Export::new(score, &mut report);
+    let fermatas = super::fermatas::Export::new(score, &mut report);
     for (field, value) in score.metadata.text_fields() {
         if value.is_some()
             && ["description", "header", "footer", "subtitle", "language"].contains(&field)
@@ -545,14 +546,15 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                         }
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
-                    if let Some(tied) = tied {
+                    if tied.is_some() || fermatas.contains(&e.id) {
                         out.push_str("        <notations>");
-                        if let Some(n) = tied.stop {
+                        if let Some(n) = tied.and_then(|t| t.stop) {
                             write!(out, "<tied type=\"stop\" number=\"{n}\"/>").unwrap();
                         }
-                        if let Some(n) = tied.start {
+                        if let Some(n) = tied.and_then(|t| t.start) {
                             write!(out, "<tied type=\"start\" number=\"{n}\"/>").unwrap();
                         }
+                        fermatas.write(&e.id, &mut out);
                         out.push_str("</notations>\n");
                     }
                     out.push_str("      </note>\n");
