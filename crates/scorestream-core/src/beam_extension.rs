@@ -2,9 +2,12 @@
 //! This capability adds no sounding durations, inferred groups, or playback policy.
 #![allow(clippy::result_large_err)]
 use crate::{
-    Diagnostic, Document, DocumentKind, Mark, Pitch, Rational, Record, Scalar, SourceRange,
+    Attributes, Diagnostic, Document, DocumentKind, Mark, Pitch, Rational, Record, Scalar,
+    SourceRange,
     notation::EventId,
-    score::{BeamValue, NoteType, ScoreBeam, ScoreDocument},
+    score::{
+        BeamValue, NoteSize, NoteType, ScoreBeam, ScoreDocument, StemDirection, WrittenDuration,
+    },
 };
 use std::collections::BTreeMap;
 
@@ -116,7 +119,113 @@ struct Context {
     flags: u8,
     pitched: bool,
     eligible: bool,
+    chord: Option<String>,
+    written: Option<WrittenRhythm>,
+    // The outer None is malformed native spelling; Some(None) is authored absence.
+    stem: Option<Option<StemDirection>>,
     source: SourceRange,
+}
+
+/// Compare semantic written fields, not serialized spelling or a reduced ratio.
+/// Separate arbitrary-precision integers keep 6:4 distinct from 3:2 while
+/// normalizing lexical variants of either integer. No fields are inferred.
+#[derive(Clone, PartialEq, Eq)]
+struct WrittenRhythm {
+    note_type: NoteType,
+    size: Option<NoteSize>,
+    dots: i64,
+    time_modification: Option<(Rational, Rational, Option<NoteType>, i64)>,
+}
+impl WrittenRhythm {
+    fn common(written: &WrittenDuration) -> Option<Self> {
+        let time_modification = match &written.time_modification {
+            Some(tm) if tm.actual > 0 && tm.normal > 0 => Some((
+                Rational::from_integer(i64::from(tm.actual)),
+                Rational::from_integer(i64::from(tm.normal)),
+                tm.normal_type,
+                i64::from(tm.normal_dots),
+            )),
+            Some(_) => return None,
+            None => None,
+        };
+        Some(Self {
+            note_type: written.note_type,
+            size: written.size,
+            dots: i64::from(written.dots),
+            time_modification,
+        })
+    }
+
+    fn native(attributes: &Attributes) -> Option<Self> {
+        fn dots(attributes: &Attributes, key: &str) -> Option<i64> {
+            match attributes.get(key) {
+                None => Some(0),
+                Some(value) => value.as_i64().filter(|n| *n >= 0),
+            }
+        }
+        fn integer(value: &str) -> Option<Rational> {
+            if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
+                return None;
+            }
+            value
+                .trim_start_matches('0')
+                .parse::<Rational>()
+                .ok()
+                .filter(Rational::is_positive)
+        }
+        let time_modification = match attributes.get("tm") {
+            Some(value) => {
+                let (actual, normal) = value.as_str()?.split_once(':')?;
+                let normal_type = match attributes.get("tm_normal_type") {
+                    Some(value) => Some(native_note_type(value.as_str()?)?),
+                    None => None,
+                };
+                Some((
+                    integer(actual)?,
+                    integer(normal)?,
+                    normal_type,
+                    dots(attributes, "tm_normal_dots")?,
+                ))
+            }
+            None => {
+                if attributes.contains_key("tm_normal_type")
+                    || attributes.contains_key("tm_normal_dots")
+                {
+                    return None;
+                }
+                None
+            }
+        };
+        Some(Self {
+            note_type: native_note_type(attributes.get("w")?.as_str()?)?,
+            size: match attributes.get("note_size") {
+                Some(value) => Some(NoteSize::from_name(value.as_str()?)?),
+                None => None,
+            },
+            dots: dots(attributes, "dots")?,
+            time_modification,
+        })
+    }
+}
+
+fn native_note_type(value: &str) -> Option<NoteType> {
+    Some(match value {
+        "maxima" => NoteType::Maxima,
+        "long" => NoteType::Long,
+        "breve" => NoteType::Breve,
+        "1" => NoteType::Whole,
+        "2" => NoteType::Half,
+        "4" => NoteType::Quarter,
+        "8" => NoteType::Eighth,
+        "16" => NoteType::N16,
+        "32" => NoteType::N32,
+        "64" => NoteType::N64,
+        "128" => NoteType::N128,
+        "256" => NoteType::N256,
+        "512" => NoteType::N512,
+        "1024" => NoteType::N1024,
+        _ => return None,
+    })
 }
 impl Context {
     fn error(&self, code: &str, message: &str) -> Diagnostic {
@@ -186,8 +295,10 @@ pub fn validate_score(score: &ScoreDocument) -> Vec<Diagnostic> {
                     flags: event.written.as_ref().map_or(0, |w| flags(w.note_type)),
                     pitched: matches!(event.pitch, Pitch::Pitched { .. }),
                     eligible: matches!(event.pitch, Pitch::Pitched { .. } | Pitch::Rest)
-                        && event.chord.is_none()
                         && event.measure_rest != Some(true),
+                    chord: event.chord.clone(),
+                    written: event.written.as_ref().and_then(WrittenRhythm::common),
+                    stem: Some(event.stem),
                     source: SourceRange::default(),
                 });
             }
@@ -215,6 +326,9 @@ pub fn validate_score(score: &ScoreDocument) -> Vec<Diagnostic> {
             flags: grace.written.as_ref().map_or(0, |w| flags(w.note_type)),
             pitched: matches!(grace.pitch, Pitch::Pitched { .. }),
             eligible: matches!(grace.pitch, Pitch::Pitched { .. }) && grace.timing.valid(),
+            chord: None,
+            written: grace.written.as_ref().and_then(WrittenRhythm::common),
+            stem: Some(grace.stem),
             source: SourceRange::default(),
         });
     }
@@ -327,15 +441,15 @@ fn native_contexts(doc: &Document) -> Vec<Context> {
                 has_grace_capability
                     && kind == Some("grace")
                     && matches!(event.pitch, Pitch::Pitched { .. })
+                    && event.chord().is_none()
             } else {
                 matches!(event.pitch, Pitch::Pitched { .. } | Pitch::Rest)
                     && kind.is_none_or(|k| k == "note")
-            } && event.chord().is_none()
-                && event
-                    .attributes
-                    .get("measure_rest")
-                    .and_then(Scalar::as_bool)
-                    != Some(true);
+            } && event
+                .attributes
+                .get("measure_rest")
+                .and_then(Scalar::as_bool)
+                != Some(true);
             contexts.push(Context {
                 id: event.id().map(str::to_owned),
                 lane: ownership.as_ref().map(|(lane, _)| lane.clone()),
@@ -348,6 +462,12 @@ fn native_contexts(doc: &Document) -> Vec<Context> {
                 flags: native_flags(event.attributes.get("w").and_then(Scalar::as_str)),
                 pitched: matches!(event.pitch, Pitch::Pitched { .. }),
                 eligible,
+                chord: event.chord().map(str::to_owned),
+                written: WrittenRhythm::native(&event.attributes),
+                stem: match event.attributes.get("stem") {
+                    Some(value) => value.as_str().and_then(StemDirection::from_name).map(Some),
+                    None => Some(None),
+                },
                 source: event.source,
             });
         }
@@ -450,6 +570,90 @@ fn connected(a: Option<BeamValue>, b: Option<BeamValue>) -> bool {
         && matches!(b, Some(BeamValue::Continue | BeamValue::End))
 }
 
+/// Keep every event in the identity map. Only this topology view may omit the
+/// non-head members of a fully checked chord, including an unmarked chord.
+/// An invalid group is never hidden just because its head has no beam.
+fn chord_topology(
+    contexts: &[Context],
+    events: &BTreeMap<&str, Vec<usize>>,
+    levels: &[[Option<BeamValue>; 8]],
+    out: &mut Vec<Diagnostic>,
+) -> Vec<bool> {
+    let mut groups: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+    for (index, context) in contexts.iter().enumerate() {
+        if let Some(chord) = &context.chord {
+            groups.entry(chord).or_default().push(index);
+        }
+    }
+    let mut omitted = vec![false; contexts.len()];
+    for (chord, members) in groups {
+        // Collection order is declaration order, never beam-mark or pitch order.
+        let head = &contexts[members[0]];
+        let beamed = members
+            .iter()
+            .any(|i| levels[*i].iter().any(Option::is_some));
+        let mut problems = Vec::new();
+        // Common-model group IDs are opaque and are normalized by adapters.
+        // Native identifier syntax is checked separately by the registry.
+        if chord.is_empty()
+            || members.len() < 2
+            || members.windows(2).any(|pair| pair[1] != pair[0] + 1)
+            || members.iter().any(|i| {
+                let c = &contexts[*i];
+                c.lane.is_none()
+                    || c.lane != head.lane
+                    || c.at != head.at
+                    || c.id.as_ref().is_some_and(|id| {
+                        events
+                            .get(id.as_str())
+                            .is_none_or(|indices| indices.len() != 1)
+                    })
+            })
+        {
+            problems.push(("beam.chord_group", "A beamed chord requires at least two distinct, consecutive declared members in one actual measure, onset, voice and staff; its group and event identities cannot be reused"));
+        }
+        if members.iter().any(|i| {
+            let c = &contexts[*i];
+            c.order.is_some() || !c.pitched || !c.eligible || !c.within_measure
+        }) {
+            problems.push(("beam.chord_profile", "Beamed chords support only ordinary measured pitched members within their actual measure"));
+        }
+        if members.iter().any(|i| {
+            let c = &contexts[*i];
+            c.duration.as_ref().is_none_or(|d| !d.is_positive())
+                || c.duration != head.duration
+                || c.written.is_none()
+                || c.written != head.written
+        }) {
+            problems.push(("beam.chord_rhythm", "Beamed chord members require equal positive actual durations and equal explicit written type, dot count, time modification, normal notation and graphic size"));
+        }
+        if !matches!(
+            head.stem,
+            Some(None | Some(StemDirection::Up | StemDirection::Down))
+        ) || members.iter().any(|i| contexts[*i].stem != head.stem)
+        {
+            problems.push(("beam.chord_stem", "Beamed chord stems must all be absent or all carry the same authored up/down direction"));
+        }
+        let mut member_beam = false;
+        for index in members.iter().skip(1).copied() {
+            if levels[index].iter().any(Option::is_some) {
+                member_beam = true;
+                out.push(contexts[index].error("beam.chord_member", "Only the first declared chord member may carry beams; later members cannot supply or split beam levels"));
+            }
+        }
+        if problems.is_empty() && !member_beam {
+            for index in members.iter().skip(1) {
+                omitted[*index] = true;
+            }
+        } else if beamed {
+            for (code, message) in problems {
+                out.push(head.error(code, message));
+            }
+        }
+    }
+    omitted
+}
+
 /// One topology checker for both public representations. In particular, a
 /// missing beam on an intervening event is not silently skipped.
 fn validate_contexts<'a>(
@@ -491,9 +695,10 @@ fn validate_contexts<'a>(
             ));
         }
     }
+    let omitted = chord_topology(contexts, &events, &levels, &mut out);
     let mut lanes: BTreeMap<&Lane, Vec<usize>> = BTreeMap::new();
     for (i, context) in contexts.iter().enumerate() {
-        if let Some(lane) = &context.lane {
+        if let Some(lane) = context.lane.as_ref().filter(|_| !omitted[i]) {
             lanes.entry(lane).or_default().push(i);
         }
         if levels[i].iter().all(Option::is_none) {
@@ -503,7 +708,7 @@ fn validate_contexts<'a>(
             out.push(context.error("beam.measure", "Beamed event must belong to one explicit actual measure without crossing its boundary"));
         }
         if !context.eligible {
-            out.push(context.error("beam.profile", "Beams support measured pitched notes/rests and authored before-principal grace notes, without chords or semantic cues"));
+            out.push(context.error("beam.profile", "Beams support measured pitched notes/rests, validated measured chord heads and authored before-principal grace notes, without semantic cues"));
         }
         for (level, value) in levels[i]
             .iter()
@@ -580,6 +785,7 @@ fn validate_contexts<'a>(
                     count.and_then(|n| i64::try_from(position).ok().map(|p| p - n));
                 let valid_principal = principal.is_some_and(|p| {
                     p.order.is_none()
+                        && p.chord.is_none()
                         && p.within_measure
                         && p.pitched
                         && p.eligible

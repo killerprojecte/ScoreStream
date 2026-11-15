@@ -9,7 +9,7 @@ acceptance.
 
 ScoreDocument.beams is an optional, omitted-when-empty collection of ScoreBeam:
 
-- event: the owning measured note/rest or supported grace event identity.
+- event: the owning measured note/rest, supported chord head or grace event identity.
 - number: optional integer 1 through 8. Absence and explicit 1 remain distinct.
 - value: begin, continue, end, forward hook, or backward hook.
 
@@ -35,8 +35,20 @@ Graphic cue size does not make a note a silent cue or alter its clock.
   local partial beams, not inferred connections to neighboring stems.
 - Every lower level must be present on a stem bearing a higher-level mark.
   Written rhythm must support the declared level.
-- Primary hooks, chords (including a head later marked by a chord member), silent
-  cues, unpitched events, spaces and full-measure rests are outside this profile.
+- Ordinary measured pitched chords are supported only when all members share
+  positive actual duration, explicit written type, dot count, time-modification
+  (including normal notation), graphic size, actual measure, onset, voice and
+  effective staff. Stems must all be absent or all the same authored up/down value.
+- The first declared member is the head. Only that head may carry beam levels.
+  Ordered member events, pitches, accidentals, ties and other independently
+  supported metadata remain separate; nothing is copied from a head to a member.
+  Only the topology view collapses checked members to a single rhythmic anchor.
+  XML/SFS/canonical/JSON conversion preserves the authoritative member order.
+- Singleton, reused, interleaved or ambiguous chord groups; split/member beams;
+  mixed-duration, cross-staff and grace chords remain outside this profile.
+  Shorter chord members are legal MusicXML but deliberately unsupported here.
+- Primary hooks, silent cues, unpitched events, spaces and full-measure rests are
+  outside this profile. Beamed graces still require a non-chord principal.
 - Only number and the five role values are mapped. Unknown descendants and
   attributes, including explicit fan, repeater, color and beam identity, remain
   blocking. They are never silently defaulted or classified as geometry.
@@ -74,9 +86,20 @@ return a partial score, or claim complete import.
 
 Independent source inventory found 8,656 complete per-level runs, including 6,258
 primary groups, and 801 hooks. Some beamed events are chord heads: an independent
-scan found 623 beamed chord heads with 648 chord-member notes, although no chord
-member itself carries a beam. Those groups remain outside this first topology
-profile; decoding their beam fields is not acceptance of their chord semantics. Six actual Movement II notes (P16/P17/P18,
+scan found 623 beamed chord heads with 648 additional chord-member notes: 598 dyads
+and 25 triads. No member itself carries a beam. These heads carry 931 beam records.
+All 623 groups satisfy the new same-rhythm/staff/stem chord field profile, including
+131 with 3:2 time-modification and 25 dotted heads. Dot geometry is not rhythm;
+unsupported dot coordinates remain blocking. Independent member accidentals and
+ties are retained, not inferred from the head. Per-movement head/member counts are
+117/117, 196/216, 46/48 and 264/267. These receipts check source fields, not complete
+source acceptance. An exact raw Movement I/P14/measure 55 fragment, with its original
+inherited attributes restored in a separate contextual measure, tests conversion
+of all notes and its three chord heads under the existing explicit coordinate
+regeneration policy. Strict import still rejects its coordinates. This fragment
+is not a whole-movement substitute or a claim of preserved source geometry.
+
+Six actual Movement II notes (P16/P17/P18,
 measure 237 note 3 and measure 238 note 2) carry a forward level-3 hook where
 level 2 ends. The typed representation retains this direction; it does not invent
 a level-2 forward connection. Beams do not make the originals pass the remaining
@@ -88,3 +111,11 @@ header, print, articulation, ornament, direction and slur requirements.
 defines eight levels, the five roles, default level one, and grouping by voice and
 presence of grace/cue elements. The supported numeric and role subset is explicit;
 this document is not permission to accept all attributes of that element.
+
+[MusicXML 4.0 chord](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/chord/)
+defines an additional tone and leaves timeline advancement to the preceding
+non-chord head. The format permits shorter member durations, but this bounded
+beam profile requires equality rather than guessing a shared stem.
+[MusicXML 4.0 stem](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/stem/)
+distinguishes up, down, none and double; the last two remain unsupported for
+these authored chord-head beams.

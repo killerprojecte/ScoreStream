@@ -1139,7 +1139,7 @@
           }
         },
         "required_extension": "scorestream.beam@1",
-        "meaning": "Printed authored beam at the exact event onset. Requires explicit written flags, unique effective levels, all lower levels and closed contiguous same-measure/voice/staff runs. Secondary connections must also connect at lower levels. Secondary hooks preserve local direction without inferred neighbor attachment. Primary hooks, chords, semantic cues, unpitched/spacer targets, cross-measure runs and mixing legacy beam relations reject. Grace beams require the authored before-principal profile. Graphic cue size remains sounding. No performance timing changes."
+        "meaning": "Printed authored beam at the exact event onset. Requires explicit written flags, unique effective levels, all lower levels and closed contiguous same-measure/voice/staff runs. Secondary connections must also connect at lower levels. Secondary hooks preserve local direction without inferred neighbor attachment. Measured pitched chords require consecutive ordered members with identical actual duration, full explicit written rhythm, graphic size and effective lane; stems must all be absent or equal up/down. The first declared member alone owns beams. Members remain separate events. Member beams, mixed rhythm/staff/stem, ambiguous groups and grace chords reject. Primary hooks, semantic cues, unpitched/spacer targets, cross-measure runs and mixing legacy beam relations reject. Grace beams require the authored before-principal profile. Graphic cue size remains sounding. No performance timing changes."
       }
     }
   },

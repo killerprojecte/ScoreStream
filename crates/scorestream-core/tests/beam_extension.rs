@@ -1,13 +1,13 @@
 use scorestream_core::{
-    Attributes, Document, DocumentKind, Duration, Event, Frame, Mark, Measure, Part, Pitch,
-    Rational, Record, Relation, RelationPhase, Scalar, Severity, SourceRange, State, Voice,
-    beam_extension::{EXTENSION, KIND, decode, encode, validate_score},
-    notation::{EventId, PartId, VoiceId, lower_document},
+    beam_extension::{decode, encode, validate_score, EXTENSION, KIND},
+    notation::{lower_document, EventId, PartId, VoiceId},
     score::{
         BeamValue, GraceTiming, NoteSize, NoteType, ScoreBeam, ScoreDocument, ScoreEvent,
-        ScoreGraceNote, ScoreMeasure, ScorePart, ScoreVoice, WrittenDuration,
+        ScoreGraceNote, ScoreMeasure, ScorePart, ScoreVoice, StemDirection, TimeModification,
+        WrittenDuration,
     },
-    validate,
+    validate, Attributes, Document, DocumentKind, Duration, Event, Frame, Mark, Measure, Part,
+    Pitch, Rational, Record, Relation, RelationPhase, Scalar, Severity, SourceRange, State, Voice,
 };
 use serde_json::json;
 
@@ -402,7 +402,7 @@ fn reject_duplicate_effective_levels_missing_lower_levels_and_insufficient_flags
     }
 }
 #[test]
-fn reject_primary_hooks_chords_semantic_cues_unpitched_spacers_and_measure_rests() {
+fn reject_primary_hooks_singleton_chords_semantic_cues_unpitched_spacers_and_measure_rests() {
     for value in [BeamValue::ForwardHook, BeamValue::BackwardHook] {
         let mut c = common();
         c.beams[0].value = value;
@@ -412,7 +412,6 @@ fn reject_primary_hooks_chords_semantic_cues_unpitched_spacers_and_measure_rests
         assert!(native_error(&doc, "beam.primary_hook_unsupported"));
     }
     for (key, value) in [
-        ("chord", Scalar::String("c".into())),
         ("kind", Scalar::String("cue".into())),
         ("measure_rest", Scalar::Boolean(true)),
     ] {
@@ -430,7 +429,12 @@ fn reject_primary_hooks_chords_semantic_cues_unpitched_spacers_and_measure_rests
     }
     let mut c = common();
     c.parts[0].measures[0].events[0].chord = Some("c".into());
-    assert!(common_error(&c, "beam.profile"));
+    assert!(common_error(&c, "beam.chord_group"));
+    let mut doc = document();
+    event(&mut doc, 0)
+        .attributes
+        .insert("chord".into(), Scalar::String("c".into()));
+    assert!(native_error(&doc, "beam.chord_group"));
 }
 #[test]
 fn reject_orphan_unclosed_and_interrupted_runs_including_anonymous_events() {
@@ -605,12 +609,10 @@ fn graces() -> Document {
 fn grace_lanes_require_explicit_valid_before_principal_profile() {
     let doc = graces();
     assert_valid(&doc);
-    assert!(
-        lower_document(&doc)
-            .unwrap_err()
-            .iter()
-            .any(|d| d.code == "grace.performance_unsupported")
-    );
+    assert!(lower_document(&doc)
+        .unwrap_err()
+        .iter()
+        .any(|d| d.code == "grace.performance_unsupported"));
     let mut c = common();
     c.beams.clear();
     for (i, value) in [BeamValue::Begin, BeamValue::Continue, BeamValue::End]
@@ -703,12 +705,10 @@ fn legacy_relation_mixing_rejects_without_weakening_other_lowering_guards() {
         source: source(),
     }));
     assert_valid(&doc);
-    assert!(
-        lower_document(&doc)
-            .unwrap_err()
-            .iter()
-            .any(|d| d.code == "fermata.performance_unsupported")
-    );
+    assert!(lower_document(&doc)
+        .unwrap_err()
+        .iter()
+        .any(|d| d.code == "fermata.performance_unsupported"));
     let mut doc = document();
     doc.frames[0].records.push(Record::Mark(Mark {
         target: "#n0".into(),
@@ -723,8 +723,8 @@ fn legacy_relation_mixing_rejects_without_weakening_other_lowering_guards() {
 #[test]
 fn qualified_projection_keeps_validated_beams_sound_neutral_and_rejects_bad_topology() {
     use scorestream_core::notation::{
-        PerformanceLimits, discover_document_fermatas, discover_document_graces,
-        discover_document_graces_and_fermatas, perform_document,
+        discover_document_fermatas, discover_document_graces,
+        discover_document_graces_and_fermatas, perform_document, PerformanceLimits,
     };
     fn without_beams(doc: &Document) -> Document {
         let mut result = doc.clone();
@@ -786,12 +786,10 @@ fn qualified_projection_keeps_validated_beams_sound_neutral_and_rejects_bad_topo
     doc.frames[0]
         .records
         .retain(|r| !matches!(r,Record::Mark(m) if m.kind==KIND && m.target=="#g1"));
-    assert!(
-        discover_document_graces_and_fermatas(&doc)
-            .unwrap_err()
-            .iter()
-            .any(|d| d.code == "beam.interrupted")
-    );
+    assert!(discover_document_graces_and_fermatas(&doc)
+        .unwrap_err()
+        .iter()
+        .any(|d| d.code == "beam.interrupted"));
 }
 
 #[test]
@@ -975,4 +973,733 @@ fn all_eight_written_flag_levels_use_the_same_native_and_common_contract() {
         }
         assert_valid(&doc);
     }
+}
+
+fn common_event<'a>(score: &'a mut ScoreDocument, id: &str) -> &'a mut ScoreEvent {
+    score.parts[0].measures[0]
+        .events
+        .iter_mut()
+        .find(|e| e.id.0 == id)
+        .unwrap()
+}
+fn native_event<'a>(doc: &'a mut Document, id: &str) -> &'a mut Event {
+    doc.frames
+        .iter_mut()
+        .flat_map(|f| &mut f.records)
+        .find_map(|r| match r {
+            Record::Event(e) if e.id() == Some(id) => Some(e),
+            _ => None,
+        })
+        .unwrap()
+}
+fn add_common_chord(score: &mut ScoreDocument, id: &str, count: usize) {
+    let events = &mut score.parts[0].measures[0].events;
+    let index = events.iter().position(|e| e.id.0 == id).unwrap();
+    events[index].chord = Some(format!("chord_{id}"));
+    for tone in 1..count {
+        let mut member = events[index].clone();
+        member.id = EventId(format!("{id}_{tone}"));
+        member.pitch = if tone == 1 { "E4" } else { "G4" }.parse().unwrap();
+        events.insert(index + tone, member);
+    }
+}
+fn add_native_chord(doc: &mut Document, id: &str, count: usize) {
+    for frame in &mut doc.frames {
+        let Some(index) = frame
+            .records
+            .iter()
+            .position(|r| matches!(r, Record::Event(e) if e.id() == Some(id)))
+        else {
+            continue;
+        };
+        let Record::Event(head) = &mut frame.records[index] else {
+            unreachable!();
+        };
+        head.attributes
+            .insert("chord".into(), Scalar::String(format!("chord_{id}")));
+        let head = head.clone();
+        for tone in 1..count {
+            let mut member = head.clone();
+            member
+                .attributes
+                .insert("id".into(), Scalar::String(format!("{id}_{tone}")));
+            member.pitch = if tone == 1 { "E4" } else { "G4" }.parse().unwrap();
+            frame.records.insert(index + tone, Record::Event(member));
+        }
+        return;
+    }
+    panic!("missing chord head {id}");
+}
+fn chord_common() -> ScoreDocument {
+    let mut score = common();
+    for (id, count) in [("n0", 2), ("n1", 3), ("n2", 2), ("n3", 2)] {
+        add_common_chord(&mut score, id, count);
+    }
+    score
+}
+fn chord_document() -> Document {
+    let mut doc = document();
+    for (id, count) in [("n0", 2), ("n1", 3), ("n2", 2), ("n3", 2)] {
+        add_native_chord(&mut doc, id, count);
+    }
+    doc
+}
+
+#[test]
+fn measured_chord_heads_support_dyads_triads_dots_tuplets_sizes_and_authored_stems() {
+    for stem in [None, Some(StemDirection::Up), Some(StemDirection::Down)] {
+        for size in [
+            None,
+            Some(NoteSize::Full),
+            Some(NoteSize::Cue),
+            Some(NoteSize::GraceCue),
+            Some(NoteSize::Large),
+        ] {
+            for tuplets in [false, true] {
+                let mut score = chord_common();
+                let mut doc = chord_document();
+                for e in &mut score.parts[0].measures[0].events {
+                    e.stem = stem;
+                    let w = e.written.as_mut().unwrap();
+                    w.size = size;
+                    w.dots = 1;
+                    if tuplets {
+                        w.time_modification = Some(TimeModification {
+                            actual: 3,
+                            normal: 2,
+                            normal_type: Some(NoteType::N16),
+                            normal_dots: 1,
+                        });
+                    }
+                }
+                for e in doc
+                    .frames
+                    .iter_mut()
+                    .flat_map(|f| &mut f.records)
+                    .filter_map(|r| {
+                        if let Record::Event(e) = r {
+                            Some(e)
+                        } else {
+                            None
+                        }
+                    })
+                {
+                    e.attributes.insert("dots".into(), Scalar::Integer(1));
+                    if let Some(stem) = stem {
+                        e.attributes
+                            .insert("stem".into(), Scalar::String(stem.name().into()));
+                    }
+                    if let Some(size) = size {
+                        e.attributes
+                            .insert("note_size".into(), Scalar::String(size.name().into()));
+                    }
+                    if tuplets {
+                        for (key, value) in [("tm", "3:2"), ("tm_normal_type", "16")] {
+                            e.attributes
+                                .insert(key.into(), Scalar::String(value.into()));
+                        }
+                        e.attributes
+                            .insert("tm_normal_dots".into(), Scalar::Integer(1));
+                    }
+                }
+                let before = score.clone();
+                assert!(
+                    validate_score(&score).is_empty(),
+                    "{:?}",
+                    validate_score(&score)
+                );
+                assert_eq!(score, before);
+                let before = doc.clone();
+                assert_valid(&doc);
+                assert_eq!(doc, before);
+            }
+        }
+    }
+    // A measured chord and an ordinary note share the same topology rules.
+    let mut score = common();
+    add_common_chord(&mut score, "n1", 3);
+    assert!(validate_score(&score).is_empty());
+    let mut doc = document();
+    add_native_chord(&mut doc, "n1", 3);
+    assert_valid(&doc);
+}
+
+#[test]
+fn chord_head_is_first_declared_member_even_after_json_reordering() {
+    let mut score = chord_common();
+    score.parts[0].measures[0].events.swap(0, 1);
+    let score: ScoreDocument =
+        serde_json::from_value(serde_json::to_value(score).unwrap()).unwrap();
+    assert!(common_error(&score, "beam.chord_member"));
+    assert_eq!(score.beams[0].event.0, "n0");
+    let mut doc = chord_document();
+    doc.frames[0].records.swap(0, 1);
+    let doc: Document = serde_json::from_value(serde_json::to_value(doc).unwrap()).unwrap();
+    assert!(native_error(&doc, "beam.chord_member"));
+    // Reordering the beam marks cannot select a different head either.
+    let mut doc = chord_document();
+    let record = doc.frames[0].records.pop().unwrap();
+    doc.frames[0].records.insert(0, record);
+    assert_valid(&doc);
+}
+
+#[test]
+fn chord_members_cannot_carry_or_split_any_beam_level() {
+    for split in [false, true] {
+        for number in [None, Some(2)] {
+            let mut score = chord_common();
+            let mut doc = chord_document();
+            if split {
+                score
+                    .beams
+                    .retain(|b| !(b.event.0 == "n0" && b.number == number));
+                doc.frames[0].records.retain(|r| {
+                    !matches!(r, Record::Mark(m) if decode(m).is_ok_and(|b| b.event.0 == "n0" && b.number == number))
+                });
+            }
+            score.beams.push(beam("n0_1", number, BeamValue::Begin));
+            doc.frames[0].records.push(Record::Mark(encode(
+                "n0_1".into(),
+                &beam("n0_1", number, BeamValue::Begin),
+            )));
+            assert!(common_error(&score, "beam.chord_member"));
+            assert!(native_error(&doc, "beam.chord_member"));
+        }
+    }
+}
+
+#[test]
+fn chord_members_require_full_equal_explicit_written_rhythm_and_duration() {
+    for mutation in 0..12 {
+        let mut score = chord_common();
+        let mut doc = chord_document();
+        for id in ["n0", "n0_1"] {
+            common_event(&mut score, id)
+                .written
+                .as_mut()
+                .unwrap()
+                .time_modification = Some(TimeModification {
+                actual: 3,
+                normal: 2,
+                normal_type: Some(NoteType::N16),
+                normal_dots: 1,
+            });
+            let e = native_event(&mut doc, id);
+            e.attributes
+                .insert("tm".into(), Scalar::String("3:2".into()));
+            e.attributes
+                .insert("tm_normal_type".into(), Scalar::String("16".into()));
+            e.attributes
+                .insert("tm_normal_dots".into(), Scalar::Integer(1));
+        }
+        let member = common_event(&mut score, "n0_1");
+        let native = native_event(&mut doc, "n0_1");
+        match mutation {
+            0 => {
+                member.written = None;
+                native.attributes.remove("w");
+            }
+            1 => {
+                member.duration = q("1/8");
+                native.duration = Duration::Measured(q("1/8"));
+            }
+            2 => {
+                member.duration = q("0");
+                native.duration = Duration::Measured(q("0"));
+            }
+            3 => {
+                member.written.as_mut().unwrap().note_type = NoteType::N32;
+                native
+                    .attributes
+                    .insert("w".into(), Scalar::String("32".into()));
+            }
+            4 => {
+                member.written.as_mut().unwrap().dots = 1;
+                native.attributes.insert("dots".into(), Scalar::Integer(1));
+            }
+            5 => {
+                member.written.as_mut().unwrap().size = Some(NoteSize::Cue);
+                native
+                    .attributes
+                    .insert("note_size".into(), Scalar::String("cue".into()));
+            }
+            6 => {
+                member.written.as_mut().unwrap().time_modification = None;
+                for key in ["tm", "tm_normal_type", "tm_normal_dots"] {
+                    native.attributes.remove(key);
+                }
+            }
+            7 => {
+                member
+                    .written
+                    .as_mut()
+                    .unwrap()
+                    .time_modification
+                    .as_mut()
+                    .unwrap()
+                    .actual = 6;
+                member
+                    .written
+                    .as_mut()
+                    .unwrap()
+                    .time_modification
+                    .as_mut()
+                    .unwrap()
+                    .normal = 4;
+                native
+                    .attributes
+                    .insert("tm".into(), Scalar::String("6:4".into()));
+            }
+            8 => {
+                member
+                    .written
+                    .as_mut()
+                    .unwrap()
+                    .time_modification
+                    .as_mut()
+                    .unwrap()
+                    .normal_type = None;
+                native.attributes.remove("tm_normal_type");
+            }
+            9 => {
+                member
+                    .written
+                    .as_mut()
+                    .unwrap()
+                    .time_modification
+                    .as_mut()
+                    .unwrap()
+                    .normal_type = Some(NoteType::Eighth);
+                native
+                    .attributes
+                    .insert("tm_normal_type".into(), Scalar::String("8".into()));
+            }
+            10 => {
+                member
+                    .written
+                    .as_mut()
+                    .unwrap()
+                    .time_modification
+                    .as_mut()
+                    .unwrap()
+                    .normal_dots = 2;
+                native
+                    .attributes
+                    .insert("tm_normal_dots".into(), Scalar::Integer(2));
+            }
+            11 => {
+                member
+                    .written
+                    .as_mut()
+                    .unwrap()
+                    .time_modification
+                    .as_mut()
+                    .unwrap()
+                    .actual = 0;
+                native
+                    .attributes
+                    .insert("tm".into(), Scalar::String("0:2".into()));
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            common_error(&score, "beam.chord_rhythm"),
+            "common mutation {mutation}"
+        );
+        assert!(
+            native_error(&doc, "beam.chord_rhythm"),
+            "native mutation {mutation}"
+        );
+    }
+    // Equal flag count alone is insufficient: all members need written spelling.
+    let mut score = chord_common();
+    for id in ["n0", "n0_1"] {
+        common_event(&mut score, id).written = None;
+    }
+    assert!(common_error(&score, "beam.chord_rhythm"));
+}
+
+#[test]
+fn native_chord_rhythm_normalization_is_semantic_and_malformed_fields_never_panic() {
+    let mut doc = chord_document();
+    native_event(&mut doc, "n0")
+        .attributes
+        .insert("tm".into(), Scalar::String("3:2".into()));
+    native_event(&mut doc, "n0_1")
+        .attributes
+        .insert("tm".into(), Scalar::String("03:02".into()));
+    native_event(&mut doc, "n0_1")
+        .attributes
+        .insert("dots".into(), Scalar::Integer(0));
+    // Whole-native validation still rejects invalid lexical attributes. The
+    // topology comparator must not confuse their integer value with raw text.
+    assert!(!native_error(&doc, "beam.chord_rhythm"));
+    assert!(validate(&doc, None)
+        .iter()
+        .any(|d| d.severity == Severity::Error));
+    for (key, value) in [
+        ("tm", Scalar::String("3:broken".into())),
+        ("tm", Scalar::String("3:2:1".into())),
+        ("tm", Scalar::Boolean(true)),
+        ("w", Scalar::Integer(16)),
+        ("dots", Scalar::Integer(-1)),
+        ("note_size", Scalar::String("unknown".into())),
+        ("tm_normal_type", Scalar::String("unknown".into())),
+        ("tm_normal_dots", Scalar::Integer(-1)),
+    ] {
+        let mut doc = doc.clone();
+        native_event(&mut doc, "n0_1")
+            .attributes
+            .insert(key.into(), value);
+        assert!(native_error(&doc, "beam.chord_rhythm"), "{key}");
+    }
+}
+
+#[test]
+fn chord_stems_are_authored_equal_up_down_or_all_absent() {
+    for (head, member) in [
+        (None, Some(StemDirection::Up)),
+        (Some(StemDirection::Down), None),
+        (Some(StemDirection::Up), Some(StemDirection::Down)),
+        (Some(StemDirection::None), Some(StemDirection::None)),
+        (Some(StemDirection::Double), Some(StemDirection::Double)),
+    ] {
+        let mut score = chord_common();
+        let mut doc = chord_document();
+        for (id, stem) in [("n0", head), ("n0_1", member)] {
+            common_event(&mut score, id).stem = stem;
+            if let Some(stem) = stem {
+                native_event(&mut doc, id)
+                    .attributes
+                    .insert("stem".into(), Scalar::String(stem.name().into()));
+            }
+        }
+        assert!(common_error(&score, "beam.chord_stem"));
+        assert!(native_error(&doc, "beam.chord_stem"));
+    }
+    let mut doc = chord_document();
+    native_event(&mut doc, "n0_1")
+        .attributes
+        .insert("stem".into(), Scalar::Integer(1));
+    assert!(native_error(&doc, "beam.chord_stem"));
+}
+
+#[test]
+fn chord_groups_reject_reused_ambiguous_and_nonconsecutive_members() {
+    for mutation in 0..5 {
+        let mut score = chord_common();
+        let mut doc = chord_document();
+        match mutation {
+            0 => {
+                common_event(&mut score, "n1").chord = Some("chord_n0".into());
+                native_event(&mut doc, "n1")
+                    .attributes
+                    .insert("chord".into(), Scalar::String("chord_n0".into()));
+            }
+            1 => {
+                common_event(&mut score, "n0_1").id = EventId("n0".into());
+                native_event(&mut doc, "n0_1")
+                    .attributes
+                    .insert("id".into(), Scalar::String("n0".into()));
+                // An ambiguous head is already rejected by beam.event. Put an
+                // authored level on the other member of a separate triad too.
+                common_event(&mut score, "n1_2").id = EventId("n1_1".into());
+                native_event(&mut doc, "n1_2")
+                    .attributes
+                    .insert("id".into(), Scalar::String("n1_1".into()));
+            }
+            2 => {
+                let mut unrelated = common_event(&mut score, "n0").clone();
+                unrelated.id = EventId("other".into());
+                unrelated.chord = None;
+                score.parts[0].measures[0].events.insert(1, unrelated);
+                let mut unrelated = native_event(&mut doc, "n0").clone();
+                unrelated
+                    .attributes
+                    .insert("id".into(), Scalar::String("other".into()));
+                unrelated.attributes.remove("chord");
+                doc.frames[0].records.insert(1, Record::Event(unrelated));
+            }
+            3 => {
+                common_event(&mut score, "n0_1").offset = q("1/8");
+                let member = doc.frames[0].records.remove(1);
+                doc.frames.insert(
+                    1,
+                    Frame {
+                        time: q("1/8"),
+                        records: vec![member],
+                        source: source(),
+                    },
+                );
+            }
+            4 => {
+                score.parts[0].staves = 2;
+                common_event(&mut score, "n0_1").staff = 2;
+                doc.parts[0].staves = 2;
+                native_event(&mut doc, "n0_1")
+                    .attributes
+                    .insert("staff".into(), Scalar::Integer(2));
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            common_error(&score, "beam.chord_group"),
+            "common mutation {mutation}"
+        );
+        assert!(
+            native_error(&doc, "beam.chord_group"),
+            "native mutation {mutation}"
+        );
+    }
+}
+
+#[test]
+fn chord_members_must_be_ordinary_measured_pitched_notes() {
+    for pitch in [Pitch::Rest, Pitch::Spacer, Pitch::Unpitched("snare".into())] {
+        let mut score = chord_common();
+        common_event(&mut score, "n0_1").pitch = pitch.clone();
+        assert!(common_error(&score, "beam.chord_profile"));
+        let mut doc = chord_document();
+        native_event(&mut doc, "n0_1").pitch = pitch;
+        assert!(native_error(&doc, "beam.chord_profile"));
+    }
+    let mut doc = chord_document();
+    native_event(&mut doc, "n0_1")
+        .attributes
+        .insert("kind".into(), Scalar::String("cue".into()));
+    assert!(native_error(&doc, "beam.chord_profile"));
+    let mut doc = chord_document();
+    native_event(&mut doc, "n0_1").duration = Duration::Grace;
+    assert!(native_error(&doc, "beam.chord_profile"));
+    let mut score = chord_common();
+    common_event(&mut score, "n0_1").measure_rest = Some(true);
+    assert!(common_error(&score, "beam.chord_profile"));
+}
+
+#[test]
+fn unmarked_or_invalid_chord_heads_still_interrupt_runs() {
+    for invalid in [false, true] {
+        let mut score = chord_common();
+        let mut doc = chord_document();
+        score.beams.retain(|b| b.event.0 != "n1");
+        doc.frames[1]
+            .records
+            .retain(|r| !matches!(r, Record::Mark(m) if m.kind == KIND));
+        if invalid {
+            common_event(&mut score, "n1_1").duration = q("1/8");
+            native_event(&mut doc, "n1_1").duration = Duration::Measured(q("1/8"));
+        }
+        assert!(common_error(&score, "beam.interrupted"));
+        assert!(native_error(&doc, "beam.interrupted"));
+    }
+}
+
+#[test]
+fn validated_chords_never_hide_unrelated_overlaps_in_either_direction() {
+    for at in ["0", "1/8", "7/8"] {
+        for first in [true, false] {
+            let mut score = chord_common();
+            let mut other = common_event(&mut score, "n0").clone();
+            other.id = EventId("other".into());
+            other.chord = None;
+            other.offset = q(at);
+            other.duration = q("1/8");
+            let index = if first {
+                0
+            } else {
+                score.parts[0].measures[0].events.len()
+            };
+            score.parts[0].measures[0].events.insert(index, other);
+            assert!(common_error(&score, "beam.overlap"));
+            let mut doc = chord_document();
+            let mut other = native_event(&mut doc, "n0").clone();
+            other
+                .attributes
+                .insert("id".into(), Scalar::String("other".into()));
+            other.attributes.remove("chord");
+            other.duration = Duration::Measured(q("1/8"));
+            if at == "0" {
+                let index = if first {
+                    0
+                } else {
+                    doc.frames[0].records.len()
+                };
+                doc.frames[0].records.insert(index, Record::Event(other));
+            } else {
+                doc.frames.push(Frame {
+                    time: q(at),
+                    records: vec![Record::Event(other)],
+                    source: source(),
+                });
+                doc.frames.sort_by(|a, b| a.time.cmp(&b.time));
+            }
+            assert!(native_error(&doc, "beam.overlap"));
+        }
+    }
+    // An earlier, unmarked chord is also an overlap obstacle when a later run
+    // opens before its independent notes finish sounding.
+    let mut score = chord_common();
+    score.beams.retain(|b| b.event.0 != "n0");
+    score
+        .beams
+        .iter_mut()
+        .filter(|b| b.event.0 == "n1")
+        .for_each(|b| b.value = BeamValue::Begin);
+    for id in ["n0", "n0_1"] {
+        common_event(&mut score, id).duration = q("1/2");
+    }
+    assert!(common_error(&score, "beam.overlap"));
+    let mut doc = chord_document();
+    doc.frames[0]
+        .records
+        .retain(|r| !matches!(r, Record::Mark(m) if m.kind == KIND));
+    for number in [1, 2] {
+        mark(&mut doc, 1, number)
+            .attributes
+            .insert("value".into(), Scalar::String("begin".into()));
+    }
+    for id in ["n0", "n0_1"] {
+        native_event(&mut doc, id).duration = Duration::Measured(q("1/2"));
+    }
+    assert!(native_error(&doc, "beam.overlap"));
+}
+
+#[test]
+fn chord_heads_do_not_expand_the_beamed_grace_principal_profile() {
+    let mut doc = graces();
+    add_native_chord(&mut doc, "principal", 2);
+    assert!(native_error(&doc, "beam.grace"));
+    let mut score = chord_common();
+    score.beams.clear();
+    for (index, value) in [BeamValue::Begin, BeamValue::End].into_iter().enumerate() {
+        let id = format!("g{index}");
+        score.beams.push(beam(&id, None, value));
+        score.graces.push(ScoreGraceNote {
+            id: EventId(id),
+            anchor: EventId("n0".into()),
+            order: index as i64 - 2,
+            pitch: "D4".parse().unwrap(),
+            written: Some(WrittenDuration {
+                note_type: NoteType::Eighth,
+                size: None,
+                dots: 0,
+                time_modification: None,
+            }),
+            slash: None,
+            stem: None,
+            accidental: None,
+            timing: GraceTiming::default(),
+        });
+    }
+    assert!(common_error(&score, "beam.grace"));
+    let mut doc = graces();
+    add_native_chord(&mut doc, "g0", 2);
+    assert!(native_error(&doc, "beam.chord_profile"));
+}
+
+#[test]
+fn native_chord_ownership_uses_state_before_all_events_at_the_onset() {
+    let mut doc = chord_document();
+    doc.parts[0].staves = 2;
+    // Place state after the members and marks. Their inherited staff is still 2.
+    doc.frames[0].records.push(Record::State(State {
+        target: "v".into(),
+        attributes: [("staff".into(), Scalar::Integer(2))].into(),
+        source: source(),
+    }));
+    assert_valid(&doc);
+    // Explicit staff 1 on just one member must disagree with inherited staff 2.
+    native_event(&mut doc, "n0_1")
+        .attributes
+        .insert("staff".into(), Scalar::Integer(1));
+    assert!(native_error(&doc, "beam.chord_group"));
+}
+
+#[test]
+fn chord_validation_preserves_member_only_ties_accidentals_and_every_playback_event() {
+    use scorestream_core::{
+        notation::{perform_document, PerformanceLimits, RelationId},
+        score::{AccidentalGlyph, PrintedAccidental, ScoreTie},
+    };
+    let mut score = chord_common();
+    common_event(&mut score, "n0_1").accidental = Some(PrintedAccidental {
+        glyph: AccidentalGlyph::Natural,
+        cautionary: Some(true),
+        parentheses: Some(false),
+    });
+    score.ties.push(ScoreTie {
+        id: RelationId("tie_member".into()),
+        events: vec![EventId("n0_1".into()), EventId("n1_1".into())],
+    });
+    let before = score.clone();
+    assert!(validate_score(&score).is_empty());
+    assert_eq!(score, before);
+    assert_eq!(score.parts[0].measures[0].events.len(), 9);
+    assert!(common_event(&mut score, "n0").accidental.is_none());
+    let mut doc = chord_document();
+    doc.frames[0].records.push(Record::Mark(Mark {
+        target: "#n0_1".into(),
+        kind: "accidental".into(),
+        attributes: [
+            ("value".into(), Scalar::String("natural".into())),
+            ("cautionary".into(), Scalar::Boolean(true)),
+            ("parentheses".into(), Scalar::Boolean(false)),
+        ]
+        .into(),
+        source: source(),
+    }));
+    for (frame, phase, anchor) in [
+        (0, RelationPhase::Start, "#n0_1"),
+        (1, RelationPhase::End, "#n1_1"),
+    ] {
+        doc.frames[frame].records.push(Record::Relation(Relation {
+            kind: "tie".into(),
+            id: "tie_member".into(),
+            phase,
+            anchor: anchor.into(),
+            attributes: Attributes::new(),
+            source: source(),
+        }));
+    }
+    let before = doc.clone();
+    assert_valid(&doc);
+    assert_eq!(doc, before);
+    assert!(perform_document(&doc, PerformanceLimits::default())
+        .unwrap_err()
+        .iter()
+        .any(|d| d.code == "navigation.performance_capability"));
+    // Playback remains a separately qualified projection. Add its authored
+    // capability and boundary only after checking beam metadata preservation.
+    doc.required_extensions
+        .push(scorestream_core::navigation_extension::EXTENSION.into());
+    doc.frames.push(Frame {
+        time: doc.end.clone(),
+        records: vec![Record::Mark(Mark {
+            target: "p".into(),
+            kind: scorestream_core::navigation_extension::KIND.into(),
+            attributes: [
+                ("measure".into(), Scalar::String("m".into())),
+                ("side".into(), Scalar::String("right".into())),
+                ("style".into(), Scalar::String("regular".into())),
+            ]
+            .into(),
+            source: source(),
+        })],
+        source: source(),
+    });
+    assert_valid(&doc);
+    let performed = perform_document(&doc, PerformanceLimits::default()).unwrap();
+    assert_eq!(performed.events.len(), 9);
+    assert!(performed.events.iter().any(|e| e.written_id.0 == "n0_1"));
+    assert!(performed.events.iter().any(|e| e.written_id.0 == "n1_2"));
+    doc.required_extensions.retain(|e| e != EXTENSION);
+    for frame in &mut doc.frames {
+        frame
+            .records
+            .retain(|r| !matches!(r, Record::Mark(m) if m.kind == KIND));
+    }
+    assert_eq!(
+        performed,
+        perform_document(&doc, PerformanceLimits::default()).unwrap()
+    );
 }

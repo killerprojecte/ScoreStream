@@ -10,7 +10,11 @@ pub(crate) fn validate(score: &ScoreDocument, report: &mut MappingReport) {
             if d.severity == Severity::Error
                 && (d.code == "beam.profile"
                     || d.code == "beam.written"
-                    || d.code == "beam.primary_hook_unsupported")
+                    || d.code == "beam.primary_hook_unsupported"
+                    || d.code == "beam.chord_profile"
+                    || d.code == "beam.chord_rhythm"
+                    || d.code == "beam.chord_stem"
+                    || d.code == "beam.chord_member")
             {
                 MappingEffect::Unsupported
             } else if d.severity == Severity::Error {

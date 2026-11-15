@@ -31,7 +31,7 @@ accidental, notehead and hidden-note attributes remain blocking unless separatel
 implemented. Coordinate regeneration still requires its unchanged explicit
 three-path policy; stems and rest identity are preserved, never regenerated.
 
-Authored non-chord beams now have a separate [typed bridge](BEAM_IMPORT.md);
+Authored beams, including the bounded same-rhythm chord-head profile, now have a separate [typed bridge](BEAM_IMPORT.md);
 stem or rest support does not silently infer their runs or hooks.
 
 ## Preview and performance

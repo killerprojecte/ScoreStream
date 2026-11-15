@@ -96,7 +96,7 @@ and one- or two-note group order. It does **not** strip other authored children.
 All 237 are pitched, genuinely unmeasured and before ordinary principals, with no
 explicit time-steal/make-time fields. Their missing timing policy stays missing.
 The full originals still reject on other unsupported metadata and notation,
-including slurs and layout. Authored non-chord beam groups now have a separate
+including slurs and layout. Authored beam groups now have a separate
 [typed bridge](BEAM_IMPORT.md); this does not admit surrounding grace notations. The bounded
 [accidental glyph bridge](ACCIDENTAL_IMPORT.md) now retains supported signs and flags. Authored stems now have a
 separate [typed bridge](NOTE_APPEARANCE_IMPORT.md) rather than being discarded. The

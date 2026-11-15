@@ -214,7 +214,7 @@ fn unsupported_fields_values_and_malformed_runs_fail_closed() {
     assert!(
         MusicXml
             .read(&xml(&(a
-                + &note("chord", "eighth", 128, "<chord/>", "")
+                + &note("chord", "16th", 64, "<chord/>", "")
                 + &b)))
             .is_err()
     );
