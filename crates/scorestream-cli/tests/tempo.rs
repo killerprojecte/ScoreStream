@@ -22,7 +22,7 @@ fn cli_imported_tempos_control_real_plan_and_unsupported_sound_is_atomic() {
     assert!((plan.event_positions[1].end_seconds - 1.0625).abs() < 1e-9);
     let source = std::fs::read_to_string(fixture).unwrap().replace(
         "<sound tempo=\"288\"/>",
-        "<sound tempo=\"288\" dynamics=\"45\"/>",
+        "<sound tempo=\"288\" pan=\"45\"/>",
     );
     let path = std::env::temp_dir().join(format!(
         "scorestream-tempo-reject-{}.musicxml",
@@ -46,6 +46,6 @@ fn cli_imported_tempos_control_real_plan_and_unsupported_sound_is_atomic() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|d| d["feature"] == "attribute.dynamics")
+            .any(|d| d["feature"] == "attribute.pan")
     );
 }

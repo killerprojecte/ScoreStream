@@ -52,3 +52,9 @@ describe('typed expressive marks',()=>{
 
  },20000);
 });
+
+it('preserves sf spelling and renders sound=false display without adding MIDI policy',()=>{
+ const r=project(fixture([mark('dynamic','p',{value:'sf',sound:false,placement:'below'})]));
+ expect(r.warnings).toEqual([]);expect(r.mei).toContain('>sf</dynam>');expect(r.mei).not.toContain('sfz');expect(r.mei).not.toContain('midi.velocity');
+ const invalid=project(fixture([mark('dynamic','p',{value:'sf',sound:'false'})]));expect(invalid.warnings.join()).toContain('unsupported sound flag');
+});

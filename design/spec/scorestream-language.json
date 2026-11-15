@@ -41,7 +41,8 @@
       "instrument",
       "transpose_chromatic",
       "transpose_diatonic",
-      "transpose_octaves"
+      "transpose_octaves",
+      "sound_dynamics"
     ],
     "staff": [
       "meter",
@@ -49,13 +50,14 @@
       "clef",
       "transpose_chromatic",
       "transpose_diatonic",
-      "transpose_octaves"
+      "transpose_octaves",
+      "sound_dynamics"
     ],
     "voice": [
       "staff"
     ],
     "collision": "Part and voice aliases must be disjoint and cannot be score",
-    "precedence": "No generic score-to-part-to-staff inheritance. A staff transposition tuple explicitly replaces the part tuple; absent staff tuple uses part tuple. Fields in a transposition tuple are assigned atomically."
+    "precedence": "No generic inheritance. Staff transposition tuple replaces the part tuple; absent staff tuple uses part. Assign tuples atomically. Numeric dynamics: staff overrides part; sound=false is display-only."
   },
   "record_order": "Frame records are collected before resolution. State applies at the frame position independent of line order; conflicting assignments fail. Source event order is retained within chord/grace groups. All event references are resolved after collection.",
   "additional_constraints": [
@@ -65,7 +67,8 @@
     "Event-attached marks and relation endpoints occur in the anchor onset frame; frame record order does not affect resolution.",
     "Fragments carry local event IDs, no declarations/state/measure mutations, and no new required extensions; only external voice bindings and supplied context apply.",
     "Unknown extension interpretation must never be inferred from raw-source preservation.",
-    "scorestream.barline requires scorestream.navigation@1, a declared part target and exact referenced measure boundary; fragments cannot introduce navigation. Authored-only validation reports unavailable engraving/replay; sounding lowering rejects."
+    "scorestream.barline requires scorestream.navigation@1, a declared part target and exact referenced measure boundary; fragments cannot introduce navigation. Authored-only validation reports unavailable engraving/replay; sounding lowering rejects.",
+    "sound_dynamics is an exact nonnegative percentage of forte velocity 90. The bounded numeric playback profile rejects mixtures with sounding symbolic dynamics, hairpins, or attack-changing accents; it never substitutes printed labels."
   ],
   "pitch": {
     "canonical": "Written pitch spelling",
@@ -347,6 +350,14 @@
         ],
         "syntax": "integer",
         "meaning": "Additional octave transposition."
+      },
+      "sound_dynamics": {
+        "scope": [
+          "part",
+          "staff"
+        ],
+        "syntax": "nonnegative rational percent",
+        "meaning": "Explicit numeric playback dynamics as a percentage of MIDI-relative forte 90; separate from printed dynamics. Exact storage; no label substitution."
       }
     },
     "marks": {
@@ -366,7 +377,8 @@
       "dynamic": [
         "value",
         "placement",
-        "id"
+        "id",
+        "sound"
       ],
       "lyric": [
         "verse",
@@ -740,6 +752,7 @@
               "ff",
               "fff",
               "ffff",
+              "sf",
               "sfz",
               "fp"
             ]
@@ -750,6 +763,11 @@
               "above",
               "below"
             ]
+          },
+          "sound": {
+            "type": "boolean",
+            "default": true,
+            "meaning": "False preserves printed dynamics without assigning performer-policy loudness."
           }
         }
       },

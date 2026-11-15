@@ -4,6 +4,7 @@
 mod continuity;
 mod diagnostic;
 mod expression;
+mod numeric;
 mod plan;
 mod tempo;
 use continuity::Continuity;

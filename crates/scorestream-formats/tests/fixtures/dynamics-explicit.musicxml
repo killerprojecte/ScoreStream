@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note id="before"><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+    <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type><sound dynamics="44.44"/></direction>
+    <note id="held"><pitch><step>D</step><octave>4</octave></pitch><duration>12</duration><voice>1</voice></note>
+    <sound dynamics="106.67"><offset>-8</offset></sound>
+  </measure></part>
+</score-partwise>

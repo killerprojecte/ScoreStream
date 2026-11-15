@@ -1,5 +1,6 @@
 //! Strict adapters through ScoreDocument. No adapter passes markup to renderers.
 #![forbid(unsafe_code)]
+mod dynamics;
 pub mod musicxml;
 pub mod mxl;
 pub mod navigation;

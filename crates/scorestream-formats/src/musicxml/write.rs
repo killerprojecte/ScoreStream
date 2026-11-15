@@ -32,13 +32,16 @@ fn gcd(mut a: u64, mut b: u64) -> u64 {
 fn divisions(
     m: &ScoreMeasure,
     tempo_index: &super::tempo::Export<'_>,
+    dynamics_index: &super::dynamics::Export<'_>,
     part: &ScorePart,
 ) -> Option<u64> {
     let mut n = 1;
     let offsets = tempo_index.positions(part, m);
+    let dynamics_offsets = dynamics_index.offsets(part, m);
     for value in std::iter::once(&m.length)
         .chain(m.events.iter().flat_map(|e| [&e.offset, &e.duration]))
         .chain(offsets.iter())
+        .chain(dynamics_offsets.iter())
     {
         let d = value.denominator().to_u64()?;
         n = (n / gcd(n, d)).checked_mul(d)?;
@@ -98,6 +101,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
     }
     super::tempo::validate_export(score, &mut report);
     let tempo_index = super::tempo::Export::new(score);
+    let dynamics_index = super::dynamics::Export::new(score, &mut report);
     for (field, value) in score.metadata.text_fields() {
         if value.is_some()
             && ["description", "header", "footer", "subtitle", "language"].contains(&field)
@@ -171,7 +175,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                     "Invalid or duplicate XML ID",
                 );
             }
-            if divisions(m, &tempo_index, part).is_none() {
+            if divisions(m, &tempo_index, &dynamics_index, part).is_none() {
                 issue(
                     &mut report,
                     "divisions.limit",
@@ -409,7 +413,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
-            let div = divisions(m, &tempo_index, p).unwrap();
+            let div = divisions(m, &tempo_index, &dynamics_index, p).unwrap();
             writeln!(
                 out,
                 "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\">",
@@ -477,6 +481,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
             }
             out.push_str("      </attributes>\n");
             super::tempo::write_measure(&tempo_index, p, m, div, &mut out);
+            dynamics_index.write_measure(p, m, div, &mut out);
             for (vi, v) in p.voices.iter().enumerate() {
                 if vi > 0 {
                     writeln!(

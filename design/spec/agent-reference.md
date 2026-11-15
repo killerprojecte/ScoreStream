@@ -105,3 +105,7 @@ Part display labels: `!part f1 instrument=flute staves=1 display_name="Flute 1"`
 ## Authored navigation capability
 
 `!requires scorestream.navigation@1` enables `+ <part> scorestream.barline measure=<measure-id> side=left|right` with typed style, repeat/count and ending/pass/display fields from the descriptor. The frame must equal that measure's exact boundary. This is authored-only interchange: current playback lowering rejects, and inspection warns that engraving/replay is unavailable. Strict conversion supports ordinary closed repeats; an unclosed ending is preserved for inspection with an explicit diagnostic, never silently closed or played once.
+
+## Explicit numeric dynamics
+
+Use `= part[.sN] sound_dynamics=1111/25` for exact playback percentage of forte velocity 90. Printed `+ part dynamic value=p sound=false` is independent; sf spelling remains distinct from sfz. Numeric playback rejects mixtures with sounding symbolic dynamics, hairpins or attack-changing accents in the current profile. See the repository dynamics import documentation for scope, offsets and renderer limits.

@@ -7,7 +7,7 @@ const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 // https://music-encoding.org/guidelines/v5/elements/tempo.html
 // https://music-encoding.org/guidelines/v5/elements/dynam.html
 const beats:Record<string,string>={w:'\uECA2',h:'\uECA3',q:'\uECA5',e:'\uECA7',s:'\uECA9'};
-const dynamics=new Set(['pppp','ppp','pp','p','mp','mf','f','ff','fff','ffff','sfz','fp']);
+const dynamics=new Set(['pppp','ppp','pp','p','mp','mf','f','ff','fff','ffff','sf','sfz','fp']);
 // MEI tstamp is a decimal, not a rational. Reject non-terminating decimals rather
 // than silently round an authored placement. Event targets use exact startid.
 function decimal(q:Q):string {
@@ -33,7 +33,7 @@ export function projectMarks(view:View,warnings:string[]){
     entry.handled=true;
     try {
      if(mark.kind!=='metronome'&&mark.kind!=='dynamic')throw Error('unsupported notation');
-     const allowed=new Set(mark.kind==='dynamic'?['value','placement','id']:['beat','bpm','text','id']);
+     const allowed=new Set(mark.kind==='dynamic'?['value','placement','sound','id']:['beat','bpm','text','id']);
      if(Object.keys(a).some(key=>!allowed.has(key)))throw Error('unsupported mark attributes');
      const voice=event?view.voices.find(v=>v.id===event.voice):view.voices.find(v=>v.id===mark.target);
      const staffIndex=event?staves.findIndex(s=>s.part===voice?.part&&s.staff===event.staff):
@@ -49,6 +49,7 @@ export function projectMarks(view:View,warnings:string[]){
      const id=`ss-mark${index}`;const common=`xml:id="${id}" staff="${staffIndex+1}" ${anchor}`;
      if(mark.kind==='dynamic'){
       if(!dynamics.has(String(a.value)))throw Error('unsupported dynamic value');
+      if(a.sound!==undefined&&typeof a.sound!=='boolean')throw Error('unsupported sound flag');
       if(a.placement!==undefined&&a.placement!=='above'&&a.placement!=='below')throw Error('unsupported placement');
       xml+=`<dynam ${common} place="${a.placement??'below'}">${esc(a.value)}</dynam>`;
      }else{

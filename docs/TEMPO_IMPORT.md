@@ -32,7 +32,7 @@ The new MusicXML direction subset is exactly one direction-type containing one n
 
 - Words, tempo ranges or approximate text, metric modulation, beat-unit ties, multiple dots, smaller metronome units, multiple direction-types, voice-scoped directions.
 - `system`, placement, parentheses, print-object, graphical positioning, font/style, IDs and other unmapped display metadata.
-- Dynamics, MIDI configuration, swing, pedals, navigation, repeat-conditioned `time-only`, and any sound property other than tempo and its child offset.
+- MIDI configuration, swing, pedals, navigation and repeat-conditioned `time-only` remain unsupported. The subsequent [numeric dynamics slice](DYNAMICS_IMPORT.md) separately maps sound dynamics and simple display symbols; it does not weaken other tempo/display boundaries.
 - The sound flag on an offset nested inside `sound`, which is outside this profile; the unambiguous nested offset without that flag is supported.
 - `sound tempo="0"`, which calls for interactive tempo selection, rather than silently becoming a default.
 - SFS score/voice/event metronome display scopes and metronome text/ID fields, which this shared display model cannot yet preserve.

@@ -46,6 +46,9 @@ fn dynamic(token: &str, s: SourceRange) -> Result<DynamicSign> {
         ("fff", Fff),
         ("ffff", Ffff),
     ];
+    if token == "sf" {
+        return Ok(DynamicSign::Sforzato);
+    }
     if token == "sfz" {
         return Ok(DynamicSign::Sforzando);
     }
@@ -282,12 +285,33 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
     for frame in &doc.frames {
         for record in &frame.records {
             match record {
+                Record::State(state) if state.attributes.contains_key("sound_dynamics") => {
+                    let percent = match &state.attributes["sound_dynamics"] {
+                        Scalar::Integer(n) => Rational::from_integer(*n),
+                        Scalar::String(s) => s
+                            .parse()
+                            .map_err(|_| error("Invalid sound dynamics", state.source))?,
+                        _ => return Err(error("Invalid sound dynamics", state.source)),
+                    };
+                    score.directions.push(Direction {
+                        at: frame.time.clone(),
+                        end: None,
+                        scope: scope(&state.target, &events, &parts, &voices, state.source)?,
+                        kind: DirectionKind::SoundDynamics { percent },
+                        placement: None,
+                        origin: origin(
+                            format!("sound_dynamics:{}:{}", frame.time, state.target),
+                            state.source,
+                        ),
+                    });
+                }
                 Record::Mark(mark) => {
                     let a = &mark.attributes;
                     let s = mark.source;
                     let kind = match mark.kind.as_str() {
                         "dynamic" => DirectionKind::Dynamic {
                             sign: dynamic(required(a, "value", s)?, s)?,
+                            sound: flag(a, "sound", true),
                         },
                         "articulation" => DirectionKind::Articulation {
                             value: articulation(required(a, "value", s)?, s)?,

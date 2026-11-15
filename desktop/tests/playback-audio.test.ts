@@ -95,3 +95,13 @@ describe('Web Audio output, mocked context only, not hardware validation',()=>{
   expect(()=>output.schedule(note,0,20)).not.toThrow();output.dispose();
  });
 });
+
+it('preserves numeric jumps as explicit sets and seeks to the right-hand value',async()=>{
+ const points=[{offset_seconds:0,gain:.9999},{offset_seconds:2,gain:.9999},{offset_seconds:2,gain:2.400075},{offset_seconds:4,gain:2.400075}];
+ expect(gainAt(points,1)).toBe(.9999);expect(gainAt(points,2)).toBe(2.400075);
+ const output=new WebAudioOutput();await output.resume();output.schedule({...note,velocity:40,gain_envelope:points},0,20);
+ const parameter=MockContext.instances[0].gains[0].gain;const level=.12*40/127;
+ expect(parameter.setValueAtTime.mock.calls).toEqual([[level*.9999,20],[level*2.400075,22]]);
+ expect(parameter.linearRampToValueAtTime.mock.calls).toEqual([[level*.9999,22],[level*2.400075,24]]);
+ output.dispose();
+});

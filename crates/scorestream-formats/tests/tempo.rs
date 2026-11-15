@@ -263,9 +263,9 @@ fn unsupported_tempo_semantics_fail_closed() {
             "",
             "100",
             "",
-            "<sound tempo=\"100\" dynamics=\"50\"/>",
+            "<sound tempo=\"100\" pan=\"50\"/>",
         )),
-        "attribute.dynamics",
+        "attribute.pan",
     );
     error(
         &full(&mark(

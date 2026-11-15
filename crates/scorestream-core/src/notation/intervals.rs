@@ -88,7 +88,7 @@ pub fn resolve_expression(score: &ResolvedScore) -> Result<ExpressionIntervals, 
     let mut result = ExpressionIntervals::default();
     let mut errors = Vec::new();
     for direction in &score.directions {
-        let DirectionKind::Dynamic { sign } = direction.kind else {
+        let DirectionKind::Dynamic { sign, sound: true } = direction.kind else {
             continue;
         };
         let end = match &direction.scope {
@@ -131,7 +131,7 @@ pub fn resolve_expression(score: &ResolvedScore) -> Result<ExpressionIntervals, 
         let level = match sign {
             DynamicSign::Level(level) => Some(level),
             DynamicSign::FortePiano => Some(DynamicLevel::P),
-            DynamicSign::Sforzando => None,
+            DynamicSign::Sforzando | DynamicSign::Sforzato => None,
         };
         if let Some(level) = level {
             result

@@ -65,10 +65,16 @@ pub enum DynamicLevel {
     Ffff,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(tag = "kind", content = "level", rename_all = "snake_case")]
+#[serde(
+    tag = "kind",
+    content = "level",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum DynamicSign {
     Level(DynamicLevel),
     Sforzando,
+    Sforzato,
     FortePiano,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -135,8 +141,14 @@ pub struct TempoChange {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DirectionKind {
+    /// Exact MusicXML percentage of default forte (MIDI velocity 90).
+    SoundDynamics {
+        percent: Rational,
+    },
     Dynamic {
         sign: DynamicSign,
+        #[serde(default = "default_sound")]
+        sound: bool,
     },
     Articulation {
         value: Articulation,
@@ -169,6 +181,10 @@ pub enum DirectionKind {
         text: Option<String>,
     },
 }
+fn default_sound() -> bool {
+    true
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Direction {
     pub at: Rational,

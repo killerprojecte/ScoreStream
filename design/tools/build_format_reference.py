@@ -104,11 +104,12 @@ attrs={
   'instrument':{'scope':['part'],'syntax':'instrument ID','meaning':'Change a declared instrument identity.'},
   'transpose_chromatic':{'scope':['part','staff'],'syntax':'rational','meaning':'Chromatic written-to-sounding interval.'},
   'transpose_diatonic':{'scope':['part','staff'],'syntax':'integer','meaning':'Diatonic written-to-sounding interval; retain separately.'},
-  'transpose_octaves':{'scope':['part','staff'],'syntax':'integer','meaning':'Additional octave transposition.'}
+  'transpose_octaves':{'scope':['part','staff'],'syntax':'integer','meaning':'Additional octave transposition.'},
+  'sound_dynamics':{'scope':['part','staff'],'syntax':'nonnegative rational percent','meaning':'Explicit numeric playback dynamics as a percentage of MIDI-relative forte 90; separate from printed dynamics. Exact storage; no label substitution.'}
  },
  'marks':{
   'accidental':['value','visible','cautionary','parentheses','editorial'],
-  'articulation':['value','placement'], 'dynamic':['value','placement'],
+  'articulation':['value','placement'], 'dynamic':['value','placement','sound'],
   'lyric':['verse','text','syllabic','language'], 'words':['text','placement','language'],
   'metronome':['beat','bpm','text'], 'harmony':['root','kind','bass','text']
  },
@@ -143,7 +144,7 @@ text_field={'type':'string'}
 attrs['mark_fields']={
  'accidental':{'targets':['pitched_event'],'required':['value'],'fields':{'value':{'type':'enum','values':['natural','sharp','flat','double-sharp','flat-flat','quarter-sharp','quarter-flat']},'visible':boolean,'cautionary':boolean,'parentheses':boolean,'editorial':boolean}},
  'articulation':{'targets':['event'],'required':['value'],'fields':{'value':{'type':'enum','values':['staccato','staccatissimo','tenuto','accent','strong-accent','breath-mark']},'placement':placement}},
- 'dynamic':{'targets':['scope','event'],'required':['value'],'fields':{'value':{'type':'enum','values':['pppp','ppp','pp','p','mp','mf','f','ff','fff','ffff','sfz','fp']},'placement':placement}},
+ 'dynamic':{'targets':['scope','event'],'required':['value'],'fields':{'value':{'type':'enum','values':['pppp','ppp','pp','p','mp','mf','f','ff','fff','ffff','sf','sfz','fp']},'placement':placement,'sound':{'type':'boolean','default':True,'meaning':'False preserves printed dynamics without assigning performer-policy loudness.'}}},
  'lyric':{'targets':['event'],'required':['verse','text'],'fields':{'verse':{'type':'positive_integer'},'text':text_field,'syllabic':{'type':'enum','values':['single','begin','middle','end']},'language':text_field}},
  'words':{'targets':['scope','event'],'required':['text'],'fields':{'text':text_field,'placement':placement,'language':text_field}},
  'metronome':{'targets':['scope','event'],'required':['beat','bpm'],'fields':{'beat':{'type':'beat_unit','values':['w','h','q','e','s','w.','h.','q.','e.','s.']},'bpm':{'type':'positive_rational'},'text':text_field}},
@@ -300,9 +301,10 @@ guide={
  'core_shape':'A header, declarations, increasing @time frames, flat records, a dot to commit each frame, and !end at=<position>.',
  'lexical':{'encoding':'UTF-8','newline':'LF; readers may normalize CRLF','comments':'Whole lines beginning with ; after optional whitespace; no inline comments','string':'JSON-quoted string; JSON escapes; no physical newline inside a token','whitespace':'One or more spaces or tabs separate fields; canonical writer uses one space','numbers':'Attribute type comes from the registry. Musical rational values remain strings in the AST. No duration or pitch inheritance.'},
  'defaults':{'event_kind':'note for pitched or unpitched events','event_staff':'voice current declared/default staff','dots':0,'tm':'1:1 when absent; notation can remain unspecified','visibility':True,'no_voice_row':'no new event, not a rest','omitted_state':'unchanged; initially unset unless an application profile explicitly supplies a reported default','event_id':'optional only in authoring; committed canonical output assigns IDs and returns the mapping','written_type':'unspecified if w absent; rendering/export may choose a documented spelling and must report inference'},
- 'scope_rules':{'score':['tempo'],'part':['instrument','transpose_chromatic','transpose_diatonic','transpose_octaves'],'staff':['meter','key','clef','transpose_chromatic','transpose_diatonic','transpose_octaves'],'voice':['staff'],'collision':'Part and voice aliases must be disjoint and cannot be score','precedence':'No generic score-to-part-to-staff inheritance. A staff transposition tuple explicitly replaces the part tuple; absent staff tuple uses part tuple. Fields in a transposition tuple are assigned atomically.'},
+ 'scope_rules':{'score':['tempo'],'part':['instrument','transpose_chromatic','transpose_diatonic','transpose_octaves','sound_dynamics'],'staff':['meter','key','clef','transpose_chromatic','transpose_diatonic','transpose_octaves','sound_dynamics'],'voice':['staff'],'collision':'Part and voice aliases must be disjoint and cannot be score','precedence':'No generic inheritance. Staff transposition tuple replaces the part tuple; absent staff tuple uses part. Assign tuples atomically. Numeric dynamics: staff overrides part; sound=false is display-only.'},
  'record_order':'Frame records are collected before resolution. State applies at the frame position independent of line order; conflicting assignments fail. Source event order is retained within chord/grace groups. All event references are resolved after collection.',
  'additional_constraints':[
+  'sound_dynamics is an exact nonnegative percentage of forte velocity 90. The bounded numeric playback profile rejects mixtures with sounding symbolic dynamics, hairpins, or attack-changing accents; it never substitutes printed labels.',
   'Transposition assignments contain chromatic, diatonic and octaves together; absent part tuple means zero, absent staff tuple uses the part tuple.',
   'tm_normal_type and tm_normal_dots require tm; actual measured duration and imported written rhythm remain distinct even if inconsistent, with a diagnostic.',
   'Measure targets are part/staff only. Labels are strings; actual length may differ from the nominal meter.',

@@ -9,7 +9,7 @@ export interface AudioOutput {
  silence():void;
  dispose():void;
 }
-/** Rust envelopes are linear in seconds, relative to the initial velocity. */
+/** Piecewise-linear Rust envelopes; equal-time anchors encode a jump. */
 export function gainAt(points:EnvelopePoint[], at:number):number {
  let previous={offset_seconds:0,gain:1};
  for(const point of points){
@@ -23,9 +23,15 @@ export function gainAt(points:EnvelopePoint[], at:number):number {
 }
 function scheduleEnvelope(parameter:AudioParam,points:EnvelopePoint[],level:number,offset:number,duration:number,when:number,completeRamp=false){
  parameter.setValueAtTime(level*gainAt(points,offset),when);
+ let previousTime:number|undefined;
  for(const point of points){
-  if(point.offset_seconds>offset&&point.offset_seconds<=duration)
-   parameter.linearRampToValueAtTime(level*point.gain,when+point.offset_seconds-offset);
+  if(point.offset_seconds>offset&&point.offset_seconds<=duration){
+   const time=when+point.offset_seconds-offset;
+   // Ordered equal-time anchors are an explicit jump, not a second ramp.
+   if(previousTime===point.offset_seconds)parameter.setValueAtTime(level*point.gain,time);
+   else parameter.linearRampToValueAtTime(level*point.gain,time);
+  }
+  previousTime=point.offset_seconds;
  }
  // Preserve interpolation when a note ends between two envelope anchors.
  if(completeRamp&&points.some(point=>point.offset_seconds>duration))

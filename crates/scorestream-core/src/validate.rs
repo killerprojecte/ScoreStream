@@ -327,6 +327,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     for (key, value) in &s.attributes {
                         let allowed = match key.as_str() {
                             "tempo" => scope == Some("score"),
+                            "sound_dynamics" => matches!(scope, Some("part" | "staff")),
                             "meter" | "key" | "clef" => scope == Some("staff"),
                             "staff" => scope == Some("voice"),
                             "instrument" => scope == Some("part"),

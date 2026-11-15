@@ -29,10 +29,12 @@ struct Curve {
 pub(super) struct Expression {
     pub intervals: ExpressionIntervals,
     curves: BTreeMap<RelationId, Curve>,
+    numeric: Option<super::numeric::NumericDynamics>,
     articulations: BTreeMap<EventId, BTreeSet<Articulation>>,
 }
 impl Expression {
     pub fn new(score: &ResolvedScore, warnings: &mut Diagnostics) -> Result<Self, String> {
+        let numeric = super::numeric::NumericDynamics::new(score)?;
         let intervals = resolve_expression(score).map_err(|d| {
             d.iter()
                 .map(ToString::to_string)
@@ -84,6 +86,15 @@ impl Expression {
         }
         let mut articulations = BTreeMap::<EventId, BTreeSet<Articulation>>::new();
         for d in &score.directions {
+            if matches!(d.kind, DirectionKind::Dynamic { sound: false, .. }) {
+                warnings.add(
+                    "dynamic_visual_only",
+                    "dynamics.symbolic",
+                    RealizationEffect::NotationOnly,
+                    &d.origin,
+                    "Printed dynamic is display-only; no sound is inferred from its sign.",
+                );
+            }
             if let (Scope::Event(id), DirectionKind::Articulation { value }) = (&d.scope, &d.kind) {
                 articulations.entry(id.clone()).or_default().insert(*value);
             }
@@ -91,10 +102,14 @@ impl Expression {
         Ok(Self {
             intervals,
             curves,
+            numeric,
             articulations,
         })
     }
     pub fn value(&self, event: &ResolvedEvent, at: &Rational) -> f64 {
+        if let Some(numeric) = &self.numeric {
+            return numeric.value(event, at).to_f64();
+        }
         let assignment = self.intervals.assignment_at(event, at);
         let base = assignment.map(|d| velocity(d.level)).unwrap_or(80.);
         if let Some(span) = self.intervals.hairpin_at(event, at) {
@@ -132,6 +147,9 @@ impl Expression {
     }
     pub fn attack(&self, event: &ResolvedEvent) -> f64 {
         let base = self.value(event, &event.start);
+        if self.numeric.is_some() {
+            return base;
+        }
         let arts = self.articulations.get(&event.id);
         let accent = if arts.is_some_and(|v| v.contains(&Articulation::StrongAccent)) {
             24.
@@ -150,7 +168,8 @@ impl Expression {
                 }
                 for transient in &values[lo..hi] {
                     attack = attack.max(match transient.sign {
-                        DynamicSign::Sforzando => 112.,
+                        // Legacy performer policy: sf and sfz share attack strength, not spelling.
+                        DynamicSign::Sforzando | DynamicSign::Sforzato => 112.,
                         DynamicSign::FortePiano => 96.,
                         DynamicSign::Level(l) => velocity(l),
                     });
@@ -167,6 +186,9 @@ impl Expression {
         initial: u8,
         tempo: &TempoMap,
     ) -> Result<Vec<EnvelopePoint>, String> {
+        if let Some(numeric) = &self.numeric {
+            return numeric.envelope(segments, release, initial, tempo);
+        }
         let event = segments[0];
         let active = |at: &Rational| {
             segments[segments

@@ -18,9 +18,38 @@ pub struct ScoreDocument {
     /// Printed numeric metronome marks. These never implicitly change playback tempo.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub metronomes: Vec<ScoreMetronome>,
+    /// Authored printed symbols, independent of explicit numeric playback suggestions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dynamics: Vec<ScoreDynamic>,
+    /// Exact MusicXML percentages of the standard forte value 90, never label estimates.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sound_dynamics: Vec<ScoreSoundDynamics>,
     /// Authored per-part boundary signs. Performance navigation is derived separately.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub barlines: Vec<ScoreBarline>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScorePartScope {
+    pub part: PartId,
+    pub staff: Option<u32>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreDynamic {
+    pub at: Rational,
+    pub scope: ScorePartScope,
+    pub sign: crate::notation::DynamicSign,
+    pub placement: Option<crate::notation::Placement>,
+    /// false for MusicXML printed dynamics; numeric sound is a separate lane.
+    pub sound: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreSoundDynamics {
+    pub at: Rational,
+    pub scope: ScorePartScope,
+    pub percent: Rational,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -170,6 +170,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         ties: vec![],
         tempos: vec![],
         metronomes: vec![],
+        dynamics: vec![],
+        sound_dynamics: vec![],
         barlines: vec![],
     };
     for p in &doc.parts {
@@ -258,6 +260,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
                     crate::sfs_navigation::read_mark(m, &mut score, &mut report);
                 }
+                Record::Mark(m) if m.kind == "dynamic" => {
+                    crate::dynamics::read_mark(m, &frame.time, &mut score, &mut report);
+                }
                 Record::Mark(m) if m.kind == "metronome" => {
                     crate::tempo::read_mark(m, &frame.time, &mut score, &mut report);
                 }
@@ -277,6 +282,10 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         .entry(&rel.id)
                         .or_default()
                         .push((&frame.time, rel));
+                }
+                Record::State(s) if s.attributes.contains_key("sound_dynamics") => {
+                    attrs(&mut report, &s.attributes, &["sound_dynamics"], &s.target);
+                    crate::dynamics::read_state(s, &frame.time, &mut score, &mut report);
                 }
                 Record::State(s) if s.target == "score" && s.attributes.contains_key("tempo") => {
                     attrs(&mut report, &s.attributes, &["tempo"], &s.target);
@@ -489,6 +498,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         unsupported(&mut report, "end_outside_measures", "document");
     }
     crate::tempo::normalize(&mut score.tempos, &mut report, Format::Sfs);
+    crate::dynamics::normalize(&mut score, &mut report, Format::Sfs);
     report.append(validate_score(&score));
     crate::sfs_navigation::sort_barlines(&mut score);
     if !report.has_errors() {
@@ -776,6 +786,14 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             at,
             &mut frames,
         );
+    }
+    for d in &score.dynamics {
+        let part = parts.get(&d.scope.part.0, &mut report);
+        crate::dynamics::write_mark(d, &part, &mut frames);
+    }
+    for d in &score.sound_dynamics {
+        let part = parts.get(&d.scope.part.0, &mut report);
+        crate::dynamics::write_state(d, &part, &mut frames);
     }
     crate::tempo::write_tempos(score, &mut frames);
     for mark in &score.metronomes {

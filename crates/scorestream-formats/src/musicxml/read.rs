@@ -349,6 +349,8 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             tie_endpoints.append(&mut reader.tie_endpoints);
             score.tempos.append(&mut reader.tempos);
             score.metronomes.append(&mut reader.metronomes);
+            score.dynamics.append(&mut reader.dynamics);
+            score.sound_dynamics.append(&mut reader.sound_dynamics);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -397,6 +399,8 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             }
         }
     }
+    super::dynamics::report_unassigned_initial(&score, &mut report);
+    crate::dynamics::normalize(&mut score, &mut report, crate::Format::MusicXml);
     crate::tempo::normalize(&mut score.tempos, &mut report, crate::Format::MusicXml);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
     report.append(validate_score(&score));
@@ -417,6 +421,8 @@ struct PartReader {
     tie_endpoints: BTreeMap<EventId, super::ties::Endpoints>,
     tempos: Vec<ScoreTempo>,
     metronomes: Vec<ScoreMetronome>,
+    dynamics: Vec<ScoreDynamic>,
+    sound_dynamics: Vec<ScoreSoundDynamics>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -454,6 +460,8 @@ impl PartReader {
             tie_endpoints: BTreeMap::new(),
             tempos: vec![],
             metronomes: vec![],
+            dynamics: vec![],
+            sound_dynamics: vec![],
             barlines: vec![],
         })
     }
@@ -474,6 +482,8 @@ impl PartReader {
             tie_endpoints,
             tempos,
             metronomes,
+            dynamics,
+            sound_dynamics,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -494,6 +504,8 @@ impl PartReader {
         };
         let tempo_start = tempos.len();
         let metronome_start = metronomes.len();
+        let dynamic_start = dynamics.len();
+        let sound_dynamic_start = sound_dynamics.len();
         barlines.extend(super::barlines::read_measure(measure, &part.id, &m.id)?);
         let mut cursor = Rational::zero();
         let mut extent = Rational::zero();
@@ -658,6 +670,15 @@ impl PartReader {
                 }
                 "direction" | "sound" => {
                     previous = None;
+                    super::dynamics::read(
+                        n,
+                        part,
+                        start,
+                        &cursor,
+                        divisions.as_ref(),
+                        dynamics,
+                        sound_dynamics,
+                    )?;
                     super::tempo::read(
                         n,
                         part,
@@ -899,6 +920,19 @@ impl PartReader {
                 measure,
                 "tempo.measure_boundary",
                 "Tempo and metronome offsets must stay inside their measure; cross-measure positions are not guessed",
+            ));
+        }
+        if dynamics[dynamic_start..]
+            .iter()
+            .any(|d| d.at < *start || d.at >= end)
+            || sound_dynamics[sound_dynamic_start..]
+                .iter()
+                .any(|d| d.at < *start || d.at >= end)
+        {
+            return Err(unsupported(
+                measure,
+                "dynamics.measure_boundary",
+                "Dynamics offsets must remain inside the containing measure",
             ));
         }
         *start = end;

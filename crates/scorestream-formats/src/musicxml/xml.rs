@@ -667,13 +667,25 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 false,
             ),
             "direction" => (
-                &[],
+                &["placement"],
                 &["direction-type", "offset", "staff", "sound"],
                 &[],
                 &["direction-type"],
                 false,
             ),
-            "direction-type" => (&[], &["metronome"], &[], &["metronome"], false),
+            "direction-type" => (&[], &["metronome", "dynamics"], &[], &[], false),
+            "dynamics" => (
+                &[],
+                &[
+                    "pppp", "ppp", "pp", "p", "mp", "mf", "f", "ff", "fff", "ffff", "sf", "sfz",
+                    "fp",
+                ],
+                &[],
+                &[],
+                false,
+            ),
+            "pppp" | "ppp" | "pp" | "p" | "mp" | "mf" | "f" | "ff" | "fff" | "ffff" | "sf"
+            | "sfz" | "fp" => (&[], &[], &[], &[], false),
             "metronome" => (
                 &[],
                 &["beat-unit", "beat-unit-dot", "per-minute"],
@@ -681,7 +693,7 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 &["beat-unit", "per-minute"],
                 false,
             ),
-            "sound" => (&["tempo"], &["offset"], &[], &[], false),
+            "sound" => (&["tempo", "dynamics"], &["offset"], &[], &[], false),
             "offset" => (&["sound"], &[], &[], &[], true),
             "barline" => (
                 &["id", "location"],
@@ -786,6 +798,9 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 return;
             }
         };
+    if matches!(n.name.as_str(), "direction-type" | "dynamics") && n.children.len() != 1 {
+        n.error(report, MappingEffect::Unsupported, "dynamics.composite", "Exactly one typed metronome or dynamic symbol is supported; combined directions and compound dynamics are not discarded");
+    }
     for key in n.attrs.keys() {
         if !attrs.contains(&key.as_str()) {
             n.error(

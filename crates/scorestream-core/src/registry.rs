@@ -25,6 +25,7 @@ pub fn attribute_type(category: &str, kind: &str, key: &str) -> Option<&'static 
     if category == "state" {
         return match key {
             "tempo" => Some("tempo"),
+            "sound_dynamics" => Some("nonnegative_rational"),
             "meter" => Some("meter"),
             "key" => Some("key"),
             "clef" => Some("clef"),
@@ -83,9 +84,12 @@ pub(crate) fn validate_attributes(
             "event_reference" => text
                 .and_then(|s| s.strip_prefix('#'))
                 .is_some_and(is_identifier),
-            "rational" | "positive_rational" => text
+            "rational" | "positive_rational" | "nonnegative_rational" => text
                 .and_then(|s| s.parse::<Rational>().ok())
-                .is_some_and(|r| ty != "positive_rational" || r.is_positive()),
+                .is_some_and(|r| {
+                    (ty != "positive_rational" || r.is_positive())
+                        && (ty != "nonnegative_rational" || !r.is_negative())
+                }),
             "positive_integer:positive_integer" => text.is_some_and(valid_ratio),
             "spelled_pitch_class" => text.is_some_and(|s| {
                 matches!(format!("{s}0").parse::<Pitch>(), Ok(Pitch::Pitched { .. }))

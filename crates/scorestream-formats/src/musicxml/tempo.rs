@@ -39,6 +39,41 @@ fn positive(node: &Node, value: &str) -> Result<Rational> {
     }
     Ok(rate)
 }
+/// Exact direction display/sound positions. Nested sound offset overrides direction.
+pub(super) fn locations(
+    node: &Node,
+    start: &Rational,
+    cursor: &Rational,
+    divisions: Option<&Rational>,
+) -> Result<(Rational, Rational)> {
+    let current = start + cursor;
+    let mut visual = current.clone();
+    let mut sounding = current.clone();
+    if node.name == "direction"
+        && let Some(o) = node.child("offset")
+    {
+        visual = &current + &offset(o, divisions)?;
+        if bool_attr(o, "sound")? {
+            sounding = visual.clone();
+        }
+    }
+    let sound = if node.name == "sound" {
+        Some(node)
+    } else {
+        node.child("sound")
+    };
+    if let Some(o) = sound.and_then(|s| s.child("offset")) {
+        if o.attr("sound").is_some() {
+            return Err(unsupported(
+                o,
+                "sound.offset_attribute",
+                "The sound flag on an offset nested in sound is outside this profile",
+            ));
+        }
+        sounding = &current + &offset(o, divisions)?;
+    }
+    Ok((visual, sounding))
+}
 #[allow(clippy::too_many_arguments)]
 pub(super) fn read(
     node: &Node,
@@ -50,18 +85,18 @@ pub(super) fn read(
     metronomes: &mut Vec<ScoreMetronome>,
     report: &mut MappingReport,
 ) -> Result<()> {
-    let current = start + cursor;
-    let mut sounding_at = current.clone();
-    if node.name == "direction" {
-        let mut visual_at = current.clone();
-        if let Some(o) = node.child("offset") {
-            let delta = offset(o, divisions)?;
-            visual_at = &current + &delta;
-            if bool_attr(o, "sound")? {
-                sounding_at = visual_at.clone();
-            }
+    let (visual_at, sounding_at) = locations(node, start, cursor, divisions)?;
+    if let Some(m) = node
+        .child("direction-type")
+        .and_then(|d| d.child("metronome"))
+    {
+        if node.attr("placement").is_some() {
+            return Err(unsupported(
+                node,
+                "attribute.placement",
+                "Metronome placement is not yet represented",
+            ));
         }
-        let m = child(child(node, "direction-type")?, "metronome")?;
         let unit = match child(m, "beat-unit")?.text.trim() {
             "whole" => BeatUnit::Whole,
             "half" => BeatUnit::Half,
@@ -117,29 +152,18 @@ pub(super) fn read(
         node.child("sound")
     };
     if let Some(sound) = sound {
-        if let Some(o) = sound.child("offset") {
-            // A sound child offset is always the intended playback position and overrides
-            // the direction offset. Its optional sound flag has no direction to affect.
-            if o.attr("sound").is_some() {
-                return Err(unsupported(
-                    o,
-                    "sound.offset_attribute",
-                    "The sound flag on an offset nested in sound is outside this profile",
-                ));
-            }
-            sounding_at = &current + &offset(o, divisions)?;
-        }
-        let tempo = sound.attr("tempo").ok_or_else(|| {
-            unsupported(
+        if let Some(tempo) = sound.attr("tempo") {
+            tempos.push(ScoreTempo {
+                at: sounding_at,
+                quarter_bpm: positive(sound, tempo)?,
+            });
+        } else if sound.attr("dynamics").is_none() {
+            return Err(unsupported(
                 sound,
                 "sound.empty",
-                "Only an explicit tempo is mapped from sound",
-            )
-        })?;
-        tempos.push(ScoreTempo {
-            at: sounding_at,
-            quarter_bpm: positive(sound, tempo)?,
-        });
+                "Sound requires an explicit mapped tempo or numeric dynamics",
+            ));
+        }
     }
     Ok(())
 }
