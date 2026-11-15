@@ -30,6 +30,10 @@ cargo run -p scorestream-cli -- convert musicxml sfs crates/scorestream-formats/
 
 MusicXML file conversion uses two incremental passes and releases each XML measure after processing; there is no whole-score byte or XML-element ceiling. The typed score and ID index still grow with musical content. Structural safety budgets and the limited mapping profile remain. `scan-musicxml` reports XML counts and peak retained nodes without converting notation; a successful scan does not mean full notation mapping is supported.
 
+### Notation coverage ledger
+
+The [versioned notation inventory](docs/NOTATION_COVERAGE.md) separates shared-model, import, export, rendering and playback evidence. Run `python3 scripts/notation_coverage.py check` offline, or `report --gaps` to expose unassessed declarations and glyphs. A catalog entry or passing inventory check never means a notation feature is supported.
+
 ### Fast format discovery
 
 Call `score_get_format` with `{}` (or `{"detail":"quick"}`) for a compact ScoreStream authoring baseline: record syntax, pitch and exact-time rules, common event attributes, scope/lexical guidance, and a complete ensemble example. This teaches the score language, not the MCP request schema.

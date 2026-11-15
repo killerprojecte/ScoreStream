@@ -1,0 +1,146 @@
+# 乐谱覆盖清单：先有边界，再扩展能力
+
+目标是把逐个源文件补洞改为**版本化标准清单、逐域建模、分层验收**。
+这次交付是可运行的覆盖基础设施和已存在能力的证据账本，**没有新增任何音乐符号的转换、绘制或演奏能力**。
+也没有宣称 MusicXML 或 SMuFL 能代表世界上的全部乐理与记谱传统。
+
+## 五条独立能力轴
+
+`docs/notation/coverage.json` 每个域必须分别记录：
+
+1. `model`：作者数据能否精确表达身份、锚点、作用域、缺省与显式值。
+2. `import`：MusicXML 的哪些上下文、属性、值能进入该模型。
+3. `export`：能否精确写出并重新导入；何时必须拒绝而不是取整或删除。
+4. `render`：实际预览是否正确绘制，或明确 withheld；导入成功不是绘制证据。
+5. `playback`：哪些显式解释策略产生已验证的声音计划；字形存在不是演奏语义。
+
+状态仅允许 `partial`（有明确范围与正向测试）、`blocked`（有拒绝测试）、
+`unassessed`（未在此账本验收）和 `not_applicable`（须说明原因）。
+故意没有把整个标签或字形标为 `supported` 的入口。`partial` 也只指该行文字界定的范围，
+不是所关联 schema 声明的全部值、属性、上下文或组合均被支持。
+
+初始账本有 22 个域：12 个有限能力域和 10 个待验收域，引用 43 个可运行的精确测试。
+模型/导入/导出各 12 条 `partial`；绘制 1 条 `partial`、2 条 `blocked`、19 条未验收；
+演奏 9 条 `partial`、1 条 `blocked`、12 条未验收。这些是**账本行数，不是标准支持率**。
+
+已录入音高/节奏/和弦、延音线、连音线、变音符、符杠、反复与房子、延长记号、倚音、
+速度、力度、移调与单乐器元数据。例如连音线作者字段可以往返，但该 profile 的预览和演奏
+仍明确拒绝；变音符可以导入 7 种，已录入的预览证据只有 natural/sharp/flat。
+延长记号和倚音的 `partial` 演奏只覆盖要求明确策略的入口，不扩大普通播放权限。
+
+待验收域包括奏法、装饰音、乐器技术、歌词、和声/数字低音、打击乐/指法谱、方向跨度、
+谱表状态词汇、页面系统排版和自定义/SMuFL 记号。`unassessed` 不表示程序接受，也不表示
+程序一定不支持；生产转换器的严格诊断仍是每个实际输入的最终依据。
+
+## 固定参考边界与可重复计数
+
+来源固定在 MusicXML **4.0** 的 `musicxml.xsd` 和 SMuFL **1.4** 的
+`glyphnames.json`、`ranges.json`、`classes.json`。完整版本、不可变 Git commit、下载 URL、
+SHA-256、版权与排除范围见 [`sources.json`](notation/sources.json)。不从 `latest` 生成账本。
+
+MusicXML 主 schema 包含：
+
+- 480 个元素声明位置，442 个不同名称。
+- 352 个属性声明/引用位置，620 个枚举值出现位置。
+- 145 个具名简单类型、224 个具名复杂类型、27 个 group、45 个 attributeGroup。
+
+SMuFL 包含 2,932 个规范字形名/码点、131 个 range、85 个 class。class 可以重叠，
+也并非每个字形都有 class；range/class 成员关系不证明字体包含该字形，更不证明渲染支持。
+
+紧凑的 5,041 条参考记录拆成小于 70 KB 的确定性 JSON 分片，索引是
+[`catalog.json`](notation/catalog.json)。这不是 5,041 种音乐符号：包含结构容器、元数据、
+排版、类型定义、枚举与字形。账本只对明确审查过的声明做 `structure`、`metadata`、
+`layout`、`musical_data` 分类；其余保持 `unclassified`，不靠名字猜测。
+
+MusicXML ID 保留 schema 的具名类型/group、sequence/choice 的位置及重复声明的位置。
+例如 note 的两处 tie/cue 和 note-notation/barline 的两处 fermata 不会合并。
+属性 `ref` 保留原值，**不会把未解析的继承属性自动算成支持**。
+紧凑清单不是有效 XSD 验证器：完整 compositor、类型引用、attributeGroup、union、facet、
+pattern、default/fixed、use 和 min/maxOccurs 树可以从同一哈希固定源文件生成到额外输出，
+而不是塞进日常账本。后续要判定有效属性/值空间时必须解析这些引用和约束及规范正文。
+
+排除边界：此版本没有盘点 `opus.xsd`、`container.xsd`、`sounds.xsd`、外部 `xml.xsd`/
+`xlink.xsd` 或只写在规范正文的约束。MXL 容器能力不能由主 schema 的数量推断。
+SMuFL 清单没有囊括字体私有/可选字形、stylistic alternates、ligatures、sets、anchors、
+字宽/BBox 或字体本身。MusicXML `other-notation/@smufl` 也不形成 XML 名称与字形一一对应。
+这些均是后续清单工作，不从统计中悄悄消失。
+
+## 离线运行
+
+Python 3.10+ 标准库即可做清单检查，不下载、不启动界面、不触发 CI：
+
+```sh
+python3 scripts/notation_coverage.py check
+python3 -m unittest discover -s scripts/tests -p 'test_notation_coverage.py' -v
+python3 scripts/notation_coverage.py report > /tmp/notation-report.json
+python3 scripts/notation_coverage.py report --gaps > /tmp/notation-gaps.json
+```
+
+`check` 校验分片与组合清单哈希、唯一 ID、引用、五层状态、范围/限制、生产代码路径和
+精确测试入口。缺失层、裸标签引用、失效测试名、把拒绝测试冒充正向支持等都会失败。
+它只检查证据声明，输出明确说明 **Behavior tests NOT executed**。
+该离线 gate 和自己的回归测试已加入 `scripts/check.sh`，未新增或修改 CI workflow。
+
+`report` 输出逐层已验收/未验收的行数及没有直接域链接的记录。`--gaps` 列出全部这类 ID，
+便于后续认领。没有链接不等于运行时不支持；有链接也不把完整声明提升为支持。
+即使某个 feature 引用一个 SMuFL range，也不会给它的所有 glyph 自动记分。
+报告不计算误导性的单一覆盖百分比。
+
+真正重跑证据（需要现有 Rust 工具链、锁定依赖，以及 frontend 的 `npm ci` 环境）：
+
+```sh
+python3 scripts/notation_coverage.py test-evidence --feature authored-slurs
+python3 scripts/notation_coverage.py test-evidence --feature printed-accidentals
+# 不带 --feature：重跑当前账本全部精确测试。
+python3 scripts/notation_coverage.py test-evidence
+```
+
+Rust 使用 integration target 和 `--exact`；Vitest 使用文件、suite 和完整测试名；参数化用例同时绑定源码中的字面量模板和展开后的精确名称。
+零测试、被忽略的测试或不匹配的测试不会当成成功；完全未验收的域不允许用零测试过关。
+该入口输出执行记录，但不把结果写成永久绿色状态，也不代替完整 workspace、平台、音频或
+视觉回归。人工仍须检查测试是否真的断言了声明的含义，文件中出现一个函数名不能证明语义。
+
+## 重建与升级参考源
+
+先按 `sources.json` 的不可变 URL 把四个文件存到本地目录，不改它们的字节：
+
+```sh
+python3 scripts/notation_coverage.py check --source-dir /path/to/upstream
+python3 scripts/notation_coverage.py regenerate --source-dir /path/to/upstream
+python3 scripts/notation_coverage.py regenerate --source-dir /path/to/upstream \
+  --expanded-output /tmp/notation-expanded.json
+```
+
+任何上游字节不匹配即拒绝。重建要求与组合清单哈希完全相同；不会下载或偷偷更新版本。
+升级标准是另一个明确审查：更新源 pin、重新生成、检查所有 ID/上下文变化、重新绑定证据、
+调整 pinned-count 测试，再提交差异。旧 ID 不静默转移给同名新声明。
+
+## 每次扩域的完成条件
+
+1. 从相应 schema 上下文、值/属性约束及规范正文定义功能范围，覆盖特殊与否定情况。
+2. 定义作者模型的身份、锚点、作用域、显式缺省/缺失值、跨声部/跨谱表与精确时间关系。
+3. 增加有边界的导入与导出、模型/SFS/JSON/规范化往返测试及明确拒绝测试。
+4. 独立验收真实渲染结果和实际播放计划；装饰、解释策略、乐器能力不能从字形推导。
+5. 测组合而不只测孤立符号：反复后的 occurrence、倚音/延长/连线、声轨和节奏交互。
+6. 将 untouched 原件验收、源片段解码、合成 fixture 分开记录。禁止删去原件未知符号来
+   宣称全谱导入成功。更新覆盖行并跑离线 gate、精确证据和受影响完整回归。
+
+这让缺口从个别曲目的临时补丁变成可认领、可审查、可测试的工作清单，但不以清单代替实现。
+
+## 来源与许可
+
+此处数据是对上游规范标识符、结构和元数据事实的派生清单，不含字体、图像或规范说明正文。
+保留来源版权：
+
+- Copyright © 2004–2021 the Contributors to the MusicXML Specification, published by the W3C Music Notation Community Group.
+- Copyright © 2021 the Contributors to the SMuFL Specification version 1.4, published by the W3C Music Notation Community Group.
+
+两者按 [W3C Community Final Specification Agreement](https://www.w3.org/community/about/agreements/final/)
+发布；[人类可读摘要](https://www.w3.org/community/about/agreements/fsa-deed/)。不要把历史版本的
+MIT 或 Bravura 字体的 OFL 误记为这两个规范版本的许可。
+
+一手定义：[MusicXML 4.0 主 schema](https://www.w3.org/2021/06/musicxml40/listings/musicxml.xsd/)、
+[SMuFL 1.4](https://www.w3.org/2021/03/smufl14/)、
+[SMuFL 许可](https://www.w3.org/2021/03/smufl14/preamble/license.html)、
+[recommended / optional glyphs](https://www.w3.org/2021/03/smufl14/about/recommended-chars-optional-glyphs.html)、
+[other-notation](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/other-notation/)。

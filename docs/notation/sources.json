@@ -1,0 +1,54 @@
+{
+  "catalog_sha256": "8d460970e9fe2965b7cefd61c531bb85281cf724909f77d87343a3492716aa06",
+  "copyright": [
+    "Copyright © 2004–2021 the Contributors to the MusicXML Specification, published by the W3C Music Notation Community Group.",
+    "Copyright © 2021 the Contributors to the SMuFL Specification version 1.4, published by the W3C Music Notation Community Group."
+  ],
+  "excluded": [
+    "MusicXML opus.xsd",
+    "MusicXML container.xsd",
+    "MusicXML sounds.xsd",
+    "Imported xml.xsd and xlink.xsd",
+    "MusicXML prose constraints not encoded in the XSD",
+    "Unregistered/private SMuFL glyphs",
+    "Other notation standards, historical and cultural notations outside these releases"
+  ],
+  "license": "W3C Community Final Specification Agreement (FSA)",
+  "license_url": "https://www.w3.org/community/about/agreements/final/",
+  "schema_version": 1,
+  "scope": "MusicXML 4.0 musicxml.xsd declarations and schema structure only; SMuFL 1.4 canonical glyphs, ranges and classes. No fonts, images, documentation prose or sound catalog.",
+  "sources": [
+    {
+      "commit": "799e2defb2ece0ae7bafe08dcbcac25b2c631d53",
+      "file": "musicxml.xsd",
+      "release": "4.0",
+      "sha256": "bfe37ed25a9ec00e6f2591d53df260b84efe12aed209ba3ac0a76f9287665a99",
+      "standard": "musicxml",
+      "url": "https://raw.githubusercontent.com/w3c/musicxml/799e2defb2ece0ae7bafe08dcbcac25b2c631d53/schema/musicxml.xsd"
+    },
+    {
+      "commit": "753f551ca6f96bf24ba38aa2d8a317e706238c51",
+      "file": "glyphnames.json",
+      "release": "1.4",
+      "sha256": "1d05352599a20983d1c901635dc75d76f063c0987a7bee65f145325fc3e0d29f",
+      "standard": "smufl",
+      "url": "https://raw.githubusercontent.com/w3c/smufl/753f551ca6f96bf24ba38aa2d8a317e706238c51/metadata/glyphnames.json"
+    },
+    {
+      "commit": "753f551ca6f96bf24ba38aa2d8a317e706238c51",
+      "file": "ranges.json",
+      "release": "1.4",
+      "sha256": "a22be610edadf823de387f4c11716beee0ba2a11534c2bae1897b23fb6869531",
+      "standard": "smufl",
+      "url": "https://raw.githubusercontent.com/w3c/smufl/753f551ca6f96bf24ba38aa2d8a317e706238c51/metadata/ranges.json"
+    },
+    {
+      "commit": "753f551ca6f96bf24ba38aa2d8a317e706238c51",
+      "file": "classes.json",
+      "release": "1.4",
+      "sha256": "6c063a55a60954c98af1fe0339df5bfe35d5fadb72000db73f93e5de7939e8d9",
+      "standard": "smufl",
+      "url": "https://raw.githubusercontent.com/w3c/smufl/753f551ca6f96bf24ba38aa2d8a317e706238c51/metadata/classes.json"
+    }
+  ]
+}

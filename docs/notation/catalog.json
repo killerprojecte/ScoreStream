@@ -1,0 +1,58 @@
+{
+  "entry_files": [
+    {
+      "file": "catalog/entries-00.json",
+      "sha256": "27f26ae20867dd01ca49a918f2f5d4048e26af5cb3a72a2dcbac10496b24e3aa"
+    },
+    {
+      "file": "catalog/entries-01.json",
+      "sha256": "8c4e3131e1ad3577a15b20ce0ab98d3e7e026502b6a000345c9c882a0c0734b0"
+    },
+    {
+      "file": "catalog/entries-02.json",
+      "sha256": "f8de32c87791dade8c068ab76b84d81c52d412179d18ee40ba59289cab9bf44f"
+    },
+    {
+      "file": "catalog/entries-03.json",
+      "sha256": "21c7df7cbd9d2597767aa82fbd88028a3768628a5797082f32d136e349594c56"
+    },
+    {
+      "file": "catalog/entries-04.json",
+      "sha256": "875dadce9cea963dd4056ef246bc33451953d221011da59320779228c8543d2a"
+    },
+    {
+      "file": "catalog/entries-05.json",
+      "sha256": "b45ed7b11c48a6ec07d772d7cad96e52afad1e8a71ca6c071a25ee94586c6536"
+    },
+    {
+      "file": "catalog/entries-06.json",
+      "sha256": "21fe09a2687a46c15bc9f4d3ba7e79bc4dcd6fa4c507ed2c99e55c1a4aaba5a8"
+    },
+    {
+      "file": "catalog/entries-07.json",
+      "sha256": "e22a8ca42a93684110caeb3ed9229facb5020c2b2c9e3b138089fa92cad1e26b"
+    },
+    {
+      "file": "catalog/entries-08.json",
+      "sha256": "a979394f0716663390303b5ef97e35eb12d2ab9ffd6844215608faa7523d9897"
+    },
+    {
+      "file": "catalog/entries-09.json",
+      "sha256": "f13c43d055b85886b12ed58f41e22a038271fda39f70d33026c4ef4b18e334b7"
+    },
+    {
+      "file": "catalog/entries-10.json",
+      "sha256": "0c027ef6d62056684b32e1854b042f3e50514c14cc57e46d7ab2b9bb1d43bc52"
+    },
+    {
+      "file": "catalog/entries-11.json",
+      "sha256": "df6bf1d3364ca9ee89431bf718e1efae07a0230540076bd038ec7044c68bbbc1"
+    },
+    {
+      "file": "catalog/entries-12.json",
+      "sha256": "ad630eb4074f7714f9d791ad8a40d4cc300556a6097aea6de0eb92a876f48b9d"
+    }
+  ],
+  "purpose": "reference_inventory_not_implementation_support",
+  "schema_version": 1
+}

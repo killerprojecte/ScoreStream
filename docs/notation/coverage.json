@@ -1,0 +1,1688 @@
+{
+  "baseline_commit": "53dfbcefd3e7d34d95c312bc7575068143c6158e",
+  "classifications": [
+    {
+      "reason": "Document/container wrappers; their existence is not a musical-symbol count.",
+      "refs": [
+        "musicxml:schema/complexType:direction[1]/sequence[1]/element:direction-type[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:notations[1]",
+        "musicxml:schema/complexType:score-part[1]/sequence[1]/element:identification[1]",
+        "musicxml:schema/element:score-partwise[1]",
+        "musicxml:schema/element:score-partwise[1]/complexType[1]/sequence[1]/element:part[1]",
+        "musicxml:schema/element:score-partwise[1]/complexType[1]/sequence[1]/element:part[1]/complexType[1]/sequence[1]/element:measure[1]",
+        "musicxml:schema/element:score-timewise[1]",
+        "musicxml:schema/element:score-timewise[1]/complexType[1]/sequence[1]/element:measure[1]",
+        "musicxml:schema/element:score-timewise[1]/complexType[1]/sequence[1]/element:measure[1]/complexType[1]/sequence[1]/element:part[1]",
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:attributes[1]",
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:print[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:defaults[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:identification[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:part-list[1]"
+      ],
+      "role": "structure"
+    },
+    {
+      "reason": "Document provenance and descriptive data, not interpreted musical marks.",
+      "refs": [
+        "musicxml:schema/complexType:encoding[1]/choice[1]/element:encoder[1]",
+        "musicxml:schema/complexType:encoding[1]/choice[1]/element:encoding-date[1]",
+        "musicxml:schema/complexType:encoding[1]/choice[1]/element:encoding-description[1]",
+        "musicxml:schema/complexType:encoding[1]/choice[1]/element:software[1]",
+        "musicxml:schema/complexType:identification[1]/sequence[1]/element:creator[1]",
+        "musicxml:schema/complexType:identification[1]/sequence[1]/element:encoding[1]",
+        "musicxml:schema/complexType:identification[1]/sequence[1]/element:miscellaneous[1]",
+        "musicxml:schema/complexType:identification[1]/sequence[1]/element:relation[1]",
+        "musicxml:schema/complexType:identification[1]/sequence[1]/element:rights[1]",
+        "musicxml:schema/complexType:identification[1]/sequence[1]/element:source[1]",
+        "musicxml:schema/complexType:miscellaneous[1]/sequence[1]/element:miscellaneous-field[1]",
+        "musicxml:schema/complexType:work[1]/sequence[1]/element:work-number[1]",
+        "musicxml:schema/complexType:work[1]/sequence[1]/element:work-title[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:movement-number[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:movement-title[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:work[1]"
+      ],
+      "role": "metadata"
+    },
+    {
+      "reason": "Physical layout and engraving setup; no semantic or rendering capability implied.",
+      "refs": [
+        "musicxml:schema/complexType:defaults[1]/sequence[1]/element:appearance[1]",
+        "musicxml:schema/complexType:defaults[1]/sequence[1]/element:scaling[1]",
+        "musicxml:schema/complexType:page-layout[1]/sequence[1]/element:page-margins[1]",
+        "musicxml:schema/complexType:page-layout[1]/sequence[1]/sequence[1]/element:page-height[1]",
+        "musicxml:schema/complexType:page-layout[1]/sequence[1]/sequence[1]/element:page-width[1]",
+        "musicxml:schema/complexType:scaling[1]/sequence[1]/element:millimeters[1]",
+        "musicxml:schema/complexType:scaling[1]/sequence[1]/element:tenths[1]",
+        "musicxml:schema/complexType:staff-layout[1]/sequence[1]/element:staff-distance[1]",
+        "musicxml:schema/complexType:system-layout[1]/sequence[1]/element:system-distance[1]",
+        "musicxml:schema/complexType:system-layout[1]/sequence[1]/element:system-margins[1]",
+        "musicxml:schema/complexType:system-layout[1]/sequence[1]/element:top-system-distance[1]",
+        "musicxml:schema/group:all-margins[1]/sequence[1]/element:bottom-margin[1]",
+        "musicxml:schema/group:all-margins[1]/sequence[1]/element:top-margin[1]",
+        "musicxml:schema/group:layout[1]/sequence[1]/element:page-layout[1]",
+        "musicxml:schema/group:layout[1]/sequence[1]/element:staff-layout[1]",
+        "musicxml:schema/group:layout[1]/sequence[1]/element:system-layout[1]",
+        "musicxml:schema/group:left-right-margins[1]/sequence[1]/element:left-margin[1]",
+        "musicxml:schema/group:left-right-margins[1]/sequence[1]/element:right-margin[1]"
+      ],
+      "role": "layout"
+    },
+    {
+      "reason": "Reviewed musical-data entry points, not necessarily glyphs. Reused declarations remain separate.",
+      "refs": [
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/choice[1]/element:transpose[1]",
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:clef[1]",
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:key[1]",
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:time[1]",
+        "musicxml:schema/complexType:barline[1]/sequence[1]/element:ending[1]",
+        "musicxml:schema/complexType:barline[1]/sequence[1]/element:fermata[1]",
+        "musicxml:schema/complexType:barline[1]/sequence[1]/element:repeat[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:dynamics[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:metronome[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:percussion[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:wedge[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:dynamics[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:fermata[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:ornaments[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:slur[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:technical[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:tied[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:tuplet[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[1]/choice[1]/sequence[1]/element:tie[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[1]/choice[1]/sequence[2]/element:cue[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[1]/element:grace[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[2]/element:cue[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[3]/element:tie[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:accidental[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:beam[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:lyric[1]",
+        "musicxml:schema/complexType:pitch[1]/sequence[1]/element:alter[1]",
+        "musicxml:schema/complexType:pitch[1]/sequence[1]/element:octave[1]",
+        "musicxml:schema/complexType:pitch[1]/sequence[1]/element:step[1]",
+        "musicxml:schema/group:duration[1]/sequence[1]/element:duration[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/choice[1]/element:pitch[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/choice[1]/element:rest[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/choice[1]/element:unpitched[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/element:chord[1]",
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:figured-bass[1]",
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:harmony[1]",
+        "musicxml:schema/group:time-signature[1]/sequence[1]/element:beat-type[1]",
+        "musicxml:schema/group:time-signature[1]/sequence[1]/element:beats[1]",
+        "musicxml:schema/group:traditional-key[1]/sequence[1]/element:fifths[1]"
+      ],
+      "role": "musical_data"
+    }
+  ],
+  "evidence": {
+    "accidentals.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/accidentals.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "accidentals",
+      "test": "written_glyph_does_not_change_transposition_duration_or_actual_playback"
+    },
+    "accidentals.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/accidentals.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "accidentals",
+      "test": "unknown_glyphs_flags_styles_targets_and_pitch_conflicts_fail_closed"
+    },
+    "accidentals.render.flat": {
+      "assertion": "positive",
+      "file": "desktop/tests/accidental-appearance.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio explicit accidental glyph fidelity",
+      "template": "renders repeated explicit $value on $pitch in key $key, for all nine independent flag combinations",
+      "test": "renders repeated explicit 'flat' on 'Cb4' in key +0, for all nine independent flag combinations"
+    },
+    "accidentals.render.natural": {
+      "assertion": "positive",
+      "file": "desktop/tests/accidental-appearance.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio explicit accidental glyph fidelity",
+      "template": "renders repeated explicit $value on $pitch in key $key, for all nine independent flag combinations",
+      "test": "renders repeated explicit 'natural' on 'C4' in key +0, for all nine independent flag combinations"
+    },
+    "accidentals.render.sharp": {
+      "assertion": "positive",
+      "file": "desktop/tests/accidental-appearance.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio explicit accidental glyph fidelity",
+      "template": "renders repeated explicit $value on $pitch in key $key, for all nine independent flag combinations",
+      "test": "renders repeated explicit 'sharp' on 'C#4' in key +0, for all nine independent flag combinations"
+    },
+    "accidentals.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/accidentals.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "accidentals",
+      "test": "seven_glyphs_and_all_flag_presences_roundtrip_on_measured_and_grace_notes"
+    },
+    "beams.hooks-rests-continue": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/beams.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "beams",
+      "test": "hooks_rests_and_graphic_cue_size_do_not_change_time_or_pitch"
+    },
+    "beams.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/beams_playback.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "beams_playback",
+      "test": "beamed_repeat_pairs_preserve_route_tempo_expression_and_occurrence_identity"
+    },
+    "beams.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/beams.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "beams",
+      "test": "unsupported_fields_values_and_malformed_runs_fail_closed"
+    },
+    "beams.render.reject": {
+      "assertion": "rejection",
+      "file": "desktop/tests/beam-fidelity.test.ts",
+      "runner": "vitest",
+      "suite": "authored beam fidelity boundary",
+      "test": "withholds rather than replacing authored runs or hooks with automatic beaming"
+    },
+    "beams.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/beams.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "beams",
+      "test": "every_level_and_absent_default_survives_xml_sfs_json_canonical_roundtrip"
+    },
+    "dynamics.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/dynamics.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "dynamics",
+      "test": "original_numeric_values_are_not_replaced_by_visible_label_policy"
+    },
+    "dynamics.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/dynamics.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "dynamics",
+      "test": "unsupported_words_glyphs_compounds_layout_wedges_and_sound_properties_block"
+    },
+    "dynamics.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/dynamics.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "dynamics",
+      "test": "exact_common_and_sfs_storage_survive_roundtrips"
+    },
+    "fermatas.qualified": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/qualified_fermata_playback.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "qualified_fermata_playback",
+      "test": "eighteen_authored_copies_are_one_explicit_global_hold"
+    },
+    "fermatas.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/fermatas.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "fermatas",
+      "test": "invalid_unknown_and_unmapped_notation_never_disappears"
+    },
+    "fermatas.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/fermatas.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "fermatas",
+      "test": "authored_shapes_orientation_and_exact_coordinates_roundtrip_without_timing"
+    },
+    "graces.default.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/qualified_grace_playback.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "qualified_grace_playback",
+      "test": "legacy_and_unqualified_apis_do_not_silently_gain_an_interpretation"
+    },
+    "graces.qualified": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/qualified_grace_playback.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "qualified_grace_playback",
+      "test": "authored_singleton_produces_two_real_attacks_without_changing_written_events"
+    },
+    "graces.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/graces.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "graces",
+      "test": "invalid_or_unsupported_grace_never_enters_the_common_model"
+    },
+    "graces.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/graces.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "graces",
+      "test": "typed_graces_have_no_measured_duration_and_preserve_order_slash_and_boundaries"
+    },
+    "instruments.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/instrument_metadata.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "instrument_metadata",
+      "test": "unknown_shapes_and_dynamic_or_multiple_instrument_payloads_remain_blocked"
+    },
+    "instruments.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/instrument_metadata.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "instrument_metadata",
+      "test": "exact_identity_label_sound_and_midi_roundtrip_xml_sfs_and_json"
+    },
+    "notes.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/musicxml.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "musicxml",
+      "test": "unsupported_paths_are_reported_and_no_document_returned"
+    },
+    "notes.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/musicxml.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "musicxml",
+      "test": "xml_sfs_xml_real_roundtrip"
+    },
+    "repeats.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/barlines.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "barlines",
+      "test": "strict_unknown_and_malformed_barlines_do_not_pass"
+    },
+    "repeats.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/barlines.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "barlines",
+      "test": "ordinary_xml_model_roundtrip_and_exact_replay"
+    },
+    "repeats.voltas": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/barlines.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "barlines",
+      "test": "agrees_across_parts_and_preserves_ending_provenance"
+    },
+    "slurs.grace-anchors": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_slurs.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_slurs",
+      "test": "grace_to_principal_same_onset_keeps_distinct_event_anchors_and_clock"
+    },
+    "slurs.number-capacity": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/xml_slurs.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "xml_slurs",
+      "test": "export_preserves_sixteen_parallel_endpoint_pairs_but_rejects_seventeen"
+    },
+    "slurs.playback.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/authored_slurs.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_slurs",
+      "test": "authored_slurs_remain_blocked_in_each_qualified_performance_composition"
+    },
+    "slurs.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/xml_slurs.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "xml_slurs",
+      "test": "unknown_fields_descendants_and_malformed_values_are_never_discarded"
+    },
+    "slurs.render.reject": {
+      "assertion": "rejection",
+      "file": "desktop/tests/slur-fidelity.test.ts",
+      "runner": "vitest",
+      "suite": "authored slur fidelity boundary",
+      "test": "withholds authored geometry rather than drawing an unannotated score"
+    },
+    "slurs.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_slurs.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_slurs",
+      "test": "independent_endpoint_fields_and_parallel_identity_survive_all_codecs"
+    },
+    "tempo.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/tempo.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "tempo",
+      "test": "pickup_and_tempo_changes_inside_held_note_and_rest_reach_real_plan"
+    },
+    "tempo.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/tempo.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "tempo",
+      "test": "unsupported_tempo_semantics_fail_closed"
+    },
+    "tempo.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/tempo.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "tempo",
+      "test": "tempo_and_metronome_roundtrip_musicxml_sfs_common_without_merging_lanes"
+    },
+    "ties.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/ties.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "ties",
+      "test": "xml_common_sfs_actual_plan_preserves_chain_and_written_notes"
+    },
+    "ties.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/ties.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "ties",
+      "test": "unsupported_semantics_and_contradictions_are_never_deleted"
+    },
+    "ties.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/ties.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "ties",
+      "test": "xml_export_preserves_endpoint_graph_and_regenerates_numbering"
+    },
+    "transpose.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/transposition.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "transposition",
+      "test": "staff_specific_and_all_staff_transposition_do_not_leak_or_double"
+    },
+    "transpose.reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/transposition.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "transposition",
+      "test": "malformed_unmapped_and_mid_measure_transposition_fail_without_output"
+    },
+    "transpose.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/transposition.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "transposition",
+      "test": "xml_measure_boundary_change_and_explicit_zero_reset_are_exact"
+    }
+  },
+  "features": [
+    {
+      "id": "pitched-measured-notes",
+      "layers": {
+        "export": {
+          "detail": "Finite score-partwise pitched/rest fixtures preserve exact time, written rhythm and separate chord-member durations through MusicXML/model/SFS/XML.",
+          "evidence": [
+            "notes.roundtrip",
+            "notes.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Finite score-partwise pitched/rest fixtures preserve exact time, written rhythm and separate chord-member durations through MusicXML/model/SFS/XML.",
+          "evidence": [
+            "notes.roundtrip",
+            "notes.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Finite score-partwise pitched/rest fixtures preserve exact time, written rhythm and separate chord-member durations through MusicXML/model/SFS/XML.",
+          "evidence": [
+            "notes.roundtrip",
+            "notes.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Not credited by this ledger yet. Preserved data does not establish an interpretation.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Not all note attributes, tuplets, pitch systems or score-timewise. Catalog links are entry points, not coverage of all contexts and values. Rendering and playback need their own evidence.",
+      "refs": [
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:dot[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:time-modification[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:type[1]",
+        "musicxml:schema/group:duration[1]/sequence[1]/element:duration[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/choice[1]/element:pitch[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/choice[1]/element:rest[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/element:chord[1]"
+      ],
+      "scope": "Finite score-partwise pitched/rest fixtures preserve exact time, written rhythm and separate chord-member durations through MusicXML/model/SFS/XML.",
+      "title": "Measured pitch, rhythm, rests and chords"
+    },
+    {
+      "id": "measured-ties",
+      "layers": {
+        "export": {
+          "detail": "Paired measured pitched tie/tied endpoints preserve relation identity and exact continuous chains; local XML numbering is regenerated with diagnostics.",
+          "evidence": [
+            "ties.roundtrip",
+            "ties.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/ties.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Paired measured pitched tie/tied endpoints preserve relation identity and exact continuous chains; local XML numbering is regenerated with diagnostics.",
+          "evidence": [
+            "ties.roundtrip",
+            "ties.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/ties.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Paired measured pitched tie/tied endpoints preserve relation identity and exact continuous chains; local XML numbering is regenerated with diagnostics.",
+          "evidence": [
+            "ties.roundtrip",
+            "ties.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Finite chains produce one attack while retaining written notes; not a universal sustain policy.",
+          "evidence": [
+            "ties.playback"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Print-only/sound-only ties, arbitrary engraving, ambiguous unisons and unsupported grace ties are outside this profile.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:tied[1]",
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[3]/element:tie[1]"
+      ],
+      "scope": "Paired measured pitched tie/tied endpoints preserve relation identity and exact continuous chains; local XML numbering is regenerated with diagnostics.",
+      "title": "Paired measured tie endpoints"
+    },
+    {
+      "id": "authored-slurs",
+      "layers": {
+        "export": {
+          "detail": "Start/stop pitched measured or before-principal grace endpoints with distinct IDs and optional exact bezier-x/y, orientation and placement; at most 16 simultaneously open XML numbers.",
+          "evidence": [
+            "slurs.roundtrip",
+            "slurs.reject",
+            "slurs.grace-anchors",
+            "slurs.number-capacity"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/slurs.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Start/stop pitched measured or before-principal grace endpoints with distinct IDs and optional exact bezier-x/y, orientation and placement; at most 16 simultaneously open XML numbers.",
+          "evidence": [
+            "slurs.roundtrip",
+            "slurs.reject",
+            "slurs.grace-anchors",
+            "slurs.number-capacity"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/slurs.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Start/stop pitched measured or before-principal grace endpoints with distinct IDs and optional exact bezier-x/y, orientation and placement; at most 16 simultaneously open XML numbers.",
+          "evidence": [
+            "slurs.roundtrip",
+            "slurs.reject",
+            "slurs.grace-anchors",
+            "slurs.number-capacity"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Authored slurs reject in ordinary and qualified playback; no silent legacy legato substitution.",
+          "evidence": [
+            "slurs.playback.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs",
+            "crates/scorestream-core/src/slur_extension.rs"
+          ],
+          "status": "blocked"
+        },
+        "render": {
+          "detail": "Preview withholds authored slur profiles instead of omitting or replacing endpoint geometry.",
+          "evidence": [
+            "slurs.render.reject"
+          ],
+          "implementation": [
+            "desktop/src/render/project.ts"
+          ],
+          "status": "blocked"
+        }
+      },
+      "limitations": "Continue, other line styles/geometry, unpitched/rest/cue anchors and general legacy-SFS conversion are not mapped. Printed geometry is not a legato playback policy.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:slur[1]"
+      ],
+      "scope": "Start/stop pitched measured or before-principal grace endpoints with distinct IDs and optional exact bezier-x/y, orientation and placement; at most 16 simultaneously open XML numbers.",
+      "title": "Authored slur endpoints"
+    },
+    {
+      "id": "printed-accidentals",
+      "layers": {
+        "export": {
+          "detail": "Seven signs (natural, sharp, flat, double-sharp, flat-flat, quarter-sharp, quarter-flat) and independent optional cautionary/parentheses flags on pitched measured/grace notes.",
+          "evidence": [
+            "accidentals.roundtrip",
+            "accidentals.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/accidentals.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Seven signs (natural, sharp, flat, double-sharp, flat-flat, quarter-sharp, quarter-flat) and independent optional cautionary/parentheses flags on pitched measured/grace notes.",
+          "evidence": [
+            "accidentals.roundtrip",
+            "accidentals.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/accidentals.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Seven signs (natural, sharp, flat, double-sharp, flat-flat, quarter-sharp, quarter-flat) and independent optional cautionary/parentheses flags on pitched measured/grace notes.",
+          "evidence": [
+            "accidentals.roundtrip",
+            "accidentals.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Printed signs do not change written pitch, transposition or the actual ordinary playback plan in tested cases.",
+          "evidence": [
+            "accidentals.playback"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Only explicit measured natural/sharp/flat in three pinned-Verovio cases asserting the exact SMuFL glyph and enclosure identities across all nine flag combinations; grace rendering and four other imported signs remain withheld.",
+          "evidence": [
+            "accidentals.render.natural",
+            "accidentals.render.sharp",
+            "accidentals.render.flat"
+          ],
+          "implementation": [
+            "desktop/src/render/project.ts"
+          ],
+          "status": "partial"
+        }
+      },
+      "limitations": "MusicXML accidental-value contains 41 values. Other values, editorial/bracket/style and SMuFL overrides remain outside this profile. This reference does not promote all enum values or SMuFL glyphs.",
+      "refs": [
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:accidental[1]",
+        "musicxml:schema/simpleType:accidental-value[1]"
+      ],
+      "scope": "Seven signs (natural, sharp, flat, double-sharp, flat-flat, quarter-sharp, quarter-flat) and independent optional cautionary/parentheses flags on pitched measured/grace notes.",
+      "title": "Authored accidental signs"
+    },
+    {
+      "id": "authored-beams",
+      "layers": {
+        "export": {
+          "detail": "Explicit beam levels, begin/continue/end and forward/backward hooks preserve authored ownership and absent number defaults through model/SFS/XML.",
+          "evidence": [
+            "beams.roundtrip",
+            "beams.reject",
+            "beams.hooks-rests-continue"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/beams.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Explicit beam levels, begin/continue/end and forward/backward hooks preserve authored ownership and absent number defaults through model/SFS/XML.",
+          "evidence": [
+            "beams.roundtrip",
+            "beams.reject",
+            "beams.hooks-rests-continue"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/beams.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Explicit beam levels, begin/continue/end and forward/backward hooks preserve authored ownership and absent number defaults through model/SFS/XML.",
+          "evidence": [
+            "beams.roundtrip",
+            "beams.reject",
+            "beams.hooks-rests-continue"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Tested repeated beamed notes retain route, tempo, expression and occurrence identity; beams are not timing instructions.",
+          "evidence": [
+            "beams.playback"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Authored beam profiles withhold preview rather than silently applying automatic beams.",
+          "evidence": [
+            "beams.render.reject"
+          ],
+          "implementation": [
+            "desktop/src/render/project.ts"
+          ],
+          "status": "blocked"
+        }
+      },
+      "limitations": "No automatic rebeaming substitutes for authored runs; unsupported styles, malformed runs and cross-feature cases still reject.",
+      "refs": [
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:beam[1]"
+      ],
+      "scope": "Explicit beam levels, begin/continue/end and forward/backward hooks preserve authored ownership and absent number defaults through model/SFS/XML.",
+      "title": "Authored beam roles and hooks"
+    },
+    {
+      "id": "barline-repeats",
+      "layers": {
+        "export": {
+          "detail": "Typed ordinary barline repeat boundaries and numbered endings agree across parts and preserve authored provenance; finite replay is tested.",
+          "evidence": [
+            "repeats.roundtrip",
+            "repeats.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/barlines.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Typed ordinary barline repeat boundaries and numbered endings agree across parts and preserve authored provenance; finite replay is tested.",
+          "evidence": [
+            "repeats.roundtrip",
+            "repeats.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/barlines.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Typed ordinary barline repeat boundaries and numbered endings agree across parts and preserve authored provenance; finite replay is tested.",
+          "evidence": [
+            "repeats.roundtrip",
+            "repeats.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Ordinary and tested multi-part ending routes have exact visit order; this is not a general D.C./D.S./coda interpreter.",
+          "evidence": [
+            "repeats.roundtrip",
+            "repeats.voltas"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs",
+            "crates/scorestream-core/src/repeat_traversal.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Not all barline styles, jump directions, nested traversal or implicit termination policies. Unclosed endings need an explicit qualified policy.",
+      "refs": [
+        "musicxml:schema/complexType:barline[1]/sequence[1]/element:ending[1]",
+        "musicxml:schema/complexType:barline[1]/sequence[1]/element:repeat[1]"
+      ],
+      "scope": "Typed ordinary barline repeat boundaries and numbered endings agree across parts and preserve authored provenance; finite replay is tested.",
+      "title": "Ordinary repeats and endings"
+    },
+    {
+      "id": "note-fermatas",
+      "layers": {
+        "export": {
+          "detail": "Authored note/rest/tie-stop anchors, bounded shapes, orientation and exact coordinates remain separate from measured duration and performance.",
+          "evidence": [
+            "fermatas.roundtrip",
+            "fermatas.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/fermatas.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Authored note/rest/tie-stop anchors, bounded shapes, orientation and exact coordinates remain separate from measured duration and performance.",
+          "evidence": [
+            "fermatas.roundtrip",
+            "fermatas.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/fermatas.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Authored note/rest/tie-stop anchors, bounded shapes, orientation and exact coordinates remain separate from measured duration and performance.",
+          "evidence": [
+            "fermatas.roundtrip",
+            "fermatas.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Default lowering rejects; qualified playback needs deliberate complete occurrence groups and hold durations. Finite global-hold fixture only.",
+          "evidence": [
+            "fermatas.qualified"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs",
+            "crates/scorestream-core/src/fermata_timing.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Barline fermatas are a different declaration and are not credited. No inferred hold length, merging or general engraving promise.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:fermata[1]"
+      ],
+      "scope": "Authored note/rest/tie-stop anchors, bounded shapes, orientation and exact coordinates remain separate from measured duration and performance.",
+      "title": "Authored note and rest fermatas"
+    },
+    {
+      "id": "before-principal-graces",
+      "layers": {
+        "export": {
+          "detail": "Unmeasured pitched before-principal grace order, slash absence/presence, written rhythm and exact authored timing intent are stored independently.",
+          "evidence": [
+            "graces.roundtrip",
+            "graces.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/graces.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Unmeasured pitched before-principal grace order, slash absence/presence, written rhythm and exact authored timing intent are stored independently.",
+          "evidence": [
+            "graces.roundtrip",
+            "graces.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/graces.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Unmeasured pitched before-principal grace order, slash absence/presence, written rhythm and exact authored timing intent are stored independently.",
+          "evidence": [
+            "graces.roundtrip",
+            "graces.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Qualified singleton playback needs a supported authored or explicit allocation; unqualified APIs remain closed.",
+          "evidence": [
+            "graces.qualified",
+            "graces.default.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs",
+            "crates/scorestream-core/src/grace_extension.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "No silent cue, after-grace, unpitched or universal grace scheduling. Playback policy must remain explicit, including combinations with holds and navigation.",
+      "refs": [
+        "musicxml:schema/complexType:note[1]/sequence[1]/choice[1]/sequence[1]/element:grace[1]"
+      ],
+      "scope": "Unmeasured pitched before-principal grace order, slash absence/presence, written rhythm and exact authored timing intent are stored independently.",
+      "title": "Pitched before-principal grace groups"
+    },
+    {
+      "id": "numeric-tempo",
+      "layers": {
+        "export": {
+          "detail": "Explicit sound tempo and simple numeric metronome beat/single-dot/per-minute stay in independent sounding and printed lanes with exact offsets.",
+          "evidence": [
+            "tempo.roundtrip",
+            "tempo.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/tempo.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Explicit sound tempo and simple numeric metronome beat/single-dot/per-minute stay in independent sounding and printed lanes with exact offsets.",
+          "evidence": [
+            "tempo.roundtrip",
+            "tempo.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/tempo.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Explicit sound tempo and simple numeric metronome beat/single-dot/per-minute stay in independent sounding and printed lanes with exact offsets.",
+          "evidence": [
+            "tempo.roundtrip",
+            "tempo.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Explicit sound tempos reach the tested real plan at exact pickup and within-note/rest positions.",
+          "evidence": [
+            "tempo.playback"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs",
+            "crates/scorestream-core/src/tempo_clock.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Words, compound metric modulation, parentheses/layout and nondecimal export remain outside this profile; printed marks alone do not dictate playback.",
+      "refs": [
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:metronome[1]",
+        "musicxml:schema/complexType:sound[1]/attribute:tempo[1]"
+      ],
+      "scope": "Explicit sound tempo and simple numeric metronome beat/single-dot/per-minute stay in independent sounding and printed lanes with exact offsets.",
+      "title": "Numeric tempo and simple metronome"
+    },
+    {
+      "id": "numeric-dynamics",
+      "layers": {
+        "export": {
+          "detail": "Exact numeric sound dynamics and a single supported printed symbol remain separate with independent scope/offset. Source numeric values are not replaced by visible labels.",
+          "evidence": [
+            "dynamics.roundtrip",
+            "dynamics.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/dynamics.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Exact numeric sound dynamics and a single supported printed symbol remain separate with independent scope/offset. Source numeric values are not replaced by visible labels.",
+          "evidence": [
+            "dynamics.roundtrip",
+            "dynamics.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/dynamics.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Exact numeric sound dynamics and a single supported printed symbol remain separate with independent scope/offset. Source numeric values are not replaced by visible labels.",
+          "evidence": [
+            "dynamics.roundtrip",
+            "dynamics.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Finite numeric dynamics fixtures reach actual playback without label-policy substitution.",
+          "evidence": [
+            "dynamics.playback"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Wedges/hairpins, compounds, words, unsupported symbols and note-notation dynamics are not credited. Numeric preservation does not guarantee realizable synthesis range.",
+      "refs": [
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:dynamics[1]",
+        "musicxml:schema/complexType:sound[1]/attribute:dynamics[1]"
+      ],
+      "scope": "Exact numeric sound dynamics and a single supported printed symbol remain separate with independent scope/offset. Source numeric values are not replaced by visible labels.",
+      "title": "Numeric dynamics and single printed marks"
+    },
+    {
+      "id": "staff-transposition",
+      "layers": {
+        "export": {
+          "detail": "Exact chromatic, optional diatonic and octave changes inherit per staff at measure boundaries; explicit zero resets and written pitch stay distinct.",
+          "evidence": [
+            "transpose.roundtrip",
+            "transpose.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Exact chromatic, optional diatonic and octave changes inherit per staff at measure boundaries; explicit zero resets and written pitch stay distinct.",
+          "evidence": [
+            "transpose.roundtrip",
+            "transpose.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Exact chromatic, optional diatonic and octave changes inherit per staff at measure boundaries; explicit zero resets and written pitch stay distinct.",
+          "evidence": [
+            "transpose.roundtrip",
+            "transpose.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Staff-local and all-staff transposition is applied once in tested sounding-pitch plans.",
+          "evidence": [
+            "transpose.playback"
+          ],
+          "implementation": [
+            "crates/scorestream-app/src/playback.rs"
+          ],
+          "status": "partial"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Mid-measure changes, unsupported double-transposition and other unmapped fields are not credited; finite-decimal export limits remain.",
+      "refs": [
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/choice[1]/element:transpose[1]"
+      ],
+      "scope": "Exact chromatic, optional diatonic and octave changes inherit per staff at measure boundaries; explicit zero resets and written pitch stay distinct.",
+      "title": "Measure-boundary staff transposition"
+    },
+    {
+      "id": "single-instrument-metadata",
+      "layers": {
+        "export": {
+          "detail": "Single-instrument identity, labels, sound identifiers and bounded explicit MIDI intent roundtrip without channel/program inference.",
+          "evidence": [
+            "instruments.roundtrip",
+            "instruments.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/instruments.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Single-instrument identity, labels, sound identifiers and bounded explicit MIDI intent roundtrip without channel/program inference.",
+          "evidence": [
+            "instruments.roundtrip",
+            "instruments.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/instruments.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Single-instrument identity, labels, sound identifiers and bounded explicit MIDI intent roundtrip without channel/program inference.",
+          "evidence": [
+            "instruments.roundtrip",
+            "instruments.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "Not credited by this ledger yet. Preserved data does not establish an interpretation.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "Not credited by this ledger yet. Import/roundtrip tests are not rendering evidence.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "No dynamic/multiple-instrument parts, unpitched mapping, synthesizer/sample-library acceptance or external MIDI device access is established by these tests.",
+      "refs": [
+        "musicxml:schema/complexType:score-part[1]/sequence[1]/element:score-instrument[1]",
+        "musicxml:schema/complexType:score-part[1]/sequence[1]/sequence[1]/element:midi-device[1]",
+        "musicxml:schema/complexType:score-part[1]/sequence[1]/sequence[1]/element:midi-instrument[1]"
+      ],
+      "scope": "Single-instrument identity, labels, sound identifiers and bounded explicit MIDI intent roundtrip without channel/program inference.",
+      "title": "Single-instrument identity and authored MIDI intent"
+    },
+    {
+      "id": "articulations",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]"
+      ],
+      "scope": "MusicXML articulation container and its distinct note-attack/length/accent meanings; legacy SFS atoms do not establish MusicXML mapping.",
+      "title": "Articulation semantics"
+    },
+    {
+      "id": "ornaments",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:ornaments[1]"
+      ],
+      "scope": "Trills, turns, mordents, tremolos and auxiliary accidentals need separate authored and performance contracts.",
+      "title": "Ornaments and realization"
+    },
+    {
+      "id": "technical-notation",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:technical[1]"
+      ],
+      "scope": "Bowing, fingering, harmonics, bends and other instrument techniques need typed semantics and independently tested routes.",
+      "title": "Instrument techniques"
+    },
+    {
+      "id": "lyrics",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:note[1]/sequence[1]/element:lyric[1]"
+      ],
+      "scope": "Syllables, text, extension spans, verse identities and layout need event-aligned model and roundtrip evidence.",
+      "title": "Lyrics and syllable alignment"
+    },
+    {
+      "id": "harmony-figured-bass",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:figured-bass[1]",
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:harmony[1]"
+      ],
+      "scope": "Chord symbols, inversions, degrees and bass figures are distinct from sounding chord-member notes.",
+      "title": "Harmony and figured bass"
+    },
+    {
+      "id": "percussion-tablature",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:percussion[1]",
+        "musicxml:schema/complexType:frame-note[1]/sequence[1]/element:fret[1]",
+        "musicxml:schema/complexType:frame-note[1]/sequence[1]/element:string[1]",
+        "musicxml:schema/complexType:staff-details[1]/sequence[1]/element:staff-tuning[1]",
+        "musicxml:schema/complexType:technical[1]/choice[1]/element:fret[1]",
+        "musicxml:schema/complexType:technical[1]/choice[1]/element:string[1]",
+        "musicxml:schema/group:full-note[1]/sequence[1]/choice[1]/element:unpitched[1]"
+      ],
+      "scope": "Unpitched identity, drum placement/routing and string/fret/tuning must not be inferred from glyphs.",
+      "title": "Percussion and tablature"
+    },
+    {
+      "id": "direction-spans",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:bracket[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:dashes[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:octave-shift[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:pedal[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:wedge[1]"
+      ],
+      "scope": "Hairpins, pedals, octave shifts and spanning directions need identity, scope, endpoint and realization policy.",
+      "title": "Expressive direction spans"
+    },
+    {
+      "id": "staff-state-vocabulary",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:clef[1]",
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:key[1]",
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:staff-details[1]",
+        "musicxml:schema/complexType:attributes[1]/sequence[1]/element:time[1]"
+      ],
+      "scope": "Existing finite state handling needs its own explicit value/context ledger; names are not coverage.",
+      "title": "Keys, meters, clefs and staff details"
+    },
+    {
+      "id": "page-system-layout",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/group:layout[1]/sequence[1]/element:page-layout[1]",
+        "musicxml:schema/group:layout[1]/sequence[1]/element:staff-layout[1]",
+        "musicxml:schema/group:layout[1]/sequence[1]/element:system-layout[1]",
+        "musicxml:schema/group:music-data[1]/sequence[1]/choice[1]/element:print[1]",
+        "musicxml:schema/group:score-header[1]/sequence[1]/element:defaults[1]"
+      ],
+      "scope": "Page/system/staff layout and source geometry need preservation versus regeneration policy and visual acceptance.",
+      "title": "Page and system engraving"
+    },
+    {
+      "id": "other-notation-smufl",
+      "layers": {
+        "export": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "import": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "model": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "playback": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        },
+        "render": {
+          "detail": "No reviewed executable contract credited here yet.",
+          "evidence": [],
+          "implementation": [],
+          "status": "unassessed"
+        }
+      },
+      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "refs": [
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
+        "musicxml:schema/complexType:direction-type[1]/choice[1]/element:other-direction[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:other-notation[1]",
+        "musicxml:schema/complexType:ornaments[1]/sequence[1]/choice[1]/element:other-ornament[1]",
+        "musicxml:schema/complexType:technical[1]/choice[1]/element:other-technical[1]"
+      ],
+      "scope": "Custom notation and SMuFL references need explicit symbol/semantic mapping, font metrics and render acceptance.",
+      "title": "Other notation and SMuFL overrides"
+    }
+  ],
+  "policy": "Bounded reference baseline, never a claim to all music theory or all attributes/values of a linked declaration. Omitted entries/layers are unassessed, not unsupported or supported. Every partial/blocked layer requires executable evidence.",
+  "schema_version": 1
+}
