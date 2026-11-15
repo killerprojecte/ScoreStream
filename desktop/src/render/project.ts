@@ -2,15 +2,17 @@ import type {View,ScoreEvent} from '../types';
 import {Q,rhythm} from './exact';
 import {projectMarks} from './marks';
 import {projectArticulations} from './articulations';
+import {projectAuthoredArticulations,type AuthoredProjection} from './authored-articulations';
 import {readMetadata} from '../app/metadata';
 const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 // Preserve authored label whitespace through XML text normalization.
 const labelEsc=(s:string)=>esc(s).replace(/[\t\n\r]/g,c=>`&#${c.charCodeAt(0)};`);
-export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.1';
-export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[]}{
+export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.2';
+export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[];authoredArticulations:AuthoredProjection|null}{
  if(!view.valid)throw Error('Only Rust-validated snapshots may be projected.');
  if(!view.events.length)throw Error('No measured events to engrave yet.');
  const warnings:string[]=[];const map:Record<string,string>={};
+ const authoredArticulations=projectAuthoredArticulations(view);
  const marks=projectMarks(view,warnings);
  const articulations=projectArticulations(view);
  if(view.states.some(s=>s.time!=='0'))throw Error('Mid-score state changes are not yet supported by this preview. Your source is preserved.');
@@ -53,7 +55,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    if(!p)throw Error(`Pitch ${e.pitch} is preserved but not supported by this preview.`);
    const acc:Record<string,string>={'#':'s','##':'ss',b:'f',bb:'ff'};
    const accidental=marks.forEvent(e.id,map);
-   const children=accidental+articulations.forEvent(e.id,map);
+   const children=accidental+articulations.forEvent(e.id,map)+authoredArticulations.forEvent(e.id,map);
    return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${!accidental&&p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}${withRhythm?stem:''}${children?`>${children}</note>`:'/>'}`;
  };
  const nominalLengths:Q[]=[];
@@ -105,8 +107,9 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  }).join('');
  marks.finish();
  articulations.finish();
+ authoredArticulations.finish();
  if(used.size!==view.events.length)throw Error('Some events are outside the declared measures or staff mapping. Preview withheld to avoid hiding music.');
  const metadata=readMetadata(view.document.metadata);
  const catalogTitle=metadata.title?`<title>${esc(metadata.title)}</title>`:'<title/>';
- return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt>${catalogTitle}</titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${groupedStaffDefs}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings};
+ return {mei:`<?xml version="1.0" encoding="UTF-8"?><mei xmlns="http://www.music-encoding.org/ns/mei" meiversion="5.0"><meiHead><fileDesc><titleStmt>${catalogTitle}</titleStmt><pubStmt/></fileDesc></meiHead><music><body><mdiv><score><scoreDef><staffGrp>${groupedStaffDefs}</staffGrp></scoreDef><section>${measureXml}</section></score></mdiv></body></music></mei>`,map,warnings,authoredArticulations:authoredArticulations.authored};
 }

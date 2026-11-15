@@ -51,10 +51,15 @@ hierarchy targets/onsets, ambiguous or ineligible hosts, and mixed legacy
 articulation/tie/slur/fermata notation on the same host fail validation. The
 family-only v1 wrapper model intentionally cannot flatten mixed-family wrappers.
 
-Core lowering/performance and desktop preview reject both the capability header
-and actual reserved authored mark kinds, including header bypass attempts. No
-accent, duration, velocity, ornament, line geometry, or glyph effect is applied.
-The four existing simple native articulation signs remain unchanged.
+Core lowering/performance still reject both the capability header and actual
+reserved authored mark kinds, including header bypass attempts. No sound policy
+is inferred. Desktop preview uses the separate bounded typed adapter documented
+in [Authored articulation engraving](../../docs/AUTHORED_ARTICULATION_ENGRAVING.md).
+It validates the complete hierarchy and rejects unsupported visible objects;
+header-only, missing-header and future-version inputs remain fail-closed. Its
+ordered receipts preserve wrappers, groups, hidden objects and compound-component
+identity separately from renderer-specific MEI. The four existing simple native
+articulation signs remain unchanged.
 
 Public core APIs: `articulation_extension::encode_event` encodes an ordered typed
 event with its caller-mapped native ID; `decode` reconstructs and validates the

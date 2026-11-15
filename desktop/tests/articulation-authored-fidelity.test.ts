@@ -8,11 +8,11 @@ describe('authored articulation fidelity boundary',()=>{
   const v=family as unknown as View;
   const marks=(v.document.frames??[]).flatMap(f=>f.records).filter(r=>r.record==='mark'&&r.kind==='scorestream.articulation.item');
   expect(marks).toHaveLength(17);
-  const before=JSON.stringify(v);expect(()=>project(v)).toThrow('Authored articulation signs');expect(JSON.stringify(v)).toBe(before);
+  const before=JSON.stringify(v);expect(()=>project(v)).toThrow('Authored articulation');expect(JSON.stringify(v)).toBe(before);
  });
  for(const version of ['1','2'])it(`withholds a header-only v${version} snapshot without modifying source`,()=>{
   const v=fixture();v.document.required_extensions=[`scorestream.articulation@${version}`];
-  const before=JSON.stringify(v);expect(()=>project(v)).toThrow('Authored articulation signs');expect(JSON.stringify(v)).toBe(before);
+  const before=JSON.stringify(v);expect(()=>project(v)).toThrow('Authored articulation');expect(JSON.stringify(v)).toBe(before);
  });
  for(const kind of ['event','notations','group','item','future'])it(`withholds actual ${kind} marks even without the header`,()=>{
   const v=fixture();v.document.frames=[{time:'0',records:[{record:'mark',kind:`scorestream.articulation.${kind}`,target:'#a',attributes:{event_index:0}}]}];

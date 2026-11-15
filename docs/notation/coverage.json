@@ -406,6 +406,76 @@
       "target": "authored_articulations",
       "test": "orientation_breath_and_caesura_authored_empty_are_not_replaced_by_defaults"
     },
+    "authored-articulations.engraving.all-ordinary": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "real pinned Verovio authored articulation SVG",
+      "test": "engraves the complete supported ordinary family together without dropping or substituting any leaf"
+    },
+    "authored-articulations.engraving.automatic-voices": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "real pinned Verovio authored articulation SVG",
+      "test": "lets native signs and compound components follow real automatic upper/lower-voice placement"
+    },
+    "authored-articulations.engraving.compound": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "real pinned Verovio authored articulation SVG",
+      "test": "keeps each repeated detached-legato dot nearer than its line without merging compound identities"
+    },
+    "authored-articulations.engraving.group-receipts": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "bounded authored family transport and receipts",
+      "test": "preserves ordered empty/repeated wrappers, groups, signs and source identities without reusing source IDs as SVG IDs"
+    },
+    "authored-articulations.engraving.hidden-text": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "bounded authored family transport and receipts",
+      "test": "suppresses hidden passive text and glyph names safely without evaluating markup or losing text"
+    },
+    "authored-articulations.engraving.inventory": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "bounded authored family transport and receipts",
+      "test": "enumerates all seventeen family capabilities explicitly"
+    },
+    "authored-articulations.engraving.object-refusal": {
+      "assertion": "rejection",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "bounded authored family transport and receipts",
+      "test": "keeps the complete all-seventeen Rust snapshot unchanged and refuses its first unsupported object"
+    },
+    "authored-articulations.engraving.orientation": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "real pinned Verovio authored articulation SVG",
+      "test": "keeps strong-accent up/down/omitted orientation independent from both placements and stem directions"
+    },
+    "authored-articulations.engraving.polyphony": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "real pinned Verovio authored articulation SVG",
+      "test": "renders independent chord members, simultaneous voices and lower staff without spreading marks to neighbors"
+    },
+    "authored-articulations.engraving.stacking": {
+      "assertion": "positive",
+      "file": "desktop/tests/authored-articulation-engraving.test.ts",
+      "runner": "vitest",
+      "suite": "real pinned Verovio authored articulation SVG",
+      "test": "retains repeated marks and authored mixed stacking order across repeated and empty groups/wrappers"
+    },
     "authored-articulations.event-order": {
       "assertion": "positive",
       "file": "crates/scorestream-formats/tests/authored_articulations.rs",
@@ -2348,7 +2418,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
             "schema_type": "empty-placement",
             "scope_class": "event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2360,7 +2430,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
             "schema_type": "breath-mark",
             "scope_class": "breath_pause",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves exact empty/comma/tick/upbow/salzedo strings and display fields; no breath timing or pause scope. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves exact empty/comma/tick/upbow/salzedo strings and display fields; no breath timing or pause scope. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2372,7 +2442,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
             "schema_type": "caesura",
             "scope_class": "phrase_break",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves exact empty/normal/thick/short/curved/single strings and display fields; no phrase-break timing or scope. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves exact empty/normal/thick/short/curved/single strings and display fields; no phrase-break timing or scope. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2384,7 +2454,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
             "schema_type": "empty-placement",
             "scope_class": "compound_event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct typed compound sign, never rewritten into two independent simple marks; no gate interpretation. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct typed compound sign, never rewritten into two independent simple marks; no gate interpretation. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2396,7 +2466,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct release-up sign and exact optional line fields; no destination pitch or bend is inferred. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct release-up sign and exact optional line fields; no destination pitch or bend is inferred. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2408,7 +2478,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct release-down sign and exact optional line fields; no destination pitch or bend is inferred. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct release-down sign and exact optional line fields; no destination pitch or bend is inferred. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2420,7 +2490,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
             "schema_type": "other-placement-text",
             "scope_class": "custom_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves passive exact text and optional ASCII NMTOKEN glyph reference; glyph existence, shape and performance are not inferred. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves passive exact text and optional ASCII NMTOKEN glyph reference; glyph existence, shape and performance are not inferred. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2432,7 +2502,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct approach-from-above sign and exact optional line fields; no starting pitch or bend is inferred. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct approach-from-above sign and exact optional line fields; no starting pitch or bend is inferred. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2444,7 +2514,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct approach-from-below sign and exact optional line fields; no starting pitch or bend is inferred. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct approach-from-below sign and exact optional line fields; no starting pitch or bend is inferred. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2456,7 +2526,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
             "schema_type": "empty-placement",
             "scope_class": "stress_event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored soft-accent sign, not ordinary accent or velocity. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored soft-accent sign, not ordinary accent or velocity. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2468,7 +2538,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
             "schema_type": "empty-placement",
             "scope_class": "technique_dependent_event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored sign, not aliased to staccato or inferred instrument technique. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored sign, not aliased to staccato or inferred instrument technique. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2480,7 +2550,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccatissimo[1]",
             "schema_type": "empty-placement",
             "scope_class": "event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2492,7 +2562,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccato[1]",
             "schema_type": "empty-placement",
             "scope_class": "event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2504,7 +2574,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
             "schema_type": "empty-placement",
             "scope_class": "stress_event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored stress sign, not ordinary accent or velocity. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored stress sign, not ordinary accent or velocity. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2516,7 +2586,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
             "schema_type": "strong-accent",
             "scope_class": "oriented_event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves optional up/down orientation independently of placement, including absent versus explicit up; no glyph or attack policy. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves optional up/down orientation independently of placement, including absent versus explicit up; no glyph or attack policy. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2528,7 +2598,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
             "schema_type": "empty-placement",
             "scope_class": "event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared import limits, full playback withholding and bounded engraving limits remain."
           },
           {
             "evidence": [
@@ -2540,7 +2610,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]",
             "schema_type": "empty-placement",
             "scope_class": "stress_event_symbol",
-            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored unstress sign, not discarded or translated to dynamics. Shared limits and runtime withholding remain."
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored unstress sign, not discarded or translated to dynamics. Shared import limits, full playback withholding and bounded engraving limits remain."
           }
         ],
         "parent": "musicxml:schema/complexType:articulations[1]/choice[1]"
@@ -2623,18 +2693,30 @@
           "status": "blocked"
         },
         "render": {
-          "detail": "Actual synthetic MusicXML→typed model→SFS→Workspace snapshot contains all 17 signs. Preview refuses the authored header or reserved marks before engraving; no glyph or layout support is credited. Existing four-sign legacy rendering is unchanged.",
+          "detail": "Bounded Verovio 5.6.0 adapter renders seven ordinary signs with automatic/explicit placement and stroke-correct spiccato, stress and unstress only with explicit placement. Deterministic leaf/component IDs, ordered hierarchy receipts, independent orientation, duplicates, compound stacking, chord/voice/staff hosts and hidden print wrappers are verified in actual SVG. Visible coordinates/styles, seven other choices and unresolved glyph orientation refuse the exact object. The original all-17 synthetic Rust snapshot still refuses unchanged.",
           "evidence": [
             "authored-articulations.snapshot",
-            "authored-articulations.render-reject"
+            "authored-articulations.render-reject",
+            "authored-articulations.engraving.inventory",
+            "authored-articulations.engraving.group-receipts",
+            "authored-articulations.engraving.hidden-text",
+            "authored-articulations.engraving.object-refusal",
+            "authored-articulations.engraving.orientation",
+            "authored-articulations.engraving.automatic-voices",
+            "authored-articulations.engraving.stacking",
+            "authored-articulations.engraving.compound",
+            "authored-articulations.engraving.polyphony",
+            "authored-articulations.engraving.all-ordinary"
           ],
           "implementation": [
+            "desktop/src/render/authored-articulations.ts",
+            "desktop/src/render/project.ts",
             "desktop/src/render/marks.ts"
           ],
-          "status": "blocked"
+          "status": "partial"
         }
       },
-      "limitations": "No same-event mixing with tied/slur/fermata or legacy articulation marks; no editorial footnote/level, rest/unpitched/grace anchors, other notation families, full Unicode source-ID/NMTOKEN profile, arbitrary XML or attribute bags. Decimal input retains the existing 64-character bound and MusicXML output needs finite decimals within 32 places and 64 characters; native rational values remain exact. All authored-v1 runtime effects are withheld, including otherwise simple signs. No inferred breath/caesura timing, pitch transitions, instrument technique or velocity policy. Wrapper/group/item order is exact; top-level event-association order follows XML voice serialization with explicit normalization reporting and remains exact in native SFS. Synthetic snapshots/probes do not establish untouched 32c acceptance; its independent metadata boundary is unchanged.",
+      "limitations": "No same-event mixing with tied/slur/fermata or legacy articulation marks; no editorial footnote/level, rest/unpitched/grace anchors, other notation families, full Unicode source-ID/NMTOKEN profile, arbitrary XML or attribute bags. Decimal input retains the existing 64-character bound and MusicXML output needs finite decimals within 32 places and 64 characters; native rational values remain exact. All authored-v1 playback effects remain withheld. Engraving is limited to the documented ten ordinary signs, three requiring explicit placement; visible appearance/coordinate fields and seven other choices remain unsupported. Hidden known objects are intentionally not printed and remain in typed receipts. MEI note children are not a lossless serialization of source wrapper/group topology. No inferred breath/caesura timing, pitch transitions, instrument technique or velocity policy. Wrapper/group/item order is exact; top-level event-association order follows XML voice serialization with explicit normalization reporting and remains exact in native SFS. Synthetic snapshots/probes do not establish untouched 32c acceptance; its independent metadata boundary is unchanged.",
       "refs": [
         "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
@@ -2655,8 +2737,8 @@
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]"
       ],
-      "scope": "MusicXmlOptions.articulations=AuthoredV1 only: all 16 defined MusicXML 4.0 choices plus passive other-articulation on measured pitched events. Ordered articulation-only notations wrappers/groups/items, repeated signs, empty groups and additional empty wrappers, optional source IDs/print-object, typed exact print-style and per-choice fields. Default import remains LegacySimple; this is a representation/interchange checkpoint, not desktop import or runtime completion.",
-      "title": "Opt-in authored articulation family v1, runtime withheld"
+      "scope": "MusicXmlOptions.articulations=AuthoredV1 only: all 16 defined MusicXML 4.0 choices plus passive other-articulation on measured pitched events. Ordered articulation-only notations wrappers/groups/items, repeated signs, empty groups and additional empty wrappers, optional source IDs/print-object, typed exact print-style and per-choice fields. Default import remains LegacySimple; representation/interchange plus bounded ordinary-sign engraving, not desktop-import-default or performance completion.",
+      "title": "Opt-in authored articulation family v1, bounded ordinary engraving"
     }
   ],
   "integrated_checkpoints": {

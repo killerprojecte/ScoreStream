@@ -11,7 +11,7 @@ MusicXML, native SFS, desktop preview and the existing SFS playback policy:
 This default profile does not claim complete MusicXML notation support or complete performance
 interpretation of every articulation. Strong-accent orientation, breath-mark
 shapes, detached-legato, spiccato, scoops, falls, stress and other marks remain
-explicit unsupported errors in the default profile. The separate opt-in authored v1 profile below now retains their typed authoring data, without runtime realization. No source element is deleted to make a score load.
+explicit unsupported errors in the default profile. The separate opt-in authored v1 profile below now retains their typed authoring data. The later [bounded engraving adapter](AUTHORED_ARTICULATION_ENGRAVING.md) realizes the ordinary-sign subset; playback remains withheld. No source element is deleted to make a score load.
 
 ## Semantic contract
 
@@ -193,11 +193,12 @@ normalization reports; the default profile is not changed.
 - Decimal input retains the 64-character bound. MusicXML export requires exact
   finite decimals within the existing 32-place and 64-character output bounds. Native rational values such
   as 1/3 survive SFS but reject XML export rather than rounding.
-- All authored-v1 rendering and playback are **withheld**, even if a rich group
-  happens to contain a simple staccato. Both the requirement and actual reserved
-  record kinds trigger fail-closed guards before preview/performance. No glyph
-  test, acoustic result, pitch transition, breath policy or velocity policy is
-  claimed for this checkpoint.
+- At the original representation checkpoint, authored-v1 rendering and playback
+  were withheld. The subsequent [bounded engraving adapter](AUTHORED_ARTICULATION_ENGRAVING.md)
+  now draws seven ordinary signs with automatic/explicit placement and three
+  more with explicit placement. Unsupported objects still refuse the whole
+  preview. Playback remains withheld for the complete authored capability; no
+  acoustic result, pitch transition, breath policy or velocity policy is claimed.
 
 ### Evidence and independent originals
 

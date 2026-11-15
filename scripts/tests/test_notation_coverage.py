@@ -156,7 +156,7 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(report["choice_import_counts"]["articulations"], {"blocked": 13, "partial": 4})
         self.assertTrue(all(c["scope_class"] and c["why_incomplete"] for c in choices))
 
-    def test_authored_family_is_separate_opt_in_with_no_runtime_credit(self):
+    def test_authored_family_remains_opt_in_with_bounded_render_and_no_playback_credit(self):
         by_id = {f["id"]: f for f in self.ledger["features"]}
         authored = by_id["authored-articulations"]
         legacy = by_id["articulations"]
@@ -166,8 +166,13 @@ class CoverageTests(unittest.TestCase):
         self.assertTrue(all(c["import_status"] == "partial" for c in authored["choice_inventory"]["entries"]))
         for layer in ["model", "import", "export"]:
             self.assertEqual(authored["layers"][layer]["status"], "partial")
-        for layer in ["render", "playback"]:
-            self.assertEqual(authored["layers"][layer]["status"], "blocked")
+        self.assertEqual(authored["layers"]["render"]["status"], "partial")
+        self.assertEqual(authored["layers"]["playback"]["status"], "blocked")
+        self.assertIn("authored-articulations.engraving.all-ordinary", authored["layers"]["render"]["evidence"])
+        self.assertIn("authored-articulations.render-reject", authored["layers"]["render"]["evidence"])
+        for sign in ["spiccato", "stress", "unstress"]:
+            self.assertIn(sign, authored["layers"]["render"]["detail"])
+        self.assertIn("explicit placement", authored["layers"]["render"]["detail"])
         report = n.report(self.catalog, self.ledger, n.check(self.catalog, self.ledger))
         self.assertEqual(report["choice_import_counts"]["authored-articulations"], {"partial": 17})
         self.assertEqual(report["choice_import_counts"]["articulations"], {"blocked": 13, "partial": 4})
