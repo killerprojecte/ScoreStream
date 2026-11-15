@@ -296,6 +296,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
             }
         }
     }
+    let barlines = super::barlines::output(score, &mut xml_ids, &mut report);
     // Partwise measure positions are shared. Reject ambiguous independent part timelines.
     let first = &score.parts[0];
     for p in score.parts.iter().skip(1) {
@@ -417,6 +418,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                 if m.implicit { "yes" } else { "no" }
             )
             .unwrap();
+            barlines.emit(&mut out, &m.id, BarlineLocation::Left);
             writeln!(out, "      <attributes><divisions>{div}</divisions>").unwrap();
             for s in &m.states {
                 if let Some(key) = s.key {
@@ -558,6 +560,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                     writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&m.length - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                 }
             }
+            barlines.emit(&mut out, &m.id, BarlineLocation::Right);
             out.push_str("    </measure>\n");
         }
         out.push_str("  </part>\n");

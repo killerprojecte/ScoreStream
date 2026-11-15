@@ -7,6 +7,7 @@ mod model;
 pub mod notation;
 mod rational;
 mod registry;
+pub mod repeat_traversal;
 pub mod score;
 mod validate;
 pub use metadata::*;

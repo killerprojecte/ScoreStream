@@ -166,6 +166,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         ties: vec![],
         tempos: vec![],
         metronomes: vec![],
+        barlines: vec![],
     };
     for p in &doc.parts {
         score.parts.push(ScorePart {
@@ -505,6 +506,9 @@ impl Ids {
 /// Export through the original codec after common and SFS semantic validation.
 pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, MappingReport> {
     let mut report = validate_score(score);
+    if !score.barlines.is_empty() {
+        unsupported(&mut report, "barline.sfs_mapping", "/barlines");
+    }
     if report.has_errors() {
         return Err(report);
     }

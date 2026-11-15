@@ -652,6 +652,7 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                     "forward",
                     "direction",
                     "sound",
+                    "barline",
                 ],
                 &[
                     "attributes",
@@ -660,6 +661,7 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                     "forward",
                     "direction",
                     "sound",
+                    "barline",
                 ],
                 &[],
                 false,
@@ -681,6 +683,16 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
             ),
             "sound" => (&["tempo"], &["offset"], &[], &[], false),
             "offset" => (&["sound"], &[], &[], &[], true),
+            "barline" => (
+                &["id", "location"],
+                &["bar-style", "ending", "repeat"],
+                &[],
+                &[],
+                false,
+            ),
+            "bar-style" => (&[], &[], &[], &[], true),
+            "repeat" => (&["direction", "times"], &[], &[], &[], false),
+            "ending" => (&["number", "type", "default-y"], &[], &[], &[], true),
             "attributes" => (
                 &[],
                 &["divisions", "key", "time", "staves", "clef", "transpose"],

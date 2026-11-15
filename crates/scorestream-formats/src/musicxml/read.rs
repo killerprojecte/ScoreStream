@@ -345,6 +345,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
                     staff: 1,
                 });
             }
+            score.barlines.append(&mut reader.barlines);
             tie_endpoints.append(&mut reader.tie_endpoints);
             score.tempos.append(&mut reader.tempos);
             score.metronomes.append(&mut reader.metronomes);
@@ -365,6 +366,20 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             part.ok_or_else(|| error(&root, "part.reference", "Part disappeared between passes"))
         })
         .collect::<Result<_>>()?;
+    let bar_order: BTreeMap<_, _> = score
+        .parts
+        .iter()
+        .enumerate()
+        .flat_map(|(pi, p)| {
+            p.measures
+                .iter()
+                .enumerate()
+                .map(move |(mi, m)| ((&p.id, m.id.as_str()), (pi, mi)))
+        })
+        .collect();
+    score
+        .barlines
+        .sort_by_key(|b| (bar_order[&(&b.part, b.measure.as_str())], b.location));
     if let Some(first) = score.parts.first() {
         for part in score.parts.iter().skip(1) {
             if part.measures.len() != first.measures.len()
@@ -402,6 +417,7 @@ struct PartReader {
     tie_endpoints: BTreeMap<EventId, super::ties::Endpoints>,
     tempos: Vec<ScoreTempo>,
     metronomes: Vec<ScoreMetronome>,
+    barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
     fn new(
@@ -438,6 +454,7 @@ impl PartReader {
             tie_endpoints: BTreeMap::new(),
             tempos: vec![],
             metronomes: vec![],
+            barlines: vec![],
         })
     }
     fn measure(
@@ -457,6 +474,7 @@ impl PartReader {
             tie_endpoints,
             tempos,
             metronomes,
+            barlines,
         } = self;
         let part_index = *part_index;
         let mi = part.measures.len();
@@ -476,6 +494,7 @@ impl PartReader {
         };
         let tempo_start = tempos.len();
         let metronome_start = metronomes.len();
+        barlines.extend(super::barlines::read_measure(measure, &part.id, &m.id)?);
         let mut cursor = Rational::zero();
         let mut extent = Rational::zero();
         let mut moved = false;
@@ -483,6 +502,9 @@ impl PartReader {
         let mut previous: Option<usize> = None;
         for n in &measure.children {
             match n.name.as_str() {
+                "barline" => {
+                    previous = None;
+                }
                 "attributes" => {
                     previous = None;
                     if moved {

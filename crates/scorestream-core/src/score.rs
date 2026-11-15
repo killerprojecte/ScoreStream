@@ -18,6 +18,9 @@ pub struct ScoreDocument {
     /// Printed numeric metronome marks. These never implicitly change playback tempo.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub metronomes: Vec<ScoreMetronome>,
+    /// Authored per-part boundary signs. Performance navigation is derived separately.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub barlines: Vec<ScoreBarline>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -169,4 +172,69 @@ pub struct TimeModification {
     pub normal: u32,
     pub normal_type: Option<NoteType>,
     pub normal_dots: u32,
+}
+
+/// An authored boundary, retained in its original part and measure.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreBarline {
+    pub part: PartId,
+    pub measure: String,
+    pub location: BarlineLocation,
+    pub id: Option<String>,
+    /// None preserves the absence of an explicit line style.
+    pub style: Option<BarlineStyle>,
+    pub repeat: Option<RepeatSign>,
+    pub ending: Option<EndingSign>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BarlineLocation {
+    Left,
+    Right,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum BarlineStyle {
+    Regular,
+    Dotted,
+    Dashed,
+    Heavy,
+    LightLight,
+    LightHeavy,
+    HeavyLight,
+    HeavyHeavy,
+    Tick,
+    Short,
+    None,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RepeatDirection {
+    Backward,
+    Forward,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RepeatSign {
+    pub direction: RepeatDirection,
+    /// Authored count, not an implicitly inserted two-pass convention.
+    pub times: Option<u32>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum EndingPhase {
+    Stop,
+    Discontinue,
+    Start,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EndingSign {
+    pub passes: Vec<u32>,
+    pub phase: EndingPhase,
+    /// Optional display override, independent of the performed pass numbers.
+    pub text: String,
+    /// Exact authored vertical placement in tenths, not a performance control.
+    pub default_y: Option<Rational>,
 }

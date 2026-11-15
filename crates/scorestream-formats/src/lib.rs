@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 pub mod musicxml;
 pub mod mxl;
+pub mod navigation;
 pub mod sfs;
 mod tempo;
 mod ties;
