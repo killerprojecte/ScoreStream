@@ -3,6 +3,7 @@
 pub mod musicxml;
 pub mod mxl;
 pub mod sfs;
+mod ties;
 mod validate;
 use scorestream_core::{SourceRange, score::ScoreDocument};
 use serde::{Deserialize, Serialize};

@@ -182,5 +182,6 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             }
         }
     }
+    crate::ties::validate(score, &mut report);
     report
 }

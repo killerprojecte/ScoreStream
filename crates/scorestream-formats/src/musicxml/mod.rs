@@ -1,5 +1,6 @@
 //! Small strict MusicXML 4.0 score-partwise profile; not complete MusicXML support.
 mod read;
+mod ties;
 mod write;
 mod xml;
 use crate::{Conversion, MappingReport, ScoreAdapter};

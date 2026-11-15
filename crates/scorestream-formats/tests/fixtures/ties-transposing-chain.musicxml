@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original test miniature dedicated to CC0; not a Beethoven excerpt. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>clarinet</part-name><score-instrument id="I1"><instrument-name>clarinet</instrument-name></score-instrument></score-part></part-list>
+  <part id="P1">
+    <measure id="m1" number="1">
+      <attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time><transpose><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose></attributes>
+      <note id="a"><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><tie type="start"/><voice>1</voice><type>quarter</type><notations><tied type="start" number="2"/></notations></note>
+    </measure>
+    <measure id="m2" number="2">
+      <note id="b"><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><tie type="stop"/><tie type="start"/><voice>1</voice><type>quarter</type><notations><tied type="stop" number="2"/><tied type="start" number="4"/></notations></note>
+    </measure>
+    <measure id="m3" number="3">
+      <attributes><transpose><diatonic>0</diatonic><chromatic>0</chromatic></transpose></attributes>
+      <note id="c"><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><tie type="stop"/><voice>1</voice><type>quarter</type><notations><tied type="stop" number="4"/></notations></note>
+    </measure>
+  </part>
+</score-partwise>

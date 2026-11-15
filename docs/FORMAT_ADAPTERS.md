@@ -1,6 +1,6 @@
 # 格式转换：共享模型和第一批 MusicXML 映射
 
-这是**严格、有限的 MusicXML 4.0 score-partwise 转换器**，不是“所有 MusicXML 已支持”。压缩 `.mxl`、score-timewise、MuseScore `.mscz` 均未实现。用户提到的 MCSZ 可能是 MSCZ，不能在没有确认格式的情况下套用 XML 解析。
+这是**严格、有限的 MusicXML 4.0 score-partwise 转换器**，不是“所有 MusicXML 已支持”。压缩 `.mxl` 已有独立的[严格容器读取入口](MXL_CONTAINERS.md)，复用同一个语义转换器；这不代表压缩包内的所有乐谱符号都能转换。score-timewise、MuseScore `.mscz` 仍未实现。用户提到的 MCSZ 可能是 MSCZ，不能在没有确认格式的情况下套用 XML 解析。
 
 ## 分层与可运行命令
 
@@ -35,6 +35,7 @@ cargo run --locked -p scorestream-cli -- convert musicxml sfs crates/scorestream
 | 谱表状态 | 小节开头的五度圈 key、普通/加法拍号、G/F/C clef。状态跨小节继承；每个谱表单独建模。不支持 mode、非传统调号、特殊谱号、中途变化、改变谱表数量或不等长复拍。 |
 | 移调 | 小节开头的 transpose：chromatic 精确有理数、可选 diatonic、octave-change。无 number 时展开到全部谱表，有 number 时只影响指定谱表；继承到后续小节，显式零值可以重置。保留书写音高和书写调号，播放阶段只应用一次。见 [移调边界与验证](TRANSPOSITION_IMPORT.md)。 |
 | 音符 | 有拼写的音高和休止符、声轨与谱表、独立精确时值。可跨谱表和弦，但 `<chord/>` 不推进游标；每个和弦音保持自身时值，副音不可长于首音。SFS 允许更长副音时，导出明确失败，不私自换首音。 |
+| 延音线 | 普通成对 `<tie>` 声音与 `<tied>` 记谱端点进入有身份的 `ScoreTie`，保留独立音符和跨小节连续性。支持精确编号配对、连续 stop/start 和可判定的跨谱表连接；局部编号规范化为关系身份。详见 [边界与播放验证](TIE_IMPORT.md)。 |
 | 写法 | note type、dots、time-modification，以及 normal-type/normal-dot。真实 duration 与书写时值分别保留，不二次套用连音比例。 |
 | 元数据 | title/work-title、work_number、movement-title、composer/lyricist/arranger、显式 type=author 的顺序 authors、rights。所有内容按纯文本转义；不会当 markup 执行。 |
 
@@ -44,7 +45,7 @@ MusicXML 的声轨编号是声部局部的，不等于 SFS 全局身份。MusicX
 
 ## 明确的拒绝，不静默删掉
 
-当前所有未实现元素和属性都造成失败，包括表情/力度 direction、连线/延音/装饰 notations、歌词、和声、反复、打击乐、倚音、cue、谱面布局与外部资源。SFS 侧无法进入公共转换模型的 marks/relations/state/event 属性同样失败。因此 `ScoreDocument` 目前是第一批转换域模型，**尚不是**所有音乐符号的完整作者模型。既有 SFS 播放方向类型仍在 notation 模块中，不会因为转换器未映射而被删掉或绕过。
+当前所有未实现元素和属性都造成失败，包括表情/力度 direction、普通延音线以外的连线/装饰 notations、歌词、和声、反复、打击乐、倚音、cue、谱面布局与外部资源。SFS 侧无法进入公共转换模型的 marks/relations/state/event 属性同样失败。因此 `ScoreDocument` 目前是第一批转换域模型，**尚不是**所有音乐符号的完整作者模型。既有 SFS 播放方向类型仍在 notation 模块中，不会因为转换器未映射而被删掉或绕过。
 
 共享元数据中的 description、header、footer、subtitle、language 在 SFS → 模型 → SFS 中保留；当前没有可证明无损的 MusicXML 导出映射，所以只在导出 XML 时明确失败。未知 creator 角色、缺少角色的 creator、多个 composer 等不能用现有单字符串字段表达，也不会合并丢失身份。XML 不允许的控制字符不会被清洗后假装成功。
 
@@ -56,7 +57,7 @@ MusicXML 的声轨编号是声部局部的，不等于 SFS 全局身份。MusicX
 
 安全预算针对异常的单个结构：48 层深度、单个 token/元素文本最多 1 MiB、当前一个头部或小节最多 100,000 个保留元素和 8 MiB 源内容及保留路径的字节预算、元素/属性名最多 256 字节、每节点最多 256 属性和不同子元素名。这些不是整首乐谱的长度上限。诊断最多 1,024 条，截断摘要保留失败状态，单条文本也有长度预算。
 
-只接受 UTF-8 XML 1.0，转换仍要求显式 MusicXML version=4.0。唯一接受的 DOCTYPE 是固定的官方 MusicXML 4.0 partwise PUBLIC 声明，作为不执行的声明元数据处理；不会打开其中的 URL。内部 DTD 子集、实体声明、其他外部标识及处理指令仍拒绝。没有外部实体解析器，也不会读取本机文件或请求网络实体。标准字符引用及预定义实体可解析，非法 XML 字符不能进入输出。压缩 MXL 仍未实现，因此不会展开压缩内容。
+只接受 UTF-8 XML 1.0，转换仍要求显式 MusicXML version=4.0。唯一接受的 DOCTYPE 是固定的官方 MusicXML 4.0 partwise PUBLIC 声明，作为不执行的声明元数据处理；不会打开其中的 URL。内部 DTD 子集、实体声明、其他外部标识及处理指令仍拒绝。没有外部实体解析器，也不会读取本机文件或请求网络实体。标准字符引用及预定义实体可解析，非法 XML 字符不能进入输出。压缩 MXL 使用[独立容器验证](MXL_CONTAINERS.md)读取并校验声明的根乐谱，再进入同一个增量 XML 读取器；不会按归档路径任意解压文件。
 
 独立的只读检查命令 `cargo run --locked -p scorestream-cli -- scan-musicxml input.musicxml` 输出字节、元素、声部、小节、音符数及最大同时保留节点数。它检查 XML 读取和结构安全，不执行符号映射；成功不能解释为全谱无损转换成功。`inspect-format` 和 `convert` 仍完整执行严格映射，不会忽略未支持的音符或符号。
 
@@ -71,7 +72,7 @@ cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-后续应按域补充 ScoreDocument 和双向映射，并在每次新增符号前确定锚点、作用域和损失策略。MXL 解包、MuseScore MSCZ、渲染迁移、演奏语义接入各有独立验收，不由当前 CLI 入口推定完成。
+后续应按域补充 ScoreDocument 和双向映射，并在每次新增符号前确定锚点、作用域和损失策略。MXL 容器读取、MuseScore MSCZ、渲染迁移和其它演奏语义各有独立验收；本次普通延音线的实际播放计划测试不代表所有符号、桌面谱面或原版总谱已经导入成功。
 
 ## 一手参考
 

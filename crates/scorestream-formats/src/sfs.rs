@@ -1,6 +1,6 @@
 //! Loss-aware bridge between the SFS 1.1 wire AST and the common score model.
 use crate::{Conversion, Format, MappingEffect, MappingReport, ScoreAdapter, validate_score};
-use scorestream_core::notation::{EventId, InstrumentId, PartId, VoiceId};
+use scorestream_core::notation::{EventId, InstrumentId, PartId, RelationId, VoiceId};
 use scorestream_core::score::*;
 use scorestream_core::{self as core, *};
 use std::collections::{BTreeMap, BTreeSet};
@@ -163,6 +163,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     let mut score = ScoreDocument {
         metadata: doc.metadata.clone(),
         parts: vec![],
+        ties: vec![],
     };
     for p in &doc.parts {
         score.parts.push(ScorePart {
@@ -210,6 +211,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     for p in &mut score.parts {
         p.measures.sort_by(|a, b| a.start.cmp(&b.start));
     }
+    let mut tie_groups: BTreeMap<&str, Vec<(&Rational, &Relation)>> = BTreeMap::new();
     let mut next_id = 0;
     let mut used: BTreeSet<String> = doc
         .events()
@@ -221,7 +223,20 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Measure(_) => {}
                 Record::Mark(m) => unsupported(&mut report, &format!("mark:{}", m.kind), &m.target),
                 Record::Relation(rel) => {
-                    unsupported(&mut report, &format!("relation:{}", rel.kind), &rel.id)
+                    if rel.kind != "tie" {
+                        unsupported(&mut report, &format!("relation:{}", rel.kind), &rel.id);
+                        continue;
+                    }
+                    attrs(&mut report, &rel.attributes, &["sound", "print"], &rel.id);
+                    if ["sound", "print"].iter().any(|key| {
+                        rel.attributes.get(*key).and_then(Scalar::as_bool) == Some(false)
+                    }) {
+                        unsupported(&mut report, "tie.sound_notation_mismatch", &rel.id);
+                    }
+                    tie_groups
+                        .entry(&rel.id)
+                        .or_default()
+                        .push((&frame.time, rel));
                 }
                 Record::State(s) => {
                     if s.attributes.is_empty() {
@@ -397,6 +412,16 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 }
             }
         }
+    }
+    for (id, mut group) in tie_groups {
+        group.sort_by(|a, b| a.0.cmp(b.0));
+        score.ties.push(ScoreTie {
+            id: RelationId(id.into()),
+            events: group
+                .into_iter()
+                .map(|(_, rel)| EventId(rel.anchor.trim_start_matches('#').into()))
+                .collect(),
+        });
     }
     let end = score
         .parts
@@ -642,6 +667,32 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             let end = &m.start + &m.length;
             if end > doc.end {
                 doc.end = end;
+            }
+        }
+    }
+    if !score.ties.is_empty() {
+        let index = crate::ties::event_index(score);
+        let mut relations = Ids::new(score.ties.iter().map(|tie| tie.id.0.clone()), "tie");
+        for tie in &score.ties {
+            let id = relations.get(&tie.id.0, &mut report);
+            for (i, event) in tie.events.iter().enumerate() {
+                frames
+                    .entry(index[event].start.clone())
+                    .or_default()
+                    .push(Record::Relation(Relation {
+                        kind: "tie".into(),
+                        id: id.clone(),
+                        phase: if i == 0 {
+                            RelationPhase::Start
+                        } else if i + 1 == tie.events.len() {
+                            RelationPhase::End
+                        } else {
+                            RelationPhase::Continue
+                        },
+                        anchor: format!("#{}", events.get(&event.0, &mut report)),
+                        attributes: Attributes::new(),
+                        source: SourceRange::default(),
+                    }));
             }
         }
     }

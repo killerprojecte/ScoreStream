@@ -293,6 +293,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
     let declared: Vec<_> = declarations.children_named("score-part").collect();
     let mut parts: Vec<Option<ScorePart>> = vec![None; declared.len()];
     let mut active = None;
+    let mut tie_endpoints = BTreeMap::new();
     input.seek(SeekFrom::Start(beginning)).map_err(io_error)?;
     let second_pass = xml::walk(&mut input, |node, parent, phase| {
         // A seekable source can change between passes. Never rely on prior validation
@@ -344,6 +345,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
                     staff: 1,
                 });
             }
+            tie_endpoints.append(&mut reader.tie_endpoints);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -378,6 +380,7 @@ pub fn read_reader<R: BufRead + Seek>(mut input: R) -> Result<Conversion<ScoreDo
             }
         }
     }
+    score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
     report.append(validate_score(&score));
     report.finish(score)
 }
@@ -393,6 +396,7 @@ struct PartReader {
     voice_map: BTreeMap<String, VoiceId>,
     start: Rational,
     note_counter: usize,
+    tie_endpoints: BTreeMap<EventId, super::ties::Endpoints>,
 }
 impl PartReader {
     fn new(
@@ -426,6 +430,7 @@ impl PartReader {
             voice_map: BTreeMap::new(),
             start: Rational::zero(),
             note_counter,
+            tie_endpoints: BTreeMap::new(),
         })
     }
     fn measure(
@@ -442,6 +447,7 @@ impl PartReader {
             voice_map,
             start,
             note_counter,
+            tie_endpoints,
         } = self;
         let part_index = *part_index;
         let mi = part.measures.len();
@@ -782,6 +788,9 @@ impl PartReader {
                         .attr("id")
                         .map(String::from)
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
+                    if let Some(endpoints) = super::ties::read_endpoints(n)? {
+                        tie_endpoints.insert(EventId(id.clone()), endpoints);
+                    }
                     m.events.push(ScoreEvent {
                         id: EventId(id),
                         voice: v,

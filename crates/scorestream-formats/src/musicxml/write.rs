@@ -154,7 +154,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
             }
         }
         let mut meters: BTreeMap<u32, Meter> = BTreeMap::new();
-        for m in &part.measures {
+        for (measure_index, m) in part.measures.iter().enumerate() {
             if !xml_id(&m.id) || !xml_ids.insert(m.id.clone()) {
                 issue(
                     &mut report,
@@ -254,9 +254,12 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
             for v in &part.voices {
                 let mut events: Vec<_> = m.events.iter().filter(|e| e.voice == v.id).collect();
                 events.sort_by(|a, b| a.offset.cmp(&b.offset));
-                if events
-                    .first()
-                    .is_some_and(|e| e.offset == Rational::zero() && e.staff != v.staff)
+                // The first measure always emits an event or a voice/staff forward.
+                // Later cross-staff notes cannot change that declared default.
+                if measure_index == 0
+                    && events
+                        .first()
+                        .is_some_and(|e| e.offset == Rational::zero() && e.staff != v.staff)
                 {
                     issue(
                         &mut report,
@@ -305,6 +308,7 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
     if report.has_errors() {
         return Err(report);
     }
+    let tie_endpoints = super::ties::output(score, &mut report)?;
     let mut out = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<score-partwise version=\"4.0\">\n",
     );
@@ -491,11 +495,18 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                     }
                     writeln!(
                         out,
-                        "        <duration>{}</duration><voice>{}</voice>",
-                        units(&e.duration, div),
-                        escape(&v.id.0)
+                        "        <duration>{}</duration>",
+                        units(&e.duration, div)
                     )
                     .unwrap();
+                    let tied = tie_endpoints.get(&e.id);
+                    if tied.is_some_and(|t| t.stop.is_some()) {
+                        out.push_str("        <tie type=\"stop\"/>\n");
+                    }
+                    if tied.is_some_and(|t| t.start.is_some()) {
+                        out.push_str("        <tie type=\"start\"/>\n");
+                    }
+                    writeln!(out, "        <voice>{}</voice>", escape(&v.id.0)).unwrap();
                     if let Some(w) = &e.written {
                         writeln!(out, "        <type>{}</type>", type_name(w.note_type)).unwrap();
                         for _ in 0..w.dots {
@@ -517,7 +528,18 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                             out.push_str("        </time-modification>\n");
                         }
                     }
-                    writeln!(out, "        <staff>{}</staff>\n      </note>", e.staff).unwrap();
+                    writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
+                    if let Some(tied) = tied {
+                        out.push_str("        <notations>");
+                        if let Some(n) = tied.stop {
+                            write!(out, "<tied type=\"stop\" number=\"{n}\"/>").unwrap();
+                        }
+                        if let Some(n) = tied.start {
+                            write!(out, "<tied type=\"start\" number=\"{n}\"/>").unwrap();
+                        }
+                        out.push_str("</notations>\n");
+                    }
+                    out.push_str("      </note>\n");
                     if !is_chord {
                         cursor = &e.offset + &e.duration;
                     }

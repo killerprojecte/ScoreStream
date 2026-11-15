@@ -1,6 +1,6 @@
 //! Format-neutral authoring model for the explicitly supported conversion profile.
 //! Not the SFS wire AST. No foreign markup, renderer payloads, or arbitrary maps.
-use crate::notation::{EventId, InstrumentId, PartId, VoiceId};
+use crate::notation::{EventId, InstrumentId, PartId, RelationId, VoiceId};
 use crate::{DocumentMetadata, Pitch, Rational};
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +9,18 @@ use serde::{Deserialize, Serialize};
 pub struct ScoreDocument {
     pub metadata: DocumentMetadata,
     pub parts: Vec<ScorePart>,
+    /// Ordinary printed and sounding ties. Written notes remain separate events.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ties: Vec<ScoreTie>,
+}
+/// A typed chain of distinct measured notes, with stable notation identity.
+/// This conversion profile does not yet represent print-only, sound-only,
+/// repeat-conditioned, let-ring, or engraving-continuation ties.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreTie {
+    pub id: RelationId,
+    pub events: Vec<EventId>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
