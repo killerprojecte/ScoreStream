@@ -69,7 +69,8 @@
     "Unknown extension interpretation must never be inferred from raw-source preservation.",
     "scorestream.barline requires scorestream.navigation@1, a declared part target and exact referenced measure boundary; fragments cannot introduce navigation. Authored-only validation reports unavailable engraving/replay; sounding lowering rejects.",
     "sound_dynamics is an exact nonnegative percentage of forte velocity 90. The bounded numeric playback profile rejects mixtures with sounding symbolic dynamics, hairpins, or attack-changing accents; it never substitutes printed labels.",
-    "scorestream.fermata requires scorestream.fermata@1 and a measured note/rest anchor at the exact onset. Keep all distinct part/event copies, authored shape/orientation absence and exact y placement. No hold duration or synchronization is inferred; playback rejects."
+    "scorestream.fermata requires scorestream.fermata@1 and a measured note/rest anchor at the exact onset. Keep all distinct part/event copies, authored shape/orientation absence and exact y placement. No hold duration or synchronization is inferred; playback rejects.",
+    "scorestream.beam requires scorestream.beam@1 and exact event onset/actual measure ownership. Preserve optional number and value. Full per-lane topology checks include unmarked events; printed beams never alter sounding pitch or time."
   ],
   "pitch": {
     "canonical": "Written pitch spelling",
@@ -439,6 +440,10 @@
         "program",
         "volume",
         "pan"
+      ],
+      "scorestream.beam": [
+        "number",
+        "value"
       ]
     },
     "relations": {
@@ -1108,6 +1113,33 @@
         },
         "required_extension": "scorestream.instrument@1",
         "meaning": "One initial single-instrument declaration per part at zero. Source ID, Unicode labels and standard sound identity remain separate from catalog key and pitch. Device string presence retains even an empty element; absent port remains absent. device_ref and midi_ref match source_id. MIDI source numbers are one-based. No multiple declarations, guessing, sample or device activation; authored MIDI intent blocks playback until explicit realization."
+      },
+      "scorestream.beam": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "value"
+        ],
+        "fields": {
+          "number": {
+            "type": "positive_integer",
+            "meaning": "Optional authored level 1 through 8; absence remains distinct from explicit 1."
+          },
+          "value": {
+            "type": "enum",
+            "values": [
+              "begin",
+              "continue",
+              "end",
+              "forward-hook",
+              "backward-hook"
+            ],
+            "meaning": "Native SFS hook atoms map exactly to the spaced MusicXML/common-model values forward hook and backward hook. Run tokens are unchanged."
+          }
+        },
+        "required_extension": "scorestream.beam@1",
+        "meaning": "Printed authored beam at the exact event onset. Requires explicit written flags, unique effective levels, all lower levels and closed contiguous same-measure/voice/staff runs. Secondary connections must also connect at lower levels. Secondary hooks preserve local direction without inferred neighbor attachment. Primary hooks, chords, semantic cues, unpitched/spacer targets, cross-measure runs and mixing legacy beam relations reject. Grace beams require the authored before-principal profile. Graphic cue size remains sounding. No performance timing changes."
       }
     }
   },
@@ -1222,6 +1254,13 @@
           "scorestream.instrument"
         ],
         "required_behavior": "One capability with at least one initial part record. Unknown sounds/names without an exact reviewed catalog projection reject. Broader catalog mappings retain source subtype and report normalization. Any MIDI record requires an explicit playback route realization; plain identity metadata preserves existing catalog playback, including explicit later SFS instrument states (which remain unsupported by the MusicXML adapter)."
+      },
+      "scorestream.beam@1": {
+        "status": "authored printed beam roundtrip; no sounding effect",
+        "mark_kinds": [
+          "scorestream.beam"
+        ],
+        "required_behavior": "One capability with at least one valid event-attached beam in a complete score. Preserve number absence and all five lexical values. Evaluate every event, including unmarked intervening events. Full validation precedes sound-neutral lowering; existing grace, fermata, navigation and instrument performance guards remain unchanged. Legacy SFS beam relations without this capability are unchanged."
       }
     }
   },

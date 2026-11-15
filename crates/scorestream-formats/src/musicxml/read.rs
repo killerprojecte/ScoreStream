@@ -387,6 +387,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.sound_dynamics.append(&mut reader.sound_dynamics);
             score.fermatas.append(&mut reader.fermatas);
             score.graces.append(&mut reader.graces);
+            score.beams.append(&mut reader.beams);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -440,6 +441,7 @@ fn read_with_audit<R: BufRead + Seek>(
     crate::tempo::normalize(&mut score.tempos, &mut report, crate::Format::MusicXml);
     crate::fermatas::sort(&mut score);
     crate::graces::sort(&mut score);
+    crate::beams::sort(&mut score);
     crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
     crate::graces::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
@@ -466,6 +468,7 @@ struct PartReader {
     sound_dynamics: Vec<ScoreSoundDynamics>,
     fermatas: Vec<ScoreFermata>,
     graces: Vec<ScoreGraceNote>,
+    beams: Vec<ScoreBeam>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -504,6 +507,7 @@ impl PartReader {
             sound_dynamics: vec![],
             fermatas: vec![],
             graces: vec![],
+            beams: vec![],
             barlines: vec![],
         })
     }
@@ -529,6 +533,7 @@ impl PartReader {
             sound_dynamics,
             fermatas,
             graces,
+            beams,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -878,6 +883,7 @@ impl PartReader {
                             .attr("id")
                             .map(String::from)
                             .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
+                        beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                         pending_graces.push(super::graces::read(
                             n,
                             EventId(id),
@@ -933,6 +939,7 @@ impl PartReader {
                         .attr("id")
                         .map(String::from)
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
+                    beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     if let Some(endpoints) = super::ties::read_endpoints(n)? {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);

@@ -57,8 +57,10 @@ attributes remain errors, including when nested inside known notes. In particula
 
 - `print-object`, print-dot/leger/lyric, visibility, attack/release, dynamics,
   pizzicato and repeat-conditioned timing are outside this geometry choice.
-- Beams, slurs, extended accidental styles, lyric text, words and other meaningful
-  notation must receive their own typed authoring semantics. The finite
+- Slurs, extended accidental styles, lyric text, words and other meaningful
+  notation must receive their own typed authoring semantics. The bounded
+  [beam bridge](BEAM_IMPORT.md) preserves authored levels and roles separately;
+  neither hooks nor runs are discarded as geometry. The finite
   [accidental glyph bridge](ACCIDENTAL_IMPORT.md) preserves known signs and flags. Attribute-free stems
   and full-rest identity now have a separate [lossless typed bridge](NOTE_APPEARANCE_IMPORT.md);
   the geometry policy never discards or interprets them.

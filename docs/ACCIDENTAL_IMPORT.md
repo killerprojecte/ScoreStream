@@ -73,7 +73,8 @@ other unimplemented metadata and notation.
 
 The exact I/P1/m96 cautionary note is tested through conversion with the explicit
 coordinate policy. The exact III/P14/m258 grace note retains its beams and slur
-and still fails, rather than becoming an accepted cleaned excerpt. Small
+and still fails on its slur, rather than becoming an accepted cleaned excerpt.
+The separate [beam bridge](BEAM_IMPORT.md) does not admit the slur. Small
 synthetic roundtrip/performance fixtures are identified separately from these
 source receipts.
 

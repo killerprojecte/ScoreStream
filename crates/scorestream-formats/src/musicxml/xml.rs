@@ -782,9 +782,10 @@ pub(super) fn schema_with_geometry(
                     "time-modification",
                     "accidental",
                     "stem",
+                    "beam",
                     "staff",
                 ],
-                &["dot", "tie", "notations"],
+                &["dot", "tie", "notations", "beam"],
                 &[],
                 false,
             ),
@@ -830,6 +831,7 @@ pub(super) fn schema_with_geometry(
             "chord" | "dot" | "normal-dot" | "beat-unit-dot" => (&[], &[], &[], &[], false),
             "type" => (&["size"], &[], &[], &[], true),
             "stem" => (&[], &[], &[], &[], true),
+            "beam" => (&["number"], &[], &[], &[], true),
             "accidental" => (&["cautionary", "parentheses"], &[], &[], &[], true),
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
             | "instrument-name" | "instrument-abbreviation" | "instrument-sound"

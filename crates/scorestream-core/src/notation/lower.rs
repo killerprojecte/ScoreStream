@@ -404,6 +404,9 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 // Authored signs are decoded and retained by the qualified
                 // constructor, then every visited sign must pass its clock policy.
                 Record::Mark(mark) if mark.kind == crate::instrument_extension::KIND => {}
+                // Fully validated authored beams are printed notation only. They
+                // do not change pitch, measured time, or grace/fermata policy.
+                Record::Mark(mark) if mark.kind == crate::beam_extension::KIND => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}
                 Record::Mark(mark) => {

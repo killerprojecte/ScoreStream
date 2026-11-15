@@ -116,6 +116,7 @@ pub fn write_with_options(
     let tempo_index = super::tempo::Export::new(score);
     let dynamics_index = super::dynamics::Export::new(score, &mut report);
     let fermatas = super::fermatas::Export::new(score, &mut report);
+    let beams = super::beams::Export::new(score);
     for (field, value) in score.metadata.text_fields() {
         if value.is_some()
             && ["description", "header", "footer", "subtitle", "language"].contains(&field)
@@ -544,7 +545,7 @@ pub fn write_with_options(
                     if !is_chord && cursor < e.offset {
                         writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&e.offset - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                     }
-                    graces.write_before(e, &v.id.0, div, &mut out);
+                    graces.write_before(e, &v.id.0, div, &beams, &mut out);
                     writeln!(out, "      <note id=\"{}\">", escape(&e.id.0)).unwrap();
                     if is_chord {
                         out.push_str("        <chord/>\n");
@@ -608,6 +609,7 @@ pub fn write_with_options(
                         writeln!(out, "        <stem>{}</stem>", stem.name()).unwrap();
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
+                    beams.write(&e.id, &mut out);
                     if tied.is_some() || fermatas.contains(&e.id) {
                         out.push_str("        <notations>");
                         if let Some(n) = tied.and_then(|t| t.stop) {

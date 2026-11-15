@@ -593,6 +593,46 @@
             },
             "description": "Requires scorestream.instrument@1: one initial record at zero per part, unique source ID and matching IDREFs, catalog projection and exact value ranges are semantic checks. MIDI intent is authored only."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.beam"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "value": {
+                    "enum": [
+                      "begin",
+                      "continue",
+                      "end",
+                      "forward-hook",
+                      "backward-hook"
+                    ]
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "description": "Requires scorestream.beam@1 in a complete score. Exact onset, actual measure ownership, written flags, full per-lane topology and the separate authored-grace capability for grace anchors are checked semantically. Legacy beam relations cannot be mixed with authored beam marks."
+          }
         }
       ]
     },

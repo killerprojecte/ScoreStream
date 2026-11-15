@@ -26,10 +26,13 @@ complete-score import or audio acceptance claim.
   XML or foreign markup is added to the common model.
 
 Only attribute-free `stem` leaves and the `rest` measure flag are newly mapped.
-Stem coordinates/colors, rest display-step/octave, unknown descendants, beam,
+Stem coordinates/colors, rest display-step/octave, unknown descendants,
 accidental, notehead and hidden-note attributes remain blocking unless separately
 implemented. Coordinate regeneration still requires its unchanged explicit
 three-path policy; stems and rest identity are preserved, never regenerated.
+
+Authored non-chord beams now have a separate [typed bridge](BEAM_IMPORT.md);
+stem or rest support does not silently infer their runs or hooks.
 
 ## Preview and performance
 

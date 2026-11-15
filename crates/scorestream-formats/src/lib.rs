@@ -1,6 +1,7 @@
 //! Strict adapters through ScoreDocument. No adapter passes markup to renderers.
 #![forbid(unsafe_code)]
 mod accidentals;
+mod beams;
 mod dynamics;
 mod fermatas;
 mod graces;

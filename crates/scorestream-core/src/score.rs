@@ -33,6 +33,52 @@ pub struct ScoreDocument {
     /// Authored unmeasured notes, not zero-length ordinary events or silent cues.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub graces: Vec<ScoreGraceNote>,
+    /// Authored printed beams. No timing, grouping, or missing levels are inferred.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub beams: Vec<ScoreBeam>,
+}
+/// One MusicXML beam value on one event, retaining an absent number separately
+/// from an explicitly authored primary level (1).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreBeam {
+    pub event: EventId,
+    pub number: Option<u8>,
+    pub value: BeamValue,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BeamValue {
+    #[serde(rename = "begin")]
+    Begin,
+    #[serde(rename = "continue")]
+    Continue,
+    #[serde(rename = "end")]
+    End,
+    #[serde(rename = "forward hook")]
+    ForwardHook,
+    #[serde(rename = "backward hook")]
+    BackwardHook,
+}
+impl BeamValue {
+    pub fn from_name(value: &str) -> Option<Self> {
+        match value {
+            "begin" => Some(Self::Begin),
+            "continue" => Some(Self::Continue),
+            "end" => Some(Self::End),
+            "forward hook" => Some(Self::ForwardHook),
+            "backward hook" => Some(Self::BackwardHook),
+            _ => None,
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Begin => "begin",
+            Self::Continue => "continue",
+            Self::End => "end",
+            Self::ForwardHook => "forward hook",
+            Self::BackwardHook => "backward hook",
+        }
+    }
 }
 /// One authored fermata on a measured note or rest. The supported profile permits
 /// one sign per event and retains every distinct event's sign without coalescing.

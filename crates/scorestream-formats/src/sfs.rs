@@ -169,6 +169,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::fermata_extension::EXTENSION
             && e != core::grace_extension::EXTENSION
             && e != core::instrument_extension::EXTENSION
+            && e != core::beam_extension::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -182,6 +183,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         sound_dynamics: vec![],
         fermatas: vec![],
         graces: vec![],
+        beams: vec![],
         barlines: vec![],
     };
     let accidentals = crate::accidentals::read_marks(doc, &mut report);
@@ -299,6 +301,12 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             match record {
                 Record::Measure(_) => {}
                 Record::Mark(m) if m.kind == "accidental" => {}
+                Record::Mark(m) if m.kind == core::beam_extension::KIND => {
+                    match core::beam_extension::decode(m) {
+                        Ok(beam) => score.beams.push(beam),
+                        Err(d) => invalid(&mut report, &d.code, &m.target),
+                    }
+                }
                 Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
                     crate::sfs_navigation::read_mark(m, &mut score, &mut report);
                 }
@@ -607,6 +615,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     crate::dynamics::normalize(&mut score, &mut report, Format::Sfs);
     crate::fermatas::sort(&mut score);
     crate::graces::sort(&mut score);
+    crate::beams::sort(&mut score);
     crate::graces::authored_only(&score, Format::Sfs, &mut report);
     crate::fermatas::authored_only(&score, Format::Sfs, &mut report);
     report.append(validate_score(&score));
@@ -685,6 +694,9 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         doc.required_extensions
             .push(core::grace_extension::EXTENSION.into());
         crate::graces::authored_only(score, Format::Sfs, &mut report);
+    }
+    if !score.beams.is_empty() {
+        doc.required_extensions.push(core::beam_extension::EXTENSION.into());
     }
     if !score.barlines.is_empty() {
         doc.required_extensions
@@ -1037,6 +1049,12 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     for f in &score.fermatas {
         let event = events.get(&f.event.0, &mut report);
         crate::fermatas::write_mark(f, event, fermata_positions[&f.event].clone(), &mut frames);
+    }
+    let beam_positions = crate::beams::positions(score);
+    for b in &score.beams {
+        let event = events.get(&b.event.0, &mut report);
+        frames.entry(beam_positions[&b.event].clone()).or_default()
+            .push(Record::Mark(core::beam_extension::encode(event, b)));
     }
     crate::tempo::write_tempos(score, &mut frames);
     for mark in &score.metronomes {

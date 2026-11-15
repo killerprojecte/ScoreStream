@@ -203,6 +203,7 @@ fn ordinal_constraint_mapping_tracks_canonical_meanings() {
         "scorestream.barline requires",
         "sound_dynamics is",
         "scorestream.fermata requires",
+        "scorestream.beam requires",
     ];
     assert_eq!(constraints.len(), prefixes.len());
     for (value, prefix) in constraints.iter().zip(prefixes) {

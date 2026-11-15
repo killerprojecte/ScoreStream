@@ -480,7 +480,7 @@ fn untouched_cautionary_fragment_maps_but_grace_beams_and_slur_remain_blocking()
         &options,
     )
     .unwrap_err();
-    assert!(
+    assert!(!
         report
             .diagnostics
             .iter()

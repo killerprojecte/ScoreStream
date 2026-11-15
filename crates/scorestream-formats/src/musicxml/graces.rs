@@ -226,6 +226,7 @@ impl<'a> Export<'a> {
         anchor: &ScoreEvent,
         voice: &str,
         div: u64,
+        beams: &super::beams::Export<'_>,
         out: &mut String,
     ) {
         for g in self.by_anchor.get(&anchor.id).into_iter().flatten() {
@@ -291,7 +292,9 @@ impl<'a> Export<'a> {
             if let Some(stem) = g.stem {
                 write!(out, "<stem>{}</stem>", stem.name()).unwrap();
             }
-            writeln!(out, "<staff>{}</staff></note>", anchor.staff).unwrap();
+            write!(out, "<staff>{}</staff>", anchor.staff).unwrap();
+            beams.write(&g.id, out);
+            out.push_str("</note>\n");
         }
     }
 }
