@@ -44,14 +44,56 @@ impl MappingReport {
         path: impl Into<String>,
         message: impl Into<String>,
     ) {
+        self.push_source(format, effect, feature, path, message, None);
+    }
+    /// Reports remain bounded even when a score repeats an unsupported construct many times.
+    /// The final summary retains error severity so truncation can never turn failure into success.
+    pub(crate) fn push_source(
+        &mut self,
+        format: Format,
+        effect: MappingEffect,
+        feature: impl Into<String>,
+        path: impl Into<String>,
+        message: impl Into<String>,
+        source: Option<SourceRange>,
+    ) {
+        const LIMIT: usize = 1024;
+        if self.diagnostics.len() >= LIMIT - 1 {
+            if self.diagnostics.len() == LIMIT - 1 {
+                self.diagnostics.push(MappingDiagnostic {
+                    format,
+                    effect,
+                    feature: "diagnostics.truncated".into(),
+                    path: "/".into(),
+                    message: "Additional diagnostics omitted; fix the reported issues and retry"
+                        .into(),
+                    source: None,
+                });
+            } else if effect != MappingEffect::Normalized {
+                self.diagnostics[LIMIT - 1].effect = effect;
+            }
+            return;
+        }
         self.diagnostics.push(MappingDiagnostic {
             format,
             effect,
-            feature: feature.into(),
-            path: path.into(),
-            message: message.into(),
-            source: None,
+            feature: bounded(feature.into(), 512),
+            path: bounded(path.into(), 4096),
+            message: bounded(message.into(), 4096),
+            source,
         });
+    }
+    pub fn append(&mut self, other: Self) {
+        for diagnostic in other.diagnostics {
+            self.push_source(
+                diagnostic.format,
+                diagnostic.effect,
+                diagnostic.feature,
+                diagnostic.path,
+                diagnostic.message,
+                diagnostic.source,
+            );
+        }
     }
     pub fn has_errors(&self) -> bool {
         self.diagnostics
@@ -68,6 +110,17 @@ impl MappingReport {
             })
         }
     }
+}
+fn bounded(mut value: String, max: usize) -> String {
+    if value.len() > max {
+        let mut end = max - 3;
+        while !value.is_char_boundary(end) {
+            end -= 1;
+        }
+        value.truncate(end);
+        value.push_str("...");
+    }
+    value
 }
 #[derive(Clone, Debug)]
 pub struct Conversion<T> {

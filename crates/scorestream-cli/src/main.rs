@@ -1,10 +1,10 @@
 use scorestream_formats::{ScoreAdapter, musicxml::MusicXml, sfs::SfsAdapter};
-use std::{env, fs, io::Read, process::ExitCode};
+use std::{env, fs, io::BufReader, process::ExitCode};
 fn main() -> ExitCode {
     let args: Vec<_> = env::args().collect();
     if args
         .get(1)
-        .is_some_and(|v| v == "convert" || v == "inspect-format")
+        .is_some_and(|v| v == "convert" || v == "inspect-format" || v == "scan-musicxml")
     {
         return conversion(&args);
     }
@@ -37,7 +37,7 @@ fn main() -> ExitCode {
 
 fn usage() {
     eprintln!(
-        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
+        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml>\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
     );
 }
 fn adapter(name: &str) -> Option<Box<dyn ScoreAdapter>> {
@@ -48,6 +48,29 @@ fn adapter(name: &str) -> Option<Box<dyn ScoreAdapter>> {
     }
 }
 fn conversion(args: &[String]) -> ExitCode {
+    if args[1] == "scan-musicxml" {
+        if args.len() != 3 {
+            usage();
+            return ExitCode::from(2);
+        }
+        let file = match fs::File::open(&args[2]) {
+            Ok(file) => file,
+            Err(error) => {
+                eprintln!("{error}");
+                return ExitCode::from(2);
+            }
+        };
+        return match scorestream_formats::musicxml::scan(BufReader::new(file)) {
+            Ok(summary) => {
+                println!("{}", serde_json::to_string_pretty(&summary).unwrap());
+                ExitCode::SUCCESS
+            }
+            Err(report) => {
+                eprintln!("{}", serde_json::to_string_pretty(&report).unwrap());
+                ExitCode::FAILURE
+            }
+        };
+    }
     let inspect = args[1] == "inspect-format";
     if args.len() != if inspect { 4 } else { 5 } {
         usage();
@@ -69,22 +92,27 @@ fn conversion(args: &[String]) -> ExitCode {
         }
     };
     let path = &args[if inspect { 3 } else { 4 }];
-    let mut source = String::new();
-    match fs::File::open(path).and_then(|f| {
-        f.take((scorestream_formats::musicxml::MAX_BYTES + 1) as u64)
-            .read_to_string(&mut source)
-    }) {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("{e}");
-            return ExitCode::from(2);
-        }
-    }
-    if source.len() > scorestream_formats::musicxml::MAX_BYTES {
-        eprintln!("Conversion input exceeds 8 MiB");
-        return ExitCode::FAILURE;
-    }
-    let converted = match input.read(&source) {
+    let result = if args[2] == "musicxml" {
+        let file = match fs::File::open(path) {
+            Ok(file) => file,
+            Err(error) => {
+                eprintln!("{error}");
+                return ExitCode::from(2);
+            }
+        };
+        scorestream_formats::musicxml::read_reader(BufReader::new(file))
+    } else {
+        // SFS has its own text parser; an XML byte budget must not reject valid SFS input.
+        let source = match fs::read_to_string(path) {
+            Ok(source) => source,
+            Err(error) => {
+                eprintln!("{error}");
+                return ExitCode::from(2);
+            }
+        };
+        input.read(&source)
+    };
+    let converted = match result {
         Ok(v) => v,
         Err(r) => {
             eprintln!("{}", serde_json::to_string_pretty(&r).unwrap());
@@ -95,11 +123,11 @@ fn conversion(args: &[String]) -> ExitCode {
     let text = if let Some(output) = output {
         match output.write(&converted.value) {
             Ok(result) => {
-                report.diagnostics.extend(result.report.diagnostics);
+                report.append(result.report);
                 result.value
             }
             Err(result) => {
-                report.diagnostics.extend(result.diagnostics);
+                report.append(result);
                 eprintln!("{}", serde_json::to_string_pretty(&report).unwrap());
                 return ExitCode::FAILURE;
             }

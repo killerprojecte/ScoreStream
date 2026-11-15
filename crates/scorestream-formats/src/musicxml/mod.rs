@@ -3,10 +3,10 @@ mod read;
 mod write;
 mod xml;
 use crate::{Conversion, MappingReport, ScoreAdapter};
-pub use read::read;
+pub use read::{read, read_reader};
 use scorestream_core::score::{NoteType, ScoreDocument};
 pub use write::write;
-pub use xml::MAX_BYTES;
+pub use xml::{ScanSummary, scan};
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MusicXml;
 impl ScoreAdapter for MusicXml {

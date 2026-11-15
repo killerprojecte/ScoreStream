@@ -500,14 +500,5 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
         out.push_str("  </part>\n");
     }
     out.push_str("</score-partwise>\n");
-    if out.len() > super::xml::MAX_BYTES {
-        report.push(
-            Format::MusicXml,
-            MappingEffect::ResourceLimit,
-            "xml.size",
-            "/",
-            "Generated XML exceeds 8 MiB",
-        );
-    }
     report.finish(out)
 }

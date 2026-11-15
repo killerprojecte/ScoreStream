@@ -120,10 +120,11 @@ fn no_external_entities_dtd_or_processing_instructions() {
     );
 }
 #[test]
-fn bounded_xml_input_and_depth() {
+fn bounded_xml_tokens_and_depth() {
+    // Limits apply to an individual pathological token, not the whole score.
     assert!(
         MusicXml
-            .read(&" ".repeat(scorestream_formats::musicxml::MAX_BYTES + 1))
+            .read(&format!("<x>{}</x>", "x".repeat(1024 * 1024 + 1)))
             .unwrap_err()
             .diagnostics
             .iter()

@@ -21,21 +21,20 @@ impl ScoreAdapter for SfsAdapter {
     }
 }
 fn diagnostics(ds: Vec<Diagnostic>) -> MappingReport {
-    MappingReport {
-        diagnostics: ds
-            .into_iter()
-            .filter(|d| d.severity == Severity::Error)
-            .map(|d| crate::MappingDiagnostic {
-                format: Format::Sfs,
-                effect: MappingEffect::Invalid,
-                feature: d.code,
-                path: d.object_id.unwrap_or_default(),
-                message: d.message,
-                source: Some(d.source),
-            })
-            .collect(),
+    let mut report = MappingReport::default();
+    for diagnostic in ds.into_iter().filter(|d| d.severity == Severity::Error) {
+        report.push_source(
+            Format::Sfs,
+            MappingEffect::Invalid,
+            diagnostic.code,
+            diagnostic.object_id.unwrap_or_default(),
+            diagnostic.message,
+            Some(diagnostic.source),
+        );
     }
+    report
 }
+
 fn unsupported(r: &mut MappingReport, feature: &str, path: &str) {
     r.push(
         Format::Sfs,
@@ -390,9 +389,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     if end != doc.end {
         unsupported(&mut report, "end_outside_measures", "document");
     }
-    report
-        .diagnostics
-        .extend(validate_score(&score).diagnostics);
+    report.append(validate_score(&score));
     report.finish(score)
 }
 
@@ -627,9 +624,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             source: SourceRange::default(),
         })
         .collect();
-    report
-        .diagnostics
-        .extend(diagnostics(core::validate(&doc, None)).diagnostics);
+    report.append(diagnostics(core::validate(&doc, None)));
     report.finish(doc)
 }
 

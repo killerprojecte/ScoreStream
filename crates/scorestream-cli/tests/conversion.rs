@@ -69,3 +69,75 @@ fn unknown_format_and_old_sfs_commands() {
         String::from_utf8_lossy(&legacy.stderr)
     );
 }
+
+#[test]
+fn scanner_is_separate_from_semantic_conversion() {
+    let scan = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .arg("scan-musicxml")
+        .arg(fixture("unsupported.musicxml"))
+        .output()
+        .unwrap();
+    assert!(
+        scan.status.success(),
+        "{}",
+        String::from_utf8_lossy(&scan.stderr)
+    );
+    let summary: serde_json::Value = serde_json::from_slice(&scan.stdout).unwrap();
+    assert!(summary["elements"].as_u64().unwrap() > 0);
+    assert!(summary["max_retained_nodes"].as_u64().unwrap() > 0);
+    let mapping = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .args(["convert", "musicxml", "sfs"])
+        .arg(fixture("unsupported.musicxml"))
+        .output()
+        .unwrap();
+    assert!(!mapping.status.success());
+    assert!(mapping.stdout.is_empty());
+}
+
+#[test]
+fn conversion_cli_has_no_global_xml_or_sfs_byte_ceiling() {
+    let directory = std::env::temp_dir().join(format!(
+        "scorestream-large-conversion-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("large.musicxml");
+    let source = std::fs::read_to_string(fixture("two-staff.musicxml")).unwrap();
+    let comments = format!("<!--{}-->", "x".repeat(900_000)).repeat(10);
+    let source = source.replace("</score-partwise>", &format!("{comments}</score-partwise>"));
+    assert!(source.len() > 8 * 1024 * 1024);
+    std::fs::write(&path, source).unwrap();
+    let converted = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .args(["convert", "musicxml", "sfs"])
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(
+        converted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&converted.stderr)
+    );
+    let source = String::from_utf8(converted.stdout).unwrap();
+    let expected = scorestream_codec::parse(&source).unwrap();
+    let sfs = directory.join("large.sfs");
+    std::fs::write(&sfs, format!(";{}\n{source}", "comment".repeat(1_300_000))).unwrap();
+    let converted = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .args(["convert", "sfs", "sfs"])
+        .arg(sfs)
+        .output()
+        .unwrap();
+    assert!(
+        converted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&converted.stderr)
+    );
+    assert_eq!(
+        scorestream_codec::canonical(&expected),
+        String::from_utf8(converted.stdout).unwrap()
+    );
+    std::fs::remove_dir_all(directory).unwrap();
+}

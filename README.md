@@ -23,9 +23,12 @@ The MCP binary defaults to newline-delimited JSON-RPC on stdin and writes respon
 A first MusicXML 4.0 score-partwise adapter now maps through the shared typed `ScoreDocument`, alongside an SFS adapter. This is a **limited conversion profile**, not complete MusicXML support. Unknown symbols/attributes block conversion with structured diagnostics; XML is never passed to a renderer. See [supported mappings, Chinese design and runnable examples](docs/FORMAT_ADAPTERS.md).
 
 ```sh
+cargo run -p scorestream-cli -- scan-musicxml crates/scorestream-formats/tests/fixtures/two-staff.musicxml
 cargo run -p scorestream-cli -- inspect-format musicxml crates/scorestream-formats/tests/fixtures/two-staff.musicxml
 cargo run -p scorestream-cli -- convert musicxml sfs crates/scorestream-formats/tests/fixtures/two-staff.musicxml
 ```
+
+MusicXML file conversion uses two incremental passes and releases each XML measure after processing; there is no whole-score byte or XML-element ceiling. The typed score and ID index still grow with musical content. Structural safety budgets and the limited mapping profile remain. `scan-musicxml` reports XML counts and peak retained nodes without converting notation; a successful scan does not mean full notation mapping is supported.
 
 ### Fast format discovery
 
