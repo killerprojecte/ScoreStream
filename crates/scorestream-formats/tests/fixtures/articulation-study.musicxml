@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original regression study, not an excerpt with unsupported source content removed. -->
+<score-partwise version="4.0">
+  <work><work-title>Four simple articulations</work-title></work>
+  <part-list><score-part id="p"><part-name>piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note id="short"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><articulations><staccato placement="above"/></articulations></notations></note>
+    <note id="shortest"><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><articulations><staccatissimo placement="below"/></articulations></notations></note>
+    <note id="held"><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><articulations><tenuto/></articulations></notations></note>
+    <note id="attack"><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><articulations><accent placement="above"/></articulations></notations></note>
+  </measure></part>
+</score-partwise>

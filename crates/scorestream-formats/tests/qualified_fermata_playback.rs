@@ -268,19 +268,22 @@ fn selected_out_of_range_pitch_rejects_qualified_playback() {
     );
 }
 #[test]
-fn cue_unpitched_and_conflicting_articulation_fail_at_current_import_boundary() {
+fn cue_and_unpitched_fail_import_but_articulation_rejects_at_sound_policy_boundary() {
     let ordinary = note("selected", 2, false, true);
     let pitch = "<pitch><step>G</step><octave>4</octave></pitch>";
     let cases = [
         ordinary.replace("<pitch>", "<cue/><pitch>"),
         ordinary.replace(pitch, "<unpitched><display-step>G</display-step><display-octave>4</display-octave></unpitched>"),
-        ordinary.replace("<notations>", "<notations><articulations><staccato/></articulations>"),
     ];
     for body in cases {
         // These mappings are not supported yet. Preserve that explicit error;
         // never remove authored data to manufacture a playable fixture.
         assert!(MusicXml.read(&xml(&[body], 1)).is_err());
     }
+    let body = ordinary.replace("<notations>", "<notations><articulations><staccato/></articulations>");
+    let s = source(&xml(&[body], 1));
+    let error = play(&s, &policy(&s, &[("1", "1")])).unwrap_err();
+    assert!(error.contains("fermata.articulation_unsupported"), "{error}");
 }
 #[test]
 fn final_hold_exact_inverse_seek_and_clamping_share_the_audio_clock() {

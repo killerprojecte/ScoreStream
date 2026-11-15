@@ -1,0 +1,297 @@
+{
+  "can_redo": false,
+  "can_undo": false,
+  "diagnostics": [],
+  "dirty": false,
+  "document": {
+    "document_kind": "score",
+    "end": "2",
+    "format": "ScoreStream",
+    "format_version": "1.1",
+    "frames": [
+      {
+        "records": [
+          {
+            "attributes": {
+              "implicit": false,
+              "label": "1"
+            },
+            "id": "m",
+            "length": "2",
+            "record": "measure",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "clef": "G2",
+              "meter": "2/4"
+            },
+            "record": "state",
+            "target": "p.s1"
+          },
+          {
+            "attributes": {
+              "clef": "F4",
+              "meter": "2/4"
+            },
+            "record": "state",
+            "target": "p.s2"
+          },
+          {
+            "attributes": {
+              "chord": "c1_1",
+              "dots": 0,
+              "id": "head",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "C4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "chord": "c1_1",
+              "dots": 0,
+              "id": "member",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "E4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "bass",
+              "staff": 2,
+              "w": "2"
+            },
+            "duration": "2",
+            "pitch": "C3",
+            "record": "event",
+            "voice": "v1_2"
+          },
+          {
+            "attributes": {
+              "name": "piano",
+              "source_id": "i"
+            },
+            "kind": "scorestream.instrument",
+            "record": "mark",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "placement": "above",
+              "value": "staccato"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#head"
+          },
+          {
+            "attributes": {
+              "value": "accent"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#head"
+          },
+          {
+            "attributes": {
+              "placement": "below",
+              "value": "tenuto"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#member"
+          }
+        ],
+        "time": "0"
+      },
+      {
+        "records": [
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "second",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "G4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "value": "staccatissimo"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#second"
+          }
+        ],
+        "time": "1"
+      }
+    ],
+    "metadata": {
+      "title": "Two-staff articulation duet"
+    },
+    "parts": [
+      {
+        "display_name": "piano",
+        "id": "p",
+        "instrument": "piano",
+        "staves": 2
+      }
+    ],
+    "required_extensions": [
+      "scorestream.instrument@1"
+    ],
+    "time_unit": "quarter",
+    "voices": [
+      {
+        "id": "v1_1",
+        "part": "p",
+        "staff": 1
+      },
+      {
+        "id": "v1_2",
+        "part": "p",
+        "staff": 2
+      }
+    ]
+  },
+  "draft_seq": 0,
+  "events": [
+    {
+      "attributes": {
+        "chord": "c1_1",
+        "dots": 0,
+        "id": "head",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": "c1_1",
+      "dots": 0,
+      "duration": "1",
+      "id": "head",
+      "pitch": "C4",
+      "source_line": 11,
+      "staff": 1,
+      "time": "0",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "chord": "c1_1",
+        "dots": 0,
+        "id": "member",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": "c1_1",
+      "dots": 0,
+      "duration": "1",
+      "id": "member",
+      "pitch": "E4",
+      "source_line": 12,
+      "staff": 1,
+      "time": "0",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "bass",
+        "staff": 2,
+        "w": "2"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "2",
+      "id": "bass",
+      "pitch": "C3",
+      "source_line": 13,
+      "staff": 2,
+      "time": "0",
+      "voice": "v1_2",
+      "written_duration": "2"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "second",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "second",
+      "pitch": "G4",
+      "source_line": 20,
+      "staff": 1,
+      "time": "1",
+      "voice": "v1_1",
+      "written_duration": "4"
+    }
+  ],
+  "measures": [
+    {
+      "id": "m",
+      "label": "1",
+      "length": "2",
+      "part": "p",
+      "time": "0"
+    }
+  ],
+  "parts": [
+    {
+      "display_name": "piano",
+      "id": "p",
+      "instrument": "piano",
+      "staves": 2
+    }
+  ],
+  "revision_id": "rev-1-01e5defe11e90c887aa8",
+  "source": "!score 1.1 unit=q\n!part p instrument=piano staves=2 display_name=\"piano\"\n!voice v1_1 part=p staff=1\n!voice v1_2 part=p staff=2\n!meta title=\"Two-staff articulation duet\"\n!requires scorestream.instrument@1\n@0\n| p m len=2 implicit=false label=\"1\"\n= p.s1 clef=G2 meter=2/4\n= p.s2 clef=F4 meter=2/4\nv1_1 C4:1 id=head chord=c1_1 dots=0 staff=1 w=4\nv1_1 E4:1 id=member chord=c1_1 dots=0 staff=1 w=4\nv1_2 C3:2 id=bass dots=0 staff=2 w=2\n+ p scorestream.instrument name=\"piano\" source_id=\"i\"\n+ #head articulation placement=above value=staccato\n+ #head articulation value=accent\n+ #member articulation placement=below value=tenuto\n.\n@1\nv1_1 G4:1 id=second dots=0 staff=1 w=4\n+ #second articulation value=staccatissimo\n.\n!end at=2\n",
+  "states": [
+    {
+      "scope": "p.s1",
+      "time": "0",
+      "values": {
+        "clef": "G2",
+        "meter": "2/4"
+      }
+    },
+    {
+      "scope": "p.s2",
+      "time": "0",
+      "values": {
+        "clef": "F4",
+        "meter": "2/4"
+      }
+    }
+  ],
+  "valid": true,
+  "voices": [
+    {
+      "id": "v1_1",
+      "part": "p",
+      "staff": 1
+    },
+    {
+      "id": "v1_2",
+      "part": "p",
+      "staff": 2
+    }
+  ]
+}

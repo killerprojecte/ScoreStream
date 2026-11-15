@@ -386,6 +386,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.dynamics.append(&mut reader.dynamics);
             score.sound_dynamics.append(&mut reader.sound_dynamics);
             score.fermatas.append(&mut reader.fermatas);
+            score.articulations.append(&mut reader.articulations);
             score.graces.append(&mut reader.graces);
             score.beams.append(&mut reader.beams);
             parts[reader.part_index] = Some(reader.part);
@@ -442,6 +443,7 @@ fn read_with_audit<R: BufRead + Seek>(
     crate::fermatas::sort(&mut score);
     crate::graces::sort(&mut score);
     crate::beams::sort(&mut score);
+    crate::articulations::sort(&mut score);
     crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
     crate::graces::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
@@ -467,6 +469,7 @@ struct PartReader {
     dynamics: Vec<ScoreDynamic>,
     sound_dynamics: Vec<ScoreSoundDynamics>,
     fermatas: Vec<ScoreFermata>,
+    articulations: Vec<ScoreArticulation>,
     graces: Vec<ScoreGraceNote>,
     beams: Vec<ScoreBeam>,
     barlines: Vec<ScoreBarline>,
@@ -506,6 +509,7 @@ impl PartReader {
             dynamics: vec![],
             sound_dynamics: vec![],
             fermatas: vec![],
+            articulations: vec![],
             graces: vec![],
             beams: vec![],
             barlines: vec![],
@@ -532,6 +536,7 @@ impl PartReader {
             dynamics,
             sound_dynamics,
             fermatas,
+            articulations,
             graces,
             beams,
             barlines,
@@ -941,6 +946,7 @@ impl PartReader {
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
                     beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
+                    articulations.extend(super::articulations::read(n, &EventId(id.clone()))?);
                     if let Some(endpoints) = super::ties::read_endpoints(n)? {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);
                     }

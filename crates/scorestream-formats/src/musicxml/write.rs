@@ -117,6 +117,7 @@ pub fn write_with_options(
     let dynamics_index = super::dynamics::Export::new(score, &mut report);
     let fermatas = super::fermatas::Export::new(score, &mut report);
     let beams = super::beams::Export::new(score);
+    let articulations = super::articulations::Export::new(score);
     for (field, value) in score.metadata.text_fields() {
         if value.is_some()
             && ["description", "header", "footer", "subtitle", "language"].contains(&field)
@@ -610,7 +611,7 @@ pub fn write_with_options(
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
                     beams.write(&e.id, &mut out);
-                    if tied.is_some() || fermatas.contains(&e.id) {
+                    if tied.is_some() || fermatas.contains(&e.id) || articulations.contains(&e.id) {
                         out.push_str("        <notations>");
                         if let Some(n) = tied.and_then(|t| t.stop) {
                             write!(out, "<tied type=\"stop\" number=\"{n}\"/>").unwrap();
@@ -619,6 +620,7 @@ pub fn write_with_options(
                             write!(out, "<tied type=\"start\" number=\"{n}\"/>").unwrap();
                         }
                         fermatas.write(&e.id, &mut out);
+                        articulations.write(&e.id, &mut out);
                         out.push_str("</notations>\n");
                     }
                     out.push_str("      </note>\n");

@@ -184,6 +184,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         fermatas: vec![],
         graces: vec![],
         beams: vec![],
+        articulations: vec![],
         barlines: vec![],
     };
     let accidentals = crate::accidentals::read_marks(doc, &mut report);
@@ -301,6 +302,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             match record {
                 Record::Measure(_) => {}
                 Record::Mark(m) if m.kind == "accidental" => {}
+                Record::Mark(m) if m.kind == "articulation" => {
+                    crate::articulations::read_mark(m, &mut score, &mut report);
+                }
                 Record::Mark(m) if m.kind == core::beam_extension::KIND => {
                     match core::beam_extension::decode(m) {
                         Ok(beam) => score.beams.push(beam),
@@ -616,6 +620,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     crate::fermatas::sort(&mut score);
     crate::graces::sort(&mut score);
     crate::beams::sort(&mut score);
+    crate::articulations::sort(&mut score);
     crate::graces::authored_only(&score, Format::Sfs, &mut report);
     crate::fermatas::authored_only(&score, Format::Sfs, &mut report);
     report.append(validate_score(&score));
@@ -1044,6 +1049,16 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     for d in &score.sound_dynamics {
         let part = parts.get(&d.scope.part.0, &mut report);
         crate::dynamics::write_state(d, &part, &mut frames);
+    }
+    let articulation_positions = crate::fermatas::positions(score);
+    for a in &score.articulations {
+        let event = events.get(&a.event.0, &mut report);
+        crate::articulations::write_mark(
+            a,
+            event,
+            articulation_positions[&a.event].clone(),
+            &mut frames,
+        );
     }
     let fermata_positions = crate::fermatas::positions(score);
     for f in &score.fermatas {

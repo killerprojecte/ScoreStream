@@ -802,7 +802,21 @@ pub(super) fn schema_with_geometry(
                 false,
             ),
             "tie" => (&["type", "time-only"], &[], &[], &[], false),
-            "notations" => (&[], &["tied", "fermata"], &["tied", "fermata"], &[], false),
+            "notations" => (
+                &[],
+                &["tied", "fermata", "articulations"],
+                &["tied", "fermata"],
+                &[],
+                false,
+            ),
+            "articulations" => (
+                &[],
+                &["staccato", "staccatissimo", "tenuto", "accent"],
+                &["staccato", "staccatissimo", "tenuto", "accent"],
+                &[],
+                false,
+            ),
+            "staccato" | "staccatissimo" | "tenuto" | "accent" => (&["placement"], &[], &[], &[], false),
             "fermata" => (&["type", "default-y", "relative-y"], &[], &[], &[], true),
             "tied" => (&["type", "number"], &[], &[], &[], false),
             "pitch" => (

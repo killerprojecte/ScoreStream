@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Independently authored polyphonic regression score. No Beethoven-specific paths. -->
+<score-partwise version="4.0">
+  <work><work-title>Two-staff articulation duet</work-title></work>
+  <part-list><score-part id="p"><part-name>piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>1</divisions><time><beats>2</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>
+    <note id="head"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><accent/><staccato placement="above"/></articulations></notations></note>
+    <note id="member"><chord/><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><tenuto placement="below"/></articulations></notations></note>
+    <note id="second"><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><staccatissimo/></articulations></notations></note>
+    <backup><duration>2</duration></backup>
+    <note id="bass"><pitch><step>C</step><octave>3</octave></pitch><duration>2</duration><voice>2</voice><type>half</type><staff>2</staff></note>
+  </measure></part>
+</score-partwise>

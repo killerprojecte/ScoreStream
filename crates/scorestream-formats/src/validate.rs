@@ -229,6 +229,7 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
         }
     }
     crate::accidentals::validate(score, &mut report);
+    crate::articulations::validate(score, &mut report);
     crate::beams::validate(score, &mut report);
     crate::ties::validate(score, &mut report);
     crate::tempo::validate(score, &mut report);
