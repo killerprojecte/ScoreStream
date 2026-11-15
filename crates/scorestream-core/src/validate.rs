@@ -35,6 +35,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::instrument_extension::EXTENSION
             && requirement != crate::beam_extension::EXTENSION
             && requirement != crate::slur_extension::EXTENSION
+            && requirement != crate::articulation_extension::EXTENSION
         {
             out.push(Diagnostic::error(
                 "extension_unsupported",
@@ -448,6 +449,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     crate::instrument_extension::validate(doc, &mut out);
     crate::beam_extension::validate(doc, &mut out);
     crate::slur_extension::validate(doc, &mut out);
+    crate::articulation_extension::validate(doc, &mut out);
     validate_measures(&measures, &parts, &mut out);
     validate_measure_rests(doc, &measures, &voices, &mut out);
     validate_references(doc, &events, &parts, &voices, &mut out);

@@ -156,6 +156,31 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(report["choice_import_counts"]["articulations"], {"blocked": 13, "partial": 4})
         self.assertTrue(all(c["scope_class"] and c["why_incomplete"] for c in choices))
 
+    def test_authored_family_is_separate_opt_in_with_no_runtime_credit(self):
+        by_id = {f["id"]: f for f in self.ledger["features"]}
+        authored = by_id["authored-articulations"]
+        legacy = by_id["articulations"]
+        self.assertIn("AuthoredV1", authored["scope"])
+        self.assertIn("LegacySimple", legacy["scope"])
+        self.assertEqual(len(authored["choice_inventory"]["entries"]), 17)
+        self.assertTrue(all(c["import_status"] == "partial" for c in authored["choice_inventory"]["entries"]))
+        for layer in ["model", "import", "export"]:
+            self.assertEqual(authored["layers"][layer]["status"], "partial")
+        for layer in ["render", "playback"]:
+            self.assertEqual(authored["layers"][layer]["status"], "blocked")
+        report = n.report(self.catalog, self.ledger, n.check(self.catalog, self.ledger))
+        self.assertEqual(report["choice_import_counts"]["authored-articulations"], {"partial": 17})
+        self.assertEqual(report["choice_import_counts"]["articulations"], {"blocked": 13, "partial": 4})
+
+    def test_authored_runtime_rejection_cannot_be_promoted_as_implementation(self):
+        for layer in ["render", "playback"]:
+            ledger = copy.deepcopy(self.ledger)
+            profile = next(f for f in ledger["features"] if f["id"] == "authored-articulations")
+            profile["layers"][layer]["status"] = "partial"
+            profile["layers"][layer]["evidence"] = ["authored-articulations.render-reject"]
+            with self.assertRaisesRegex(ValueError, "positive evidence"):
+                n.check(self.catalog, ledger)
+
     def test_choice_inventory_cannot_omit_duplicate_or_rename_declarations(self):
         for mutation in (lambda entries: entries.pop(),
                          lambda entries: entries.append(copy.deepcopy(entries[0])),

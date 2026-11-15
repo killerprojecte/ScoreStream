@@ -20,9 +20,9 @@
 故意没有把整个标签或字形标为 `supported` 的入口。`partial` 也只指该行文字界定的范围，
 不是所关联 schema 声明的全部值、属性、上下文或组合均被支持。
 
-集成账本有 22 个域：13 个有限能力域和 9 个待验收域，引用 70 个可运行的精确测试。
-模型/导入/导出各 13 条 `partial`；绘制 2 条 `partial`、2 条 `blocked`、18 条未验收；
-演奏 10 条 `partial`、1 条 `blocked`、11 条未验收。这些是**账本行数，不是标准支持率**。
+集成账本现有 23 个域：14 个有限能力域和 9 个待验收域，引用 89 个可运行的精确测试。
+模型/导入/导出各 14 条 `partial`；绘制 2 条 `partial`、3 条 `blocked`、18 条未验收；
+演奏 10 条 `partial`、2 条 `blocked`、11 条未验收。这些是**账本行数，不是标准支持率**。
 
 已录入音高/节奏/和弦、延音线、连音线、变音符、符杠、反复与房子、延长记号、倚音、
 速度、力度、移调与单乐器元数据。例如连音线作者字段可以往返，但该 profile 的预览和演奏
@@ -45,17 +45,14 @@
 详见 [`ARTICULATION_IMPORT.md`](ARTICULATION_IMPORT.md)。
 
 `articulations.choice_inventory` 覆盖固定 schema 的全部 17 个直接 choice，并记录名称、
-精确声明 ID、schema 类型、scope class、导入状态、不完整原因和证据。以下 13 项仍未完成：
+精确声明 ID、schema 类型、scope class、导入状态、不完整原因和证据。以下 13 项在默认 `LegacySimple` 导入/运行时路径仍未完成；其作者数据现已在后述显式 `AuthoredV1` 路径另行建模：
 
-- strong-accent：有方向的事件符号；缺 up/down 形状的作者模型、往返和绘制契约。
-- detached-legato：复合事件符号；不能未经验证就改写为 tenuto 与 staccato 的组合。
-- spiccato：依赖乐器技术的事件符号；缺独立身份、字形和演奏解释。
-- scoop、plop：音高进入过渡；缺线形、进入音高及其演奏策略。
-- doit、falloff：音高结束过渡；缺线形、结束音高及其演奏策略。
-- breath-mark：呼吸/暂停；形状、暂停作用域与时长未形成 MusicXML 全链路契约。
-- caesura：乐句中断；缺形状、作用域、时间策略和绘制验收。
-- stress、unstress、soft-accent：独立重音类别；不能直接等同于现有 accent 或力度。
-- other-articulation：自定义符号；文字/字形、语义身份、字体与视觉/声音策略仍未验收。
+- strong-accent：保留方向需要独立作者字段；默认路径没有方向字形或声音验收。
+- detached-legato、spiccato：不可当作现有短音/长音组合或乐器技巧的别名。
+- scoop、plop、doit、falloff：音高进入/离开记号，不推测起点、终点或弯音演奏。
+- breath-mark、caesura：形状与暂停时间/范围是不同层，后者仍未实现。
+- stress、unstress、soft-accent：独立重音类别，不等同于已有 accent 或力度数值。
+- other-articulation：被动文字/字形名的保存不是自定义字形渲染或声音实现。
 
 这 13 项的 `blocked` **仅指有精确拒绝测试的导入边界**；不把拒绝当作完成实现，也不把
 原生 SFS 已有的某些声音策略误记为 MusicXML 导入或绘制支持。scope class 是工作分类，
@@ -63,8 +60,32 @@
 独立原件验收仍未建立：固定版本的 [W3C 社区测试集](https://github.com/w3c-cg/musicxmlTestSuite/tree/0618bdee1bfcb965ffdd9f4e52271c909d744fd1)
 32c 的非映射 identification/miscellaneous 元数据是较早边界，其合法的重复 articulations
 容器也不在本 profile 内。此集成未下载、运行或宣称接受该原件；没有删改原件来获得绿色结果。
-容器整体身份、次序、空/重复组和堆叠关系仍待完整家族模型，不通过展平容器假装完成。
+默认路径继续拒绝容器身份、空/重复组与堆叠；下述独立作者 profile 精确保留这些字段，不通过展平容器获得运行时绿灯。
 离线 gate 会拒绝 choice 缺项、重项、失效引用、类型变化、缺范围/原因和证据不匹配。
+
+## 显式作者奏法家族 v1
+
+新增 `authored-articulations` 账本行，与上面的默认四符号 profile 分开记账。
+`MusicXmlOptions.articulations = AuthoredV1` 才启用它；不是桌面或 CLI 的默认导入模式。
+17 个 choice 的作者模型、导入、导出均为有边界的 `partial`，绘制和演奏均为 `blocked`。
+拒绝测试不是绘制或演奏完成率，默认路径的 4/13 状态不因另一 profile 而改写。
+
+版本化模型保留事件锚点、notations wrapper 的 id/print-object、articulations 组的 id、
+空组/附加空 wrapper、重复符号及 wrapper/组/符号顺序。17 种封闭分支有独立 placement、
+方向/呼吸形状/中断形状/线条字段和精确排版属性；缺省与显式值分开。other-articulation
+仅保存被动原文和可选字形名，不存外来 XML、不猜声音、不宣称字形存在。
+SFS 用 `scorestream.articulation@1` 的显式标量记录往返；不会改写为旧 articulation 音效。
+
+这是**表示与交换检查点**。仍只接收有节拍的有音高宿主；同一事件上的 tied/slur/fermata
+与作者奏法混合 wrapper 尚未建模，因此明确拒绝。不同事件上的这些家族可以并存。
+休止符/无音高/倚音锚点、editorial footnote/level、完整 Unicode ID/NMTOKEN 等仍不在范围内。
+数值沿用输入 64 字符、XML 输出有限小数 32 位的精确边界，不能表示时拒绝而非取整。
+跨事件关联列表在 XML 随既有声部/音符序列显式报告规范化；事件内部作者顺序不变。
+
+真实导入→SFS→Workspace 的合成 17-choice JSON 已加入前端拒绝验收，所有作者 v1
+预览/播放均在进入渲染或声音计划前拒绝。旧四符号的真实 Verovio/播放策略回归不变。
+32c 原件仍没有新增接受证据，其独立 metadata 限制未解除；合成 wrapper 探针不是原件。
+完整契约与测试入口见 [`ARTICULATION_IMPORT.md`](ARTICULATION_IMPORT.md)。
 
 ## 固定参考边界与可重复计数
 
@@ -124,6 +145,7 @@ python3 scripts/notation_coverage.py report --gaps > /tmp/notation-gaps.json
 
 ```sh
 python3 scripts/notation_coverage.py test-evidence --feature articulations
+python3 scripts/notation_coverage.py test-evidence --feature authored-articulations
 python3 scripts/notation_coverage.py test-evidence --feature authored-slurs
 python3 scripts/notation_coverage.py test-evidence --feature printed-accidentals
 # 不带 --feature：重跑当前账本全部精确测试。

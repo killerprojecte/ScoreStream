@@ -1,6 +1,6 @@
-# Simple articulation conversion and rendering
+# Articulation import profiles
 
-This completes one explicitly bounded family across the authoring model,
+The default `LegacySimple` profile completes one explicitly bounded family across the authoring model,
 MusicXML, native SFS, desktop preview and the existing SFS playback policy:
 
 - staccato
@@ -8,10 +8,10 @@ MusicXML, native SFS, desktop preview and the existing SFS playback policy:
 - tenuto
 - accent
 
-It does not claim complete MusicXML notation support or complete performance
+This default profile does not claim complete MusicXML notation support or complete performance
 interpretation of every articulation. Strong-accent orientation, breath-mark
 shapes, detached-legato, spiccato, scoops, falls, stress and other marks remain
-explicit unsupported errors. No source element is deleted to make a score load.
+explicit unsupported errors in the default profile. The separate opt-in authored v1 profile below now retains their typed authoring data, without runtime realization. No source element is deleted to make a score load.
 
 ## Semantic contract
 
@@ -123,3 +123,116 @@ References:
 [MusicXML accent](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/accent/),
 [MEI artic](https://music-encoding.org/guidelines/v5/elements/artic.html),
 [SMuFL articulation glyphs](https://smufl.formats.music/latest/tables/articulation.html).
+
+
+## Authored family v1: representation/interchange checkpoint
+
+`MusicXmlOptions.articulations = ArticulationProfile::AuthoredV1` is an explicit,
+input-only opt-in. Default `MusicXml.read` still uses `LegacySimple`: its accepted
+four signs, canonical ordering, preview and sound policies are unchanged.
+The new option does **not** become the desktop/CLI default, infer playback, or
+extend unrelated MusicXML structures. Export of a typed authored payload is
+explicit through that payload itself; `MusicXml.write` emits it irrespective of
+the input-only option. Re-import rich output with `AuthoredV1`.
+
+`ScoreDocument.authored_articulations` is optional for old JSON compatibility.
+Its closed version is `"1"`; unknown versions, choices, fields and inapplicable
+per-choice fields reject. It contains measured pitched event anchors, ordered
+notations wrappers, ordered articulation groups and ordered typed signs. Empty
+groups, additional empty wrappers and repeated signs are preserved. Source IDs
+belong only to wrappers/groups, never to individual leaves. Missing IDs remain
+missing. Optional `print-object` keeps absent, explicit yes and explicit no
+separate. Wrapper/group/item order is never canonicalized or flattened.
+
+All 16 defined MusicXML 4.0 choices and passive `other-articulation` are modeled:
+
+- accent, staccato, tenuto, detached-legato, staccatissimo, spiccato, stress,
+  unstress and soft-accent are distinct closed signs.
+- strong-accent keeps optional up/down orientation independently from placement;
+  absent type stays absent rather than being replaced by the XSD default up.
+- scoop, plop, doit and falloff keep optional line shape, type, length and exact
+  dash/space lengths. No starting/destination pitch or pitch bend is invented.
+- breath-mark keeps empty/comma/tick/upbow/salzedo; caesura keeps
+  empty/normal/thick/short/curved/single. These XSD string enums are never trimmed.
+  No pause duration or voice/ensemble timing scope is inferred.
+- other-articulation retains exact passive text, including whitespace and escaped
+  literal markup, and optional SMuFL name. Neither is an executable instruction,
+  a validated glyph resource, a renderer override that we can honor, or a sound.
+
+Every choice preserves optional default/relative x/y, font family/style/size/
+weight, color and placement as explicit typed fields. Coordinates, numeric point
+sizes and dash/space lengths use exact rationals, including zero and negative
+values allowed by the pinned schema. Font sizes distinguish CSS enums from
+numeric values. Absent values are not guessed. Token-derived XML attributes get
+XML whitespace normalization; `other-articulation` text does not. Colors retain
+RGB versus ARGB spelling. No XML payload or arbitrary attribute bag is stored.
+
+The SFS capability `scorestream.articulation@1` uses explicit event, wrapper,
+group and item records with typed scalar fields and contiguous indices. The
+[wire specification](../design/spec/authored-articulation-v1.md) defines their
+closed schema. Native SFS retains the association-list order even across frames.
+MusicXML serializes hosts in the existing voice/note order and reports any
+association-list reordering; each host's local authored ordering stays exact.
+All source identities are reserved before generated SFS ID normalization.
+A source note `_e` and wrapper `event1` therefore map the host to `event2`, retaining
+the wrapper identity, rather than colliding or renaming the wrapper. XML-generated
+voice/chord/tie/slur names likewise avoid authored source identities, with explicit
+normalization reports; the default profile is not changed.
+
+### Deliberate remaining boundaries
+
+- V1 accepts only articulation-only wrappers on measured pitched events. A host
+  shared with tied/slur/fermata or legacy articulation data rejects, even across
+  separate wrappers. Those other families may coexist on different events.
+  Ordered mixed-family wrappers need a later model, not a flattening workaround.
+- Rest, unpitched and grace anchors remain unsupported. New wrapper fields on a
+  grace cannot bypass the scope guard. Editorial footnote/level, other families,
+  arbitrary children and unknown attributes remain blocked.
+- Source IDs use the existing ASCII XML-ID subset. SMuFL references use a bounded
+  ASCII NMTOKEN subset; no claim covers the whole Unicode XSD lexical space.
+- Decimal input retains the 64-character bound. MusicXML export requires exact
+  finite decimals within the existing 32-place and 64-character output bounds. Native rational values such
+  as 1/3 survive SFS but reject XML export rather than rounding.
+- All authored-v1 rendering and playback are **withheld**, even if a rich group
+  happens to contain a simple staccato. Both the requirement and actual reserved
+  record kinds trigger fail-closed guards before preview/performance. No glyph
+  test, acoustic result, pitch transition, breath policy or velocity policy is
+  claimed for this checkpoint.
+
+### Evidence and independent originals
+
+`authored_articulations` tests cover every choice and placement; every shared
+attribute; orientation/default distinctions; all breath/caesura values; line
+styles; exact passive text; wrapper/group order and IDs; polyphonic chord and
+staff hosts; JSON/SFS/XML roundtrip; nonterminating output refusal; legacy
+compatibility; and invalid syntax, anchors, wrappers and metadata boundaries.
+Core wire tests independently cover missing/unknown capability, typed fields,
+gapped/duplicate hierarchy, onset/ownership, source collisions and runtime guards.
+
+`authored-articulation-family.musicxml` is an original synthetic fixture with all
+17 choices. Its checked-in desktop JSON is produced by the actual importer,
+SFS writer and Workspace. The frontend consumes that snapshot and verifies the
+whole preview is withheld without changing its source. Regenerate deliberately:
+`UPDATE_AUTHORED_ARTICULATION_FIXTURE=1 cargo test -p scorestream-formats --test authored_articulations actual_imported_family_snapshot_preserves_all_choices_for_fail_closed_preview`.
+
+This is not untouched external-score acceptance. The W3C community suite 32c
+metadata boundary remains independent and unchanged. The synthetic repeated/
+empty-wrapper probes are not that original; no deletion of original metadata or
+notations is used to claim success. An external-source retrieval attempt in this
+checkpoint did not yield the original, so no new 32c run is claimed.
+
+### Local verification for the authored-v1 checkpoint
+
+- Core/formats/app/codec package tests: **599 passed, 14 existing ignored**.
+- Full frontend suite: **362 passed across 32 files**; TypeScript passed.
+- Both articulation ledger profiles: **47 exact evidence tests passed**.
+- Offline catalog/source-pin check and **19 coverage regression tests** passed.
+- Actual authored snapshot validates against the extended native AST JSON Schema.
+- Scoped rustfmt on all 18 changed Rust files and `git diff --check` passed.
+- Strict scoped Clippy still encounters the existing `wav.rs:158`
+  `manual_is_multiple_of` lint. With only that baseline lint allowed, the four
+  affected packages and all their targets pass `-D warnings`.
+
+No full-workspace build/test, MCP binary check, Vite production build, platform
+packaging, remote branch, pull request or CI result is claimed for this checkpoint.
+The compact existing target was reused and all other caches were retained.

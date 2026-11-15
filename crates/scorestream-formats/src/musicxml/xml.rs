@@ -631,6 +631,22 @@ pub(super) fn schema_with_geometry(
     geometry: &mut super::geometry::Audit,
     report: &mut MappingReport,
 ) {
+    schema_with_profile(
+        n,
+        policy,
+        geometry,
+        super::ArticulationProfile::LegacySimple,
+        report,
+    );
+}
+pub(super) fn schema_with_profile(
+    n: &Node,
+    policy: super::GeometryPolicy,
+    geometry: &mut super::geometry::Audit,
+    articulations: super::ArticulationProfile,
+    report: &mut MappingReport,
+) {
+    let authored = articulations == super::ArticulationProfile::AuthoredV1;
     let (attrs, children, multiple, required, text): (&[&str], &[&str], &[&str], &[&str], bool) =
         match n.name.as_str() {
             "score-partwise" => (
@@ -658,21 +674,34 @@ pub(super) fn schema_with_geometry(
             ),
             "score-part" => (
                 &["id"],
-                &["part-name", "score-instrument", "midi-device", "midi-instrument"],
+                &[
+                    "part-name",
+                    "score-instrument",
+                    "midi-device",
+                    "midi-instrument",
+                ],
                 &[],
                 &["part-name"],
                 false,
             ),
             "score-instrument" => (
                 &["id"],
-                &["instrument-name", "instrument-abbreviation", "instrument-sound"],
+                &[
+                    "instrument-name",
+                    "instrument-abbreviation",
+                    "instrument-sound",
+                ],
                 &[],
                 &["instrument-name"],
                 false,
             ),
             "midi-device" => (&["id", "port"], &[], &[], &[], true),
             "midi-instrument" => (
-                &["id"], &["midi-channel", "midi-program", "volume", "pan"], &[], &[], false,
+                &["id"],
+                &["midi-channel", "midi-program", "volume", "pan"],
+                &[],
+                &[],
+                false,
             ),
             "part" => (&["id"], &["measure"], &["measure"], &["measure"], false),
             "measure" => (
@@ -802,6 +831,27 @@ pub(super) fn schema_with_geometry(
                 false,
             ),
             "tie" => (&["type", "time-only"], &[], &[], &[], false),
+            "notations" if authored => (
+                &["id", "print-object"],
+                &["tied", "fermata", "slur", "articulations"],
+                &["tied", "fermata", "slur", "articulations"],
+                &[],
+                false,
+            ),
+            "articulations" if authored => (
+                &["id"],
+                super::authored_articulations::CHOICES,
+                super::authored_articulations::CHOICES,
+                &[],
+                false,
+            ),
+            name if authored && super::authored_articulations::CHOICES.contains(&name) => (
+                super::authored_articulations::attributes(name),
+                &[],
+                &[],
+                &[],
+                ["breath-mark", "caesura", "other-articulation"].contains(&name),
+            ),
             "notations" => (
                 &[],
                 &["tied", "fermata", "slur", "articulations"],
@@ -830,7 +880,9 @@ pub(super) fn schema_with_geometry(
                 &[],
                 false,
             ),
-            "staccato" | "staccatissimo" | "tenuto" | "accent" => (&["placement"], &[], &[], &[], false),
+            "staccato" | "staccatissimo" | "tenuto" | "accent" => {
+                (&["placement"], &[], &[], &[], false)
+            }
             "fermata" => (&["type", "default-y", "relative-y"], &[], &[], &[], true),
             "tied" => (&["type", "number"], &[], &[], &[], false),
             "pitch" => (
@@ -861,12 +913,39 @@ pub(super) fn schema_with_geometry(
             "stem" => (&[], &[], &[], &[], true),
             "beam" => (&["number"], &[], &[], &[], true),
             "accidental" => (&["cautionary", "parentheses"], &[], &[], &[], true),
-            "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
-            | "instrument-name" | "instrument-abbreviation" | "instrument-sound"
-            | "midi-channel" | "midi-program" | "volume" | "pan" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
-            | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "staff"
-            | "actual-notes" | "normal-notes" | "normal-type" | "diatonic" | "chromatic"
-            | "octave-change" | "beat-unit" | "per-minute" => (&[], &[], &[], &[], true),
+            "work-title"
+            | "work-number"
+            | "movement-title"
+            | "rights"
+            | "part-name"
+            | "instrument-name"
+            | "instrument-abbreviation"
+            | "instrument-sound"
+            | "midi-channel"
+            | "midi-program"
+            | "volume"
+            | "pan"
+            | "divisions"
+            | "staves"
+            | "fifths"
+            | "beats"
+            | "beat-type"
+            | "sign"
+            | "line"
+            | "step"
+            | "alter"
+            | "octave"
+            | "duration"
+            | "voice"
+            | "staff"
+            | "actual-notes"
+            | "normal-notes"
+            | "normal-type"
+            | "diatonic"
+            | "chromatic"
+            | "octave-change"
+            | "beat-unit"
+            | "per-minute" => (&[], &[], &[], &[], true),
             _ => {
                 n.error(
                     report,
@@ -915,7 +994,7 @@ pub(super) fn schema_with_geometry(
                 "Element has no implemented mapping at this path",
             );
         } else {
-            schema_with_geometry(child, policy, geometry, report);
+            schema_with_profile(child, policy, geometry, articulations, report);
         }
     }
     for name in children {

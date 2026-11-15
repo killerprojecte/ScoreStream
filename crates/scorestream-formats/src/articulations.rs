@@ -8,6 +8,15 @@ use scorestream_core::{
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) fn validate(score: &ScoreDocument, report: &mut MappingReport) {
+    for d in scorestream_core::articulation_model::validate_score(score) {
+        report.push(
+            Format::ScoreModel,
+            MappingEffect::Invalid,
+            d.code,
+            "/authored_articulations",
+            d.message,
+        );
+    }
     let events: BTreeSet<_> = score
         .parts
         .iter()

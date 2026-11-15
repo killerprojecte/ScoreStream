@@ -39,10 +39,16 @@ pub struct ScoreDocument {
     /// Event-local simple articulation signs; no chord-wide or voice-wide inference.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub articulations: Vec<ScoreArticulation>,
+    /// Versioned, ordered authored articulation notation, independent of legacy
+    /// simple-sign performance. No rendering or sounding policy is implied.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authored_articulations: Option<AuthoredArticulations>,
     /// Authored printed beams. No timing, grouping, or missing levels are inferred.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub beams: Vec<ScoreBeam>,
 }
+pub use crate::articulation_model::*;
+
 /// The complete empty-symbol articulation subset with a native SFS sound policy.
 /// More complex signs (strong-accent orientation, breath shapes, detached-legato,
 /// stress, scoop and falloff) require their own typed semantics, never aliases.

@@ -1,0 +1,447 @@
+{
+  "can_redo": false,
+  "can_undo": false,
+  "diagnostics": [],
+  "dirty": false,
+  "document": {
+    "document_kind": "score",
+    "end": "1",
+    "format": "ScoreStream",
+    "format_version": "1.1",
+    "frames": [
+      {
+        "records": [
+          {
+            "attributes": {
+              "implicit": false,
+              "label": "1"
+            },
+            "id": "m",
+            "length": "1",
+            "record": "measure",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "clef": "G2",
+              "meter": "1/4"
+            },
+            "record": "state",
+            "target": "p.s1"
+          },
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "host",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "C4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "name": "flute",
+              "source_id": "i"
+            },
+            "kind": "scorestream.instrument",
+            "record": "mark",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "event_index": 0
+            },
+            "kind": "scorestream.articulation.event",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "print_object": true,
+              "source_id": "wrapper",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "source_id": "empty_group",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "source_id": "ordinary",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 0,
+              "placement": "above",
+              "sign": "accent",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 1,
+              "orientation": "down",
+              "placement": "above",
+              "sign": "strong-accent",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 2,
+              "placement": "below",
+              "sign": "staccato",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 3,
+              "sign": "tenuto",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 4,
+              "sign": "detached-legato",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 5,
+              "sign": "staccatissimo",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 1,
+              "item_index": 6,
+              "sign": "spiccato",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 2,
+              "source_id": "transitions",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "dash_length": "3/2",
+              "event_index": 0,
+              "group_index": 2,
+              "item_index": 0,
+              "line_length": "long",
+              "line_shape": "curved",
+              "line_type": "dashed",
+              "sign": "scoop",
+              "space_length": "1/2",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 2,
+              "item_index": 1,
+              "line_shape": "straight",
+              "sign": "plop",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 2,
+              "item_index": 2,
+              "sign": "doit",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 2,
+              "item_index": 3,
+              "sign": "falloff",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "source_id": "empty_wrapper",
+              "wrapper_index": 1
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "print_object": false,
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "source_id": "breaks_and_stress",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 0,
+              "shape": "salzedo",
+              "sign": "breath-mark",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 1,
+              "shape": "single",
+              "sign": "caesura",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 2,
+              "sign": "stress",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 3,
+              "sign": "unstress",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 4,
+              "sign": "soft-accent",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          },
+          {
+            "attributes": {
+              "color": "#80AABBCC",
+              "default_x": "-5/4",
+              "event_index": 0,
+              "font_family": "Bravura, serif",
+              "font_size_css": "small",
+              "font_style": "italic",
+              "font_weight": "bold",
+              "group_index": 0,
+              "item_index": 5,
+              "relative_y": "0",
+              "sign": "other-articulation",
+              "smufl": "articAccentAbove",
+              "text": " Passive <text> & 私 ",
+              "wrapper_index": 2
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#host"
+          }
+        ],
+        "time": "0"
+      }
+    ],
+    "metadata": {
+      "title": "Authored articulation family, v1"
+    },
+    "parts": [
+      {
+        "display_name": "Flute",
+        "id": "p",
+        "instrument": "flute",
+        "staves": 1
+      }
+    ],
+    "required_extensions": [
+      "scorestream.articulation@1",
+      "scorestream.instrument@1"
+    ],
+    "time_unit": "quarter",
+    "voices": [
+      {
+        "id": "v1_1",
+        "part": "p",
+        "staff": 1
+      }
+    ]
+  },
+  "draft_seq": 0,
+  "events": [
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "host",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "host",
+      "pitch": "C4",
+      "source_line": 10,
+      "staff": 1,
+      "time": "0",
+      "voice": "v1_1",
+      "written_duration": "4"
+    }
+  ],
+  "measures": [
+    {
+      "id": "m",
+      "label": "1",
+      "length": "1",
+      "part": "p",
+      "time": "0"
+    }
+  ],
+  "parts": [
+    {
+      "display_name": "Flute",
+      "id": "p",
+      "instrument": "flute",
+      "staves": 1
+    }
+  ],
+  "revision_id": "rev-1-a19eb7693590d25c6a4a",
+  "source": "!score 1.1 unit=q\n!part p instrument=flute staves=1 display_name=\"Flute\"\n!voice v1_1 part=p staff=1\n!meta title=\"Authored articulation family, v1\"\n!requires scorestream.articulation@1\n!requires scorestream.instrument@1\n@0\n| p m len=1 implicit=false label=\"1\"\n= p.s1 clef=G2 meter=1/4\nv1_1 C4:1 id=host dots=0 staff=1 w=4\n+ p scorestream.instrument name=\"flute\" source_id=\"i\"\n+ #host scorestream.articulation.event event_index=0\n+ #host scorestream.articulation.notations event_index=0 print_object=true source_id=\"wrapper\" wrapper_index=0\n+ #host scorestream.articulation.group event_index=0 group_index=0 source_id=\"empty_group\" wrapper_index=0\n+ #host scorestream.articulation.group event_index=0 group_index=1 source_id=\"ordinary\" wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=0 placement=above sign=accent wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=1 orientation=down placement=above sign=strong-accent wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=2 placement=below sign=staccato wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=3 sign=tenuto wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=4 sign=detached-legato wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=5 sign=staccatissimo wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=1 item_index=6 sign=spiccato wrapper_index=0\n+ #host scorestream.articulation.group event_index=0 group_index=2 source_id=\"transitions\" wrapper_index=0\n+ #host scorestream.articulation.item dash_length=\"3/2\" event_index=0 group_index=2 item_index=0 line_length=long line_shape=curved line_type=dashed sign=scoop space_length=\"1/2\" wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=2 item_index=1 line_shape=straight sign=plop wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=2 item_index=2 sign=doit wrapper_index=0\n+ #host scorestream.articulation.item event_index=0 group_index=2 item_index=3 sign=falloff wrapper_index=0\n+ #host scorestream.articulation.notations event_index=0 source_id=\"empty_wrapper\" wrapper_index=1\n+ #host scorestream.articulation.notations event_index=0 print_object=false wrapper_index=2\n+ #host scorestream.articulation.group event_index=0 group_index=0 source_id=\"breaks_and_stress\" wrapper_index=2\n+ #host scorestream.articulation.item event_index=0 group_index=0 item_index=0 shape=\"salzedo\" sign=breath-mark wrapper_index=2\n+ #host scorestream.articulation.item event_index=0 group_index=0 item_index=1 shape=\"single\" sign=caesura wrapper_index=2\n+ #host scorestream.articulation.item event_index=0 group_index=0 item_index=2 sign=stress wrapper_index=2\n+ #host scorestream.articulation.item event_index=0 group_index=0 item_index=3 sign=unstress wrapper_index=2\n+ #host scorestream.articulation.item event_index=0 group_index=0 item_index=4 sign=soft-accent wrapper_index=2\n+ #host scorestream.articulation.item color=\"#80AABBCC\" default_x=\"-5/4\" event_index=0 font_family=\"Bravura, serif\" font_size_css=small font_style=italic font_weight=bold group_index=0 item_index=5 relative_y=\"0\" sign=other-articulation smufl=\"articAccentAbove\" text=\" Passive <text> & 私 \" wrapper_index=2\n.\n!end at=1\n",
+  "states": [
+    {
+      "scope": "p.s1",
+      "time": "0",
+      "values": {
+        "clef": "G2",
+        "meter": "1/4"
+      }
+    }
+  ],
+  "valid": true,
+  "voices": [
+    {
+      "id": "v1_1",
+      "part": "p",
+      "staff": 1
+    }
+  ]
+}

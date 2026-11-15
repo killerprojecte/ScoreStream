@@ -14,6 +14,7 @@ fn r(s: &str) -> Rational {
 fn options() -> MusicXmlOptions {
     MusicXmlOptions {
         geometry: Default::default(),
+        articulations: Default::default(),
         irregular_measures: vec![IrregularMeasure {
             ordinal: 1,
             label: "268".into(),

@@ -85,6 +85,7 @@ pub(super) fn perform(
     maximum_timing_bits: Option<u64>,
     grace_budgets: Option<(usize, usize)>,
 ) -> Result<PerformedScore> {
+    lower::reject_authored_articulations(doc)?;
     let combined = profile == lower::LoweringProfile::ExplicitGracesAndFermatas;
     let fermatas = combined || profile == lower::LoweringProfile::ExplicitFermatas;
     let graces = combined || profile == lower::LoweringProfile::ExplicitGraces;

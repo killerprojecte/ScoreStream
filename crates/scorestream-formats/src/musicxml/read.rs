@@ -190,7 +190,13 @@ fn read_with_audit<R: BufRead + Seek>(
         if phase == xml::Phase::PartStart {
             return Ok(());
         }
-        xml::schema_with_geometry(node, options.geometry, geometry, &mut report);
+        xml::schema_with_profile(
+            node,
+            options.geometry,
+            geometry,
+            options.articulations,
+            &mut report,
+        );
         if let Err(errors) = reserve_ids(node, &mut object_ids) {
             report.append(errors);
         }
@@ -330,10 +336,11 @@ fn read_with_audit<R: BufRead + Seek>(
         // for an unchecked match or index in the semantic mapper.
         if phase == xml::Phase::Complete {
             let mut checked = MappingReport::default();
-            xml::schema_with_geometry(
+            xml::schema_with_profile(
                 node,
                 options.geometry,
                 &mut super::geometry::Audit::default(),
+                options.articulations,
                 &mut checked,
             );
             if checked.has_errors() {
@@ -389,6 +396,16 @@ fn read_with_audit<R: BufRead + Seek>(
             score.sound_dynamics.append(&mut reader.sound_dynamics);
             score.fermatas.append(&mut reader.fermatas);
             score.articulations.append(&mut reader.articulations);
+            if !reader.authored_articulations.is_empty() {
+                score
+                    .authored_articulations
+                    .get_or_insert_with(|| AuthoredArticulations {
+                        version: ArticulationVersion::V1,
+                        events: vec![],
+                    })
+                    .events
+                    .append(&mut reader.authored_articulations);
+            }
             score.graces.append(&mut reader.graces);
             score.beams.append(&mut reader.beams);
             parts[reader.part_index] = Some(reader.part);
@@ -450,8 +467,17 @@ fn read_with_audit<R: BufRead + Seek>(
     crate::graces::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
     score.slurs = super::slurs::resolve(slur_endpoints, &mut report)?;
+    super::authored_articulations::protect_generated_identities(
+        &mut score,
+        &mut object_ids,
+        &mut report,
+    );
     crate::slurs::sort(&mut score);
     crate::slurs::authored_only(&score, crate::Format::MusicXml, &mut report);
+    if score.authored_articulations.is_some() {
+        report.push(crate::Format::MusicXml, crate::MappingEffect::Preserved, "articulation.authored_only", "/authored_articulations",
+            "Authored v1 preserves ordered articulation-only notation wrappers, exact optional attributes and passive custom text. Preview and playback remain withheld; no articulation effect is inferred.");
+    }
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
     report.finish(score)
@@ -476,6 +502,7 @@ struct PartReader {
     sound_dynamics: Vec<ScoreSoundDynamics>,
     fermatas: Vec<ScoreFermata>,
     articulations: Vec<ScoreArticulation>,
+    authored_articulations: Vec<ArticulationEvent>,
     graces: Vec<ScoreGraceNote>,
     beams: Vec<ScoreBeam>,
     barlines: Vec<ScoreBarline>,
@@ -517,6 +544,7 @@ impl PartReader {
             sound_dynamics: vec![],
             fermatas: vec![],
             articulations: vec![],
+            authored_articulations: vec![],
             graces: vec![],
             beams: vec![],
             barlines: vec![],
@@ -545,6 +573,7 @@ impl PartReader {
             sound_dynamics,
             fermatas,
             articulations,
+            authored_articulations,
             graces,
             beams,
             barlines,
@@ -896,8 +925,17 @@ impl PartReader {
                             .attr("id")
                             .map(String::from)
                             .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
+                        if options.articulations == super::ArticulationProfile::AuthoredV1 {
+                            // New wrapper fields must not bypass the authored-family
+                            // scope check through the separate grace reader.
+                            super::authored_articulations::read(n, &EventId(id.clone()))?;
+                        }
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
-                        slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
+                        slur_endpoints.extend(super::slurs::read(
+                            n,
+                            &part.id,
+                            &EventId(id.clone()),
+                        )?);
                         pending_graces.push(super::graces::read(
                             n,
                             EventId(id),
@@ -956,8 +994,25 @@ impl PartReader {
                     beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
-                    articulations.extend(super::articulations::read(n, &EventId(id.clone()))?);
-                    if let Some(endpoints) = super::ties::read_endpoints(n)? {
+                    let mut authored_event = false;
+                    if options.articulations == super::ArticulationProfile::AuthoredV1 {
+                        if let Some(authored) =
+                            super::authored_articulations::read(n, &EventId(id.clone()))?
+                        {
+                            authored_articulations.push(authored);
+                            authored_event = true;
+                        }
+                    } else {
+                        articulations.extend(super::articulations::read(n, &EventId(id.clone()))?);
+                    }
+                    // Authored-family validation has already refused every tie
+                    // and preserved intentional empty wrappers on this event.
+                    let endpoints = if authored_event {
+                        None
+                    } else {
+                        super::ties::read_endpoints(n)?
+                    };
+                    if let Some(endpoints) = endpoints {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);
                     }
                     let event = ScoreEvent {

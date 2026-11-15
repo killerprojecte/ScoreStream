@@ -165,6 +165,8 @@ pub fn write_with_options(
         }
     }
     let mut xml_ids = BTreeSet::new();
+    let authored_articulations =
+        super::authored_articulations::Export::new(score, &mut xml_ids, &mut report);
     for value in score
         .parts
         .iter()
@@ -633,6 +635,7 @@ pub fn write_with_options(
                         articulations.write(&e.id, &mut out);
                         out.push_str("</notations>\n");
                     }
+                    authored_articulations.write(&e.id, &mut out);
                     out.push_str("      </note>\n");
                     if !is_chord {
                         cursor = &e.offset + &e.duration;

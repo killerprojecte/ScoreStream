@@ -17,6 +17,7 @@ function decimal(q:Q):string {
  let result=String(n/d),r=n%d;if(r){result+='.';while(r){r*=10n;result+=String(r/d);r%=d;}}return result;
 }
 export function projectMarks(view:View,warnings:string[]){
+ if((Array.isArray(view.document.required_extensions)&&view.document.required_extensions.some(e=>e.startsWith('scorestream.articulation@')))||(view.document.frames??[]).some(f=>f.records.some(r=>r.record==='mark'&&(r.kind==='scorestream.articulation'||r.kind.startsWith('scorestream.articulation.')))))throw Error('Authored articulation signs, grouping and print attributes are preserved but not yet supported by the preview. Preview withheld; source is unchanged.');
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.slur@1'))throw Error('Authored slur endpoints, orientation and Bézier geometry are preserved but not yet supported by the preview. Preview withheld; source is unchanged.');
  if((Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.beam@1'))||(view.document.frames??[]).some(f=>f.records.some(r=>r.record==='mark'&&r.kind==='scorestream.beam')))throw Error('Authored beam roles and hooks are preserved but not yet supported by the preview. Preview withheld to avoid replacing them with automatic grouping.');
  const staves=view.parts.flatMap(p=>Array.from({length:p.staves},(_,i)=>({part:p.id,staff:i+1})));

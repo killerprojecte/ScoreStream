@@ -1,23 +1,25 @@
 //! Small strict MusicXML 4.0 score-partwise profile; not complete MusicXML support.
 mod accidentals;
+mod appearance;
+mod barlines;
 mod beams;
 #[cfg(test)]
 mod chord_beam_corpus;
-mod appearance;
-mod barlines;
 mod dynamics;
 mod extent;
 pub use extent::{IrregularMeasure, MusicXmlOptions};
 mod articulations;
+mod authored_articulations;
+pub use authored_articulations::ArticulationProfile;
 mod fermatas;
 mod geometry;
 mod graces;
 mod instruments;
 pub use geometry::GeometryPolicy;
 mod read;
-mod slurs;
 #[cfg(test)]
 mod slur_corpus;
+mod slurs;
 mod tempo;
 mod ties;
 mod write;

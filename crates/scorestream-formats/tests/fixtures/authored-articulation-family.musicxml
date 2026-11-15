@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic authored-family study, not an edited external score. Preview/playback withheld. -->
+<score-partwise version="4.0">
+  <work><work-title>Authored articulation family, v1</work-title></work>
+  <part-list><score-part id="p"><part-name>Flute</part-name><score-instrument id="i"><instrument-name>flute</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note id="host"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type>
+      <notations id="wrapper" print-object="yes">
+        <articulations id="empty_group"/>
+        <articulations id="ordinary">
+          <accent placement="above"/><strong-accent type="down" placement="above"/>
+          <staccato placement="below"/><tenuto/><detached-legato/><staccatissimo/><spiccato/>
+        </articulations>
+        <articulations id="transitions">
+          <scoop line-shape="curved" line-type="dashed" line-length="long" dash-length="1.5" space-length="0.5"/>
+          <plop line-shape="straight"/><doit/><falloff/>
+        </articulations>
+      </notations>
+      <notations id="empty_wrapper"/>
+      <notations print-object="no"><articulations id="breaks_and_stress">
+        <breath-mark>salzedo</breath-mark><caesura>single</caesura><stress/><unstress/><soft-accent/>
+        <other-articulation smufl="articAccentAbove" default-x="-1.25" relative-y="0" font-family="Bravura, serif" font-style="italic" font-size="small" font-weight="bold" color="#80AABBCC"> Passive &lt;text&gt; &amp; 私 </other-articulation>
+      </articulations></notations>
+    </note>
+  </measure></part>
+</score-partwise>

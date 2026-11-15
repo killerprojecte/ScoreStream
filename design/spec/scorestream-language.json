@@ -70,7 +70,8 @@
     "scorestream.barline requires scorestream.navigation@1, a declared part target and exact referenced measure boundary; fragments cannot introduce navigation. Authored-only validation reports unavailable engraving/replay; sounding lowering rejects.",
     "sound_dynamics is an exact nonnegative percentage of forte velocity 90. The bounded numeric playback profile rejects mixtures with sounding symbolic dynamics, hairpins, or attack-changing accents; it never substitutes printed labels.",
     "scorestream.fermata requires scorestream.fermata@1 and a measured note/rest anchor at the exact onset. Keep all distinct part/event copies, authored shape/orientation absence and exact y placement. No hold duration or synchronization is inferred; playback rejects.",
-    "scorestream.beam requires scorestream.beam@1 and exact event onset/actual measure ownership. Preserve optional number and value. Full per-lane topology checks include unmarked events; printed beams never alter sounding pitch or time."
+    "scorestream.beam requires scorestream.beam@1 and exact event onset/actual measure ownership. Preserve optional number and value. Full per-lane topology checks include unmarked events; printed beams never alter sounding pitch or time.",
+    "scorestream.articulation@1 preserves typed authored articulation hierarchy without inferred defaults or interpretation; header and actual mark kinds independently withhold preview and performance."
   ],
   "pitch": {
     "canonical": "Written pitch spelling",
@@ -444,6 +445,48 @@
       "scorestream.beam": [
         "number",
         "value"
+      ],
+      "scorestream.articulation.event": [
+        "event_index"
+      ],
+      "scorestream.articulation.notations": [
+        "event_index",
+        "wrapper_index",
+        "source_id",
+        "print_object"
+      ],
+      "scorestream.articulation.group": [
+        "event_index",
+        "wrapper_index",
+        "group_index",
+        "source_id"
+      ],
+      "scorestream.articulation.item": [
+        "event_index",
+        "wrapper_index",
+        "group_index",
+        "item_index",
+        "font_family",
+        "color",
+        "shape",
+        "text",
+        "smufl",
+        "default_x",
+        "default_y",
+        "relative_x",
+        "relative_y",
+        "font_size_points",
+        "dash_length",
+        "space_length",
+        "sign",
+        "placement",
+        "font_style",
+        "font_size_css",
+        "font_weight",
+        "orientation",
+        "line_shape",
+        "line_type",
+        "line_length"
       ]
     },
     "relations": {
@@ -1164,6 +1207,229 @@
         },
         "required_extension": "scorestream.beam@1",
         "meaning": "Printed authored beam at the exact event onset. Requires explicit written flags, unique effective levels, all lower levels and closed contiguous same-measure/voice/staff runs. Secondary connections must also connect at lower levels. Secondary hooks preserve local direction without inferred neighbor attachment. Measured pitched chords require consecutive ordered members with identical actual duration, full explicit written rhythm, graphic size and effective lane; stems must all be absent or equal up/down. The first declared member alone owns beams. Members remain separate events. Member beams, mixed rhythm/staff/stem, ambiguous groups and grace chords reject. Primary hooks, semantic cues, unpitched/spacer targets, cross-measure runs and mixing legacy beam relations reject. Grace beams require the authored before-principal profile. Graphic cue size remains sounding. No performance timing changes."
+      },
+      "scorestream.articulation.event": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "event_index"
+        ],
+        "fields": {
+          "event_index": {
+            "type": "nonnegative_integer"
+          }
+        },
+        "required_extension": "scorestream.articulation@1",
+        "meaning": "Authored articulation hierarchy, targeted at the exact onset of a measured pitched event. Zero-based indices are contiguous and preserve authored event, wrapper, group and item order. Empty wrappers/groups require their own records. No generic id or payload field. Sign-specific optional fields are allowed only for their matching sign; font size alternatives are mutually exclusive."
+      },
+      "scorestream.articulation.notations": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "event_index",
+          "wrapper_index"
+        ],
+        "fields": {
+          "event_index": {
+            "type": "nonnegative_integer"
+          },
+          "wrapper_index": {
+            "type": "nonnegative_integer"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "print_object": {
+            "type": "boolean"
+          }
+        },
+        "required_extension": "scorestream.articulation@1",
+        "meaning": "Authored articulation hierarchy, targeted at the exact onset of a measured pitched event. Zero-based indices are contiguous and preserve authored event, wrapper, group and item order. Empty wrappers/groups require their own records. No generic id or payload field. Sign-specific optional fields are allowed only for their matching sign; font size alternatives are mutually exclusive."
+      },
+      "scorestream.articulation.group": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "event_index",
+          "wrapper_index",
+          "group_index"
+        ],
+        "fields": {
+          "event_index": {
+            "type": "nonnegative_integer"
+          },
+          "wrapper_index": {
+            "type": "nonnegative_integer"
+          },
+          "group_index": {
+            "type": "nonnegative_integer"
+          },
+          "source_id": {
+            "type": "string"
+          }
+        },
+        "required_extension": "scorestream.articulation@1",
+        "meaning": "Authored articulation hierarchy, targeted at the exact onset of a measured pitched event. Zero-based indices are contiguous and preserve authored event, wrapper, group and item order. Empty wrappers/groups require their own records. No generic id or payload field. Sign-specific optional fields are allowed only for their matching sign; font size alternatives are mutually exclusive."
+      },
+      "scorestream.articulation.item": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "event_index",
+          "wrapper_index",
+          "group_index",
+          "item_index",
+          "sign"
+        ],
+        "fields": {
+          "event_index": {
+            "type": "nonnegative_integer"
+          },
+          "wrapper_index": {
+            "type": "nonnegative_integer"
+          },
+          "group_index": {
+            "type": "nonnegative_integer"
+          },
+          "item_index": {
+            "type": "nonnegative_integer"
+          },
+          "font_family": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "shape": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "smufl": {
+            "type": "string"
+          },
+          "default_x": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "default_y": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "relative_x": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "relative_y": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "font_size_points": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "dash_length": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "space_length": {
+            "type": "string",
+            "meaning": "Exact rational encoded as a string; no floating-point approximation."
+          },
+          "sign": {
+            "type": "enum",
+            "values": [
+              "accent",
+              "strong-accent",
+              "staccato",
+              "tenuto",
+              "detached-legato",
+              "staccatissimo",
+              "spiccato",
+              "scoop",
+              "plop",
+              "doit",
+              "falloff",
+              "breath-mark",
+              "caesura",
+              "stress",
+              "unstress",
+              "soft-accent",
+              "other-articulation"
+            ]
+          },
+          "placement": {
+            "type": "enum",
+            "values": [
+              "above",
+              "below"
+            ]
+          },
+          "font_style": {
+            "type": "enum",
+            "values": [
+              "normal",
+              "italic"
+            ]
+          },
+          "font_size_css": {
+            "type": "enum",
+            "values": [
+              "xx-small",
+              "x-small",
+              "small",
+              "medium",
+              "large",
+              "x-large",
+              "xx-large"
+            ]
+          },
+          "font_weight": {
+            "type": "enum",
+            "values": [
+              "normal",
+              "bold"
+            ]
+          },
+          "orientation": {
+            "type": "enum",
+            "values": [
+              "up",
+              "down"
+            ]
+          },
+          "line_shape": {
+            "type": "enum",
+            "values": [
+              "straight",
+              "curved"
+            ]
+          },
+          "line_type": {
+            "type": "enum",
+            "values": [
+              "solid",
+              "dashed",
+              "dotted",
+              "wavy"
+            ]
+          },
+          "line_length": {
+            "type": "enum",
+            "values": [
+              "short",
+              "medium",
+              "long"
+            ]
+          }
+        },
+        "required_extension": "scorestream.articulation@1",
+        "meaning": "Authored articulation hierarchy, targeted at the exact onset of a measured pitched event. Zero-based indices are contiguous and preserve authored event, wrapper, group and item order. Empty wrappers/groups require their own records. No generic id or payload field. Sign-specific optional fields are allowed only for their matching sign; font size alternatives are mutually exclusive."
       }
     }
   },
@@ -1292,6 +1558,16 @@
           "slur"
         ],
         "required_behavior": "One capability with at least one valid slur in a complete score. Reuse stable native relation IDs, with exactly one start and one end per ID; parallel relations with distinct IDs remain distinct. Anchors must be distinct pitched events in one part; cross-voice and cross-staff are allowed. Start onset precedes end, except strictly ordered genuine before-principal grace events in the same principal group using authored negative order (including grace to principal). Never infer order from IDs or record order. Exact optional endpoint Bézier coordinates, orientation and placement are independent and no defaults are inferred. Source-local XML numbers may be regenerated with an explicit normalization report. Reject malformed fields, continues, line_type, resting/unpitched/silent-cue anchors, unknown versions and missing capability for new fields. Every ordinary or qualified performance lowering rejects this capability until an explicit supported policy exists. Legacy SFS slurs without it are unchanged."
+      },
+      "scorestream.articulation@1": {
+        "status": "typed authored articulation roundtrip; rendering and performance unavailable",
+        "mark_kinds": [
+          "scorestream.articulation.event",
+          "scorestream.articulation.notations",
+          "scorestream.articulation.group",
+          "scorestream.articulation.item"
+        ],
+        "required_behavior": "One declaration in a complete score. Explicit event, wrapper, group and item records preserve order, duplicate signs, empty wrappers/groups, optional source IDs and print-object absence. All 17 closed MusicXML articulation signs retain typed common print fields and their sign-specific fields. Other-articulation text and SMuFL name are passive data, never markup or performance instructions. Reject unknown fields/versions, malformed or gapped indices, duplicate paths, missing parents, source-ID/native-ID collisions, legacy articulation overlap, invalid ownership, non-measured/non-pitched anchors and non-exact onsets. All rendering and performance paths fail closed on either the header or actual mark kind; legacy native four-sign articulations remain unchanged."
       }
     }
   },

@@ -211,7 +211,23 @@ pub(super) enum LoweringProfile {
     ExplicitGraces,
     ExplicitGracesAndFermatas,
 }
+/// Refuse authored articulation data even in unchecked or incomplete ASTs.
+pub(super) fn reject_authored_articulations(doc: &Document) -> Result<()> {
+    if doc.required_extensions.iter().any(|e| e.starts_with("scorestream.articulation@"))
+        || doc.frames.iter().flat_map(|f| &f.records).any(|r| {
+            matches!(r, Record::Mark(mark) if crate::articulation_extension::is_kind(&mark.kind))
+        })
+    {
+        return Err(Diagnostic::error(
+            "articulation.performance_unsupported",
+            "Authored articulation fidelity has no supported performance interpretation; signs, grouping and print attributes must not be silently discarded",
+            doc.source,
+        ));
+    }
+    Ok(())
+}
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
+    reject_authored_articulations(doc)?;
     if doc
         .required_extensions
         .iter()
@@ -624,6 +640,65 @@ mod authored_slur_guards {
                 lower(&doc, profile).unwrap_err().code,
                 "slur.performance_unsupported"
             );
+        }
+    }
+}
+
+#[cfg(test)]
+mod authored_articulation_guards {
+    use super::*;
+
+    #[test]
+    fn all_profiles_reject_header_and_each_actual_kind_without_header() {
+        let mut documents = Vec::new();
+        let mut declared = Document::new(DocumentKind::Score);
+        declared
+            .required_extensions
+            .push(crate::articulation_extension::EXTENSION.into());
+        documents.push(declared.clone());
+        declared.required_extensions = vec!["scorestream.articulation@2".into()];
+        documents.push(declared);
+        for kind in ["event", "notations", "group", "item", "future"] {
+            let mut doc = Document::new(DocumentKind::Score);
+            doc.frames.push(crate::Frame {
+                time: Rational::zero(),
+                records: vec![Record::Mark(crate::Mark {
+                    target: "#a".into(),
+                    kind: format!("scorestream.articulation.{kind}"),
+                    attributes: Attributes::new(),
+                    source: SourceRange::default(),
+                })],
+                source: SourceRange::default(),
+            });
+            documents.push(doc);
+        }
+        for doc in documents {
+            let before = doc.clone();
+            for profile in [
+                LoweringProfile::Written,
+                LoweringProfile::Navigation,
+                LoweringProfile::ExplicitFermatas,
+                LoweringProfile::ExplicitGraces,
+                LoweringProfile::ExplicitGracesAndFermatas,
+            ] {
+                assert_eq!(
+                    lower(&doc, profile).unwrap_err().code,
+                    "articulation.performance_unsupported"
+                );
+                assert_eq!(
+                    super::super::perform::perform(
+                        &doc,
+                        super::super::PerformanceLimits::default(),
+                        profile,
+                        None,
+                        None,
+                    )
+                    .unwrap_err()
+                    .code,
+                    "articulation.performance_unsupported"
+                );
+            }
+            assert_eq!(doc, before);
         }
     }
 }

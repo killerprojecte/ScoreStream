@@ -171,6 +171,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::instrument_extension::EXTENSION
             && e != core::beam_extension::EXTENSION
             && e != core::slur_extension::EXTENSION
+            && e != core::articulation_extension::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -187,6 +188,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         graces: vec![],
         beams: vec![],
         articulations: vec![],
+        authored_articulations: core::articulation_extension::decode(doc)
+            .expect("validated authored articulations"),
         barlines: vec![],
     };
     let accidentals = crate::accidentals::read_marks(doc, &mut report);
@@ -305,6 +308,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             match record {
                 Record::Measure(_) => {}
                 Record::Mark(m) if m.kind == "accidental" => {}
+                Record::Mark(m) if core::articulation_extension::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
                 }
@@ -673,9 +677,16 @@ struct Ids {
     next: usize,
 }
 impl Ids {
-    fn new(values: impl Iterator<Item = String>, prefix: &'static str) -> Self {
+    fn new(
+        values: impl Iterator<Item = String>,
+        prefix: &'static str,
+        reserved: &BTreeSet<String>,
+    ) -> Self {
         Self {
-            used: values.filter(|v| is_identifier(v)).collect(),
+            used: values
+                .chain(reserved.iter().cloned())
+                .filter(|v| is_identifier(v))
+                .collect(),
             mapping: BTreeMap::new(),
             prefix,
             next: 0,
@@ -715,8 +726,26 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     if report.has_errors() {
         return Err(report);
     }
+    // XML source identities are preserved verbatim. Reserve them before every
+    // native namespace allocator can synthesize a normalized identifier.
+    let authored_source_ids: BTreeSet<String> = score
+        .authored_articulations
+        .iter()
+        .flat_map(|a| &a.events)
+        .flat_map(|e| &e.notations)
+        .flat_map(|w| {
+            w.source_id
+                .iter()
+                .chain(w.groups.iter().filter_map(|g| g.source_id.as_ref()))
+        })
+        .cloned()
+        .collect();
     let mut doc = Document::new(DocumentKind::Score);
     doc.metadata = score.metadata.clone();
+    if score.authored_articulations.is_some() {
+        doc.required_extensions
+            .push(core::articulation_extension::EXTENSION.into());
+    }
     if score.parts.iter().any(|p| p.instrument_metadata.is_some()) {
         doc.required_extensions
             .push(core::instrument_extension::EXTENSION.into());
@@ -758,8 +787,8 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             .iter()
             .filter_map(|p| p.instrument_metadata.as_ref().map(|m| m.source_id.clone())),
     );
-    let mut parts = Ids::new(aliases.iter().cloned(), "part");
-    let mut voices = Ids::new(aliases.into_iter(), "voice");
+    let mut parts = Ids::new(aliases.iter().cloned(), "part", &authored_source_ids);
+    let mut voices = Ids::new(aliases.into_iter(), "voice", &authored_source_ids);
     let mut objects: Vec<String> = score
         .parts
         .iter()
@@ -777,8 +806,8 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             .iter()
             .filter_map(|p| p.instrument_metadata.as_ref().map(|m| m.source_id.clone())),
     );
-    let mut measures = Ids::new(objects.iter().cloned(), "measure");
-    let mut events = Ids::new(objects.into_iter(), "event");
+    let mut measures = Ids::new(objects.iter().cloned(), "measure", &authored_source_ids);
+    let mut events = Ids::new(objects.into_iter(), "event", &authored_source_ids);
     let mut chords = Ids::new(
         score.parts.iter().flat_map(|p| {
             p.measures
@@ -786,6 +815,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .flat_map(|m| m.events.iter().filter_map(|e| e.chord.clone()))
         }),
         "chord",
+        &authored_source_ids,
     );
     let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
     for p in &score.parts {
@@ -1042,6 +1072,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .map(|tie| tie.id.0.clone())
                 .chain(score.slurs.iter().map(|slur| slur.id.0.clone())),
             "tie",
+            &authored_source_ids,
         );
         for tie in &score.ties {
             let id = relations.get(&tie.id.0, &mut report);
@@ -1075,6 +1106,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .map(|slur| slur.id.0.clone())
                 .chain(score.ties.iter().map(|tie| tie.id.0.clone())),
             "slur",
+            &authored_source_ids,
         );
         for slur in &score.slurs {
             let id = relations.get(&slur.id.0, &mut report);
@@ -1092,6 +1124,20 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                         endpoint,
                     )));
             }
+        }
+    }
+    if let Some(authored) = &score.authored_articulations {
+        let positions = crate::beams::positions(score);
+        for (event_index, event) in authored.events.iter().enumerate() {
+            let id = events.get(&event.event.0, &mut report);
+            frames
+                .entry(positions[&event.event].clone())
+                .or_default()
+                .extend(
+                    core::articulation_extension::encode_event(event, event_index, &id)
+                        .into_iter()
+                        .map(Record::Mark),
+                );
         }
     }
     let measure_index: BTreeMap<_, _> = score
@@ -1408,5 +1454,24 @@ mod tests {
             state.attributes.clear();
         }
         assert!(from_document(&doc).is_err());
+    }
+}
+
+#[cfg(test)]
+mod authored_identity_tests {
+    use super::*;
+    #[test]
+    fn every_native_allocator_reserves_authored_source_ids() {
+        let reserved: BTreeSet<String> =
+            ["part", "voice", "measure", "event", "chord", "tie", "slur"]
+                .into_iter()
+                .map(|prefix| format!("{prefix}1"))
+                .collect();
+        for prefix in ["part", "voice", "measure", "event", "chord", "tie", "slur"] {
+            let mut ids = Ids::new(std::iter::once("foreign id".into()), prefix, &reserved);
+            let mut report = MappingReport::default();
+            assert_eq!(ids.get("foreign id", &mut report), format!("{prefix}2"));
+            assert_eq!(ids.get("foreign id", &mut report), format!("{prefix}2"));
+        }
     }
 }

@@ -29,6 +29,10 @@ pub struct MusicXmlOptions {
     /// Explicit input-only regeneration of a finite set of geometric coordinates.
     #[serde(default, skip_serializing_if = "super::GeometryPolicy::is_strict")]
     pub geometry: super::GeometryPolicy,
+    /// Input-only: opt-in authored v1 preserves ordered grouping and all typed choices but
+    /// supplies no runtime realization. Legacy simple-sign import stays default.
+    #[serde(default, skip_serializing_if = "super::ArticulationProfile::is_legacy")]
+    pub articulations: super::ArticulationProfile,
 }
 impl MusicXmlOptions {
     pub(crate) fn at(&self, ordinal: usize) -> Option<&IrregularMeasure> {
@@ -215,6 +219,7 @@ mod tests {
         };
         let options = MusicXmlOptions {
             geometry: super::super::GeometryPolicy::Strict,
+            articulations: Default::default(),
             irregular_measures: vec![IrregularMeasure {
                 ordinal: 268,
                 label: "268".into(),

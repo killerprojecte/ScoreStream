@@ -2,6 +2,8 @@
 //! Pure, explicitly selected performance semantics may live here; UI, storage,
 //! network, audio gates, devices, and playback runtime behavior do not.
 #![forbid(unsafe_code)]
+pub mod articulation_extension;
+pub mod articulation_model;
 pub mod beam_extension;
 pub mod fermata_extension;
 pub mod fermata_timing;

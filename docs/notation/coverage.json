@@ -374,6 +374,157 @@
       "target": "articulations",
       "test": "old_common_json_remains_compatible_and_unknown_articulation_shapes_are_typed_errors"
     },
+    "authored-articulations.attributes": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "exact_print_style_and_transition_fields_apply_to_every_choice_without_inferred_defaults"
+    },
+    "authored-articulations.choices": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "every_defined_choice_and_passive_other_roundtrips_as_distinct_typed_data"
+    },
+    "authored-articulations.compatibility": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "legacy_default_four_signs_and_old_json_remain_compatible_while_v1_is_explicit"
+    },
+    "authored-articulations.defaults": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "orientation_breath_and_caesura_authored_empty_are_not_replaced_by_defaults"
+    },
+    "authored-articulations.event-order": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "musicxml_reports_event_association_reordering_without_changing_local_authored_order"
+    },
+    "authored-articulations.groups": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "order_repeated_empty_groups_wrappers_and_source_identity_survive_without_flattening"
+    },
+    "authored-articulations.identities": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "source_ids_reserve_before_generated_hosts_and_reject_cross_domain_collisions"
+    },
+    "authored-articulations.normalize-host": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "underscored_xml_host_normalization_never_collides_with_authored_wrapper_identity"
+    },
+    "authored-articulations.passive-other": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "passive_other_text_is_not_xml_or_a_performance_instruction"
+    },
+    "authored-articulations.playback-reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "other_families_on_separate_events_roundtrip_but_each_performance_entry_refuses"
+    },
+    "authored-articulations.polyphony": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "polyphonic_chord_members_and_second_staff_keep_independent_hosts"
+    },
+    "authored-articulations.reject-grace-wrapper": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "grace_wrapper_identity_and_visibility_cannot_bypass_the_authored_scope_guard"
+    },
+    "authored-articulations.reject-invalid": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "invalid_attrs_unknown_values_bad_anchors_and_mixed_notations_fail_closed"
+    },
+    "authored-articulations.reject-rounding": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "nonterminating_author_values_keep_native_exactness_but_musicxml_refuses_rounding"
+    },
+    "authored-articulations.reject-unrelated": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "unrelated_metadata_layout_and_notation_gates_remain_closed"
+    },
+    "authored-articulations.render-reject": {
+      "assertion": "rejection",
+      "file": "desktop/tests/articulation-authored-fidelity.test.ts",
+      "runner": "vitest",
+      "suite": "authored articulation fidelity boundary",
+      "test": "withholds the actual Rust-imported family snapshot with all seventeen signs intact"
+    },
+    "authored-articulations.snapshot": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "actual_imported_family_snapshot_preserves_all_choices_for_fail_closed_preview"
+    },
+    "authored-articulations.wire": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulation_wire.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulation_wire",
+      "test": "authored_scalar_sfs_json_and_codec_roundtrip"
+    },
+    "authored-articulations.xml-generated-identities": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/authored_articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "authored_articulations",
+      "test": "xml_generated_voice_chord_and_relation_names_never_steal_authored_source_ids"
+    },
     "beams.hooks-rests-continue": {
       "assertion": "positive",
       "file": "crates/scorestream-formats/tests/beams.rs",
@@ -1503,7 +1654,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
             "schema_type": "breath-mark",
             "scope_class": "breath_pause",
-            "why_incomplete": "Shape/text and pause scope/duration lack a typed and visually qualified MusicXML contract; legacy native SFS breath behavior is not an import/render receipt."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1514,7 +1665,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
             "schema_type": "caesura",
             "scope_class": "phrase_break",
-            "why_incomplete": "Shape and phrase-break scope/duration need authored modeling, exact roundtrip, render tests and explicit timing policy."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1525,7 +1676,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
             "schema_type": "empty-placement",
             "scope_class": "compound_event_symbol",
-            "why_incomplete": "No typed combined articulation or independently qualified render/gate interpretation; it is not silently rewritten as tenuto plus staccato."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1536,7 +1687,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "No authored release-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1547,7 +1698,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "No authored release-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1558,7 +1709,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
             "schema_type": "other-placement-text",
             "scope_class": "custom_symbol",
-            "why_incomplete": "Custom text/glyph and semantic identity, font/layout contract and explicit playback-or-visual-only policy remain unassessed; no opaque pass-through."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1569,7 +1720,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "No authored approach-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1580,7 +1731,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
             "schema_type": "empty-line",
             "scope_class": "pitch_transition",
-            "why_incomplete": "No authored approach-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1591,7 +1742,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
             "schema_type": "empty-placement",
             "scope_class": "stress_event_symbol",
-            "why_incomplete": "No distinct typed soft-accent identity, exact glyph evidence or documented attack policy; not aliased to ordinary accent."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1602,7 +1753,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
             "schema_type": "empty-placement",
             "scope_class": "technique_dependent_event_symbol",
-            "why_incomplete": "No typed technique identity, glyph acceptance or instrument-aware performance contract; it is not silently treated as staccato."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1635,7 +1786,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
             "schema_type": "empty-placement",
             "scope_class": "stress_event_symbol",
-            "why_incomplete": "No distinct typed stress identity, exact glyph evidence or documented playback interpretation; not aliased to accent."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1646,7 +1797,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
             "schema_type": "strong-accent",
             "scope_class": "oriented_event_symbol",
-            "why_incomplete": "Up/down orientation and shape need a typed roundtrip/render contract; native SFS attack support alone does not establish MusicXML mapping."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           },
           {
             "evidence": [
@@ -1668,7 +1819,7 @@
             "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]",
             "schema_type": "empty-placement",
             "scope_class": "stress_event_symbol",
-            "why_incomplete": "No distinct typed unstress identity, exact glyph evidence or documented playback interpretation; not erased or aliased to a dynamic."
+            "why_incomplete": "LegacySimple import intentionally refuses this choice. AuthoredV1 now preserves typed authoring data in its separate bounded profile; this does not supply a legacy render or performance interpretation."
           }
         ],
         "parent": "musicxml:schema/complexType:articulations[1]/choice[1]"
@@ -1769,7 +1920,7 @@
           "status": "partial"
         }
       },
-      "limitations": "No styling/coordinates/glyph overrides, repeated identical signs, rest/unpitched/grace anchors or arbitrary native SFS attributes. All other 13 MusicXML choices reject on import and have no credited end-to-end contract. Slur combinations roundtrip but still withhold preview/playback; fermata-qualified playback and numeric-dynamics accent conflicts still reject. Synthetic fixtures, pinned Verovio SVG and modeled gate/velocity assertions do not establish complete external-score acceptance, acoustic fidelity, all instruments, platforms or performance interpretations. Repeated articulation containers within one notations wrapper are legal MusicXML but rejected by this bounded profile; container grouping/order, empty-group identity and authored stacking are not modeled. Untouched musicxmlTestSuite 32c acceptance is not established: non-mapped identification/miscellaneous metadata is an earlier independent boundary.",
+      "limitations": "No styling/coordinates/glyph overrides, repeated identical signs, rest/unpitched/grace anchors or arbitrary native SFS attributes. All other 13 MusicXML choices reject on import and have no credited end-to-end contract. Slur combinations roundtrip but still withhold preview/playback; fermata-qualified playback and numeric-dynamics accent conflicts still reject. Synthetic fixtures, pinned Verovio SVG and modeled gate/velocity assertions do not establish complete external-score acceptance, acoustic fidelity, all instruments, platforms or performance interpretations. Repeated articulation containers within one notations wrapper are legal MusicXML but rejected by this bounded profile; container grouping/order, empty-group identity and authored stacking are not modeled. Untouched musicxmlTestSuite 32c acceptance is not established: non-mapped identification/miscellaneous metadata is an earlier independent boundary. The separate authored-articulations profile now models ordered grouping and all 17 choices under explicit opt-in; these facts do not change this default profile or its runtime boundary.",
       "refs": [
         "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
@@ -1790,8 +1941,8 @@
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]"
       ],
-      "scope": "Only staccato, staccatissimo, tenuto and accent as empty elements on measured pitched events, with absent/above/below placement. The 17 MusicXML 4.0 articulation choices are individually inventoried below; four bounded profiles are not whole-element or whole-family support.",
-      "title": "Bounded simple event articulations and the remaining MusicXML choices"
+      "scope": "Only staccato, staccatissimo, tenuto and accent as empty elements on measured pitched events, with absent/above/below placement. The 17 MusicXML 4.0 articulation choices are individually inventoried below; four bounded profiles are not whole-element or whole-family support. This is the default LegacySimple import/runtime profile; the explicit AuthoredV1 profile is independently recorded under authored-articulations.",
+      "title": "Default legacy simple event articulations (separate from authored v1)"
     },
     {
       "id": "ornaments",
@@ -2183,6 +2334,329 @@
       ],
       "scope": "Custom notation and SMuFL references need explicit symbol/semantic mapping, font metrics and render acceptance.",
       "title": "Other notation and SMuFL overrides"
+    },
+    {
+      "choice_inventory": {
+        "entries": [
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "accent",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "breath-mark",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
+            "schema_type": "breath-mark",
+            "scope_class": "breath_pause",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves exact empty/comma/tick/upbow/salzedo strings and display fields; no breath timing or pause scope. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "caesura",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
+            "schema_type": "caesura",
+            "scope_class": "phrase_break",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves exact empty/normal/thick/short/curved/single strings and display fields; no phrase-break timing or scope. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "detached-legato",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "compound_event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct typed compound sign, never rewritten into two independent simple marks; no gate interpretation. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "doit",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct release-up sign and exact optional line fields; no destination pitch or bend is inferred. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "falloff",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct release-down sign and exact optional line fields; no destination pitch or bend is inferred. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "other-articulation",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
+            "schema_type": "other-placement-text",
+            "scope_class": "custom_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves passive exact text and optional ASCII NMTOKEN glyph reference; glyph existence, shape and performance are not inferred. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "plop",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct approach-from-above sign and exact optional line fields; no starting pitch or bend is inferred. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "scoop",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct approach-from-below sign and exact optional line fields; no starting pitch or bend is inferred. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "soft-accent",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "stress_event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored soft-accent sign, not ordinary accent or velocity. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "spiccato",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "technique_dependent_event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored sign, not aliased to staccato or inferred instrument technique. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "staccatissimo",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccatissimo[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "staccato",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccato[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "stress",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "stress_event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored stress sign, not ordinary accent or velocity. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "strong-accent",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
+            "schema_type": "strong-accent",
+            "scope_class": "oriented_event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Preserves optional up/down orientation independently of placement, including absent versus explicit up; no glyph or attack policy. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "tenuto",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Typed authored sign with exact optional display fields; this ordered v1 form deliberately does not activate the legacy simple runtime policy. Shared limits and runtime withholding remain."
+          },
+          {
+            "evidence": [
+              "authored-articulations.choices",
+              "authored-articulations.attributes"
+            ],
+            "import_status": "partial",
+            "name": "unstress",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "stress_event_symbol",
+            "why_incomplete": "Explicit AuthoredV1, measured pitched articulation-only wrapper profile. Distinct authored unstress sign, not discarded or translated to dynamics. Shared limits and runtime withholding remain."
+          }
+        ],
+        "parent": "musicxml:schema/complexType:articulations[1]/choice[1]"
+      },
+      "id": "authored-articulations",
+      "layers": {
+        "export": {
+          "detail": "Typed JSON/SFS/MusicXML roundtrip preserves all local authored data. Globally reserved source IDs survive generated native host normalization; MusicXML refuses nonterminating decimals and reports event association reordering rather than changing local stacking.",
+          "evidence": [
+            "authored-articulations.choices",
+            "authored-articulations.groups",
+            "authored-articulations.identities",
+            "authored-articulations.normalize-host",
+            "authored-articulations.event-order",
+            "authored-articulations.reject-rounding",
+            "authored-articulations.wire",
+            "authored-articulations.xml-generated-identities"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/authored_articulations.rs",
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/musicxml/xml.rs",
+            "crates/scorestream-core/src/articulation_extension.rs",
+            "crates/scorestream-formats/src/sfs.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Explicit AuthoredV1 option enables all 17 bounded choices and scalar SFS capability; default LegacySimple admission and unrelated boundaries remain unchanged. Exact string/decimal/enum validation and grace-wrapper scope checks prevent trimming or attr loss.",
+          "evidence": [
+            "authored-articulations.choices",
+            "authored-articulations.attributes",
+            "authored-articulations.defaults",
+            "authored-articulations.reject-invalid",
+            "authored-articulations.reject-grace-wrapper",
+            "authored-articulations.reject-unrelated",
+            "authored-articulations.wire",
+            "authored-articulations.xml-generated-identities"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/authored_articulations.rs",
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/musicxml/xml.rs",
+            "crates/scorestream-core/src/articulation_extension.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Closed versioned typed choices preserve authored absence, independent placement/orientation, font and line fields, exact rationals, source IDs and event-local ordered wrappers/groups/items without foreign markup. Separate legacy lane and mixed-wrapper/anchor validation are explicit.",
+          "evidence": [
+            "authored-articulations.choices",
+            "authored-articulations.groups",
+            "authored-articulations.attributes",
+            "authored-articulations.defaults",
+            "authored-articulations.passive-other",
+            "authored-articulations.identities",
+            "authored-articulations.compatibility",
+            "authored-articulations.polyphony",
+            "authored-articulations.reject-invalid",
+            "authored-articulations.xml-generated-identities"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/articulation_model.rs",
+            "crates/scorestream-formats/src/articulations.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "All authored v1 data remains without a sound policy. Core lowering/performed projection and ordinary or qualified grace/fermata entry points refuse it, including combinations on distinct hosts. Existing native simple policies are not reused for richer signs.",
+          "evidence": [
+            "authored-articulations.playback-reject",
+            "authored-articulations.snapshot"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/notation/lower.rs",
+            "crates/scorestream-core/src/notation/perform.rs"
+          ],
+          "status": "blocked"
+        },
+        "render": {
+          "detail": "Actual synthetic MusicXML→typed model→SFS→Workspace snapshot contains all 17 signs. Preview refuses the authored header or reserved marks before engraving; no glyph or layout support is credited. Existing four-sign legacy rendering is unchanged.",
+          "evidence": [
+            "authored-articulations.snapshot",
+            "authored-articulations.render-reject"
+          ],
+          "implementation": [
+            "desktop/src/render/marks.ts"
+          ],
+          "status": "blocked"
+        }
+      },
+      "limitations": "No same-event mixing with tied/slur/fermata or legacy articulation marks; no editorial footnote/level, rest/unpitched/grace anchors, other notation families, full Unicode source-ID/NMTOKEN profile, arbitrary XML or attribute bags. Decimal input retains the existing 64-character bound and MusicXML output needs finite decimals within 32 places and 64 characters; native rational values remain exact. All authored-v1 runtime effects are withheld, including otherwise simple signs. No inferred breath/caesura timing, pitch transitions, instrument technique or velocity policy. Wrapper/group/item order is exact; top-level event-association order follows XML voice serialization with explicit normalization reporting and remains exact in native SFS. Synthetic snapshots/probes do not establish untouched 32c acceptance; its independent metadata boundary is unchanged.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccatissimo[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]"
+      ],
+      "scope": "MusicXmlOptions.articulations=AuthoredV1 only: all 16 defined MusicXML 4.0 choices plus passive other-articulation on measured pitched events. Ordered articulation-only notations wrappers/groups/items, repeated signs, empty groups and additional empty wrappers, optional source IDs/print-object, typed exact print-style and per-choice fields. Default import remains LegacySimple; this is a representation/interchange checkpoint, not desktop import or runtime completion.",
+      "title": "Opt-in authored articulation family v1, runtime withheld"
     }
   ],
   "integrated_checkpoints": {

@@ -633,6 +633,511 @@
             },
             "description": "Requires scorestream.beam@1 in a complete score. Exact onset, actual measure ownership, written flags, full per-lane topology and the separate authored-grace capability for grace anchors are checked semantically. Legacy beam relations cannot be mixed with authored beam marks."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.articulation.event"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "event_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "event_index"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.articulation.notations"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "event_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "wrapper_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "source_id": {
+                    "type": "string"
+                  },
+                  "print_object": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "event_index",
+                  "wrapper_index"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.articulation.group"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "event_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "wrapper_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "group_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "source_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event_index",
+                  "wrapper_index",
+                  "group_index"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.articulation.item"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "event_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "wrapper_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "group_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "item_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "font_family": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string"
+                  },
+                  "shape": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "smufl": {
+                    "type": "string"
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "font_size_points": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "dash_length": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "space_length": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "sign": {
+                    "type": "string",
+                    "enum": [
+                      "accent",
+                      "strong-accent",
+                      "staccato",
+                      "tenuto",
+                      "detached-legato",
+                      "staccatissimo",
+                      "spiccato",
+                      "scoop",
+                      "plop",
+                      "doit",
+                      "falloff",
+                      "breath-mark",
+                      "caesura",
+                      "stress",
+                      "unstress",
+                      "soft-accent",
+                      "other-articulation"
+                    ]
+                  },
+                  "placement": {
+                    "type": "string",
+                    "enum": [
+                      "above",
+                      "below"
+                    ]
+                  },
+                  "font_style": {
+                    "type": "string",
+                    "enum": [
+                      "normal",
+                      "italic"
+                    ]
+                  },
+                  "font_size_css": {
+                    "type": "string",
+                    "enum": [
+                      "xx-small",
+                      "x-small",
+                      "small",
+                      "medium",
+                      "large",
+                      "x-large",
+                      "xx-large"
+                    ]
+                  },
+                  "font_weight": {
+                    "type": "string",
+                    "enum": [
+                      "normal",
+                      "bold"
+                    ]
+                  },
+                  "orientation": {
+                    "type": "string",
+                    "enum": [
+                      "up",
+                      "down"
+                    ]
+                  },
+                  "line_shape": {
+                    "type": "string",
+                    "enum": [
+                      "straight",
+                      "curved"
+                    ]
+                  },
+                  "line_type": {
+                    "type": "string",
+                    "enum": [
+                      "solid",
+                      "dashed",
+                      "dotted",
+                      "wavy"
+                    ]
+                  },
+                  "line_length": {
+                    "type": "string",
+                    "enum": [
+                      "short",
+                      "medium",
+                      "long"
+                    ]
+                  }
+                },
+                "required": [
+                  "event_index",
+                  "wrapper_index",
+                  "group_index",
+                  "item_index",
+                  "sign"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "required": [
+                        "orientation"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "strong-accent"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "line_shape"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "scoop",
+                            "plop",
+                            "doit",
+                            "falloff"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "line_type"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "scoop",
+                            "plop",
+                            "doit",
+                            "falloff"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "line_length"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "scoop",
+                            "plop",
+                            "doit",
+                            "falloff"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "dash_length"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "scoop",
+                            "plop",
+                            "doit",
+                            "falloff"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "space_length"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "scoop",
+                            "plop",
+                            "doit",
+                            "falloff"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "shape"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "breath-mark",
+                            "caesura"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "text"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "other-articulation"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "smufl"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "sign": {
+                          "enum": [
+                            "other-articulation"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "not": {
+                      "required": [
+                        "font_size_points",
+                        "font_size_css"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "sign": {
+                          "const": "other-articulation"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "text"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "sign": {
+                          "const": "breath-mark"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "shape": {
+                          "enum": [
+                            "comma",
+                            "tick",
+                            "upbow",
+                            "salzedo"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "sign": {
+                          "const": "caesura"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "shape": {
+                          "enum": [
+                            "normal",
+                            "thick",
+                            "short",
+                            "curved",
+                            "single"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
         }
       ]
     },
