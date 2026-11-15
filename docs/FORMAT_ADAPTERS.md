@@ -141,3 +141,14 @@ Genuine pitched before-principal grace groups now use a separate unmeasured lane
 and required SFS fidelity capability. Source slash absence, order, written rhythm
 and exact timing intent roundtrip; exact playback and unsupported preview remain
 blocked. Legacy native SFS grace playback is unchanged. See [Grace import](GRACE_IMPORT.md).
+
+### Explicit, finite coordinate regeneration
+
+Default import remains strict. The input-only
+`MusicXmlOptions.geometry = GeometryPolicy::RegenerateNoteAndMeasureCoordinates`
+permits only direct measure width and direct note default-x/default-y, validating
+exact bounded signed tenths at their full XML paths. Original coordinates are
+not retained; three aggregate policy diagnostics disclose counts and regenerated
+layout. Unknown descendants and semantic/display fields remain blocking, as do
+`defaults` and `print` subtrees. There is no CLI or desktop opt-in in this slice.
+See [the coordinate policy and original-source evidence](GEOMETRY_IMPORT.md).

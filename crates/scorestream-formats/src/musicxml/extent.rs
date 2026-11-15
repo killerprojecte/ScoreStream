@@ -26,6 +26,9 @@ pub struct IrregularMeasure {
 #[serde(deny_unknown_fields)]
 pub struct MusicXmlOptions {
     pub irregular_measures: Vec<IrregularMeasure>,
+    /// Explicit input-only regeneration of a finite set of geometric coordinates.
+    #[serde(default, skip_serializing_if = "super::GeometryPolicy::is_strict")]
+    pub geometry: super::GeometryPolicy,
 }
 impl MusicXmlOptions {
     pub(crate) fn at(&self, ordinal: usize) -> Option<&IrregularMeasure> {
@@ -211,6 +214,7 @@ mod tests {
             beat_type: 4,
         };
         let options = MusicXmlOptions {
+            geometry: super::super::GeometryPolicy::Strict,
             irregular_measures: vec![IrregularMeasure {
                 ordinal: 268,
                 label: "268".into(),

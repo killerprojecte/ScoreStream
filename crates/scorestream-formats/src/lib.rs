@@ -29,7 +29,7 @@ pub enum MappingEffect {
     Invalid,
     ResourceLimit,
     Normalized,
-    /// A deliberate caller policy was applied without discarding source semantics.
+    /// A deliberate caller policy was applied; its scope and any permitted loss are reported.
     PolicyApplied,
     /// Typed authored data is retained; any unimplemented realization is stated.
     Preserved,

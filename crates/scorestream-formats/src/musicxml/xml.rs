@@ -40,6 +40,19 @@ impl Node {
     pub fn attr(&self, name: &str) -> Option<&str> {
         self.attrs.get(name).map(String::as_str)
     }
+    /// Copy scalar provenance without retaining/cloning a subtree.
+    pub(super) fn scalar_attribute(&self, key: &str) -> Self {
+        Self {
+            name: self.name.clone(),
+            attrs: BTreeMap::new(),
+            children: vec![],
+            text: self.attr(key).unwrap_or("").into(),
+            source: self.source,
+            path: self.path.clone(),
+            child_counts: BTreeMap::new(),
+            retained_nodes: 1,
+        }
+    }
     pub fn error(
         &self,
         report: &mut MappingReport,
@@ -602,7 +615,21 @@ fn inert_doctype(value: &str) -> bool {
 }
 
 /// Deliberately closed conversion profile, not a full MusicXML XSD validator.
+#[cfg(test)]
 pub(super) fn schema(n: &Node, report: &mut MappingReport) {
+    schema_with_geometry(
+        n,
+        super::GeometryPolicy::Strict,
+        &mut super::geometry::Audit::default(),
+        report,
+    );
+}
+pub(super) fn schema_with_geometry(
+    n: &Node,
+    policy: super::GeometryPolicy,
+    geometry: &mut super::geometry::Audit,
+    report: &mut MappingReport,
+) {
     let (attrs, children, multiple, required, text): (&[&str], &[&str], &[&str], &[&str], bool) =
         match n.name.as_str() {
             "score-partwise" => (
@@ -823,7 +850,7 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
         n.error(report, MappingEffect::Unsupported, "dynamics.composite", "Exactly one typed metronome or dynamic symbol is supported; combined directions and compound dynamics are not discarded");
     }
     for key in n.attrs.keys() {
-        if !attrs.contains(&key.as_str()) {
+        if !attrs.contains(&key.as_str()) && !geometry.attribute(n, key, policy, report) {
             n.error(
                 report,
                 MappingEffect::Unsupported,
@@ -849,7 +876,7 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 "Element has no implemented mapping at this path",
             );
         } else {
-            schema(child, report);
+            schema_with_geometry(child, policy, geometry, report);
         }
     }
     for name in children {

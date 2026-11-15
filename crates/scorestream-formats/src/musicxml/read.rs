@@ -161,8 +161,22 @@ pub fn read_with_options(
     read_reader_with_options(Cursor::new(source.as_bytes()), options)
 }
 pub fn read_reader_with_options<R: BufRead + Seek>(
+    input: R,
+    options: &super::MusicXmlOptions,
+) -> Result<Conversion<ScoreDocument>> {
+    let mut geometry = super::geometry::Audit::default();
+    match read_with_audit(input, options, &mut geometry) {
+        Ok(mut converted) => {
+            converted.report = geometry.prepend_report(converted.report);
+            Ok(converted)
+        }
+        Err(report) => Err(geometry.prepend_report(report)),
+    }
+}
+fn read_with_audit<R: BufRead + Seek>(
     mut input: R,
     options: &super::MusicXmlOptions,
+    geometry: &mut super::geometry::Audit,
 ) -> Result<Conversion<ScoreDocument>> {
     options.validate()?;
     let beginning = input.stream_position().map_err(io_error)?;
@@ -176,7 +190,7 @@ pub fn read_reader_with_options<R: BufRead + Seek>(
         if phase == xml::Phase::PartStart {
             return Ok(());
         }
-        xml::schema(node, &mut report);
+        xml::schema_with_geometry(node, options.geometry, geometry, &mut report);
         if let Err(errors) = reserve_ids(node, &mut object_ids) {
             report.append(errors);
         }
@@ -315,7 +329,12 @@ pub fn read_reader_with_options<R: BufRead + Seek>(
         // for an unchecked match or index in the semantic mapper.
         if phase == xml::Phase::Complete {
             let mut checked = MappingReport::default();
-            xml::schema(node, &mut checked);
+            xml::schema_with_geometry(
+                node,
+                options.geometry,
+                &mut super::geometry::Audit::default(),
+                &mut checked,
+            );
             if checked.has_errors() {
                 return Err(checked);
             }
