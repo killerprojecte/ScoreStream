@@ -132,6 +132,23 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: '1'
         run: npm run desktop:build -- --ci --no-sign --target "$BUILD_TARGET" --bundles "$BUNDLE_FORMATS" -- --locked
 
+      # Reuse the release dependencies and frontend dist on all six native runners.
+      # These filesystem/session tests do not open a window or a save dialog.
+      - name: Test native WAV export sessions
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          test_log="$RUNNER_TEMP/scorestream-wav-tests.log"
+          cargo test --manifest-path crates/scorestream-desktop/Cargo.toml \
+            --target-dir crates/scorestream-desktop/target \
+            --release --target "$BUILD_TARGET" --locked \
+            --bin scorestream-desktop wav_export::tests:: -- --color never 2>&1 | tee "$test_log"
+          if ! grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed;' "$test_log"; then
+            echo "::error::The native WAV test filter did not run any passing tests."
+            exit 1
+          fi
+
       - name: Check lockfiles were not changed
         run: git diff --exit-code -- Cargo.lock crates/scorestream-desktop/Cargo.lock desktop/package-lock.json
 
