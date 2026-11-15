@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Focused semantic fixture; not a full Beethoven import. Source values: movement 4, part P1. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="p"><part-name>piccolo</part-name><score-instrument id="i"><instrument-name>piccolo</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1" implicit="yes">
+    <attributes><divisions>12</divisions><key>
+          <fifths>0</fifths>
+          </key><transpose>
+          <diatonic>0</diatonic>
+          <chromatic>0</chromatic>
+          <octave-change>1</octave-change>
+          </transpose></attributes>
+    <note id="n"><pitch>
+          <step>C</step>
+          <octave>5</octave>
+          </pitch><duration>12</duration><voice>1</voice><type>quarter</type></note>
+  </measure></part>
+</score-partwise>

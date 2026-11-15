@@ -175,6 +175,17 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                 if let Some(meter) = &s.meter {
                     meters.insert(s.staff, meter.clone());
                 }
+                if s.transpose
+                    .as_ref()
+                    .is_some_and(|t| decimal(&t.chromatic).is_none_or(|value| value.len() > 64))
+                {
+                    issue(
+                        &mut report,
+                        "transpose.chromatic",
+                        &m.id,
+                        "Chromatic transposition needs an exact finite decimal of at most 32 places and 64 characters",
+                    );
+                }
             }
             if !m.implicit && meters.values().any(|meter| meter.quarters() != m.length) {
                 issue(
@@ -427,6 +438,27 @@ pub fn write(score: &ScoreDocument) -> Result<Conversion<String>, MappingReport>
                         clef.line
                     )
                     .unwrap();
+                }
+            }
+            for s in &m.states {
+                if let Some(t) = &s.transpose {
+                    writeln!(out, "        <transpose number=\"{}\">", s.staff).unwrap();
+                    if let Some(diatonic) = t.diatonic {
+                        writeln!(out, "          <diatonic>{diatonic}</diatonic>").unwrap();
+                    }
+                    writeln!(
+                        out,
+                        "          <chromatic>{}</chromatic>",
+                        decimal(&t.chromatic).unwrap()
+                    )
+                    .unwrap();
+                    writeln!(
+                        out,
+                        "          <octave-change>{}</octave-change>",
+                        t.octaves
+                    )
+                    .unwrap();
+                    out.push_str("        </transpose>\n");
                 }
             }
             out.push_str("      </attributes>\n");

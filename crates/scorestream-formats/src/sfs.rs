@@ -230,7 +230,14 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     attrs(
                         &mut report,
                         &s.attributes,
-                        &["key", "meter", "clef"],
+                        &[
+                            "key",
+                            "meter",
+                            "clef",
+                            "transpose_chromatic",
+                            "transpose_diatonic",
+                            "transpose_octaves",
+                        ],
                         &s.target,
                     );
                     let Some((part_id, staff)) = s
@@ -255,6 +262,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         clef: None,
                         key: None,
                         meter: None,
+                        transpose: None,
                     };
                     if s.attributes.contains_key("key") {
                         match integer(&s.attributes, "key") {
@@ -295,6 +303,14 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             unsupported(&mut report, "meter", &s.target);
                         }
                     }
+                    if let Some(chromatic) = text(&s.attributes, "transpose_chromatic") {
+                        state.transpose = Some(Transposition {
+                            chromatic: chromatic.parse().expect("validated rational transposition"),
+                            diatonic: integer(&s.attributes, "transpose_diatonic"),
+                            octaves: integer(&s.attributes, "transpose_octaves")
+                                .expect("validated transposition tuple"),
+                        });
+                    }
                     if let Some(old) = measure.states.iter_mut().find(|v| v.staff == staff) {
                         if state.clef.is_some() {
                             old.clef = state.clef;
@@ -304,6 +320,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         }
                         if state.meter.is_some() {
                             old.meter = state.meter;
+                        }
+                        if state.transpose.is_some() {
+                            old.transpose = state.transpose;
                         }
                     } else {
                         measure.states.push(state);
@@ -527,7 +546,8 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     source: SourceRange::default(),
                 }));
             for s in &m.states {
-                if s.clef.is_none() && s.key.is_none() && s.meter.is_none() {
+                if s.clef.is_none() && s.key.is_none() && s.meter.is_none() && s.transpose.is_none()
+                {
                     invalid(&mut report, "empty_state", &m.id);
                     continue;
                 }
@@ -564,6 +584,15 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                             t.beat_type
                         ),
                     );
+                }
+                if let Some(t) = &s.transpose {
+                    if let Some(diatonic) = t.diatonic {
+                        put(&mut a, "transpose_chromatic", t.chromatic.to_string());
+                        a.insert("transpose_diatonic".into(), Scalar::Integer(diatonic));
+                        a.insert("transpose_octaves".into(), Scalar::Integer(t.octaves));
+                    } else {
+                        unsupported(&mut report, "transpose.diatonic_unspecified", &m.id);
+                    }
                 }
                 frames
                     .entry(m.start.clone())
@@ -843,6 +872,7 @@ mod tests {
             clef: None,
             key: None,
             meter: None,
+            transpose: None,
         };
         assert!(
             SfsAdapter

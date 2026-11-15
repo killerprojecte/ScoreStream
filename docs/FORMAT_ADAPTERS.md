@@ -33,6 +33,7 @@ cargo run --locked -p scorestream-cli -- convert musicxml sfs crates/scorestream
 | 时间 | divisions 和 duration 精确转为有理数，以四分音符为单位。backup/forward 只移动当前小节游标；负回退、越界、不明确的中途状态更改均拒绝。 |
 | 小节 | 保存小节标签、显式 ID、起点、长度、implicit。普通小节按活动拍号确定长度，无拍号按已解析的最大游标推导；隐含小节按实际长度。不会自动补发声休止符。 |
 | 谱表状态 | 小节开头的五度圈 key、普通/加法拍号、G/F/C clef。状态跨小节继承；每个谱表单独建模。不支持 mode、非传统调号、特殊谱号、中途变化、改变谱表数量或不等长复拍。 |
+| 移调 | 小节开头的 transpose：chromatic 精确有理数、可选 diatonic、octave-change。无 number 时展开到全部谱表，有 number 时只影响指定谱表；继承到后续小节，显式零值可以重置。保留书写音高和书写调号，播放阶段只应用一次。见 [移调边界与验证](TRANSPOSITION_IMPORT.md)。 |
 | 音符 | 有拼写的音高和休止符、声轨与谱表、独立精确时值。可跨谱表和弦，但 `<chord/>` 不推进游标；每个和弦音保持自身时值，副音不可长于首音。SFS 允许更长副音时，导出明确失败，不私自换首音。 |
 | 写法 | note type、dots、time-modification，以及 normal-type/normal-dot。真实 duration 与书写时值分别保留，不二次套用连音比例。 |
 | 元数据 | title/work-title、work_number、movement-title、composer/lyricist/arranger、显式 type=author 的顺序 authors、rights。所有内容按纯文本转义；不会当 markup 执行。 |
@@ -43,7 +44,7 @@ MusicXML 的声轨编号是声部局部的，不等于 SFS 全局身份。MusicX
 
 ## 明确的拒绝，不静默删掉
 
-当前所有未实现元素和属性都造成失败，包括表情/力度 direction、连线/延音/装饰 notations、歌词、和声、反复、移调、打击乐、倚音、cue、谱面布局与外部资源。SFS 侧无法进入公共转换模型的 marks/relations/state/event 属性同样失败。因此 `ScoreDocument` 目前是第一批转换域模型，**尚不是**所有音乐符号的完整作者模型。既有 SFS 播放方向类型仍在 notation 模块中，不会因为转换器未映射而被删掉或绕过。
+当前所有未实现元素和属性都造成失败，包括表情/力度 direction、连线/延音/装饰 notations、歌词、和声、反复、打击乐、倚音、cue、谱面布局与外部资源。SFS 侧无法进入公共转换模型的 marks/relations/state/event 属性同样失败。因此 `ScoreDocument` 目前是第一批转换域模型，**尚不是**所有音乐符号的完整作者模型。既有 SFS 播放方向类型仍在 notation 模块中，不会因为转换器未映射而被删掉或绕过。
 
 共享元数据中的 description、header、footer、subtitle、language 在 SFS → 模型 → SFS 中保留；当前没有可证明无损的 MusicXML 导出映射，所以只在导出 XML 时明确失败。未知 creator 角色、缺少角色的 creator、多个 composer 等不能用现有单字符串字段表达，也不会合并丢失身份。XML 不允许的控制字符不会被清洗后假装成功。
 
@@ -78,4 +79,5 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 - [divisions](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/divisions/) 与 [duration](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/duration/)
 - [chord 的独立时值和游标规则](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/chord/)
 - [backup / 多声轨与谱表](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/backup/)
+- [transpose 的书写音高到实际音高语义](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/transpose/)
 - [attributes 的作用时间](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/attributes/)

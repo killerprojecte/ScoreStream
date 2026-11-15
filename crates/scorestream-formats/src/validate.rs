@@ -88,7 +88,8 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             end = &m.start + &m.length;
             let mut staffs = BTreeSet::new();
             for s in &m.states {
-                if s.clef.is_none() && s.key.is_none() && s.meter.is_none() {
+                if s.clef.is_none() && s.key.is_none() && s.meter.is_none() && s.transpose.is_none()
+                {
                     invalid(
                         &path,
                         "state.empty",

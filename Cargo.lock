@@ -476,6 +476,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "quick-xml",
+ "scorestream-app",
  "scorestream-codec",
  "scorestream-core",
  "serde",

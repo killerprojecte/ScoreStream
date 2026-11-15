@@ -507,7 +507,7 @@ impl PartReader {
                     for state in n
                         .children
                         .iter()
-                        .filter(|s| ["key", "time", "clef"].contains(&s.name.as_str()))
+                        .filter(|s| ["key", "time", "clef", "transpose"].contains(&s.name.as_str()))
                     {
                         let targets = if state.attr("number").is_none() && state.name != "clef" {
                             (1..=part.staves).collect::<Vec<_>>()
@@ -521,6 +521,7 @@ impl PartReader {
                                     clef: None,
                                     key: None,
                                     meter: None,
+                                    transpose: None,
                                 });
                             }
                             let target = m.states.iter_mut().find(|s| s.staff == staff).unwrap();
@@ -564,6 +565,27 @@ impl PartReader {
                                     }
                                     meters.insert(staff, meter.clone());
                                     target.meter = Some(meter);
+                                }
+                                "transpose" => {
+                                    if target.transpose.is_some() {
+                                        return Err(error(
+                                            state,
+                                            "attributes.conflict",
+                                            "Repeated transposition for staff",
+                                        ));
+                                    }
+                                    target.transpose = Some(Transposition {
+                                        chromatic: decimal(child(state, "chromatic")?)?,
+                                        diatonic: state
+                                            .child("diatonic")
+                                            .map(integer)
+                                            .transpose()?,
+                                        octaves: state
+                                            .child("octave-change")
+                                            .map(integer)
+                                            .transpose()?
+                                            .unwrap_or(0),
+                                    });
                                 }
                                 "clef" => {
                                     let sign = match state.value("sign") {

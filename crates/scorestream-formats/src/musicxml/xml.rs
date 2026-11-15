@@ -543,6 +543,7 @@ fn stack_container(name: &str) -> bool {
             | "key"
             | "time"
             | "clef"
+            | "transpose"
             | "note"
             | "pitch"
             | "time-modification"
@@ -651,8 +652,8 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
             ),
             "attributes" => (
                 &[],
-                &["divisions", "key", "time", "staves", "clef"],
-                &["key", "time", "clef"],
+                &["divisions", "key", "time", "staves", "clef", "transpose"],
+                &["key", "time", "clef", "transpose"],
                 &[],
                 false,
             ),
@@ -669,6 +670,13 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
                 &["sign", "line"],
                 &[],
                 &["sign", "line"],
+                false,
+            ),
+            "transpose" => (
+                &["number"],
+                &["diatonic", "chromatic", "octave-change"],
+                &[],
+                &["chromatic"],
                 false,
             ),
             "note" => (
@@ -714,9 +722,8 @@ pub(super) fn schema(n: &Node, report: &mut MappingReport) {
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
             | "instrument-name" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
             | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "type"
-            | "staff" | "actual-notes" | "normal-notes" | "normal-type" => {
-                (&[], &[], &[], &[], true)
-            }
+            | "staff" | "actual-notes" | "normal-notes" | "normal-type" | "diatonic"
+            | "chromatic" | "octave-change" => (&[], &[], &[], &[], true),
             _ => {
                 n.error(
                     report,

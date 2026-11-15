@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Focused semantic fixture; not a full Beethoven import. Source values: movement 1, part P18. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="p"><part-name>contrabass</part-name><score-instrument id="i"><instrument-name>contrabass</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1" implicit="yes">
+    <attributes><divisions>4</divisions><key>
+          <fifths>-3</fifths>
+          </key><transpose>
+          <diatonic>0</diatonic>
+          <chromatic>0</chromatic>
+          <octave-change>-1</octave-change>
+          </transpose></attributes>
+    <note id="n"><pitch>
+          <step>G</step>
+          <octave>3</octave>
+          </pitch><duration>2</duration><voice>1</voice><type>eighth</type></note>
+  </measure></part>
+</score-partwise>

@@ -13,4 +13,5 @@ num-traits.workspace = true
 quick-xml = "=0.38.4"
 
 [dev-dependencies]
+scorestream-app = { path = "../scorestream-app" }
 serde_json.workspace = true

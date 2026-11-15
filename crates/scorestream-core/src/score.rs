@@ -45,6 +45,18 @@ pub struct StaffState {
     pub clef: Option<Clef>,
     pub key: Option<KeySignature>,
     pub meter: Option<Meter>,
+    /// Written-to-sounding transposition; inherited until an explicit replacement.
+    /// The written key and written event pitch are never modified by this state.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transpose: Option<Transposition>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Transposition {
+    pub chromatic: Rational,
+    /// MusicXML permits the spelling interval to be absent, not implicitly zero.
+    pub diatonic: Option<i64>,
+    pub octaves: i64,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
