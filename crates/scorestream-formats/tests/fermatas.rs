@@ -167,7 +167,7 @@ fn invalid_unknown_and_unmapped_notation_never_disappears() {
             "<fermata/> <fermata type=\"inverted\"/>",
             "fermata.duplicate",
         ),
-        ("<fermata/><slur type=\"start\"/>", "element.slur"),
+        ("<fermata/><slur type=\"start\"/>", "slur.unmatched"),
         (
             "<fermata/><ornaments><trill-mark/></ornaments>",
             "element.ornaments",

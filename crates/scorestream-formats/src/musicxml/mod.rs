@@ -14,6 +14,9 @@ mod graces;
 mod instruments;
 pub use geometry::GeometryPolicy;
 mod read;
+mod slurs;
+#[cfg(test)]
+mod slur_corpus;
 mod tempo;
 mod ties;
 mod write;

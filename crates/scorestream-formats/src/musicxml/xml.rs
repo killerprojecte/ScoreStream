@@ -802,7 +802,27 @@ pub(super) fn schema_with_geometry(
                 false,
             ),
             "tie" => (&["type", "time-only"], &[], &[], &[], false),
-            "notations" => (&[], &["tied", "fermata"], &["tied", "fermata"], &[], false),
+            "notations" => (
+                &[],
+                &["tied", "fermata", "slur"],
+                &["tied", "fermata", "slur"],
+                &[],
+                false,
+            ),
+            "slur" => (
+                &[
+                    "type",
+                    "number",
+                    "bezier-x",
+                    "bezier-y",
+                    "orientation",
+                    "placement",
+                ],
+                &[],
+                &[],
+                &[],
+                false,
+            ),
             "fermata" => (&["type", "default-y", "relative-y"], &[], &[], &[], true),
             "tied" => (&["type", "number"], &[], &[], &[], false),
             "pitch" => (

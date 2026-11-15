@@ -212,6 +212,17 @@ pub(super) enum LoweringProfile {
     ExplicitGracesAndFermatas,
 }
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
+    if doc
+        .required_extensions
+        .iter()
+        .any(|e| e == crate::slur_extension::EXTENSION)
+    {
+        return Err(Diagnostic::error(
+            "slur.performance_unsupported",
+            "Authored slur fidelity has no supported performance interpretation; endpoint geometry and phrasing must not be silently discarded",
+            doc.source,
+        ));
+    }
     if crate::instrument_extension::has_midi_intent(doc) {
         return Err(Diagnostic::error(
             "instrument.performance_unsupported",
@@ -586,5 +597,33 @@ fn phase(p: RelationPhase) -> u8 {
         RelationPhase::Start => 0,
         RelationPhase::Continue => 1,
         RelationPhase::End => 2,
+    }
+}
+
+#[cfg(test)]
+mod authored_slur_guards {
+    use super::*;
+
+    #[test]
+    fn every_private_profile_rejects_slur_before_other_feature_guards() {
+        let mut doc = Document::new(DocumentKind::Score);
+        doc.required_extensions = vec![
+            crate::slur_extension::EXTENSION.into(),
+            crate::grace_extension::EXTENSION.into(),
+            crate::fermata_extension::EXTENSION.into(),
+            crate::navigation_extension::EXTENSION.into(),
+        ];
+        for profile in [
+            LoweringProfile::Written,
+            LoweringProfile::Navigation,
+            LoweringProfile::ExplicitFermatas,
+            LoweringProfile::ExplicitGraces,
+            LoweringProfile::ExplicitGracesAndFermatas,
+        ] {
+            assert_eq!(
+                lower(&doc, profile).unwrap_err().code,
+                "slur.performance_unsupported"
+            );
+        }
     }
 }

@@ -10,6 +10,7 @@ pub mod mxl;
 pub mod navigation;
 pub mod sfs;
 mod sfs_navigation;
+mod slurs;
 mod tempo;
 mod ties;
 mod validate;

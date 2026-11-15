@@ -323,6 +323,7 @@ fn read_with_audit<R: BufRead + Seek>(
     let mut parts: Vec<Option<ScorePart>> = vec![None; declared.len()];
     let mut active = None;
     let mut tie_endpoints = BTreeMap::new();
+    let mut slur_endpoints = Vec::new();
     input.seek(SeekFrom::Start(beginning)).map_err(io_error)?;
     let second_pass = xml::walk(&mut input, |node, parent, phase| {
         // A seekable source can change between passes. Never rely on prior validation
@@ -381,6 +382,7 @@ fn read_with_audit<R: BufRead + Seek>(
             }
             score.barlines.append(&mut reader.barlines);
             tie_endpoints.append(&mut reader.tie_endpoints);
+            slur_endpoints.append(&mut reader.slur_endpoints);
             score.tempos.append(&mut reader.tempos);
             score.metronomes.append(&mut reader.metronomes);
             score.dynamics.append(&mut reader.dynamics);
@@ -445,6 +447,9 @@ fn read_with_audit<R: BufRead + Seek>(
     crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
     crate::graces::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
+    score.slurs = super::slurs::resolve(slur_endpoints, &mut report)?;
+    crate::slurs::sort(&mut score);
+    crate::slurs::authored_only(&score, crate::Format::MusicXml, &mut report);
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
     report.finish(score)
@@ -462,6 +467,7 @@ struct PartReader {
     start: Rational,
     note_counter: usize,
     tie_endpoints: BTreeMap<EventId, super::ties::Endpoints>,
+    slur_endpoints: Vec<super::slurs::Encounter>,
     tempos: Vec<ScoreTempo>,
     metronomes: Vec<ScoreMetronome>,
     dynamics: Vec<ScoreDynamic>,
@@ -501,6 +507,7 @@ impl PartReader {
             start: Rational::zero(),
             note_counter,
             tie_endpoints: BTreeMap::new(),
+            slur_endpoints: vec![],
             tempos: vec![],
             metronomes: vec![],
             dynamics: vec![],
@@ -527,6 +534,7 @@ impl PartReader {
             start,
             note_counter,
             tie_endpoints,
+            slur_endpoints,
             tempos,
             metronomes,
             dynamics,
@@ -884,6 +892,7 @@ impl PartReader {
                             .map(String::from)
                             .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
+                        slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                         pending_graces.push(super::graces::read(
                             n,
                             EventId(id),
@@ -941,6 +950,7 @@ impl PartReader {
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
                     beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
+                    slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                     if let Some(endpoints) = super::ties::read_endpoints(n)? {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);
                     }

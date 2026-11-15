@@ -2,7 +2,7 @@ use super::{type_name, xml::escape};
 use crate::{Conversion, Format, MappingEffect, MappingReport, validate_score};
 use num_bigint::BigInt;
 use num_traits::ToPrimitive;
-use scorestream_core::{Pitch, Rational, score::*};
+use scorestream_core::{Pitch, Rational, notation::VoiceId, score::*};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Write,
@@ -57,6 +57,12 @@ fn units(value: &Rational, div: u64) -> String {
     (value * &Rational::from_big_integer(div.into()))
         .numerator()
         .to_string()
+}
+/// Stable ordering retains source chord members and is shared with slur allocation.
+pub(super) fn ordered_events<'a>(m: &'a ScoreMeasure, voice: &VoiceId) -> Vec<&'a ScoreEvent> {
+    let mut events: Vec<_> = m.events.iter().filter(|e| &e.voice == voice).collect();
+    events.sort_by(|a, b| a.offset.cmp(&b.offset));
+    events
 }
 pub(super) fn decimal(value: &Rational) -> Option<String> {
     let mut d = value.denominator().clone();
@@ -305,8 +311,7 @@ pub fn write_with_options(
             }
             // Detect overlaps in a voice rather than flattening polyphony into chords.
             for v in &part.voices {
-                let mut events: Vec<_> = m.events.iter().filter(|e| e.voice == v.id).collect();
-                events.sort_by(|a, b| a.offset.cmp(&b.offset));
+                let events = ordered_events(m, &v.id);
                 // The first measure always emits an event or a voice/staff forward.
                 // Later cross-staff notes cannot change that declared default.
                 if measure_index == 0
@@ -363,6 +368,7 @@ pub fn write_with_options(
         return Err(report);
     }
     let tie_endpoints = super::ties::output(score, &mut report)?;
+    let slurs = super::slurs::Export::new(score, &graces, &mut report)?;
     let mut out = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<score-partwise version=\"4.0\">\n",
     );
@@ -536,8 +542,7 @@ pub fn write_with_options(
                     )
                     .unwrap();
                 }
-                let mut events: Vec<_> = m.events.iter().filter(|e| e.voice == v.id).collect();
-                events.sort_by(|a, b| a.offset.cmp(&b.offset));
+                let events = ordered_events(m, &v.id);
                 let mut cursor = Rational::zero();
                 let mut active_chord = None;
                 for e in events {
@@ -545,7 +550,7 @@ pub fn write_with_options(
                     if !is_chord && cursor < e.offset {
                         writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&e.offset - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                     }
-                    graces.write_before(e, &v.id.0, div, &beams, &mut out);
+                    graces.write_before(e, &v.id.0, div, &beams, &slurs, &mut out);
                     writeln!(out, "      <note id=\"{}\">", escape(&e.id.0)).unwrap();
                     if is_chord {
                         out.push_str("        <chord/>\n");
@@ -610,7 +615,7 @@ pub fn write_with_options(
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
                     beams.write(&e.id, &mut out);
-                    if tied.is_some() || fermatas.contains(&e.id) {
+                    if tied.is_some() || fermatas.contains(&e.id) || slurs.contains(&e.id) {
                         out.push_str("        <notations>");
                         if let Some(n) = tied.and_then(|t| t.stop) {
                             write!(out, "<tied type=\"stop\" number=\"{n}\"/>").unwrap();
@@ -619,6 +624,7 @@ pub fn write_with_options(
                             write!(out, "<tied type=\"start\" number=\"{n}\"/>").unwrap();
                         }
                         fermatas.write(&e.id, &mut out);
+                        slurs.write(&e.id, &mut out);
                         out.push_str("</notations>\n");
                     }
                     out.push_str("      </note>\n");

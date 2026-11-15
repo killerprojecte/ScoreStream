@@ -46,12 +46,12 @@ pub(super) fn read<'a>(
         || n.child("cue").is_some()
         || n.child("tie").is_some()
         || n.children_named("notations")
-            .any(|x| !x.children.is_empty())
+            .any(|x| x.children.iter().any(|child| child.name != "slur"))
     {
         return Err(unsupported(
             n,
             "grace.profile",
-            "Only pitched, non-chord grace notes without ties or other notations are currently mapped",
+            "Only pitched, non-chord grace notes without ties or notations other than bounded slurs are currently mapped",
         ));
     }
     let (slash, timing) = metadata(g, divisions)?;
@@ -204,6 +204,10 @@ impl<'a> Export<'a> {
             })
             .collect()
     }
+    /// The allocator and writer must see exactly the same grace encounter order.
+    pub(super) fn before(&self, anchor: &EventId) -> impl Iterator<Item = &ScoreGraceNote> {
+        self.by_anchor.get(anchor).into_iter().flatten().copied()
+    }
     pub(super) fn validate_make_times(&self, m: &ScoreMeasure, div: u64, r: &mut MappingReport) {
         for event in &m.events {
             for g in self.by_anchor.get(&event.id).into_iter().flatten() {
@@ -227,6 +231,7 @@ impl<'a> Export<'a> {
         voice: &str,
         div: u64,
         beams: &super::beams::Export<'_>,
+        slurs: &super::slurs::Export<'_>,
         out: &mut String,
     ) {
         for g in self.by_anchor.get(&anchor.id).into_iter().flatten() {
@@ -294,6 +299,11 @@ impl<'a> Export<'a> {
             }
             write!(out, "<staff>{}</staff>", anchor.staff).unwrap();
             beams.write(&g.id, out);
+            if slurs.contains(&g.id) {
+                out.push_str("<notations>");
+                slurs.write(&g.id, out);
+                out.push_str("</notations>");
+            }
             out.push_str("</note>\n");
         }
     }

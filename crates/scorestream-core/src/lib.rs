@@ -18,6 +18,7 @@ mod rational;
 mod registry;
 pub mod repeat_traversal;
 pub mod score;
+pub mod slur_extension;
 pub mod tempo_clock;
 mod validate;
 pub use metadata::*;

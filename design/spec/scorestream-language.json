@@ -476,7 +476,10 @@
       "slur": {
         "attributes": [
           "placement",
-          "line_type"
+          "line_type",
+          "bezier_x",
+          "bezier_y",
+          "orientation"
         ],
         "end_semantics": "The linked terminal event; may cross other slurs.",
         "fields": {
@@ -485,7 +488,8 @@
             "values": [
               "above",
               "below"
-            ]
+            ],
+            "meaning": "Without scorestream.slur@1 this retains legacy immutable relation semantics. With the capability it is independently optional on each endpoint and is distinct from curvature orientation."
           },
           "line_type": {
             "type": "enum",
@@ -494,9 +498,29 @@
               "dashed",
               "dotted"
             ]
+          },
+          "bezier_x": {
+            "type": "rational",
+            "required_extension": "scorestream.slur@1",
+            "meaning": "Exact authored MusicXML horizontal Bézier control-point coordinate in tenths relative to this endpoint. Start supplies control point 1; end supplies control point 2. Independently optional; never infer zero or the missing partner."
+          },
+          "bezier_y": {
+            "type": "rational",
+            "required_extension": "scorestream.slur@1",
+            "meaning": "Exact authored MusicXML vertical Bézier control-point coordinate in tenths relative to this endpoint. Start supplies control point 1; end supplies control point 2. Independently optional; never infer zero or the missing partner."
+          },
+          "orientation": {
+            "type": "enum",
+            "values": [
+              "over",
+              "under"
+            ],
+            "required_extension": "scorestream.slur@1",
+            "meaning": "Endpoint-authored curvature orientation, distinct from above/below placement; absence remains absence."
           }
         },
-        "required_on_start": []
+        "required_on_start": [],
+        "authored_profile": "scorestream.slur@1 reuses native relation IDs and exactly start/end anchors. Only bezier_x, bezier_y, orientation and placement are permitted and are per-endpoint, never immutable across the relation. line_type and continue are unsupported in this profile but remain valid legacy SFS."
       },
       "tuplet": {
         "attributes": [
@@ -1261,6 +1285,13 @@
           "scorestream.beam"
         ],
         "required_behavior": "One capability with at least one valid event-attached beam in a complete score. Preserve number absence and all five lexical values. Evaluate every event, including unmarked intervening events. Full validation precedes sound-neutral lowering; existing grace, fermata, navigation and instrument performance guards remain unchanged. Legacy SFS beam relations without this capability are unchanged."
+      },
+      "scorestream.slur@1": {
+        "status": "authored slur endpoint roundtrip; performance unavailable",
+        "relation_kinds": [
+          "slur"
+        ],
+        "required_behavior": "One capability with at least one valid slur in a complete score. Reuse stable native relation IDs, with exactly one start and one end per ID; parallel relations with distinct IDs remain distinct. Anchors must be distinct pitched events in one part; cross-voice and cross-staff are allowed. Start onset precedes end, except strictly ordered genuine before-principal grace events in the same principal group using authored negative order (including grace to principal). Never infer order from IDs or record order. Exact optional endpoint Bézier coordinates, orientation and placement are independent and no defaults are inferred. Source-local XML numbers may be regenerated with an explicit normalization report. Reject malformed fields, continues, line_type, resting/unpitched/silent-cue anchors, unknown versions and missing capability for new fields. Every ordinary or qualified performance lowering rejects this capability until an explicit supported policy exists. Legacy SFS slurs without it are unchanged."
       }
     }
   },

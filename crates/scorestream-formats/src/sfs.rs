@@ -170,6 +170,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::grace_extension::EXTENSION
             && e != core::instrument_extension::EXTENSION
             && e != core::beam_extension::EXTENSION
+            && e != core::slur_extension::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -177,6 +178,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         metadata: doc.metadata.clone(),
         parts: vec![],
         ties: vec![],
+        slurs: vec![],
         tempos: vec![],
         metronomes: vec![],
         dynamics: vec![],
@@ -261,6 +263,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         p.measures.sort_by(|a, b| a.start.cmp(&b.start));
     }
     let mut tie_groups: BTreeMap<&str, Vec<(&Rational, &Relation)>> = BTreeMap::new();
+    let mut slur_groups: BTreeMap<&str, Vec<&Relation>> = BTreeMap::new();
     let mut next_id = 0;
     let mut used: BTreeSet<String> = doc
         .events()
@@ -324,6 +327,15 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 }
                 Record::Mark(m) => unsupported(&mut report, &format!("mark:{}", m.kind), &m.target),
                 Record::Relation(rel) => {
+                    if rel.kind == "slur"
+                        && doc
+                            .required_extensions
+                            .iter()
+                            .any(|e| e == core::slur_extension::EXTENSION)
+                    {
+                        slur_groups.entry(&rel.id).or_default().push(rel);
+                        continue;
+                    }
                     if rel.kind != "tie" {
                         unsupported(&mut report, &format!("relation:{}", rel.kind), &rel.id);
                         continue;
@@ -601,6 +613,23 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 .collect(),
         });
     }
+    for (id, endpoints) in slur_groups {
+        // Native validation has already checked phases, exact onset and ownership.
+        // Never merge distinct IDs merely because their endpoints are identical.
+        let start = endpoints
+            .iter()
+            .find(|e| e.phase == RelationPhase::Start)
+            .expect("validated slur start");
+        let end = endpoints
+            .iter()
+            .find(|e| e.phase == RelationPhase::End)
+            .expect("validated slur end");
+        score.slurs.push(ScoreSlur {
+            id: RelationId(id.into()),
+            start: core::slur_extension::decode_endpoint(start).expect("validated slur endpoint"),
+            end: core::slur_extension::decode_endpoint(end).expect("validated slur endpoint"),
+        });
+    }
     let end = score
         .parts
         .iter()
@@ -616,6 +645,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     crate::fermatas::sort(&mut score);
     crate::graces::sort(&mut score);
     crate::beams::sort(&mut score);
+    crate::slurs::sort(&mut score);
+    crate::slurs::authored_only(&score, Format::Sfs, &mut report);
     crate::graces::authored_only(&score, Format::Sfs, &mut report);
     crate::fermatas::authored_only(&score, Format::Sfs, &mut report);
     report.append(validate_score(&score));
@@ -695,8 +726,14 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             .push(core::grace_extension::EXTENSION.into());
         crate::graces::authored_only(score, Format::Sfs, &mut report);
     }
+    if !score.slurs.is_empty() {
+        doc.required_extensions
+            .push(core::slur_extension::EXTENSION.into());
+        crate::slurs::authored_only(score, Format::Sfs, &mut report);
+    }
     if !score.beams.is_empty() {
-        doc.required_extensions.push(core::beam_extension::EXTENSION.into());
+        doc.required_extensions
+            .push(core::beam_extension::EXTENSION.into());
     }
     if !score.barlines.is_empty() {
         doc.required_extensions
@@ -993,7 +1030,14 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     }
     if !score.ties.is_empty() {
         let index = crate::ties::event_index(score);
-        let mut relations = Ids::new(score.ties.iter().map(|tie| tie.id.0.clone()), "tie");
+        let mut relations = Ids::new(
+            score
+                .ties
+                .iter()
+                .map(|tie| tie.id.0.clone())
+                .chain(score.slurs.iter().map(|slur| slur.id.0.clone())),
+            "tie",
+        );
         for tie in &score.ties {
             let id = relations.get(&tie.id.0, &mut report);
             for (i, event) in tie.events.iter().enumerate() {
@@ -1014,6 +1058,34 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                         attributes: Attributes::new(),
                         source: SourceRange::default(),
                     }));
+            }
+        }
+    }
+    if !score.slurs.is_empty() {
+        let positions = crate::beams::positions(score);
+        let mut relations = Ids::new(
+            score
+                .slurs
+                .iter()
+                .map(|slur| slur.id.0.clone())
+                .chain(score.ties.iter().map(|tie| tie.id.0.clone())),
+            "slur",
+        );
+        for slur in &score.slurs {
+            let id = relations.get(&slur.id.0, &mut report);
+            for (phase, endpoint) in [
+                (RelationPhase::Start, &slur.start),
+                (RelationPhase::End, &slur.end),
+            ] {
+                frames
+                    .entry(positions[&endpoint.event].clone())
+                    .or_default()
+                    .push(Record::Relation(core::slur_extension::encode_endpoint(
+                        id.clone(),
+                        events.get(&endpoint.event.0, &mut report),
+                        phase,
+                        endpoint,
+                    )));
             }
         }
     }
@@ -1053,7 +1125,9 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     let beam_positions = crate::beams::positions(score);
     for b in &score.beams {
         let event = events.get(&b.event.0, &mut report);
-        frames.entry(beam_positions[&b.event].clone()).or_default()
+        frames
+            .entry(beam_positions[&b.event].clone())
+            .or_default()
             .push(Record::Mark(core::beam_extension::encode(event, b)));
     }
     crate::tempo::write_tempos(score, &mut frames);

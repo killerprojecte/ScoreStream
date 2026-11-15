@@ -490,7 +490,7 @@ fn untouched_cautionary_fragment_maps_but_grace_beams_and_slur_remain_blocking()
         report
             .diagnostics
             .iter()
-            .any(|d| d.feature == "element.slur")
+            .any(|d| d.feature == "slur.unmatched")
     );
 }
 

@@ -298,7 +298,7 @@ fn unsupported_semantics_and_contradictions_are_never_deleted() {
     );
     error(
         &CHAIN.replacen("<notations>", "<notations><slur type=\"start\"/>", 1),
-        "element.slur",
+        "slur.unmatched",
     );
 }
 #[test]
