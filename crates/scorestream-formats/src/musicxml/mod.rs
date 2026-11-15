@@ -7,6 +7,7 @@ pub use extent::{IrregularMeasure, MusicXmlOptions};
 mod fermatas;
 mod geometry;
 mod graces;
+mod instruments;
 pub use geometry::GeometryPolicy;
 mod read;
 mod tempo;

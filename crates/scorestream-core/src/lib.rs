@@ -5,6 +5,8 @@
 pub mod fermata_extension;
 pub mod fermata_timing;
 pub mod grace_extension;
+pub mod instrument_extension;
+pub mod instrument_metadata;
 pub mod instruments;
 mod metadata;
 mod model;

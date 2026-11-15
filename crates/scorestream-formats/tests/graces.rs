@@ -300,7 +300,7 @@ fn typed_workspace_keeps_unmeasured_graces_through_pitch_edit_undo_and_redo() {
     );
     assert_eq!(
         view.document["required_extensions"],
-        serde_json::json!(["scorestream.grace@1"])
+        serde_json::json!(["scorestream.instrument@1", "scorestream.grace@1"])
     );
     let changed = workspace
         .set_event_pitch("a", "D#5", &view.revision_id)

@@ -365,6 +365,7 @@ fn display_only_and_unrelated_parts_preserve_existing_playback() {
     // A second independent part must not acquire an unrequested baseline.
     let mut other = base.parts[0].clone();
     other.id.0 = "other".into();
+    other.instrument_metadata.as_mut().unwrap().source_id = "other_instrument".into();
     other.voices[0].id.0 = "other_voice".into();
     other.measures[0].id = "other_measure".into();
     other.measures[0].events[0].id.0 = "other_note".into();

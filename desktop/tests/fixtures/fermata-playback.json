@@ -10,8 +10,8 @@
       "source": {
         "column": 1,
         "end_column": 27,
-        "end_line": 10,
-        "line": 10
+        "end_line": 11,
+        "line": 11
       }
     },
     {
@@ -24,8 +24,8 @@
       "source": {
         "column": 1,
         "end_column": 26,
-        "end_line": 16,
-        "line": 16
+        "end_line": 18,
+        "line": 18
       }
     },
     {
@@ -38,8 +38,8 @@
       "source": {
         "column": 1,
         "end_column": 25,
-        "end_line": 21,
-        "line": 21
+        "end_line": 23,
+        "line": 23
       }
     },
     {
@@ -52,8 +52,8 @@
       "source": {
         "column": 1,
         "end_column": 26,
-        "end_line": 16,
-        "line": 16
+        "end_line": 18,
+        "line": 18
       }
     }
   ],

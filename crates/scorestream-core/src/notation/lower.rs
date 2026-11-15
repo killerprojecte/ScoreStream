@@ -212,6 +212,13 @@ pub(super) enum LoweringProfile {
     ExplicitGracesAndFermatas,
 }
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
+    if crate::instrument_extension::has_midi_intent(doc) {
+        return Err(Diagnostic::error(
+            "instrument.performance_unsupported",
+            "Authored instrument and MIDI intent requires explicit route realization; volume, pan, ports and programs must not be silently ignored",
+            doc.source,
+        ));
+    }
     let graces = matches!(
         profile,
         LoweringProfile::ExplicitGraces | LoweringProfile::ExplicitGracesAndFermatas
@@ -396,6 +403,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                     if navigation && mark.kind == crate::navigation_extension::KIND => {}
                 // Authored signs are decoded and retained by the qualified
                 // constructor, then every visited sign must pass its clock policy.
+                Record::Mark(mark) if mark.kind == crate::instrument_extension::KIND => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}
                 Record::Mark(mark) => {

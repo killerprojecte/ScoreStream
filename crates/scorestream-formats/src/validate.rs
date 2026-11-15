@@ -38,10 +38,40 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
     let mut voices = BTreeSet::new();
     let mut events = BTreeSet::new();
     let mut measures = BTreeSet::new();
+    let mut instrument_sources = BTreeSet::new();
     for part in &score.parts {
         let path = format!("/parts/{}", part.id);
         if part.id.0.is_empty() || !parts.insert(&part.id) {
             invalid(&path, "part.identity", "Empty or duplicate part ID");
+        }
+        if let Some(metadata) = &part.instrument_metadata {
+            if let Err(e) = scorestream_core::instrument_metadata::validate(metadata) {
+                invalid(&path, e.code, e.message);
+            }
+            if !instrument_sources.insert(&metadata.source_id) {
+                invalid(
+                    &path,
+                    "instrument.source_id",
+                    "Duplicate instrument source ID",
+                );
+            }
+            match scorestream_core::instrument_metadata::catalog_projection(metadata) {
+                Some(p)
+                    if part
+                        .instrument
+                        .as_ref()
+                        .is_some_and(|id| id.0 == p.canonical_id) => {}
+                Some(_) => invalid(
+                    &path,
+                    "instrument.catalog_mismatch",
+                    "Instrument route differs from preserved metadata projection",
+                ),
+                None => invalid(
+                    &path,
+                    "instrument.catalog_unresolved",
+                    "No exact supported catalog projection",
+                ),
+            }
         }
         if part.staves == 0 || part.staves > 64 {
             invalid(&path, "part.staves", "Staff count must be 1 through 64");

@@ -6,7 +6,7 @@ use crate::{Conversion, MappingEffect, MappingReport, validate_score};
 use num_bigint::BigInt;
 use scorestream_core::{
     Pitch, Rational,
-    notation::{EventId, InstrumentId, PartId, VoiceId},
+    notation::{EventId, PartId, VoiceId},
     score::*,
 };
 use std::{
@@ -476,18 +476,15 @@ impl PartReader {
         report: &mut MappingReport,
     ) -> Result<Self> {
         let id = required_attr(declared, "id")?;
-        let instrument = declared
-            .child("score-instrument")
-            .map(|n| {
-                let original = required_attr(n, "id")?;
-                n.error(report, MappingEffect::Normalized, "instrument.identity", format!("XML instrument reference {original:?} is replaced by its instrument-name in the shared profile; no external instrument references are accepted"));
-                Ok(InstrumentId(child(n, "instrument-name")?.text.clone()))
-            })
-            .transpose()?;
+        let metadata = super::instruments::read(declared, report)?;
+        let (instrument, instrument_metadata) = metadata
+            .map(|(id, value)| (Some(id), Some(value)))
+            .unwrap_or_default();
         let part = ScorePart {
             id: PartId(id.into()),
             name: Some(child(declared, "part-name")?.text.clone()),
             instrument,
+            instrument_metadata,
             staves: 1,
             voices: vec![],
             measures: vec![],

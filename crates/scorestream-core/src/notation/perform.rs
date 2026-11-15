@@ -109,6 +109,7 @@ pub(super) fn perform(
                 e == crate::fermata_extension::EXTENSION
                     || e == crate::grace_extension::EXTENSION
                     || e == ext::EXTENSION
+                    || e == crate::instrument_extension::EXTENSION
             })
     } else if fermatas {
         doc.required_extensions
@@ -117,7 +118,8 @@ pub(super) fn perform(
             && doc
                 .required_extensions
                 .iter()
-                .all(|e| e == crate::fermata_extension::EXTENSION || e == ext::EXTENSION)
+                .all(|e| e == crate::fermata_extension::EXTENSION || e == ext::EXTENSION
+                    || e == crate::instrument_extension::EXTENSION)
     } else if graces {
         doc.required_extensions
             .iter()
@@ -125,9 +127,12 @@ pub(super) fn perform(
             && doc
                 .required_extensions
                 .iter()
-                .all(|e| e == crate::grace_extension::EXTENSION || e == ext::EXTENSION)
+                .all(|e| e == crate::grace_extension::EXTENSION || e == ext::EXTENSION
+                    || e == crate::instrument_extension::EXTENSION)
     } else {
-        doc.required_extensions.as_slice() == [ext::EXTENSION]
+        doc.required_extensions.iter().any(|e| e == ext::EXTENSION)
+            && doc.required_extensions.iter().all(|e| e == ext::EXTENSION
+                || e == crate::instrument_extension::EXTENSION)
     };
     if !supported {
         return Err(if combined {

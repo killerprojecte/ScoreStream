@@ -425,6 +425,20 @@
         "steal_previous",
         "steal_following",
         "make_time"
+      ],
+      "scorestream.instrument": [
+        "source_id",
+        "name",
+        "abbreviation",
+        "sound",
+        "device",
+        "device_ref",
+        "midi_ref",
+        "port",
+        "channel",
+        "program",
+        "volume",
+        "pan"
       ]
     },
     "relations": {
@@ -1043,6 +1057,57 @@
         },
         "required_extension": "scorestream.grace@1",
         "meaning": "One metadata record per authored pitched grace event, including empty timing intent. Requires duration=?, kind=grace, same-frame/voice/staff non-chord pitched principal, consecutive order=-N..-1; slash absence is retained. Performance rejects rather than omitting attacks."
+      },
+      "scorestream.instrument": {
+        "targets": [
+          "part"
+        ],
+        "required": [
+          "source_id",
+          "name"
+        ],
+        "fields": {
+          "source_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "abbreviation": {
+            "type": "string"
+          },
+          "sound": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "device_ref": {
+            "type": "string"
+          },
+          "midi_ref": {
+            "type": "string"
+          },
+          "port": {
+            "type": "positive_integer"
+          },
+          "channel": {
+            "type": "positive_integer"
+          },
+          "program": {
+            "type": "positive_integer"
+          },
+          "volume": {
+            "type": "nonnegative_rational",
+            "meaning": "Exact channel volume percent 0..100, distinct from note velocity."
+          },
+          "pan": {
+            "type": "rational",
+            "meaning": "Exact degrees -180..180; not MIDI CC10."
+          }
+        },
+        "required_extension": "scorestream.instrument@1",
+        "meaning": "One initial single-instrument declaration per part at zero. Source ID, Unicode labels and standard sound identity remain separate from catalog key and pitch. Device string presence retains even an empty element; absent port remains absent. device_ref and midi_ref match source_id. MIDI source numbers are one-based. No multiple declarations, guessing, sample or device activation; authored MIDI intent blocks playback until explicit realization."
       }
     }
   },
@@ -1150,6 +1215,13 @@
           "scorestream.grace"
         ],
         "required_behavior": "One capability and one metadata record per grace event. Only pitched before-principal non-chord groups. All timing values are retained without inference. Legacy SFS grace without this capability is unchanged."
+      },
+      "scorestream.instrument@1": {
+        "status": "single-instrument identity and initial MIDI intent roundtrip",
+        "mark_kinds": [
+          "scorestream.instrument"
+        ],
+        "required_behavior": "One capability with at least one initial part record. Unknown sounds/names without an exact reviewed catalog projection reject. Broader catalog mappings retain source subtype and report normalization. Any MIDI record requires an explicit playback route realization; plain identity metadata preserves existing catalog playback, including explicit later SFS instrument states (which remain unsupported by the MusicXML adapter)."
       }
     }
   },

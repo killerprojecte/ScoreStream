@@ -157,8 +157,28 @@ pub fn write_with_options(
         }
     }
     let mut xml_ids = BTreeSet::new();
+    for value in score
+        .parts
+        .iter()
+        .filter_map(|p| p.instrument_metadata.as_ref())
+    {
+        super::instruments::validate_export(value, &mut xml_ids, &mut report);
+    }
     let graces = super::graces::Export::new(score, &mut xml_ids, &mut report);
     for part in &score.parts {
+        if part.instrument_metadata.is_none()
+            && part
+                .instrument
+                .as_ref()
+                .is_some_and(|id| scorestream_core::instruments::resolve_instrument(id).is_none())
+        {
+            issue(
+                &mut report,
+                "instrument.catalog_unresolved",
+                &part.id.0,
+                "Legacy instrument has no exact catalog mapping; export cannot produce a declaration the importer would reject",
+            );
+        }
         if !xml_id(&part.id.0) {
             issue(
                 &mut report,
@@ -419,12 +439,16 @@ pub fn write_with_options(
                 "Required part-name derived from instrument label or left empty",
             );
         }
-        if let Some(instrument) = &p.instrument {
+        if let Some(value) = &p.instrument_metadata {
+            super::instruments::write(&mut out, value);
+        } else if let Some(instrument) = &p.instrument {
             let mut id = format!("mx_instrument{}", i + 1);
             while xml_ids.contains(&id) {
                 id.push('_');
             }
             xml_ids.insert(id.clone());
+            report.push(Format::MusicXml, MappingEffect::Normalized, "instrument.generated_declaration", &p.id.0,
+                "Generated a score-instrument declaration from the explicit catalog identity; no MIDI assignment was inferred");
             writeln!(out, "      <score-instrument id=\"{id}\"><instrument-name>{}</instrument-name></score-instrument>", escape(&instrument.0)).unwrap();
         }
         out.push_str("    </score-part>\n");

@@ -120,6 +120,7 @@ fn source_like_different_anchor_intervals_are_not_coalesced_or_stretched() {
     for (name, offset, duration, rest) in [("rest", "0", "1/2", true), ("late", "2", "2", false)] {
         let mut p = base.parts[0].clone();
         p.id.0 = name.into();
+        p.instrument_metadata.as_mut().unwrap().source_id = format!("instrument_{name}");
         p.voices[0].id.0 = format!("v{}_1", model.parts.len() + 1);
         p.measures[0].id = format!("m_{name}");
         let e = &mut p.measures[0].events[0];

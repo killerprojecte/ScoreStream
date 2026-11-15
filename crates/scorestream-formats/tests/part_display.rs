@@ -77,21 +77,14 @@ fn xml10_label_text_preserves_nel_and_line_separator() {
 }
 
 #[test]
-fn recognized_idrefs_do_not_become_duplicate_definitions_or_supported_metadata() {
+fn recognized_idrefs_do_not_become_duplicate_definitions_or_allow_foreign_references() {
     let input = two_flutes().replace("</score-instrument>", "</score-instrument><midi-device id=\"I1\" port=\"1\"/><midi-instrument id=\"I1\"><midi-program>74</midi-program></midi-instrument>");
     let report = MusicXml.read(&input).unwrap_err();
     assert!(
         report
             .diagnostics
             .iter()
-            .any(|d| d.feature == "element.midi-device" && d.effect == MappingEffect::Unsupported)
-    );
-    assert!(
-        report
-            .diagnostics
-            .iter()
-            .any(|d| d.feature == "element.midi-instrument"
-                && d.effect == MappingEffect::Unsupported)
+            .any(|d| d.feature == "instrument.idref" && d.effect == MappingEffect::Invalid)
     );
     assert!(!report.diagnostics.iter().any(|d| d.feature == "xml.id"));
     let input = two_flutes().replace(
@@ -118,7 +111,7 @@ fn recognized_idrefs_do_not_become_duplicate_definitions_or_supported_metadata()
 }
 
 #[test]
-fn richer_names_instrument_sound_and_layout_still_fail_closed() {
+fn richer_part_labels_and_layout_fail_closed_but_standard_sound_is_preserved() {
     for extra in [
         "<part-name-display><display-text>Flute 1</display-text></part-name-display>",
         "<part-abbreviation>Fl. 1</part-abbreviation>",
@@ -135,7 +128,7 @@ fn richer_names_instrument_sound_and_layout_still_fail_closed() {
                 "</instrument-name>",
                 "</instrument-name><instrument-sound>wind.flutes.flute</instrument-sound>"
             ))
-            .is_err()
+            .is_ok()
     );
     assert!(
         MusicXml

@@ -118,6 +118,8 @@ pub struct ScorePart {
     pub id: PartId,
     pub name: Option<String>,
     pub instrument: Option<InstrumentId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instrument_metadata: Option<crate::instrument_metadata::InstrumentMetadata>,
     pub staves: u32,
     pub voices: Vec<ScoreVoice>,
     pub measures: Vec<ScoreMeasure>,

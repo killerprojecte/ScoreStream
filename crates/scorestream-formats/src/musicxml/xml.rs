@@ -552,6 +552,7 @@ fn stack_container(name: &str) -> bool {
             | "part-list"
             | "score-part"
             | "score-instrument"
+            | "midi-instrument"
             | "attributes"
             | "key"
             | "time"
@@ -657,17 +658,21 @@ pub(super) fn schema_with_geometry(
             ),
             "score-part" => (
                 &["id"],
-                &["part-name", "score-instrument"],
+                &["part-name", "score-instrument", "midi-device", "midi-instrument"],
                 &[],
                 &["part-name"],
                 false,
             ),
             "score-instrument" => (
                 &["id"],
-                &["instrument-name"],
+                &["instrument-name", "instrument-abbreviation", "instrument-sound"],
                 &[],
                 &["instrument-name"],
                 false,
+            ),
+            "midi-device" => (&["id", "port"], &[], &[], &[], true),
+            "midi-instrument" => (
+                &["id"], &["midi-channel", "midi-program", "volume", "pan"], &[], &[], false,
             ),
             "part" => (&["id"], &["measure"], &["measure"], &["measure"], false),
             "measure" => (
@@ -825,7 +830,8 @@ pub(super) fn schema_with_geometry(
             "type" => (&["size"], &[], &[], &[], true),
             "stem" => (&[], &[], &[], &[], true),
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
-            | "instrument-name" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
+            | "instrument-name" | "instrument-abbreviation" | "instrument-sound"
+            | "midi-channel" | "midi-program" | "volume" | "pan" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
             | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "staff"
             | "actual-notes" | "normal-notes" | "normal-type" | "diatonic" | "chromatic"
             | "octave-change" | "beat-unit" | "per-minute" => (&[], &[], &[], &[], true),

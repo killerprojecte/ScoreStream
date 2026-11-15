@@ -504,6 +504,95 @@
             },
             "description": "Requires scorestream.grace@1 and a pitched unmeasured grace anchor. Exact ranges, same-frame placement, group order and one mark per grace are validated semantically."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.instrument"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Identifier"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "source_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "abbreviation": {
+                    "type": "string"
+                  },
+                  "sound": {
+                    "type": "string"
+                  },
+                  "device": {
+                    "type": "string"
+                  },
+                  "device_ref": {
+                    "type": "string"
+                  },
+                  "midi_ref": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "channel": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "program": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 128
+                  },
+                  "volume": {
+                    "$ref": "#/$defs/NonNegativeRational"
+                  },
+                  "pan": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "source_id",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "dependentRequired": {
+                  "device_ref": [
+                    "device"
+                  ],
+                  "port": [
+                    "device"
+                  ],
+                  "channel": [
+                    "midi_ref"
+                  ],
+                  "program": [
+                    "midi_ref"
+                  ],
+                  "volume": [
+                    "midi_ref"
+                  ],
+                  "pan": [
+                    "midi_ref"
+                  ]
+                }
+              }
+            },
+            "description": "Requires scorestream.instrument@1: one initial record at zero per part, unique source ID and matching IDREFs, catalog projection and exact value ranges are semantic checks. MIDI intent is authored only."
+          }
         }
       ]
     },

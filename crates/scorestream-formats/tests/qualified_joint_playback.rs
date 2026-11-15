@@ -1305,3 +1305,16 @@ fn desktop_fixture_is_generated_only_from_the_actual_qualified_joint_plan() {
         "Regenerate only from unchanged synthetic XML with UPDATE_JOINT_FIXTURE=1"
     );
 }
+
+#[test]
+fn combined_clock_cannot_silently_ignore_initial_midi_intent() {
+    let plain = source(XML);
+    let grace = explicit(&plain, &[("z-grace", "1/8"), ("a-grace", "1/4")]);
+    let fermata = holds(&plain, &[("1", "1")]);
+    assert!(play(&plain, &grace, &fermata).is_ok());
+    let mark = plain.lines().find(|l| l.contains(" scorestream.instrument ")).unwrap();
+    // Empty device is still authored intent, not permission to choose an output.
+    let assigned = plain.replace(mark, &format!("{mark} device=\"\""));
+    assert!(SfsAdapter.read(&assigned).is_ok());
+    reject(&assigned, &grace, &fermata, "instrument.performance_unsupported");
+}

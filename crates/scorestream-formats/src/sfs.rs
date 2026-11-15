@@ -168,6 +168,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         e != core::navigation_extension::EXTENSION
             && e != core::fermata_extension::EXTENSION
             && e != core::grace_extension::EXTENSION
+            && e != core::instrument_extension::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -200,6 +201,21 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             id: PartId(p.id.clone()),
             name: p.display_name.clone(),
             instrument: Some(InstrumentId(p.instrument.clone())),
+            instrument_metadata: doc
+                .frames
+                .iter()
+                .flat_map(|f| &f.records)
+                .find_map(|r| match r {
+                    Record::Mark(m)
+                        if m.kind == core::instrument_extension::KIND && m.target == p.id =>
+                    {
+                        Some(
+                            core::instrument_extension::decode(m)
+                                .expect("validated instrument metadata"),
+                        )
+                    }
+                    _ => None,
+                }),
             staves: p.staves,
             voices: doc
                 .voices
@@ -263,7 +279,10 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     .attributes
                     .get("source_id")
                     .and_then(Scalar::as_str)
-                    .filter(|_| m.kind == scorestream_core::navigation_extension::KIND)
+                    .filter(|_| {
+                        m.kind == scorestream_core::navigation_extension::KIND
+                            || m.kind == core::instrument_extension::KIND
+                    })
                 {
                     used.insert(id.into());
                 }
@@ -281,7 +300,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
                     crate::sfs_navigation::read_mark(m, &mut score, &mut report);
                 }
-                Record::Mark(m) if m.kind == core::grace_extension::KIND => {}
+                Record::Mark(m)
+                    if m.kind == core::grace_extension::KIND
+                        || m.kind == core::instrument_extension::KIND => {}
                 Record::Mark(m) if m.kind == core::fermata_extension::KIND => {
                     crate::fermatas::read_mark(m, &mut score, &mut report);
                 }
@@ -647,6 +668,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     }
     let mut doc = Document::new(DocumentKind::Score);
     doc.metadata = score.metadata.clone();
+    if score.parts.iter().any(|p| p.instrument_metadata.is_some()) {
+        doc.required_extensions
+            .push(core::instrument_extension::EXTENSION.into());
+    }
     if !score.fermatas.is_empty() {
         doc.required_extensions
             .push(core::fermata_extension::EXTENSION.into());
@@ -669,6 +694,12 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         })
         .collect();
     aliases.extend(score.barlines.iter().filter_map(|b| b.id.clone()));
+    aliases.extend(
+        score
+            .parts
+            .iter()
+            .filter_map(|p| p.instrument_metadata.as_ref().map(|m| m.source_id.clone())),
+    );
     let mut parts = Ids::new(aliases.iter().cloned(), "part");
     let mut voices = Ids::new(aliases.into_iter(), "voice");
     let mut objects: Vec<String> = score
@@ -682,6 +713,12 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .collect();
     objects.extend(score.barlines.iter().filter_map(|b| b.id.clone()));
     objects.extend(score.graces.iter().map(|g| g.id.0.clone()));
+    objects.extend(
+        score
+            .parts
+            .iter()
+            .filter_map(|p| p.instrument_metadata.as_ref().map(|m| m.source_id.clone())),
+    );
     let mut measures = Ids::new(objects.iter().cloned(), "measure");
     let mut events = Ids::new(objects.into_iter(), "event");
     let mut chords = Ids::new(
@@ -695,6 +732,15 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
     for p in &score.parts {
         let pid = parts.get(&p.id.0, &mut report);
+        if let Some(value) = &p.instrument_metadata {
+            frames
+                .entry(Rational::zero())
+                .or_default()
+                .push(Record::Mark(core::instrument_extension::encode(
+                    pid.clone(),
+                    value,
+                )));
+        }
         let instrument = match &p.instrument {
             Some(i) => i.0.clone(),
             None => {
