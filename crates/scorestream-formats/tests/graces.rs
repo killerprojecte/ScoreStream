@@ -210,7 +210,7 @@ fn unsupported_source_tags_are_not_removed_when_grace_is_mapped() {
     for tag in [
         "<stem default-y=\"1\">up</stem>",
         "<beam number=\"1\">begin</beam>",
-        "<accidental>natural</accidental>",
+        "<accidental bracket=\"yes\">natural</accidental>",
         "<notations><slur type=\"start\"/></notations>",
     ] {
         assert!(

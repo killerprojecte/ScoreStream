@@ -96,7 +96,8 @@ and one- or two-note group order. It does **not** strip other authored children.
 All 237 are pitched, genuinely unmeasured and before ordinary principals, with no
 explicit time-steal/make-time fields. Their missing timing policy stays missing.
 The full originals still reject on other unsupported metadata and notation,
-including beams, accidental glyphs, slurs and layout. Authored stems now have a
+including beams, slurs and layout. The bounded
+[accidental glyph bridge](ACCIDENTAL_IMPORT.md) now retains supported signs and flags. Authored stems now have a
 separate [typed bridge](NOTE_APPEARANCE_IMPORT.md) rather than being discarded. The
 end-to-end tests are separately identified small fixtures, not substitute scores.
 No sampled whole-score audio or native desktop visual acceptance is claimed.

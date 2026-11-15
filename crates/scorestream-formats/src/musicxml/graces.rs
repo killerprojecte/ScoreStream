@@ -66,6 +66,7 @@ pub(super) fn read<'a>(
             slash,
             timing,
             stem: super::appearance::stem(n)?,
+            accidental: super::accidentals::read(n)?,
         },
         voice,
         staff,
@@ -272,6 +273,7 @@ impl<'a> Export<'a> {
                 for _ in 0..w.dots {
                     out.push_str("<dot/>");
                 }
+                super::accidentals::write(g.accidental.as_ref(), out);
                 if let Some(t) = &w.time_modification {
                     write!(out,"<time-modification><actual-notes>{}</actual-notes><normal-notes>{}</normal-notes>",t.actual,t.normal).unwrap();
                     if let Some(n) = t.normal_type {
@@ -282,6 +284,9 @@ impl<'a> Export<'a> {
                     }
                     out.push_str("</time-modification>");
                 }
+            }
+            if g.written.is_none() {
+                super::accidentals::write(g.accidental.as_ref(), out);
             }
             if let Some(stem) = g.stem {
                 write!(out, "<stem>{}</stem>", stem.name()).unwrap();

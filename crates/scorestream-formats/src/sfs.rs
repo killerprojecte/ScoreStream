@@ -184,6 +184,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         graces: vec![],
         barlines: vec![],
     };
+    let accidentals = crate::accidentals::read_marks(doc, &mut report);
     let grace_metadata: BTreeMap<_, _> = doc
         .frames
         .iter()
@@ -297,6 +298,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         for record in &frame.records {
             match record {
                 Record::Measure(_) => {}
+                Record::Mark(m) if m.kind == "accidental" => {}
                 Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
                     crate::sfs_navigation::read_mark(m, &mut score, &mut report);
                 }
@@ -502,6 +504,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             slash: e.attributes.get("slash").and_then(Scalar::as_bool),
                             timing: grace_metadata[id].clone(),
                             stem: text(&e.attributes, "stem").and_then(StemDirection::from_name),
+                            accidental: accidentals.get(id).cloned(),
                         });
                         continue;
                     }
@@ -574,6 +577,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         written: written(&e.attributes, &mut report, &id),
                         stem: text(&e.attributes, "stem").and_then(StemDirection::from_name),
                         measure_rest: e.attributes.get("measure_rest").and_then(Scalar::as_bool),
+                        accidental: accidentals.get(&id).cloned(),
                     });
                 }
             }
@@ -847,7 +851,14 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     continue;
                 }
                 let mut a = Attributes::new();
-                put(&mut a, "id", events.get(&e.id.0, &mut report));
+                let id = events.get(&e.id.0, &mut report);
+                crate::accidentals::write_mark(
+                    e.accidental.as_ref(),
+                    &id,
+                    &m.start + &e.offset,
+                    &mut frames,
+                );
+                put(&mut a, "id", id);
                 a.insert("staff".into(), Scalar::Integer(i64::from(e.staff)));
                 if let Some(c) = &e.chord {
                     put(&mut a, "chord", chords.get(c, &mut report));
@@ -896,6 +907,12 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     for g in &score.graces {
         let anchor = &grace_anchors[&g.anchor];
         let id = events.get(&g.id.0, &mut report);
+        crate::accidentals::write_mark(
+            g.accidental.as_ref(),
+            &id,
+            anchor.start.clone(),
+            &mut frames,
+        );
         let mut a = Attributes::new();
         put(&mut a, "id", id.clone());
         put(&mut a, "kind", "grace");

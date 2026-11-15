@@ -1,4 +1,4 @@
-import type {View,MarkRecord,Measure} from '../types';
+import type {View,MarkRecord,Measure,ScoreEvent} from '../types';
 import {Q} from './exact';
 const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 // SMuFL metronome note glyphs, not Unicode text-font approximations.
@@ -21,11 +21,48 @@ export function projectMarks(view:View,warnings:string[]){
  const entries=(view.document.frames??[]).flatMap(f=>f.records.filter((r):r is MarkRecord=>r.record==='mark').map(mark=>({time:f.time,mark,handled:false})));
  if((view.document.frames??[]).some(f=>f.records.some(r=>r.record==='relation')))warnings.push('Relationships are preserved in the source but not drawn in this preview.');
  const warn=(mark:MarkRecord,reason:string)=>warnings.push(`${mark.kind} mark ${mark.attributes.id??mark.target}: ${reason}; preserved in the source but not drawn.`);
+ // An authored accidental is part of its note, not an optional control mark.
+ // Fail closed before engraving: a pitch-derived accidental is no substitute.
+ const accidentals=new Map<string,{entry:typeof entries[number];id:string;xml:string}>();
+ const eventsById=new Map<string,ScoreEvent|null>();
+ for(const event of view.events)eventsById.set(event.id,eventsById.has(event.id)?null:event);
+ const glyphs=new Map([['natural',{mei:'n',pitch:''}],['sharp',{mei:'s',pitch:'#'}],['flat',{mei:'f',pitch:'b'}]]);
+ const accidentalFields=new Set(['value','cautionary','parentheses','id']);
+ for(const [index,entry] of entries.entries()){
+  const {mark}=entry;if(mark.kind!=='accidental')continue;
+  const a=mark.attributes;
+  const fail:(reason:string)=>never=reason=>{throw Error(`Accidental mark ${mark.target}: ${reason}. Preview withheld; your source is preserved.`);};
+  if(Object.keys(a).some(key=>!accidentalFields.has(key)))fail('unsupported accidental attributes');
+  if(a.id!==undefined&&(typeof a.id!=='string'||!a.id))fail('unsupported accidental identity');
+  for(const flag of ['cautionary','parentheses'])if(a[flag]!==undefined&&typeof a[flag]!=='boolean')fail(`${flag} must be a boolean`);
+  const glyph=typeof a.value==='string'?glyphs.get(a.value):undefined;
+  if(!glyph)fail('unsupported accidental value');
+  const event=mark.target.startsWith('#')?eventsById.get(mark.target.slice(1)):undefined;
+  if(!event)fail('requires one mapped event target');
+  if(!new Q(entry.time).eq(new Q(event.time)))fail('attachment must be in its event onset frame');
+  const pitch=/^[A-G](#|b)?-?\d+$/.exec(event.pitch);
+  if(!pitch)fail('requires a supported pitched note');
+  if((pitch[1]??'')!==glyph.pitch)fail('printed glyph conflicts with written pitch');
+  if(accidentals.has(event.id))fail('duplicate accidental marks for one event');
+  // MEI 5 keeps function and enclosure independent. Verovio 5.6 renders
+  // func="caution" without adding parentheses. False/absent cautionary both
+  // mean no caution function; absent/false parentheses stay distinct in MEI.
+  // https://music-encoding.org/guidelines/v5/elements/accid.html
+  const id=`ss-mark${index}`;
+  const func=a.cautionary===true?' func="caution"':'';
+  const enclosure=a.parentheses===undefined?'':` enclose="${a.parentheses?'paren':'none'}"`;
+  accidentals.set(event.id,{entry,id,xml:`<accid xml:id="${id}" accid="${glyph.mei}"${func}${enclosure}/>`});
+ }
  return {
+  forEvent(eventId:string,map:Record<string,string>){
+   const accidental=accidentals.get(eventId);if(!accidental)return '';
+   if(accidental.entry.handled)throw Error('An accidental target was engraved more than once. Preview withheld.');
+   accidental.entry.handled=true;map[accidental.id]=eventId;return accidental.xml;
+  },
   forMeasure(measure:Measure,map:Record<string,string>){
    let xml='';const start=new Q(measure.time),end=start.add(new Q(measure.length));
    for(const [index,entry] of entries.entries()){
-    if(entry.handled)continue;
+    if(entry.handled||entry.mark.kind==='accidental')continue;
     const {mark}=entry,a=mark.attributes;
     const event=mark.target.startsWith('#')?view.events.find(e=>e.id===mark.target.slice(1)):undefined;
     const time=new Q(event?.time??entry.time);
@@ -67,6 +104,9 @@ export function projectMarks(view:View,warnings:string[]){
     }catch(error){warn(mark,(error as Error).message);}
    }return xml;
   },
-  finish(){for(const entry of entries)if(!entry.handled)warn(entry.mark,'outside declared measures');}
+  finish(){for(const entry of entries)if(!entry.handled){
+   if(entry.mark.kind==='accidental')throw Error('An accidental target is outside the engraved measures or staff mapping. Preview withheld; your source is preserved.');
+   warn(entry.mark,'outside declared measures');
+  }}
  };
 }

@@ -584,6 +584,7 @@ pub fn write_with_options(
                         for _ in 0..w.dots {
                             out.push_str("        <dot/>\n");
                         }
+                        super::accidentals::write(e.accidental.as_ref(), &mut out);
                         if let Some(tm) = &w.time_modification {
                             writeln!(out, "        <time-modification><actual-notes>{}</actual-notes><normal-notes>{}</normal-notes>", tm.actual, tm.normal).unwrap();
                             if let Some(t) = tm.normal_type {
@@ -599,6 +600,9 @@ pub fn write_with_options(
                             }
                             out.push_str("        </time-modification>\n");
                         }
+                    }
+                    if e.written.is_none() {
+                        super::accidentals::write(e.accidental.as_ref(), &mut out);
                     }
                     if let Some(stem) = e.stem {
                         writeln!(out, "        <stem>{}</stem>", stem.name()).unwrap();

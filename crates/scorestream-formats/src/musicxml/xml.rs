@@ -780,6 +780,7 @@ pub(super) fn schema_with_geometry(
                     "type",
                     "dot",
                     "time-modification",
+                    "accidental",
                     "stem",
                     "staff",
                 ],
@@ -829,6 +830,7 @@ pub(super) fn schema_with_geometry(
             "chord" | "dot" | "normal-dot" | "beat-unit-dot" => (&[], &[], &[], &[], false),
             "type" => (&["size"], &[], &[], &[], true),
             "stem" => (&[], &[], &[], &[], true),
+            "accidental" => (&["cautionary", "parentheses"], &[], &[], &[], true),
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
             | "instrument-name" | "instrument-abbreviation" | "instrument-sound"
             | "midi-channel" | "midi-program" | "volume" | "pan" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"

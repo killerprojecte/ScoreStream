@@ -212,9 +212,61 @@ pub struct ScoreEvent {
     /// Authored stem, independent of pitch, written type and sounding duration.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stem: Option<StemDirection>,
+    /// Authored printed glyph and flags, independent of sounding pitch and duration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub accidental: Option<PrintedAccidental>,
     /// None, explicit no, and yes remain distinct. True spans this actual measure.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub measure_rest: Option<bool>,
+}
+/// One explicitly authored accidental glyph. Absence does not infer a glyph.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrintedAccidental {
+    pub glyph: AccidentalGlyph,
+    /// MusicXML defaults cautionary to no, but its authored absence is retained.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cautionary: Option<bool>,
+    /// None leaves enclosure to renderer defaults; explicit false is not absence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parentheses: Option<bool>,
+}
+/// Finite intersection of MusicXML glyphs and the existing SFS accidental registry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AccidentalGlyph {
+    Natural,
+    Sharp,
+    Flat,
+    DoubleSharp,
+    FlatFlat,
+    QuarterSharp,
+    QuarterFlat,
+}
+impl AccidentalGlyph {
+    pub fn from_name(value: &str) -> Option<Self> {
+        match value {
+            "natural" => Some(Self::Natural),
+            "sharp" => Some(Self::Sharp),
+            "flat" => Some(Self::Flat),
+            "double-sharp" => Some(Self::DoubleSharp),
+            "flat-flat" => Some(Self::FlatFlat),
+            "quarter-sharp" => Some(Self::QuarterSharp),
+            "quarter-flat" => Some(Self::QuarterFlat),
+            _ => None,
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Natural => "natural",
+            Self::Sharp => "sharp",
+            Self::Flat => "flat",
+            Self::DoubleSharp => "double-sharp",
+            Self::FlatFlat => "flat-flat",
+            Self::QuarterSharp => "quarter-sharp",
+            Self::QuarterFlat => "quarter-flat",
+        }
+    }
 }
 /// MusicXML / SFS stem values. A stem on a rest is a stemlet, not a note.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -390,6 +442,9 @@ pub struct ScoreGraceNote {
     pub slash: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stem: Option<StemDirection>,
+    /// Authored printed glyph and flags, independent of sounding pitch and duration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub accidental: Option<PrintedAccidental>,
     pub timing: GraceTiming,
 }
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

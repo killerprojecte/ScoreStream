@@ -50,7 +50,8 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    const p=/^([A-G])(#{1,2}|b{1,2})?(-?\d+)$/.exec(e.pitch);
    if(!p)throw Error(`Pitch ${e.pitch} is preserved but not supported by this preview.`);
    const acc:Record<string,string>={'#':'s','##':'ss',b:'f',bb:'ff'};
-   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}${withRhythm?stem:''}/>`;
+   const accidental=marks.forEvent(e.id,map);
+   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${!accidental&&p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}${withRhythm?stem:''}${accidental?`>${accidental}</note>`:'/>'}`;
  };
  const nominalLengths:Q[]=[];
  const staffDefXml=staffDefs.map((s,i)=>{

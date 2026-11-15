@@ -124,7 +124,7 @@ fn semantic_fields_unknown_descendants_and_other_paths_stay_blocking() {
     for child in [
         "<stem default-y=\"1\">up</stem>",
         "<beam>begin</beam>",
-        "<accidental>natural</accidental>",
+        "<accidental bracket=\"yes\">natural</accidental>",
         "<unknown><note default-x=\"1\"/></unknown>",
         "<notations><slur type=\"start\"/></notations>",
     ] {

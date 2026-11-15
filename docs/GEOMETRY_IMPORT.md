@@ -57,8 +57,9 @@ attributes remain errors, including when nested inside known notes. In particula
 
 - `print-object`, print-dot/leger/lyric, visibility, attack/release, dynamics,
   pizzicato and repeat-conditioned timing are outside this geometry choice.
-- Beams, slurs, accidental display, lyric text, words and other meaningful
-  notation must receive their own typed authoring semantics. Attribute-free stems
+- Beams, slurs, extended accidental styles, lyric text, words and other meaningful
+  notation must receive their own typed authoring semantics. The finite
+  [accidental glyph bridge](ACCIDENTAL_IMPORT.md) preserves known signs and flags. Attribute-free stems
   and full-rest identity now have a separate [lossless typed bridge](NOTE_APPEARANCE_IMPORT.md);
   the geometry policy never discards or interprets them.
 - Positioning on other elements, `relative-x`/`relative-y`, color, placement,
