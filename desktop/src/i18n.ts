@@ -12,6 +12,7 @@ export const zh:Record<string,string>={
 "{percent}% written":"已写入 {percent}%",
 "Exported {name}.":"已导出 {name}。",
 "Could not start WAV export. Check the source diagnostics and the 120-second limit, then choose a new filename in a writable folder.":"无法开始导出 WAV。请检查源码诊断和 120 秒时长限制，再在可写文件夹中选择新的文件名。",
+"Could not open or complete the WAV save dialog. Try again, or restart the desktop app if the problem continues.":"无法打开或完成 WAV 保存对话框。请重试；如果问题持续出现，请重新启动桌面应用。",
 "Could not render WAV audio. Try a shorter score and make sure this desktop WebView supports offline audio.":"无法渲染 WAV 音频。请尝试更短的乐谱，并确认此桌面 WebView 支持离线音频。",
 "Could not write the WAV file. Check free disk space and folder permissions, then try again with a new filename.":"无法写入 WAV 文件。请检查可用磁盘空间和文件夹权限，再使用新的文件名重试。",
 "Could not finish the WAV file. Choose a new filename; existing files are never replaced.":"无法完成 WAV 文件。请选择新的文件名；不会覆盖已有文件。",

@@ -133,11 +133,25 @@ describe('safe WAV export failures',()=>{
   }
  });
  it('maps only known structured codes, including destination collision and invalid source',async()=>{
-  const expected={WAV_SOURCE_INVALID:/valid score/,WAV_LIMIT_EXCEEDED:/4,096/,WAV_DESTINATION_EXISTS:/new filename/,WAV_BUSY:/Another WAV export/,WAV_BAD_REQUEST:/rejected/,WAV_SESSION_NOT_FOUND:/session has ended/,WAV_CLEANUP_FAILED:/Restart/,WAV_IO:/Could not start/,constructor:/Could not start/,['__proto__']:/Could not start/,toString:/Could not start/};
+  const expected={WAV_CHOOSER_FAILED:/WAV save dialog/,WAV_SOURCE_INVALID:/valid score/,WAV_LIMIT_EXCEEDED:/4,096/,WAV_DESTINATION_EXISTS:/new filename/,WAV_BUSY:/Another WAV export/,WAV_BAD_REQUEST:/rejected/,WAV_SESSION_NOT_FOUND:/session has ended/,WAV_CLEANUP_FAILED:/Restart/,WAV_IO:/Could not start/,constructor:/Could not start/,['__proto__']:/Could not start/,toString:/Could not start/};
   for(const [code,pattern] of Object.entries(expected)){
    const {controller,calls}=setup({begin:async()=>{throw {code,message:'secret source'};}});await controller.start('score');assert.equal(controller.getSnapshot().phase,'failed');assert.match(controller.getSnapshot().error,pattern);assert.equal(calls.length,0);assert.ok(!controller.getSnapshot().error.includes('secret'));
   }
   const {controller}=setup({finish:async()=>{throw {code:'WAV_DESTINATION_EXISTS',message:'sensitive path'};}});await controller.start('score');assert.match(controller.getSnapshot().error,/new filename/);
+ });
+ it('keeps chooser failures visible in English and Chinese, releases the guard, and can retry',async()=>{
+  let renders=0;
+  const {controller,calls,api}=setup({begin:async()=>{throw {code:'WAV_CHOOSER_FAILED',message:'/private/path portal diagnostics'};}},async(...args)=>{renders++;return fakeRender(...args);});
+  await controller.start('score');
+  assert.equal(controller.getSnapshot().phase,'failed');assert.equal(controller.busy,false);assert.equal(renders,0);assert.deepEqual(calls,[]);
+  const message=controller.getSnapshot().error;
+  try{
+   setLanguage('en');assert.equal(t(message),'Could not open or complete the WAV save dialog. Try again, or restart the desktop app if the problem continues.');
+   setLanguage('zh-CN');assert.equal(t(message),'无法打开或完成 WAV 保存对话框。请重试；如果问题持续出现，请重新启动桌面应用。');
+  }finally{setLanguage('en');}
+  assert.ok(!message.includes('/private/')&&!message.includes('portal diagnostics'));
+  controller.dismiss();assert.equal(controller.getSnapshot().phase,'idle');
+  api.begin=async()=>session();await controller.start('retry');assert.equal(renders,1);assert.equal(controller.getSnapshot().phase,'succeeded');
  });
  it('treats native cancellation as quiet and makes cleanup failure visible even after cancel',async()=>{
   const native=setup({begin:async()=>{throw {code:'WAV_CANCELLED'};}});await native.controller.start('score');assert.equal(native.controller.getSnapshot().phase,'idle');

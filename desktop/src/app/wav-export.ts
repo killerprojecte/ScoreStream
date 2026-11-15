@@ -38,6 +38,7 @@ const failures={
 
 const nativeErrors:Record<string,string>={
  WAV_CLEANUP_FAILED:failures.cleanup,
+ WAV_CHOOSER_FAILED:'Could not open or complete the WAV save dialog. Try again, or restart the desktop app if the problem continues.',
  WAV_SOURCE_INVALID:'WAV export needs a valid score. Fix the source diagnostics and try again.',
  WAV_LIMIT_EXCEEDED:'This score exceeds the WAV export limits (120 seconds, 4,096 notes, or 32,768 expression points). Shorten or simplify it and try again.',
  WAV_DESTINATION_EXISTS:'A file already exists at this destination. Export again with a new filename; existing files are never replaced.',

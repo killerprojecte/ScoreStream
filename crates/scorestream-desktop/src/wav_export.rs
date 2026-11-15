@@ -4,6 +4,8 @@ use serde::Serialize;
 use std::{collections::BTreeMap, io::ErrorKind, path::PathBuf, sync::{Arc, Mutex}};
 use tauri::{State, WebviewWindow, ipc::{InvokeBody, Request}};
 
+mod chooser;
+
 const SESSION_HEADER: &str = "x-scorestream-wav-session";
 const OFFSET_HEADER: &str = "x-scorestream-wav-offset";
 const MAX_SOURCE_BYTES: usize = 4 * 1024 * 1024;
@@ -22,6 +24,10 @@ impl WavError {
     fn bad_request() -> Self { Self::new("WAV_BAD_REQUEST", "The WAV stream does not match the export contract.") }
     fn missing() -> Self { Self::new("WAV_SESSION_NOT_FOUND", "This window has no matching WAV export.") }
     fn cancelled() -> Self { Self::new("WAV_CANCELLED", "The WAV export was cancelled before saving.") }
+    #[cfg(any(target_os = "linux", test))]
+    fn chooser() -> Self {
+        Self::new("WAV_CHOOSER_FAILED", "The WAV save dialog could not select a local destination.")
+    }
     fn exists() -> Self {
         Self::new("WAV_DESTINATION_EXISTS", "Choose a new filename. WAV export does not replace existing files.")
     }
@@ -228,13 +234,11 @@ pub async fn wav_export_begin(source: String, window: WebviewWindow, state: Stat
     if !state.lock().map_err(|_| WavError::io())?.matches(&owner, &id) {
         return Err(WavError::cancelled());
     }
-    let Some(file) = rfd::AsyncFileDialog::new()
-        .set_title("Export WAV (choose a new filename)")
-        .set_file_name("score.wav")
-        .add_filter("WAV audio", &["wav"])
-        .save_file().await
-    else { return Ok(None); };
-    let path = file.path().to_path_buf();
+    let chosen = chooser::destination(&window, &reservation).await;
+    if !state.lock().map_err(|_| WavError::io())?.matches(&owner, &id) {
+        return Err(WavError::cancelled());
+    }
+    let Some(path) = chosen? else { return Ok(None); };
     let display_path = path.display().to_string();
     // Window close/reload invalidates the reservation even while the OS chooser
     // is open. In that case no temporary file is created when it returns.

@@ -137,6 +137,28 @@ fn bounded_canonical_headers_and_path_free_errors() {
         "code": "WAV_DESTINATION_EXISTS",
         "message": "Choose a new filename. WAV export does not replace existing files.",
     }));
+    assert_eq!(serde_json::to_value(WavError::chooser()).unwrap(), serde_json::json!({
+        "code": "WAV_CHOOSER_FAILED",
+        "message": "The WAV save dialog could not select a local destination.",
+    }));
+}
+
+#[test]
+fn chooser_failures_and_cancellation_release_only_their_reservation() {
+    let state = WavExports::default();
+    for _ in 0..3 {
+        let id = state.lock().unwrap().reserve("main").unwrap();
+        let reservation = Reservation { state: state.clone(), owner: "main".into(), id, armed: true };
+        drop(reservation); // Same guard used by error, quiet cancellation or a dropped future.
+        assert!(state.lock().unwrap().windows.is_empty());
+    }
+    let id = state.lock().unwrap().reserve("main").unwrap();
+    let old = Reservation { state: state.clone(), owner: "main".into(), id, armed: true };
+    discard_window(&state, "main");
+    let current = state.lock().unwrap().reserve("main").unwrap();
+    drop(old); // A late response/teardown must not release a replacement operation.
+    assert!(state.lock().unwrap().matches("main", &current));
+    discard_all(&state);
 }
 
 #[test]
@@ -145,4 +167,71 @@ fn source_preflight_returns_exact_plan_or_stable_error_before_file_setup() {
     assert_eq!(layout, WavLayout::for_plan(&plan).unwrap());
     assert_eq!(prepare("not a score").unwrap_err().code, "WAV_SOURCE_INVALID");
     assert_eq!(prepare(&" ".repeat(MAX_SOURCE_BYTES + 1)).unwrap_err().code, "WAV_LIMIT_EXCEEDED");
+}
+
+// Pure response/channel tests: no GTK initialization, widgets or event loop.
+#[cfg(target_os = "linux")]
+mod linux_chooser {
+    use super::*;
+    use super::super::chooser::linux::{Reply, classify, received};
+    use gtk::ResponseType;
+    use tauri::async_runtime::channel;
+
+    #[test]
+    fn only_explicit_cancel_or_delete_is_quiet() {
+        for response in [ResponseType::Cancel, ResponseType::DeleteEvent] {
+            assert!(classify(response, Some(PathBuf::from("/private/ignored.wav"))).unwrap().is_none());
+        }
+        for response in [ResponseType::None, ResponseType::Reject, ResponseType::Ok,
+            ResponseType::Close, ResponseType::Yes, ResponseType::No, ResponseType::Apply,
+            ResponseType::Help, ResponseType::Other(42), ResponseType::__Unknown(-42)]
+        {
+            assert_eq!(classify(response, None).unwrap_err().code, "WAV_CHOOSER_FAILED");
+        }
+    }
+
+    #[test]
+    fn accept_requires_a_native_absolute_path_and_preserves_it() {
+        for path in [None, Some(PathBuf::new()), Some(PathBuf::from("relative.wav"))] {
+            assert_eq!(classify(ResponseType::Accept, path).unwrap_err().code, "WAV_CHOOSER_FAILED");
+        }
+        let path = PathBuf::from("/private/音频/Score.WAV");
+        assert_eq!(classify(ResponseType::Accept, Some(path.clone())).unwrap(), Some(path));
+    }
+
+    #[test]
+    fn response_followed_by_destroy_or_another_response_settles_once() {
+        for response in [ResponseType::Accept, ResponseType::Cancel, ResponseType::DeleteEvent, ResponseType::None] {
+            let (sender, mut receiver) = channel(1);
+            let mut reply = Reply(Some(sender));
+            assert!(reply.complete(classify(response, Some(PathBuf::from("/private/score.wav")))));
+            assert!(!reply.complete(Err(WavError::chooser())));
+            assert!(!reply.complete(Ok(None)));
+            let result = received(Some(receiver.try_recv().unwrap()));
+            match response {
+                ResponseType::Accept => assert_eq!(result.unwrap(), Some(PathBuf::from("/private/score.wav"))),
+                ResponseType::Cancel | ResponseType::DeleteEvent => assert!(result.unwrap().is_none()),
+                _ => assert_eq!(result.unwrap_err().code, "WAV_CHOOSER_FAILED"),
+            }
+            assert!(receiver.try_recv().is_err());
+        }
+    }
+
+    #[test]
+    fn unexpected_destroy_or_lost_dispatch_is_failure_not_cancel() {
+        let (sender, mut receiver) = channel(1);
+        let mut reply = Reply(Some(sender));
+        assert!(reply.complete(Err(WavError::chooser())));
+        assert_eq!(received(Some(receiver.try_recv().unwrap())).unwrap_err().code, "WAV_CHOOSER_FAILED");
+        assert_eq!(received(None).unwrap_err().code, "WAV_CHOOSER_FAILED");
+    }
+
+    #[test]
+    fn dropped_receiver_never_blocks_or_replies_twice() {
+        let (sender, receiver) = channel(1);
+        let mut reply = Reply(Some(sender));
+        drop(receiver);
+        assert!(reply.complete(Ok(None)));
+        assert!(!reply.complete(Err(WavError::chooser())));
+    }
 }

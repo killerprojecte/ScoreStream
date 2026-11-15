@@ -2,6 +2,8 @@
 
 Use **File → Export WAV…** in the native desktop editor. Choose a **new** `.wav` filename in the operating system save dialog. A destination that already exists is rejected, even if the operating system dialog offered to replace it. The export dialog reports completion or an actionable error. Cancelling the native save dialog closes the export quietly.
 
+On Linux, WAV export uses a GTK save dialog parented to the invoking editor window. It runs through main-thread response signals rather than a nested blocking dialog loop, accepts only local paths, and does not offer an overwrite confirmation. Explicit Cancel or window-close responses are quiet; an abnormal response, missing local filename, unavailable dispatch or unexpected destruction reports the stable `WAV_CHOOSER_FAILED` error in English/Chinese. Windows/macOS retain their existing native chooser route. Ordinary SFS Open/Save are unchanged.
+
 The export captures the current source at the menu action, including an unapplied draft. Rust validates and plans that source independently; invalid or over-budget input fails without changing the document. Export does not call SFS Open/Save, apply, undo, or redo. Editor file identity, saved-source marker, revision and undo history are unchanged.
 
 ## Output and limits
@@ -39,3 +41,5 @@ npx --no-install tsc --noEmit
 Standalone Node tests inject a fake native bridge/renderer. They cover captured source, duplicate starts, exact raw IPC shape, ordered offsets, one in-flight write, acknowledgement mismatch, cancel during chooser/render/write, dispose, finalization wins, plan limits, cleanup, safe errors and narrow source-level UI wiring checks. Existing standalone PCM/offline tests cover the byte encoding and mock graph separately.
 
 These tests do **not** launch a native chooser, Vite, browser, WebView or audio device and do not test actual native file persistence. Real native chooser, operating-system filesystem behavior, real offline audio and Windows/macOS/Linux desktop acceptance require separate validation. Do not interpret these mocked tests as full platform acceptance.
+
+The desktop Rust test filter `wav_export::tests` also includes pure Linux response classification and single-reply channel lifecycle checks (no GTK initialization or widgets), plus reservation cleanup/stale-operation checks. The GTK/Tauri adapter was checked against the committed GTK 0.18.2 and Tauri 2.9.4 source APIs. That source review does not replace compilation or native interaction: chooser presentation, focus, Save/Cancel/Escape/window-close, parent teardown and repeated exports still require native runtime validation.
