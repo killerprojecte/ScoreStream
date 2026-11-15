@@ -949,6 +949,8 @@ impl PartReader {
                         pitch,
                         chord,
                         written,
+                        stem: super::appearance::stem(n)?,
+                        measure_rest: super::appearance::measure_rest(n)?,
                     };
                     super::graces::attach(&mut pending_graces, &event, graces)?;
                     m.events.push(event);

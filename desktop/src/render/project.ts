@@ -18,6 +18,13 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  if(!measures.length)throw Error('Add explicit measure records to render this score.');
  for(const part of view.parts){const own=view.measures.filter(m=>m.part===part.id);if(own.length!==measures.length||own.some((m,i)=>!new Q(m.time).eq(new Q(measures[i].time))||!new Q(m.length).eq(new Q(measures[i].length))))throw Error('This preview requires aligned measure boundaries across parts.');}
  const used=new Set<string>();let next=0;
+ const stemXml=(e:ScoreEvent)=>{
+   const stem=e.attributes?.stem;if(stem===undefined)return '';
+   if(e.pitch==='r'||e.pitch==='_')throw Error('Rest stemlets and space stems are preserved but not yet supported by the preview.');
+   if(stem!=='up'&&stem!=='down')throw Error('This stem kind is preserved but not yet supported by the preview.');
+   if(rhythm(new Q(e.duration)).dur===1)throw Error('Stem directions on stemless durations are preserved but not yet supported by the preview.');
+   return ` stem.dir="${stem}"`;
+ };
  const eventXml=(e:ScoreEvent,withRhythm=true)=>{
    if(!e.id)throw Error('Preview requires stable event IDs.');
    if(e.duration==='?')throw Error('Grace-note layout is not yet supported.');
@@ -26,15 +33,24 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    if(noteSize!==undefined&&noteSize!=='full'&&noteSize!=='cue')throw Error('This graphic note size is preserved but not yet supported by the preview.');
    if(noteSize!==undefined&&e.pitch==='_')throw Error('Graphic note size on a space cannot be engraved faithfully.');
    const size=noteSize==='cue'?' cue="true"':'';
+   const stem=stemXml(e);
+   const measureRest=e.attributes?.measure_rest;
+   if(measureRest!==undefined&&typeof measureRest!=='boolean')throw Error('Full-measure-rest indication must be a boolean in a validated snapshot.');
+   if(measureRest===true){
+     if(e.pitch!=='r'||e.chord)throw Error('Full-measure rests cannot be pitched, spaces, or chord members.');
+     if(e.written_duration!==null||e.dots!==0||noteSize!==undefined)throw Error('Explicit written spelling or graphic size on a full-measure rest is preserved but not yet supported by the preview.');
+     const id=`ss-e${next++}`;map[id]=e.id;used.add(e.id);
+     return `<mRest xml:id="${id}"/>`;
+   }
    const r=rhythm(new Q(e.duration));
-   if(e.written_duration && Number(e.written_duration)!==r.dur)throw Error('Written and actual rhythm differ; this preview cannot engrave that rhythm faithfully yet.');
+   if(e.written_duration && (Number(e.written_duration)!==r.dur||e.dots!==r.dots))throw Error('Written and actual rhythm differ; this preview cannot engrave that rhythm faithfully yet.');
    const id=`ss-e${next++}`;map[id]=e.id;used.add(e.id);
    const dur=withRhythm?` dur="${r.dur}" dots="${r.dots}"`:'';
    if(e.pitch==='r'||e.pitch==='_')return `<${e.pitch==='r'?'rest':'space'} xml:id="${id}"${dur}${size}/>`;
    const p=/^([A-G])(#{1,2}|b{1,2})?(-?\d+)$/.exec(e.pitch);
    if(!p)throw Error(`Pitch ${e.pitch} is preserved but not supported by this preview.`);
    const acc:Record<string,string>={'#':'s','##':'ss',b:'f',bb:'ff'};
-   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}/>`;
+   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}${withRhythm?stem:''}/>`;
  };
  const nominalLengths:Q[]=[];
  const staffDefXml=staffDefs.map((s,i)=>{
@@ -64,13 +80,17 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
        for(let j=0;j<events.length;j++){
          const e=events[j],time=new Q(e.time);
          if(e.duration==='?')throw Error('Grace-note layout is not yet supported.');
+         if(e.attributes?.measure_rest===true&&(!time.eq(start)||!new Q(e.duration).eq(new Q(m.length))))throw Error('A full-measure rest must start at the exact measure boundary and span its actual length.');
+         // Pinned Verovio infers mRest duration from meter; irregular rest-only measures can collapse to zero.
+         if(e.attributes?.measure_rest===true&&irregular)throw Error('Full-measure rests in metrically irregular measures are preserved but not yet supported by the preview.');
          const finish=time.add(new Q(e.duration));if(finish.cmp(end)>0)throw Error('Cross-bar events require a tie projection, which is not yet supported.');
          if(time.cmp(cursor)<0)throw Error('Overlapping ungrouped events cannot be engraved by this preview.');
          if(time.cmp(cursor)>0){const r=rhythm(time.sub(cursor));content+=`<space dur="${r.dur}" dots="${r.dots}"/>`;}
          const chord=[e];if(e.chord)while(j+1<events.length&&events[j+1].chord===e.chord&&events[j+1].time===e.time)chord.push(events[++j]);
          if(chord.some(c=>!new Q(c.duration).eq(new Q(e.duration))))throw Error('Unequal-duration chord members are not yet supported by the preview.');
          if(chord.some(c=>(c.attributes?.note_size??'full')!==(e.attributes?.note_size??'full')))throw Error('Mixed graphic sizes within a chord are preserved but not yet supported by the preview.');
-         if(chord.length>1){const r=rhythm(new Q(e.duration));content+=`<chord dur="${r.dur}" dots="${r.dots}"${e.attributes?.note_size==='cue'?' cue="true"':''}>${chord.map(c=>eventXml(c,false)).join('')}</chord>`;}else content+=eventXml(e);
+         if(chord.some(c=>c.attributes?.stem!==e.attributes?.stem))throw Error('Mixed stem indications within a chord are preserved but not yet supported by the preview.');
+         if(chord.length>1){const r=rhythm(new Q(e.duration));content+=`<chord dur="${r.dur}" dots="${r.dots}"${e.attributes?.note_size==='cue'?' cue="true"':''}${stemXml(e)}>${chord.map(c=>eventXml(c,false)).join('')}</chord>`;}else content+=eventXml(e);
          cursor=finish;
        }
        if(!events.length)content='<mSpace/>';

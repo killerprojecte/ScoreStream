@@ -1,4 +1,5 @@
 //! Small strict MusicXML 4.0 score-partwise profile; not complete MusicXML support.
+mod appearance;
 mod barlines;
 mod dynamics;
 mod extent;

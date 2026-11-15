@@ -526,7 +526,13 @@ pub fn write_with_options(
                         out.push_str("        <chord/>\n");
                     }
                     match &e.pitch {
-                        Pitch::Rest => out.push_str("        <rest/>\n"),
+                        Pitch::Rest => {
+                            if let Some(full) = e.measure_rest {
+                                writeln!(out, "        <rest measure=\"{}\"/>", if full { "yes" } else { "no" }).unwrap();
+                            } else {
+                                out.push_str("        <rest/>\n");
+                            }
+                        },
                         Pitch::Pitched { step, alteration, octave } => writeln!(out, "        <pitch><step>{step}</step><alter>{}</alter><octave>{octave}</octave></pitch>", decimal(alteration).unwrap()).unwrap(),
                         _ => unreachable!("validated"),
                     }
@@ -569,6 +575,9 @@ pub fn write_with_options(
                             }
                             out.push_str("        </time-modification>\n");
                         }
+                    }
+                    if let Some(stem) = e.stem {
+                        writeln!(out, "        <stem>{}</stem>", stem.name()).unwrap();
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
                     if tied.is_some() || fermatas.contains(&e.id) {

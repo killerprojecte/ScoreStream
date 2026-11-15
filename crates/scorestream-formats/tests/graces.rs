@@ -208,7 +208,7 @@ fn typed_input_cannot_forge_anchor_identity_order_or_timing() {
 #[test]
 fn unsupported_source_tags_are_not_removed_when_grace_is_mapped() {
     for tag in [
-        "<stem>up</stem>",
+        "<stem default-y=\"1\">up</stem>",
         "<beam number=\"1\">begin</beam>",
         "<accidental>natural</accidental>",
         "<notations><slur type=\"start\"/></notations>",

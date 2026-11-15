@@ -443,6 +443,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     crate::fermata_extension::validate(doc, &mut out);
     crate::grace_extension::validate(doc, &mut out);
     validate_measures(&measures, &parts, &mut out);
+    validate_measure_rests(doc, &measures, &voices, &mut out);
     validate_references(doc, &events, &parts, &voices, &mut out);
     if doc.document_kind == DocumentKind::Fragment {
         if let Some(span) = &doc.span {
@@ -555,7 +556,72 @@ fn validate_coverage(doc: &Document, alias: &str, span: &Rational, out: &mut Vec
         ));
     }
 }
+/// Check authored full-rest identity against explicit actual measure ownership.
+/// State records at an onset apply before events, regardless of record ordering.
+fn validate_measure_rests(
+    doc: &Document,
+    measures: &[(&Rational, &Measure)],
+    voices: &BTreeMap<&str, (&str, u32)>,
+    out: &mut Vec<Diagnostic>,
+) {
+    if !doc.frames.iter().flat_map(|f| &f.records).any(|record| {
+        matches!(record, Record::Event(e) if e.attributes.get("measure_rest").and_then(Scalar::as_bool) == Some(true))
+    }) {
+        return;
+    }
+    let index: BTreeMap<_, _> = measures
+        .iter()
+        .map(|(at, m)| ((m.target.as_str(), *at), *m))
+        .collect();
+    let mut staff_defaults: BTreeMap<_, _> = voices
+        .iter()
+        .map(|(id, (_, staff))| (*id, i64::from(*staff)))
+        .collect();
+    for frame in &doc.frames {
+        for record in &frame.records {
+            if let Record::State(s) = record {
+                if let Some(staff) = s.attributes.get("staff").and_then(Scalar::as_i64) {
+                    if let Some(current) = staff_defaults.get_mut(s.target.as_str()) {
+                        *current = staff;
+                    }
+                }
+            }
+        }
+        for record in &frame.records {
+            let Record::Event(e) = record else { continue };
+            if e.attributes.get("measure_rest").and_then(Scalar::as_bool) != Some(true) {
+                continue;
+            }
+            let owner = voices.get(e.voice.as_str()).and_then(|(part, _)| {
+                let staff = e
+                    .attributes
+                    .get("staff")
+                    .and_then(Scalar::as_i64)
+                    .or_else(|| staff_defaults.get(e.voice.as_str()).copied())?;
+                index.get(&(*part, &frame.time)).copied().or_else(|| {
+                    index
+                        .get(&(format!("{part}.s{staff}").as_str(), &frame.time))
+                        .copied()
+                })
+            });
+            if doc.document_kind == DocumentKind::Fragment
+                || !owner.is_some_and(|m| e.duration.measured() == Some(&m.length))
+            {
+                out.push(Diagnostic::error("rest.measure_extent",
+                    "Full-measure rest requires its exact owning explicit measure at this onset and the same actual duration",
+                    e.source));
+            }
+        }
+    }
+}
 fn validate_rhythm(e: &Event, out: &mut Vec<Diagnostic>) {
+    if e.attributes.contains_key("measure_rest") && (e.pitch != Pitch::Rest || e.is_grace()) {
+        out.push(Diagnostic::error(
+            "rest.measure_kind",
+            "Measure-rest identity requires a measured rest",
+            e.source,
+        ));
+    }
     let kind = e.attributes.get("kind").and_then(Scalar::as_str);
     if e.is_grace() {
         if kind != Some("grace") || !e.pitch.is_note() {

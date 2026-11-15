@@ -142,6 +142,22 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
                 if matches!(e.pitch, Pitch::Pitched { step, .. } if !('A'..='G').contains(&step)) {
                     invalid(&ep, "event.pitch", "Pitch step must be A through G");
                 }
+                if e.measure_rest.is_some() && !matches!(e.pitch, Pitch::Rest) {
+                    invalid(
+                        &ep,
+                        "rest.measure_kind",
+                        "Measure-rest identity requires a rest",
+                    );
+                }
+                if e.measure_rest == Some(true)
+                    && (e.offset != Rational::zero() || e.duration != m.length)
+                {
+                    invalid(
+                        &ep,
+                        "rest.measure_extent",
+                        "Full-measure rest must span the exact actual measure from its start",
+                    );
+                }
                 if let Some(w) = &e.written {
                     if w.dots > 32 {
                         invalid(&ep, "written.dots", "At most 32 augmentation dots");

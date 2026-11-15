@@ -122,7 +122,7 @@ fn semantic_fields_unknown_descendants_and_other_paths_stay_blocking() {
         );
     }
     for child in [
-        "<stem>up</stem>",
+        "<stem default-y=\"1\">up</stem>",
         "<beam>begin</beam>",
         "<accidental>natural</accidental>",
         "<unknown><note default-x=\"1\"/></unknown>",
@@ -182,7 +182,7 @@ fn audit_survives_mapping_failures_and_bounded_error_truncation() {
             .iter()
             .any(|d| d.feature == "divisions.missing")
     );
-    let many=fixture().replace("</measure>",&format!("{}</measure>","<note default-x=\"1\" default-y=\"2\"><rest/><duration>1</duration><stem>up</stem></note>".repeat(2000)));
+    let many=fixture().replace("</measure>",&format!("{}</measure>","<note default-x=\"1\" default-y=\"2\"><rest/><duration>1</duration><beam>begin</beam></note>".repeat(2000)));
     let e = musicxml::read_with_options(&many, &options()).unwrap_err();
     assert_eq!(e.diagnostics.len(), 1024);
     assert!(e.has_errors());

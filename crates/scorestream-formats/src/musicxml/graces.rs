@@ -65,6 +65,7 @@ pub(super) fn read<'a>(
             written,
             slash,
             timing,
+            stem: super::appearance::stem(n)?,
         },
         voice,
         staff,
@@ -281,6 +282,9 @@ impl<'a> Export<'a> {
                     }
                     out.push_str("</time-modification>");
                 }
+            }
+            if let Some(stem) = g.stem {
+                write!(out, "<stem>{}</stem>", stem.name()).unwrap();
             }
             writeln!(out, "<staff>{}</staff></note>", anchor.staff).unwrap();
         }

@@ -207,6 +207,40 @@ pub struct ScoreEvent {
     /// Ordered membership, not a shared duration; each tone has its own duration.
     pub chord: Option<String>,
     pub written: Option<WrittenDuration>,
+    /// Authored stem, independent of pitch, written type and sounding duration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stem: Option<StemDirection>,
+    /// None, explicit no, and yes remain distinct. True spans this actual measure.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measure_rest: Option<bool>,
+}
+/// MusicXML / SFS stem values. A stem on a rest is a stemlet, not a note.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum StemDirection {
+    Up,
+    Down,
+    None,
+    Double,
+}
+impl StemDirection {
+    pub fn from_name(value: &str) -> Option<Self> {
+        match value {
+            "up" => Some(Self::Up),
+            "down" => Some(Self::Down),
+            "none" => Some(Self::None),
+            "double" => Some(Self::Double),
+            _ => None,
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Up => "up",
+            Self::Down => "down",
+            Self::None => "none",
+            Self::Double => "double",
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -352,6 +386,8 @@ pub struct ScoreGraceNote {
     pub written: Option<WrittenDuration>,
     /// None, explicit no, and yes remain distinct authored states.
     pub slash: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stem: Option<StemDirection>,
     pub timing: GraceTiming,
 }
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

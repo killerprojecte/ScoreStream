@@ -775,6 +775,7 @@ pub(super) fn schema_with_geometry(
                     "type",
                     "dot",
                     "time-modification",
+                    "stem",
                     "staff",
                 ],
                 &["dot", "tie", "notations"],
@@ -819,10 +820,10 @@ pub(super) fn schema_with_geometry(
                 &["duration"],
                 false,
             ),
-            "rest" | "chord" | "dot" | "normal-dot" | "beat-unit-dot" => {
-                (&[], &[], &[], &[], false)
-            }
+            "rest" => (&["measure"], &[], &[], &[], false),
+            "chord" | "dot" | "normal-dot" | "beat-unit-dot" => (&[], &[], &[], &[], false),
             "type" => (&["size"], &[], &[], &[], true),
+            "stem" => (&[], &[], &[], &[], true),
             "work-title" | "work-number" | "movement-title" | "rights" | "part-name"
             | "instrument-name" | "divisions" | "staves" | "fifths" | "beats" | "beat-type"
             | "sign" | "line" | "step" | "alter" | "octave" | "duration" | "voice" | "staff"

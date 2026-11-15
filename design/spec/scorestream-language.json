@@ -258,6 +258,10 @@
         "type": "boolean",
         "meaning": "Intrinsic printed visibility; a hidden rest is still a rest."
       },
+      "measure_rest": {
+        "type": "boolean",
+        "meaning": "Explicit full-measure rest identity, independent of written type. True requires a measured rest spanning its owning explicit actual measure from its start; false and absent are distinct."
+      },
       "stem": {
         "type": "enum",
         "values": [

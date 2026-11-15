@@ -95,6 +95,7 @@ attrs={
   'anchor':{'type':'event_reference','meaning':'Principal note for a grace event; # prefix required.'},
   'order':{'type':'nonzero_integer','meaning':'Grace order relative to principal: negative before, positive after; unique within anchor/group.'},
   'visible':{'type':'boolean','meaning':'Intrinsic printed visibility; a hidden rest is still a rest.'},
+  'measure_rest':{'type':'boolean','meaning':'Explicit full-measure rest identity, independent of written type. True requires a measured rest spanning its owning explicit actual measure from its start; false and absent are distinct.'},
   'stem':{'type':'enum','values':['up','down','none','double'],'meaning':'Written stem attribute.'},
   'notehead':{'type':'registered_string','meaning':'Registered notehead name; unknown names require declared vocabulary support.'},
   'slash':{'type':'boolean','meaning':'Grace slash notation.'}

@@ -450,6 +450,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                                 "anchor",
                                 "order",
                                 "slash",
+                                "stem",
                             ],
                             e.id().unwrap_or(&e.voice),
                         );
@@ -479,6 +480,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             written: written(&e.attributes, &mut report, id),
                             slash: e.attributes.get("slash").and_then(Scalar::as_bool),
                             timing: grace_metadata[id].clone(),
+                            stem: text(&e.attributes, "stem").and_then(StemDirection::from_name),
                         });
                         continue;
                     }
@@ -495,6 +497,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             "tm_normal_type",
                             "tm_normal_dots",
                             "note_size",
+                            "stem",
+                            "measure_rest",
                         ],
                         e.id().unwrap_or(&e.voice),
                     );
@@ -547,6 +551,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         pitch: e.pitch.clone(),
                         chord: e.chord().map(str::to_owned),
                         written: written(&e.attributes, &mut report, &id),
+                        stem: text(&e.attributes, "stem").and_then(StemDirection::from_name),
+                        measure_rest: e.attributes.get("measure_rest").and_then(Scalar::as_bool),
                     });
                 }
             }
@@ -800,6 +806,12 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 if let Some(c) = &e.chord {
                     put(&mut a, "chord", chords.get(c, &mut report));
                 }
+                if let Some(stem) = e.stem {
+                    put(&mut a, "stem", stem.name());
+                }
+                if let Some(full) = e.measure_rest {
+                    a.insert("measure_rest".into(), Scalar::Boolean(full));
+                }
                 if let Some(w) = &e.written {
                     put(&mut a, "w", note_text(w.note_type));
                     if let Some(size) = w.size {
@@ -853,6 +865,9 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         );
         if let Some(slash) = g.slash {
             a.insert("slash".into(), Scalar::Boolean(slash));
+        }
+        if let Some(stem) = g.stem {
+            put(&mut a, "stem", stem.name());
         }
         if let Some(w) = &g.written {
             put(&mut a, "w", note_text(w.note_type));
@@ -1014,7 +1029,7 @@ mod tests {
     #[test]
     fn reject_unmapped_symbols_instead_of_dropping() {
         for input in [
-            SOURCE.replace("id=e3 w=2", "id=e3 w=2 stem=up"),
+            SOURCE.replace("id=e3 w=2", "id=e3 w=2 notehead=diamond"),
             SOURCE.replace("@2", "@2\n= p.s1 key=2"),
             SOURCE.replace("id=e3 w=2", "id=e3 w=2\n+ score dynamic value=f"),
         ] {
