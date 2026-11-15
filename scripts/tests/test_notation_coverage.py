@@ -139,7 +139,45 @@ class CoverageTests(unittest.TestCase):
 
     def test_unassessed_profile_cannot_report_zero_tests_as_passed(self):
         with self.assertRaisesRegex(ValueError, "no executable evidence"):
-            n.run_evidence(self.ledger, ["articulations"])
+            n.run_evidence(self.ledger, ["ornaments"])
+
+    def test_all_articulation_choices_remain_bounded_and_visible(self):
+        profile = next(f for f in self.ledger["features"] if f["id"] == "articulations")
+        choices = profile["choice_inventory"]["entries"]
+        self.assertEqual(len(choices), 17)
+        self.assertEqual({c["name"] for c in choices if c["import_status"] == "partial"},
+                         {"accent", "staccato", "staccatissimo", "tenuto"})
+        self.assertEqual({c["name"] for c in choices if c["import_status"] == "blocked"}, {
+            "breath-mark", "caesura", "detached-legato", "doit", "falloff",
+            "other-articulation", "plop", "scoop", "soft-accent", "spiccato",
+            "stress", "strong-accent", "unstress",
+        })
+        report = n.report(self.catalog, self.ledger, n.check(self.catalog, self.ledger))
+        self.assertEqual(report["choice_import_counts"]["articulations"], {"blocked": 13, "partial": 4})
+        self.assertTrue(all(c["scope_class"] and c["why_incomplete"] for c in choices))
+
+    def test_choice_inventory_cannot_omit_duplicate_or_rename_declarations(self):
+        for mutation in (lambda entries: entries.pop(),
+                         lambda entries: entries.append(copy.deepcopy(entries[0])),
+                         lambda entries: entries[0].update(name="unreviewed-alias"),
+                         lambda entries: entries[0].update(schema_type="wrong-type")):
+            ledger = copy.deepcopy(self.ledger)
+            profile = next(f for f in ledger["features"] if f["id"] == "articulations")
+            mutation(profile["choice_inventory"]["entries"])
+            with self.assertRaises(ValueError):
+                n.check(self.catalog, ledger)
+
+    def test_choice_claims_require_scope_reason_and_matching_evidence(self):
+        for mutation in (lambda c: c.update(scope_class=""),
+                         lambda c: c.update(why_incomplete=""),
+                         lambda c: c.update(evidence=["articulations.roundtrip"]),
+                         lambda c: c.update(import_status="supported")):
+            ledger = copy.deepcopy(self.ledger)
+            profile = next(f for f in ledger["features"] if f["id"] == "articulations")
+            choice = next(c for c in profile["choice_inventory"]["entries"] if c["import_status"] == "blocked")
+            mutation(choice)
+            with self.assertRaises(ValueError):
+                n.check(self.catalog, ledger)
 
     def test_seeded_profiles_remain_independently_staged(self):
         by_id = {f["id"]: f for f in self.ledger["features"]}
@@ -148,7 +186,8 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(by_id["authored-slurs"]["layers"]["import"]["status"], "partial")
         self.assertEqual(by_id["authored-slurs"]["layers"]["render"]["status"], "blocked")
         self.assertEqual(by_id["authored-slurs"]["layers"]["playback"]["status"], "blocked")
-        self.assertEqual(by_id["articulations"]["layers"]["import"]["status"], "unassessed")
+        self.assertTrue(all(layer["status"] == "partial" for layer in by_id["articulations"]["layers"].values()))
+        self.assertTrue(all(layer["status"] == "unassessed" for layer in by_id["ornaments"]["layers"].values()))
 
 
 if __name__ == "__main__":

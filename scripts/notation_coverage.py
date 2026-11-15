@@ -133,6 +133,7 @@ def safe_path(root, relative):
 def check(catalog, ledger, root=ROOT):
     require(catalog.get("schema_version") == 1 and ledger.get("schema_version") == 1, "unknown schema version")
     entries = catalog["entries"]
+    by_id = {entry["id"]: entry for entry in entries}
     ids = {entry["id"] for entry in entries}
     require(len(ids) == len(entries), "duplicate catalog ID")
     for entry in entries:
@@ -172,6 +173,25 @@ def check(catalog, ledger, root=ROOT):
         require(feature["scope"].strip() and feature["limitations"].strip(), f"{fid}: scope and limitations required")
         require(feature["refs"] and len(feature["refs"]) == len(set(feature["refs"])), f"{fid}: empty or duplicate refs")
         require(set(feature["refs"]) <= ids, f"{fid}: unknown or context-free reference")
+        if "choice_inventory" in feature:
+            inventory = feature["choice_inventory"]
+            parent = inventory["parent"]
+            choices = inventory["entries"]
+            expected = {e["id"] for e in entries if e["kind"] == "element" and e["id"].rsplit("/", 1)[0] == parent}
+            actual = [choice["ref"] for choice in choices]
+            require(expected and len(actual) == len(set(actual)) and set(actual) == expected, f"{fid}: choice inventory must cover every pinned direct choice exactly once")
+            require(set(actual) <= set(feature["refs"]), f"{fid}: choice references must be linked to the profile")
+            for choice in choices:
+                entry = by_id[choice["ref"]]
+                require(choice["name"] == entry["name"] and choice["schema_type"] == entry["properties"].get("type"), f"{fid}: choice name/type differs from pinned schema")
+                require(choice["scope_class"].strip() and choice["why_incomplete"].strip(), f"{fid}: choice scope and incomplete reason required")
+                require(choice["import_status"] in {"partial", "blocked", "unassessed"}, f"{fid}: invalid choice import status")
+                receipts = choice["evidence"]
+                require(set(receipts) <= set(evidence), f"{fid}: unknown choice evidence")
+                if choice["import_status"] != "unassessed":
+                    assertion = "positive" if choice["import_status"] == "partial" else "rejection"
+                    require(any(evidence[e]["assertion"] == assertion for e in receipts), f"{fid}: choice status requires matching evidence")
+                used.update(receipts)
         require(set(feature["layers"]) == set(LAYERS), f"{fid}: all five independent layers required")
         for layer, state in feature["layers"].items():
             require(state["status"] in STATUSES, f"{fid}/{layer}: invalid status (no blanket supported state)")
@@ -213,6 +233,7 @@ def report(catalog, ledger, roles, include_gaps=False):
         "entries_without_direct_feature_link": len(gaps),
         "layer_counts": {layer: dict(sorted(Counter(f["layers"][layer]["status"] for f in ledger["features"]).items())) for layer in LAYERS},
         "features": ledger["features"],
+        "choice_import_counts": {f["id"]: dict(sorted(Counter(c["import_status"] for c in f["choice_inventory"]["entries"]).items())) for f in ledger["features"] if "choice_inventory" in f},
         "warning": "A feature link does not cover the referenced declaration's entire value, attribute or context space. Range/class membership is not glyph rendering evidence. Static checks do not execute behavior tests.",
     }
     if include_gaps:

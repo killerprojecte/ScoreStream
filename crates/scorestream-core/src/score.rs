@@ -36,9 +36,50 @@ pub struct ScoreDocument {
     /// Authored unmeasured notes, not zero-length ordinary events or silent cues.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub graces: Vec<ScoreGraceNote>,
+    /// Event-local simple articulation signs; no chord-wide or voice-wide inference.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub articulations: Vec<ScoreArticulation>,
     /// Authored printed beams. No timing, grouping, or missing levels are inferred.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub beams: Vec<ScoreBeam>,
+}
+/// The complete empty-symbol articulation subset with a native SFS sound policy.
+/// More complex signs (strong-accent orientation, breath shapes, detached-legato,
+/// stress, scoop and falloff) require their own typed semantics, never aliases.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SimpleArticulation {
+    Staccato,
+    Staccatissimo,
+    Tenuto,
+    Accent,
+}
+impl SimpleArticulation {
+    pub fn from_name(value: &str) -> Option<Self> {
+        match value {
+            "staccato" => Some(Self::Staccato),
+            "staccatissimo" => Some(Self::Staccatissimo),
+            "tenuto" => Some(Self::Tenuto),
+            "accent" => Some(Self::Accent),
+            _ => None,
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Staccato => "staccato",
+            Self::Staccatissimo => "staccatissimo",
+            Self::Tenuto => "tenuto",
+            Self::Accent => "accent",
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreArticulation {
+    pub event: EventId,
+    pub value: SimpleArticulation,
+    /// Absence means no authored placement, not an invented above/below choice.
+    pub placement: Option<crate::notation::Placement>,
 }
 /// One MusicXML beam value on one event, retaining an absent number separately
 /// from an explicitly authored primary level (1).

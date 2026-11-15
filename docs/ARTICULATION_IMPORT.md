@@ -1,0 +1,125 @@
+# Simple articulation conversion and rendering
+
+This completes one explicitly bounded family across the authoring model,
+MusicXML, native SFS, desktop preview and the existing SFS playback policy:
+
+- staccato
+- staccatissimo
+- tenuto
+- accent
+
+It does not claim complete MusicXML notation support or complete performance
+interpretation of every articulation. Strong-accent orientation, breath-mark
+shapes, detached-legato, spiccato, scoops, falls, stress and other marks remain
+explicit unsupported errors. No source element is deleted to make a score load.
+
+## Semantic contract
+
+`ScoreDocument.articulations` contains typed `ScoreArticulation` values:
+`event`, the closed `SimpleArticulation` enum, and optional `Placement`.
+Old serialized scores without this field still deserialize. Unknown enum values
+and unknown fields reject. There is no XML payload or arbitrary attribute bag.
+
+Each sign stays attached to its authored measured pitched event. Voice, staff,
+chord membership, written pitch, onset and duration come from that event, not
+from the most recently visited voice or note. A sign on one chord member is not
+copied onto other chord members or a simultaneous second voice. Native SFS
+playback continues to use its documented event-local performance policy; this
+is not a claim to infer a performer's whole-chord intention from one sign.
+
+The MusicXML profile accepts empty articulation elements with no attributes
+other than optional `placement="above"` or `placement="below"`. Absent placement
+stays absent. Styling, coordinates, explicit glyph overrides, alternate shapes,
+rest/unpitched/grace attachments, empty containers, repeated articulation containers
+within one notations wrapper and repeated identical signs on one event reject.
+Repeated containers are legal MusicXML but remain outside this bounded profile.
+Whole-group identity/order, empty-group semantics and authored stacking require
+a later family model; flattening containers is not a supported workaround. Multiple different supported signs are preserved. Their
+record order is canonicalized, since this subset contains no authored coordinates
+or stacking-order field. Separate events never coalesce.
+
+SFS uses its existing `+ #event articulation value=... placement=...` marks. No
+new extension or playback implementation is introduced. Unmapped mark attributes
+(including a separate mark identity) reject conversion rather than being lost.
+The preview can map native mark IDs to existing event selection without changing
+the source. The authoring bridge is deliberately stricter than the whole SFS
+language: native strong-accent and breath-mark playback remains available, but
+this conversion/preview family does not silently alias their shape semantics.
+
+## Performance qualification
+
+Tests prove the existing policy is reached after actual MusicXML → typed score
+→ SFS conversion, not after rewriting the score into a convenient native fixture.
+At 120 quarter BPM, an ordinary quarter note has these modeled results:
+
+| Mark | Gate | Attack at default level 80 |
+| --- | --- | --- |
+| staccato | 0.25 s (50%) | 80 |
+| staccatissimo | 0.125 s (25%) | 80 |
+| tenuto | 0.5 s (100%) | 80 |
+| accent | ordinary 0.46 s (92%) | 96 (+16, clamped by existing policy) |
+
+These are ScoreStream's existing performance choices, not timings mandated by
+MusicXML. Independent gate/attack signs combine. Shorter gate constraints win.
+Written event positions and measure time do not shrink with the sound gate.
+Ties still have one attack and use the final segment's articulation for release.
+
+Existing conservative boundaries remain in force:
+
+- Numeric sound dynamics permit gate-only marks, but attack-changing accent
+  conflicts still refuse playback. No symbolic/numeric precedence is invented.
+- Fermata-qualified playback refuses audible articulations rather than guessing
+  how a hold and a shortened release combine. The old test now checks this at
+  the sound-policy boundary, since notation import itself succeeds.
+- Grace/performance and unsupported renderer combinations keep their existing
+  capability gates. This change does not unlock complete Beethoven playback.
+
+## Preview qualification
+
+The typed workspace snapshot projects each mark as a note-local MEI `artic`,
+retains explicit placement, and maps each rendered mark back to the same source
+event for selection. An unsupported articulation fails the preview rather than
+being silently omitted. Explicit and pitch-derived accidentals remain separate.
+
+Pinned Verovio 5.6.0 tests verify actual Bravura SVG glyphs for all four signs,
+above and below, combined marks, independent chord members and a second staff.
+Verovio's default `stacciss` style uses wedge glyphs E4A8/E4A9. No incoming shape
+or SMuFL override is accepted and then replaced by this renderer default.
+
+Two independently authored complete fixtures are committed:
+
+- `articulation-study.musicxml`: all four signs with varied placement.
+- `articulation-duet.musicxml`: polyphonic two-staff score, two chord members,
+  independent simultaneous bass, combined accent/staccato and a later mark.
+
+Their JSON desktop snapshots are generated by the actual Rust importer, SFS
+writer and `Workspace::current`. A Rust regression compares regenerated snapshots
+against the checked-in JSON. Frontend tests consume those exact snapshots and
+assert rendered glyph count and original event identities. The fixtures are
+synthetic studies, not edited Beethoven excerpts or evidence that an entire
+external score is now supported.
+
+## Verification
+
+- `cargo test --offline --locked -p scorestream-formats -p scorestream-core -p scorestream-app -p scorestream-codec`
+- `tsc --project desktop/tsconfig.json --noEmit`
+- `vitest run --root desktop`
+- For deliberate fixture regeneration only:
+  `UPDATE_ARTICULATION_FIXTURES=1 cargo test -p scorestream-formats --test articulations desktop_snapshots`
+- Optional exact rendered evidence: set `ARTICULATION_EVIDENCE_DIR` to an existing
+  directory when running the frontend articulation tests.
+
+Verified locally: 530 Rust package tests passed (12 existing ignored tests),
+347 frontend tests passed across 30 files, and TypeScript passed. Both generated
+fixture previews were also rendered to PNG and visually inspected.
+
+No CI workflow, remote branch, pull request or production build is changed.
+The full Rust workspace attempt exhausted shared disk while compiling unrelated
+network dependencies; it did not reach tests. Package-level results are recorded
+separately from that infrastructure failure.
+
+References:
+[MusicXML articulation container](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/articulations/),
+[MusicXML accent](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/accent/),
+[MEI artic](https://music-encoding.org/guidelines/v5/elements/artic.html),
+[SMuFL articulation glyphs](https://smufl.formats.music/latest/tables/articulation.html).

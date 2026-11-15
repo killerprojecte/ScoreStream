@@ -3,6 +3,14 @@ import {project} from '../src/render/project';
 import type {View} from '../src/types';
 const fixture=():View=>({valid:true,diagnostics:[],source:'Never parsed by the renderer.',document:{frames:[]},revision_id:'r1',dirty:false,draft_seq:0,can_undo:false,can_redo:false,parts:[{id:'p',instrument:'flute',staves:1}],voices:[{id:'v',part:'p',staff:1}],states:[{time:'0',scope:'p.s1',values:{meter:'4/4',clef:'G2',key:0}}],measures:[{id:'m',part:'p',time:'0',length:'4',label:'1'}],events:[{id:'a',voice:'v',pitch:'C4',time:'0',duration:'1/2',staff:1,chord:null,written_duration:'8',dots:0,source_line:1}]});
 describe('authored slur fidelity boundary',()=>{
+ it('keeps authored slur preview withheld when supported articulations share its event',()=>{
+  const v=fixture();v.document.required_extensions=['scorestream.slur@1'];
+  v.document.frames=[{time:'0',records:[
+   {record:'relation',kind:'slur',id:'s',phase:'start',anchor:'#a',attributes:{bezier_x:'1/4'}},
+   {record:'mark',kind:'articulation',target:'#a',attributes:{value:'staccato',placement:'above'}},
+  ]}];
+  const before=JSON.stringify(v);expect(()=>project(v)).toThrow('Authored slur endpoints');expect(JSON.stringify(v)).toBe(before);
+ });
  it('withholds authored geometry rather than drawing an unannotated score',()=>{
   const v=fixture();v.document.required_extensions=['scorestream.slur@1'];
   v.document.frames=[{time:'0',records:[{record:'relation',kind:'slur',id:'s',phase:'start',anchor:'#a',attributes:{bezier_x:'1/4',orientation:'under',placement:'below'}}]}];

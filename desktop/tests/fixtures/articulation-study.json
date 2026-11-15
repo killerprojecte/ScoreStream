@@ -1,0 +1,278 @@
+{
+  "can_redo": false,
+  "can_undo": false,
+  "diagnostics": [],
+  "dirty": false,
+  "document": {
+    "document_kind": "score",
+    "end": "4",
+    "format": "ScoreStream",
+    "format_version": "1.1",
+    "frames": [
+      {
+        "records": [
+          {
+            "attributes": {
+              "implicit": false,
+              "label": "1"
+            },
+            "id": "m",
+            "length": "4",
+            "record": "measure",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "clef": "G2",
+              "meter": "4/4"
+            },
+            "record": "state",
+            "target": "p.s1"
+          },
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "short",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "C4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "name": "piano",
+              "source_id": "i"
+            },
+            "kind": "scorestream.instrument",
+            "record": "mark",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "placement": "above",
+              "value": "staccato"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#short"
+          }
+        ],
+        "time": "0"
+      },
+      {
+        "records": [
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "shortest",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "D4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "placement": "below",
+              "value": "staccatissimo"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#shortest"
+          }
+        ],
+        "time": "1"
+      },
+      {
+        "records": [
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "held",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "E4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "value": "tenuto"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#held"
+          }
+        ],
+        "time": "2"
+      },
+      {
+        "records": [
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "attack",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "F4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "placement": "above",
+              "value": "accent"
+            },
+            "kind": "articulation",
+            "record": "mark",
+            "target": "#attack"
+          }
+        ],
+        "time": "3"
+      }
+    ],
+    "metadata": {
+      "title": "Four simple articulations"
+    },
+    "parts": [
+      {
+        "display_name": "piano",
+        "id": "p",
+        "instrument": "piano",
+        "staves": 1
+      }
+    ],
+    "required_extensions": [
+      "scorestream.instrument@1"
+    ],
+    "time_unit": "quarter",
+    "voices": [
+      {
+        "id": "v1_1",
+        "part": "p",
+        "staff": 1
+      }
+    ]
+  },
+  "draft_seq": 0,
+  "events": [
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "short",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "short",
+      "pitch": "C4",
+      "source_line": 9,
+      "staff": 1,
+      "time": "0",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "shortest",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "shortest",
+      "pitch": "D4",
+      "source_line": 14,
+      "staff": 1,
+      "time": "1",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "held",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "held",
+      "pitch": "E4",
+      "source_line": 18,
+      "staff": 1,
+      "time": "2",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "attack",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "attack",
+      "pitch": "F4",
+      "source_line": 22,
+      "staff": 1,
+      "time": "3",
+      "voice": "v1_1",
+      "written_duration": "4"
+    }
+  ],
+  "measures": [
+    {
+      "id": "m",
+      "label": "1",
+      "length": "4",
+      "part": "p",
+      "time": "0"
+    }
+  ],
+  "parts": [
+    {
+      "display_name": "piano",
+      "id": "p",
+      "instrument": "piano",
+      "staves": 1
+    }
+  ],
+  "revision_id": "rev-1-1c6df27c7b1801125cbe",
+  "source": "!score 1.1 unit=q\n!part p instrument=piano staves=1 display_name=\"piano\"\n!voice v1_1 part=p staff=1\n!meta title=\"Four simple articulations\"\n!requires scorestream.instrument@1\n@0\n| p m len=4 implicit=false label=\"1\"\n= p.s1 clef=G2 meter=4/4\nv1_1 C4:1 id=short dots=0 staff=1 w=4\n+ p scorestream.instrument name=\"piano\" source_id=\"i\"\n+ #short articulation placement=above value=staccato\n.\n@1\nv1_1 D4:1 id=shortest dots=0 staff=1 w=4\n+ #shortest articulation placement=below value=staccatissimo\n.\n@2\nv1_1 E4:1 id=held dots=0 staff=1 w=4\n+ #held articulation value=tenuto\n.\n@3\nv1_1 F4:1 id=attack dots=0 staff=1 w=4\n+ #attack articulation placement=above value=accent\n.\n!end at=4\n",
+  "states": [
+    {
+      "scope": "p.s1",
+      "time": "0",
+      "values": {
+        "clef": "G2",
+        "meter": "4/4"
+      }
+    }
+  ],
+  "valid": true,
+  "voices": [
+    {
+      "id": "v1_1",
+      "part": "p",
+      "staff": 1
+    }
+  ]
+}

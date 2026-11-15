@@ -1,6 +1,7 @@
 import type {View,ScoreEvent} from '../types';
 import {Q,rhythm} from './exact';
 import {projectMarks} from './marks';
+import {projectArticulations} from './articulations';
 import {readMetadata} from '../app/metadata';
 const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 // Preserve authored label whitespace through XML text normalization.
@@ -11,6 +12,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  if(!view.events.length)throw Error('No measured events to engrave yet.');
  const warnings:string[]=[];const map:Record<string,string>={};
  const marks=projectMarks(view,warnings);
+ const articulations=projectArticulations(view);
  if(view.states.some(s=>s.time!=='0'))throw Error('Mid-score state changes are not yet supported by this preview. Your source is preserved.');
  const staffDefs=view.parts.flatMap(p=>Array.from({length:p.staves},(_,i)=>({part:p.id,staff:i+1,instrument:p.instrument})));
  const firstPart=view.parts[0]?.id;
@@ -51,7 +53,8 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    if(!p)throw Error(`Pitch ${e.pitch} is preserved but not supported by this preview.`);
    const acc:Record<string,string>={'#':'s','##':'ss',b:'f',bb:'ff'};
    const accidental=marks.forEvent(e.id,map);
-   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${!accidental&&p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}${withRhythm?stem:''}${accidental?`>${accidental}</note>`:'/>'}`;
+   const children=accidental+articulations.forEvent(e.id,map);
+   return `<note xml:id="${id}" pname="${p[1].toLowerCase()}" oct="${p[3]}"${!accidental&&p[2]?` accid="${acc[p[2]]}"`:''}${dur}${size}${withRhythm?stem:''}${children?`>${children}</note>`:'/>'}`;
  };
  const nominalLengths:Q[]=[];
  const staffDefXml=staffDefs.map((s,i)=>{
@@ -101,6 +104,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    }).join('')}${marks.forMeasure(m,map)}</measure>`;
  }).join('');
  marks.finish();
+ articulations.finish();
  if(used.size!==view.events.length)throw Error('Some events are outside the declared measures or staff mapping. Preview withheld to avoid hiding music.');
  const metadata=readMetadata(view.document.metadata);
  const catalogTitle=metadata.title?`<title>${esc(metadata.title)}</title>`:'<title/>';

@@ -70,6 +70,23 @@
     {
       "reason": "Reviewed musical-data entry points, not necessarily glyphs. Reused declarations remain separate.",
       "refs": [
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccatissimo[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]",
         "musicxml:schema/complexType:attributes[1]/sequence[1]/choice[1]/element:transpose[1]",
         "musicxml:schema/complexType:attributes[1]/sequence[1]/element:clef[1]",
         "musicxml:schema/complexType:attributes[1]/sequence[1]/element:key[1]",
@@ -162,6 +179,200 @@
       "runner": "cargo",
       "target": "accidentals",
       "test": "seven_glyphs_and_all_flag_presences_roundtrip_on_measured_and_grace_notes"
+    },
+    "articulations.duet": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "alternate_duet_keeps_combined_marks_chord_members_voices_and_staves_independent"
+    },
+    "articulations.duplicates": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "identical_signs_reject_instead_of_collapsing_but_independent_order_is_canonical"
+    },
+    "articulations.fermata-reject": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/qualified_fermata_playback.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "qualified_fermata_playback",
+      "test": "cue_and_unpitched_fail_import_but_articulation_rejects_at_sound_policy_boundary"
+    },
+    "articulations.numeric-dynamics": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "numeric_dynamics_gate_marks_work_but_attack_conflicts_keep_the_existing_refusal"
+    },
+    "articulations.playback": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "imported_symbols_activate_existing_sound_policy_without_changing_written_clock"
+    },
+    "articulations.project.accent": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "template": "projects %s with distinct absent/above/below placement and selection identity",
+      "test": "projects accent with distinct absent/above/below placement and selection identity"
+    },
+    "articulations.project.staccatissimo": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "template": "projects %s with distinct absent/above/below placement and selection identity",
+      "test": "projects staccatissimo with distinct absent/above/below placement and selection identity"
+    },
+    "articulations.project.staccato": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "template": "projects %s with distinct absent/above/below placement and selection identity",
+      "test": "projects staccato with distinct absent/above/below placement and selection identity"
+    },
+    "articulations.project.tenuto": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "template": "projects %s with distinct absent/above/below placement and selection identity",
+      "test": "projects tenuto with distinct absent/above/below placement and selection identity"
+    },
+    "articulations.reject-anchors": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "rest_grace_missing_event_and_duplicate_common_model_anchors_reject"
+    },
+    "articulations.reject-repeated-containers": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/notation_combination.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "notation_combination",
+      "test": "repeated_articulation_containers_remain_outside_the_bounded_profile"
+    },
+    "articulations.reject-sfs": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "sfs_outside_subset_and_unmapped_attributes_are_not_dropped"
+    },
+    "articulations.reject-shapes": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "unsupported_shapes_and_layout_are_explicit_errors_with_source_context"
+    },
+    "articulations.render.articulation-duet": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio articulation fidelity",
+      "template": "renders the Rust-produced MusicXML → SFS → workspace snapshot %s",
+      "test": "renders the Rust-produced MusicXML → SFS → workspace snapshot articulation-duet"
+    },
+    "articulations.render.articulation-study": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio articulation fidelity",
+      "template": "renders the Rust-produced MusicXML → SFS → workspace snapshot %s",
+      "test": "renders the Rust-produced MusicXML → SFS → workspace snapshot articulation-study"
+    },
+    "articulations.render.duet": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio articulation fidelity",
+      "test": "renders the alternate duet with chord-head, member and independent lower-staff identities"
+    },
+    "articulations.render.explicit-accidentals": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "test": "keeps explicit accidental and articulation children independent"
+    },
+    "articulations.render.glyphs": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "pinned Verovio articulation fidelity",
+      "test": "renders all four symbols, both placements, and glyph identities"
+    },
+    "articulations.render.pitch-accidentals": {
+      "assertion": "positive",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "test": "does not suppress pitch accidentals when adding articulations"
+    },
+    "articulations.render.reject-anchors": {
+      "assertion": "rejection",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "test": "rejects missing, non-pitched, grace, duplicate and off-frame anchors"
+    },
+    "articulations.render.reject-shapes": {
+      "assertion": "rejection",
+      "file": "desktop/tests/articulations.test.ts",
+      "runner": "vitest",
+      "suite": "simple articulation projection",
+      "test": "rejects unsupported shapes, attributes, invalid placement and duplicates rather than silently dropping marks"
+    },
+    "articulations.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "every_simple_symbol_and_placement_roundtrips_without_foreign_payloads"
+    },
+    "articulations.snapshots": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "desktop_snapshots_are_generated_from_the_same_musicxml_roundtrip"
+    },
+    "articulations.tied-release": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "final_tied_articulation_shapes_one_release_without_retriggering"
+    },
+    "articulations.typed-json": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/articulations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "articulations",
+      "test": "old_common_json_remains_compatible_and_unknown_articulation_shapes_are_typed_errors"
     },
     "beams.hooks-rests-continue": {
       "assertion": "positive",
@@ -297,6 +508,21 @@
       "runner": "cargo",
       "target": "instrument_metadata",
       "test": "exact_identity_label_sound_and_midi_roundtrip_xml_sfs_and_json"
+    },
+    "integration.slurs-articulations": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/notation_combination.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "notation_combination",
+      "test": "authored_slurs_and_simple_articulations_roundtrip_without_unlocking_playback"
+    },
+    "integration.slurs-articulations.render-reject": {
+      "assertion": "rejection",
+      "file": "desktop/tests/slur-fidelity.test.ts",
+      "runner": "vitest",
+      "suite": "authored slur fidelity boundary",
+      "test": "keeps authored slur preview withheld when supported articulations share its event"
     },
     "notes.reject": {
       "assertion": "rejection",
@@ -597,7 +823,8 @@
             "slurs.roundtrip",
             "slurs.reject",
             "slurs.grace-anchors",
-            "slurs.number-capacity"
+            "slurs.number-capacity",
+            "integration.slurs-articulations"
           ],
           "implementation": [
             "crates/scorestream-formats/src/musicxml/slurs.rs",
@@ -611,7 +838,8 @@
             "slurs.roundtrip",
             "slurs.reject",
             "slurs.grace-anchors",
-            "slurs.number-capacity"
+            "slurs.number-capacity",
+            "integration.slurs-articulations"
           ],
           "implementation": [
             "crates/scorestream-formats/src/musicxml/slurs.rs",
@@ -625,7 +853,8 @@
             "slurs.roundtrip",
             "slurs.reject",
             "slurs.grace-anchors",
-            "slurs.number-capacity"
+            "slurs.number-capacity",
+            "integration.slurs-articulations"
           ],
           "implementation": [
             "crates/scorestream-core/src/score.rs",
@@ -647,7 +876,8 @@
         "render": {
           "detail": "Preview withholds authored slur profiles instead of omitting or replacing endpoint geometry.",
           "evidence": [
-            "slurs.render.reject"
+            "slurs.render.reject",
+            "integration.slurs-articulations.render-reject"
           ],
           "implementation": [
             "desktop/src/render/project.ts"
@@ -1251,45 +1481,317 @@
       "title": "Single-instrument identity and authored MIDI intent"
     },
     {
+      "choice_inventory": {
+        "entries": [
+          {
+            "evidence": [
+              "articulations.roundtrip"
+            ],
+            "import_status": "partial",
+            "name": "accent",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Only empty measured-event accent with optional placement is qualified; extended attributes and other anchors remain outside the profile."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "breath-mark",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
+            "schema_type": "breath-mark",
+            "scope_class": "breath_pause",
+            "why_incomplete": "Shape/text and pause scope/duration lack a typed and visually qualified MusicXML contract; legacy native SFS breath behavior is not an import/render receipt."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "caesura",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
+            "schema_type": "caesura",
+            "scope_class": "phrase_break",
+            "why_incomplete": "Shape and phrase-break scope/duration need authored modeling, exact roundtrip, render tests and explicit timing policy."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "detached-legato",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "compound_event_symbol",
+            "why_incomplete": "No typed combined articulation or independently qualified render/gate interpretation; it is not silently rewritten as tenuto plus staccato."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "doit",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "No authored release-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "falloff",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "No authored release-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "other-articulation",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
+            "schema_type": "other-placement-text",
+            "scope_class": "custom_symbol",
+            "why_incomplete": "Custom text/glyph and semantic identity, font/layout contract and explicit playback-or-visual-only policy remain unassessed; no opaque pass-through."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "plop",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "No authored approach-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "scoop",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
+            "schema_type": "empty-line",
+            "scope_class": "pitch_transition",
+            "why_incomplete": "No authored approach-pitch/line-style model, roundtrip/render contract or explicit pitch-transition playback policy."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "soft-accent",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "stress_event_symbol",
+            "why_incomplete": "No distinct typed soft-accent identity, exact glyph evidence or documented attack policy; not aliased to ordinary accent."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "spiccato",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "technique_dependent_event_symbol",
+            "why_incomplete": "No typed technique identity, glyph acceptance or instrument-aware performance contract; it is not silently treated as staccato."
+          },
+          {
+            "evidence": [
+              "articulations.roundtrip"
+            ],
+            "import_status": "partial",
+            "name": "staccatissimo",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccatissimo[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Only empty measured-event staccatissimo with optional placement is qualified; authored alternate glyph/shape and extended attributes remain outside the profile."
+          },
+          {
+            "evidence": [
+              "articulations.roundtrip"
+            ],
+            "import_status": "partial",
+            "name": "staccato",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccato[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Only empty measured-event staccato with optional placement is qualified; extended attributes and other anchors remain outside the profile."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "stress",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "stress_event_symbol",
+            "why_incomplete": "No distinct typed stress identity, exact glyph evidence or documented playback interpretation; not aliased to accent."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "strong-accent",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
+            "schema_type": "strong-accent",
+            "scope_class": "oriented_event_symbol",
+            "why_incomplete": "Up/down orientation and shape need a typed roundtrip/render contract; native SFS attack support alone does not establish MusicXML mapping."
+          },
+          {
+            "evidence": [
+              "articulations.roundtrip"
+            ],
+            "import_status": "partial",
+            "name": "tenuto",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "event_symbol",
+            "why_incomplete": "Only empty measured-event tenuto with optional placement is qualified; extended attributes and other anchors remain outside the profile."
+          },
+          {
+            "evidence": [
+              "articulations.reject-shapes"
+            ],
+            "import_status": "blocked",
+            "name": "unstress",
+            "ref": "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]",
+            "schema_type": "empty-placement",
+            "scope_class": "stress_event_symbol",
+            "why_incomplete": "No distinct typed unstress identity, exact glyph evidence or documented playback interpretation; not erased or aliased to a dynamic."
+          }
+        ],
+        "parent": "musicxml:schema/complexType:articulations[1]/choice[1]"
+      },
       "id": "articulations",
       "layers": {
         "export": {
-          "detail": "No reviewed executable contract credited here yet.",
-          "evidence": [],
-          "implementation": [],
-          "status": "unassessed"
+          "detail": "JSON, SFS, MusicXML and normalized re-import preserve the four-symbol profile, placement, independent event anchors and combinations with ties or authored slurs. No foreign payload, arbitrary mark identity, unsupported symbol or duplicated event-sign is silently discarded.",
+          "evidence": [
+            "articulations.roundtrip",
+            "articulations.duet",
+            "articulations.tied-release",
+            "articulations.reject-anchors",
+            "articulations.reject-sfs",
+            "integration.slurs-articulations"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/articulations.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
         },
         "import": {
-          "detail": "No reviewed executable contract credited here yet.",
-          "evidence": [],
-          "implementation": [],
-          "status": "unassessed"
+          "detail": "Four empty MusicXML symbols with optional placement map to the typed model. Native SFS uses existing event-local articulation marks. Source-specific rejection covers each of the other 13 choices; shared schema types do not imply acceptance of their names or attributes. This does not cover repeated articulation containers within one notations wrapper, which are rejected rather than flattened.",
+          "evidence": [
+            "articulations.roundtrip",
+            "articulations.duet",
+            "articulations.reject-shapes",
+            "articulations.reject-anchors",
+            "articulations.reject-sfs",
+            "integration.slurs-articulations",
+            "articulations.reject-repeated-containers"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/articulations.rs",
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/musicxml/xml.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
         },
         "model": {
-          "detail": "No reviewed executable contract credited here yet.",
-          "evidence": [],
-          "implementation": [],
-          "status": "unassessed"
+          "detail": "Typed ScoreArticulation and closed SimpleArticulation preserve event identity, absent/explicit placement, distinct chord members/voices/staves, old JSON compatibility and canonical order. Duplicate/invalid anchors fail. Authored slurs coexist without replacing either model.",
+          "evidence": [
+            "articulations.roundtrip",
+            "articulations.duet",
+            "articulations.typed-json",
+            "articulations.duplicates",
+            "articulations.reject-anchors",
+            "integration.slurs-articulations"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/score.rs",
+            "crates/scorestream-formats/src/articulations.rs"
+          ],
+          "status": "partial"
         },
         "playback": {
-          "detail": "No reviewed executable contract credited here yet.",
-          "evidence": [],
-          "implementation": [],
-          "status": "unassessed"
+          "detail": "Actual MusicXML → SFS → playback-plan tests reach the existing policy: staccato 50% gate, staccatissimo 25%, tenuto 100%, accent +16 attack with existing clamp. Written time is unchanged; chord members remain event-local; tied notes retain one attack/final-segment release. These are engine policy choices, not MusicXML-mandated or acoustic acceptance. Numeric-dynamics attack conflicts, fermata combinations and authored slur playback remain refused.",
+          "evidence": [
+            "articulations.playback",
+            "articulations.duet",
+            "articulations.numeric-dynamics",
+            "articulations.tied-release",
+            "articulations.fermata-reject",
+            "slurs.playback.reject"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/notation/perform.rs",
+            "crates/scorestream-app/src/playback.rs"
+          ],
+          "status": "partial"
         },
         "render": {
-          "detail": "No reviewed executable contract credited here yet.",
-          "evidence": [],
-          "implementation": [],
-          "status": "unassessed"
+          "detail": "Pinned Verovio 5.6.0 / Bravura SVG verifies four glyphs above/below, independent chord members/staves, combined marks and original selection identities. Staccatissimo uses the renderer default wedge E4A8/E4A9; no authored shape override is accepted. Rust-generated synthetic study/duet snapshots connect importer to actual rendering. Authored slurs still withhold the whole preview.",
+          "evidence": [
+            "articulations.snapshots",
+            "articulations.project.staccato",
+            "articulations.project.staccatissimo",
+            "articulations.project.tenuto",
+            "articulations.project.accent",
+            "articulations.render.glyphs",
+            "articulations.render.articulation-study",
+            "articulations.render.articulation-duet",
+            "articulations.render.duet",
+            "articulations.render.pitch-accidentals",
+            "articulations.render.explicit-accidentals",
+            "articulations.render.reject-shapes",
+            "articulations.render.reject-anchors",
+            "integration.slurs-articulations.render-reject"
+          ],
+          "implementation": [
+            "desktop/src/render/articulations.ts",
+            "desktop/src/render/project.ts",
+            "desktop/src/render/marks.ts"
+          ],
+          "status": "partial"
         }
       },
-      "limitations": "Unassessed in this first ledger. This is neither acceptance nor an exhaustive unsupported claim. The production strict converter remains authoritative.",
+      "limitations": "No styling/coordinates/glyph overrides, repeated identical signs, rest/unpitched/grace anchors or arbitrary native SFS attributes. All other 13 MusicXML choices reject on import and have no credited end-to-end contract. Slur combinations roundtrip but still withhold preview/playback; fermata-qualified playback and numeric-dynamics accent conflicts still reject. Synthetic fixtures, pinned Verovio SVG and modeled gate/velocity assertions do not establish complete external-score acceptance, acoustic fidelity, all instruments, platforms or performance interpretations. Repeated articulation containers within one notations wrapper are legal MusicXML but rejected by this bounded profile; container grouping/order, empty-group identity and authored stacking are not modeled. Untouched musicxmlTestSuite 32c acceptance is not established: non-mapped identification/miscellaneous metadata is an earlier independent boundary.",
       "refs": [
-        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]"
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:breath-mark[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:caesura[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:detached-legato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:doit[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:falloff[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:other-articulation[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:plop[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:scoop[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:soft-accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:spiccato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccatissimo[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:staccato[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:stress[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:strong-accent[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:tenuto[1]",
+        "musicxml:schema/complexType:articulations[1]/choice[1]/element:unstress[1]"
       ],
-      "scope": "MusicXML articulation container and its distinct note-attack/length/accent meanings; legacy SFS atoms do not establish MusicXML mapping.",
-      "title": "Articulation semantics"
+      "scope": "Only staccato, staccatissimo, tenuto and accent as empty elements on measured pitched events, with absent/above/below placement. The 17 MusicXML 4.0 articulation choices are individually inventoried below; four bounded profiles are not whole-element or whole-family support.",
+      "title": "Bounded simple event articulations and the remaining MusicXML choices"
     },
     {
       "id": "ornaments",
@@ -1683,6 +2185,11 @@
       "title": "Other notation and SMuFL overrides"
     }
   ],
+  "integrated_checkpoints": {
+    "authored_slurs": "53dfbcefd3e7d34d95c312bc7575068143c6158e",
+    "notation_ledger": "d6041ed7dcaed6ddffd0924a4f4473e206c662a6",
+    "simple_articulations": "5555cfdd6769873ea62a7a321fa0ec6ed5c921df"
+  },
   "policy": "Bounded reference baseline, never a claim to all music theory or all attributes/values of a linked declaration. Omitted entries/layers are unassessed, not unsupported or supported. Every partial/blocked layer requires executable evidence.",
   "schema_version": 1
 }

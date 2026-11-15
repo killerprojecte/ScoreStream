@@ -1,7 +1,8 @@
 # 乐谱覆盖清单：先有边界，再扩展能力
 
 目标是把逐个源文件补洞改为**版本化标准清单、逐域建模、分层验收**。
-这次交付是可运行的覆盖基础设施和已存在能力的证据账本，**没有新增任何音乐符号的转换、绘制或演奏能力**。
+初始交付提供可运行的覆盖基础设施和已存在能力的证据账本。本地集成检查点进一步合并
+已完成的连音线作者数据和四种有限奏法实现，不把清单本身当成新增能力。
 也没有宣称 MusicXML 或 SMuFL 能代表世界上的全部乐理与记谱传统。
 
 ## 五条独立能力轴
@@ -19,18 +20,51 @@
 故意没有把整个标签或字形标为 `supported` 的入口。`partial` 也只指该行文字界定的范围，
 不是所关联 schema 声明的全部值、属性、上下文或组合均被支持。
 
-初始账本有 22 个域：12 个有限能力域和 10 个待验收域，引用 43 个可运行的精确测试。
-模型/导入/导出各 12 条 `partial`；绘制 1 条 `partial`、2 条 `blocked`、19 条未验收；
-演奏 9 条 `partial`、1 条 `blocked`、12 条未验收。这些是**账本行数，不是标准支持率**。
+集成账本有 22 个域：13 个有限能力域和 9 个待验收域，引用 70 个可运行的精确测试。
+模型/导入/导出各 13 条 `partial`；绘制 2 条 `partial`、2 条 `blocked`、18 条未验收；
+演奏 10 条 `partial`、1 条 `blocked`、11 条未验收。这些是**账本行数，不是标准支持率**。
 
 已录入音高/节奏/和弦、延音线、连音线、变音符、符杠、反复与房子、延长记号、倚音、
 速度、力度、移调与单乐器元数据。例如连音线作者字段可以往返，但该 profile 的预览和演奏
 仍明确拒绝；变音符可以导入 7 种，已录入的预览证据只有 natural/sharp/flat。
 延长记号和倚音的 `partial` 演奏只覆盖要求明确策略的入口，不扩大普通播放权限。
 
-待验收域包括奏法、装饰音、乐器技术、歌词、和声/数字低音、打击乐/指法谱、方向跨度、
+待验收域包括装饰音、乐器技术、歌词、和声/数字低音、打击乐/指法谱、方向跨度、
 谱表状态词汇、页面系统排版和自定义/SMuFL 记号。`unassessed` 不表示程序接受，也不表示
 程序一定不支持；生产转换器的严格诊断仍是每个实际输入的最终依据。
+
+## 本地奏法集成的明确边界
+
+合并来源保留在 `coverage.json` 的 `integrated_checkpoints`：清单 `d6041ed7`（含连音线
+`53dfbce`）与奏法 `5555cfdd`。它们在共享 MusicXML/SFS 入口并存，而非选择一方覆盖另一方。
+新增联合测试验证同一音符上的连音线和奏法可往返，连音线的预览和演奏仍明确拒绝。
+
+四种有限奏法为 staccato、staccatissimo、tenuto、accent；只接收有节拍的有音高事件，
+以及缺省/above/below placement。导入、导出、模型、真实 Verovio SVG 和演奏计划分别有
+精确测试。形状、坐标、字体替换、倚音/休止符锚点与全部扩展属性未因此获得支持。
+详见 [`ARTICULATION_IMPORT.md`](ARTICULATION_IMPORT.md)。
+
+`articulations.choice_inventory` 覆盖固定 schema 的全部 17 个直接 choice，并记录名称、
+精确声明 ID、schema 类型、scope class、导入状态、不完整原因和证据。以下 13 项仍未完成：
+
+- strong-accent：有方向的事件符号；缺 up/down 形状的作者模型、往返和绘制契约。
+- detached-legato：复合事件符号；不能未经验证就改写为 tenuto 与 staccato 的组合。
+- spiccato：依赖乐器技术的事件符号；缺独立身份、字形和演奏解释。
+- scoop、plop：音高进入过渡；缺线形、进入音高及其演奏策略。
+- doit、falloff：音高结束过渡；缺线形、结束音高及其演奏策略。
+- breath-mark：呼吸/暂停；形状、暂停作用域与时长未形成 MusicXML 全链路契约。
+- caesura：乐句中断；缺形状、作用域、时间策略和绘制验收。
+- stress、unstress、soft-accent：独立重音类别；不能直接等同于现有 accent 或力度。
+- other-articulation：自定义符号；文字/字形、语义身份、字体与视觉/声音策略仍未验收。
+
+这 13 项的 `blocked` **仅指有精确拒绝测试的导入边界**；不把拒绝当作完成实现，也不把
+原生 SFS 已有的某些声音策略误记为 MusicXML 导入或绘制支持。scope class 是工作分类，
+不是 MusicXML 新类型或推导支持率的依据。其余域的未知状态和清单缺口继续显式保留。
+独立原件验收仍未建立：固定版本的 [W3C 社区测试集](https://github.com/w3c-cg/musicxmlTestSuite/tree/0618bdee1bfcb965ffdd9f4e52271c909d744fd1)
+32c 的非映射 identification/miscellaneous 元数据是较早边界，其合法的重复 articulations
+容器也不在本 profile 内。此集成未下载、运行或宣称接受该原件；没有删改原件来获得绿色结果。
+容器整体身份、次序、空/重复组和堆叠关系仍待完整家族模型，不通过展平容器假装完成。
+离线 gate 会拒绝 choice 缺项、重项、失效引用、类型变化、缺范围/原因和证据不匹配。
 
 ## 固定参考边界与可重复计数
 
@@ -89,6 +123,7 @@ python3 scripts/notation_coverage.py report --gaps > /tmp/notation-gaps.json
 真正重跑证据（需要现有 Rust 工具链、锁定依赖，以及 frontend 的 `npm ci` 环境）：
 
 ```sh
+python3 scripts/notation_coverage.py test-evidence --feature articulations
 python3 scripts/notation_coverage.py test-evidence --feature authored-slurs
 python3 scripts/notation_coverage.py test-evidence --feature printed-accidentals
 # 不带 --feature：重跑当前账本全部精确测试。

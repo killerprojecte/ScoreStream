@@ -8,6 +8,7 @@ mod barlines;
 mod dynamics;
 mod extent;
 pub use extent::{IrregularMeasure, MusicXmlOptions};
+mod articulations;
 mod fermatas;
 mod geometry;
 mod graces;
