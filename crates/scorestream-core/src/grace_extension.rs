@@ -1,7 +1,7 @@
 //! Required fidelity for imported authored grace notes. Legacy core grace is unchanged.
 #![allow(clippy::result_large_err)]
 use crate::{
-    Diagnostic, Document, DocumentKind, Mark, Pitch, Rational, Record, Scalar, score::GraceTiming,
+    score::GraceTiming, Diagnostic, Document, DocumentKind, Mark, Pitch, Rational, Record, Scalar,
 };
 use std::collections::{BTreeMap, BTreeSet};
 pub const EXTENSION: &str = "scorestream.grace@1";
@@ -174,5 +174,5 @@ pub(crate) fn validate(doc: &Document, out: &mut Vec<Diagnostic>) {
             ));
         }
     }
-    out.push(Diagnostic::warning("grace.realization_unavailable","Authored grace notation and timing intent are retained; performed timing is not implemented",doc.source));
+    out.push(Diagnostic::warning("grace.realization_unavailable","Authored grace notation and timing intent are retained; playback requires a separately selected complete explicit grace allocation and sound policy",doc.source));
 }

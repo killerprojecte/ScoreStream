@@ -6,6 +6,7 @@ mod continuity;
 mod diagnostic;
 mod expression;
 mod fermata;
+mod grace;
 mod numeric;
 mod plan;
 mod tempo;
@@ -15,6 +16,7 @@ use diagnostic::Diagnostics;
 pub use diagnostic::{PerformanceDiagnostic, RealizationEffect};
 use expression::Expression;
 pub use fermata::*;
+pub use grace::*;
 pub use plan::*;
 use scorestream_codec::fermata_timing::TimingProjection;
 use scorestream_codec::{Document, Duration, Rational, Record, Scalar, notation::*};
@@ -56,10 +58,30 @@ fn compile_performed(
     performed: Option<&PerformedScore>,
     timing: Option<&TimingProjection>,
 ) -> Result<PlaybackPlan, String> {
+    compile_scheduled(score, doc, performed, timing, None)
+}
+fn compile_scheduled(
+    score: &ResolvedScore,
+    doc: &Document,
+    performed: Option<&PerformedScore>,
+    timing: Option<&TimingProjection>,
+    grace: Option<&GraceSchedule>,
+) -> Result<PlaybackPlan, String> {
     if score.events.len() > 100_000 {
         return Err("Playback is limited to 100,000 events per score".into());
     }
-    let tempo = PlaybackClock::new(score, timing)?;
+    let tempo = if let Some(grace) = grace {
+        if timing.is_some() {
+            return Err("Combined fermata and grace sound policies are unsupported".into());
+        }
+        PlaybackClock::Grace(grace)
+    } else {
+        PlaybackClock::new(score, timing)?
+    };
+    let grace_windows: BTreeMap<_, _> = grace
+        .into_iter()
+        .flat_map(|g| g.windows().iter().map(|w| (&w.id, w)))
+        .collect();
     let mut duration_seconds = tempo.seconds(&score.end)?;
     let written_ids: BTreeMap<_, _> = performed
         .into_iter()
@@ -133,6 +155,47 @@ fn compile_performed(
     }
     let expression = Expression::new(score, &mut warnings)?;
     let continuity = Continuity::new(score, &expression, &mut warnings)?;
+    if let Some(grace) = grace {
+        let events: BTreeMap<_, _> = score.events.iter().map(|e| (&e.id, e)).collect();
+        for window in grace.windows() {
+            let event = events
+                .get(&window.id)
+                .ok_or("grace.schedule_identity: Missing scheduled event")?;
+            if expression.value(event, &window.quarter_start) <= 0. {
+                return Err(format!(
+                    "grace.inaudible_anchor: Scheduled event {} has zero sound dynamics at its actual attack",
+                    event.id
+                ));
+            }
+            warnings.add("grace.explicit_sound_window", "rhythm.grace", RealizationEffect::Policy, &event.origin,
+                "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.");
+        }
+        for interval in grace.default_tempo_intervals() {
+            warnings.add("grace.default_quarter_tempo", "tempo.default", RealizationEffect::Policy,
+                &Origin { object_id: "performance.default_tempo".into(), source: doc.source },
+                &format!("Existing quarter=120 clock convention applies from {} through {} quarters; this is not an authored tempo.", interval.from_quarter, interval.until_quarter));
+        }
+        for group in grace.groups() {
+            let event = events.get(&group.principal).expect("qualified principal");
+            let (code, message) = match group.allocation {
+                GraceAllocation::AuthoredFollowingPercent => (
+                    "grace.authored_following_percent",
+                    "Duration derives from the sole authored following percentage at constant effective tempo; grace-first gate order is explicit playback policy, not a MusicXML rule.",
+                ),
+                GraceAllocation::ExplicitFollowingQuarters { .. } => (
+                    "grace.explicit_following_quarters",
+                    "Every grace duration derives from the caller's exact quarter allocation; no slash, written-value or equal-division duration was inferred.",
+                ),
+            };
+            warnings.add(
+                code,
+                "rhythm.grace",
+                RealizationEffect::Policy,
+                &event.origin,
+                message,
+            );
+        }
+    }
     let held_tails = if let Some(timing) = timing {
         fermata::validate_sound_policy(score, &continuity, timing, &mut warnings)?
     } else {
@@ -151,7 +214,8 @@ fn compile_performed(
         if continuity.targets.contains(&index) {
             continue;
         }
-        if event.duration == Duration::Grace {
+        let window = grace_windows.get(&event.id).copied();
+        if event.duration == Duration::Grace && window.is_none() {
             warnings.add(
                 "grace_unrealized",
                 "rhythm.grace",
@@ -196,20 +260,33 @@ fn compile_performed(
         }
         let chain = continuity.chain(index)?;
         let tail = *chain.last().unwrap();
-        let release = if held_tails.contains(&tail) {
+        let release = if let Some(window) = window {
+            window.quarter_end.clone()
+        } else if held_tails.contains(&tail) {
             score.events[tail].end()
         } else {
             continuity.release(&score.events[tail], tail)
         };
-        let start = tempo.seconds(&event.start)?;
+        let attack = window.map(|w| &w.quarter_start).unwrap_or(&event.start);
+        let start = tempo.seconds(attack)?;
         let end = tempo.seconds(&release)?;
         let duration = end - start;
         if duration < 0.000_001 {
             return Err("A note is shorter than the playback clock can represent".into());
         }
-        let velocity = expression.attack(event).round().clamp(1., 127.) as u8;
+        let velocity = if window.is_some() {
+            expression.attack_at(event, attack)
+        } else {
+            expression.attack(event)
+        }
+        .round()
+        .clamp(1., 127.) as u8;
         let segments: Vec<_> = chain.iter().map(|i| &score.events[*i]).collect();
-        let envelope = expression.envelope(&segments, &release, velocity, &tempo)?;
+        let envelope = if window.is_some() {
+            expression.envelope_from(&segments, attack, &release, velocity, &tempo)?
+        } else {
+            expression.envelope(&segments, &release, velocity, &tempo)?
+        };
         routes.insert(PlaybackRoute {
             part: event.part.0.clone(),
             instrument: event.instrument.0.clone(),

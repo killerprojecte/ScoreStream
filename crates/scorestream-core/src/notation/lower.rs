@@ -208,12 +208,15 @@ pub(super) enum LoweringProfile {
     Written,
     Navigation,
     ExplicitFermatas,
+    ExplicitGraces,
 }
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
-    if doc
-        .required_extensions
-        .iter()
-        .any(|e| e == crate::grace_extension::EXTENSION)
+    let graces = profile == LoweringProfile::ExplicitGraces;
+    if !graces
+        && doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::grace_extension::EXTENSION)
     {
         return Err(Diagnostic::error(
             "grace.performance_unsupported",
@@ -387,6 +390,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 // Authored signs are decoded and retained by the qualified
                 // constructor, then every visited sign must pass its clock policy.
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
+                Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}
                 Record::Mark(mark) => {
                     let a = &mark.attributes;
                     let s = mark.source;

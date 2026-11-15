@@ -1,33 +1,11 @@
-use scorestream_codec::{Rational, notation::ResolvedScore};
-struct TempoPoint {
-    at: Rational,
-    seconds: Rational,
-    seconds_per_quarter: Rational,
-}
-pub(super) struct TempoMap(Vec<TempoPoint>);
+use scorestream_codec::{Rational, notation::ResolvedScore, tempo_clock::ExactTempoMap};
+pub(super) struct TempoMap(ExactTempoMap);
 impl TempoMap {
-    pub fn new(score: &ResolvedScore) -> Self {
-        let mut points = vec![TempoPoint {
-            at: Rational::zero(),
-            seconds: Rational::zero(),
-            seconds_per_quarter: "1/2".parse().unwrap(),
-        }];
-        for change in &score.tempos {
-            let previous = points.last().unwrap();
-            let seconds =
-                &previous.seconds + &(&(&change.at - &previous.at) * &previous.seconds_per_quarter);
-            points.push(TempoPoint {
-                at: change.at.clone(),
-                seconds,
-                seconds_per_quarter: &Rational::from_integer(60)
-                    / &(&change.value.beat.quarters() * &change.value.bpm),
-            });
-        }
-        Self(points)
+    pub fn new(score: &ResolvedScore) -> Result<Self, String> {
+        ExactTempoMap::new(score, None).map(Self)
     }
     pub fn seconds(&self, at: &Rational) -> Result<f64, String> {
-        let point = &self.0[self.0.partition_point(|p| p.at <= *at).saturating_sub(1)];
-        let value = (&point.seconds + &(&(at - &point.at) * &point.seconds_per_quarter)).to_f64();
+        let value = self.0.seconds(at).to_f64();
         if value.is_finite() && (0.0..=21_600.).contains(&value) {
             Ok(value)
         } else {
@@ -39,8 +17,6 @@ impl TempoMap {
         start: &Rational,
         end: &Rational,
     ) -> impl Iterator<Item = &'a Rational> {
-        let lo = self.0.partition_point(|p| p.at <= *start);
-        let hi = self.0.partition_point(|p| p.at < *end);
-        self.0[lo..hi].iter().map(|p| &p.at)
+        self.0.boundaries(start, end)
     }
 }

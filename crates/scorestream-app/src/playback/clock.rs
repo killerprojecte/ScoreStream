@@ -1,10 +1,15 @@
 //! One clock for markers, note gates and both expression implementations. Exact
 //! fermata seconds are converted only at the existing PlaybackPlan boundary.
 use super::tempo::TempoMap;
-use scorestream_codec::{Rational, fermata_timing::TimingProjection, notation::ResolvedScore};
+use scorestream_codec::{
+    Rational,
+    fermata_timing::TimingProjection,
+    notation::{GraceSchedule, ResolvedScore},
+};
 
 pub(super) enum PlaybackClock<'a> {
     Ordinary(TempoMap),
+    Grace(&'a GraceSchedule),
     Explicit {
         timing: &'a TimingProjection,
         boundaries: Vec<Rational>,
@@ -36,12 +41,20 @@ impl<'a> PlaybackClock<'a> {
             boundaries.dedup();
             Ok(Self::Explicit { timing, boundaries })
         } else {
-            Ok(Self::Ordinary(TempoMap::new(score)))
+            Ok(Self::Ordinary(TempoMap::new(score)?))
         }
     }
     pub fn seconds(&self, at: &Rational) -> Result<f64, String> {
         match self {
             Self::Ordinary(tempo) => tempo.seconds(at),
+            Self::Grace(schedule) => {
+                let seconds = schedule.seconds(at)?.to_f64();
+                if seconds.is_finite() && (0.0..=21_600.).contains(&seconds) {
+                    Ok(seconds)
+                } else {
+                    Err("Playback timeline must fit in six hours at the specified tempo".into())
+                }
+            }
             Self::Explicit { timing, .. } => {
                 // TimingProjection intentionally clamps seek/marker queries. A
                 // compiler release outside its domain must never clamp silently.
@@ -60,6 +73,7 @@ impl<'a> PlaybackClock<'a> {
     pub fn boundaries<'b>(&'b self, start: &Rational, end: &Rational) -> Vec<&'b Rational> {
         match self {
             Self::Ordinary(tempo) => tempo.boundaries(start, end).collect(),
+            Self::Grace(schedule) => schedule.boundaries(start, end).collect(),
             Self::Explicit { boundaries, .. } => {
                 let lo = boundaries.partition_point(|q| q <= start);
                 let hi = boundaries.partition_point(|q| q < end);

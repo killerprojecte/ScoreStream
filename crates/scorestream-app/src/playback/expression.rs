@@ -146,7 +146,10 @@ impl Expression {
         gate
     }
     pub fn attack(&self, event: &ResolvedEvent) -> f64 {
-        let base = self.value(event, &event.start);
+        self.attack_at(event, &event.start)
+    }
+    pub fn attack_at(&self, event: &ResolvedEvent, at: &Rational) -> f64 {
+        let base = self.value(event, at);
         if self.numeric.is_some() {
             return base;
         }
@@ -161,8 +164,8 @@ impl Expression {
         let mut attack = base + accent;
         for scope in ExpressionIntervals::scopes(event).into_iter().rev() {
             if let Some(values) = self.intervals.attacks.get(&scope) {
-                let lo = values.partition_point(|v| v.at < event.start);
-                let hi = values.partition_point(|v| v.at <= event.start);
+                let lo = values.partition_point(|v| &v.at < at);
+                let hi = values.partition_point(|v| &v.at <= at);
                 if lo == hi {
                     continue;
                 }
@@ -186,8 +189,18 @@ impl Expression {
         initial: u8,
         tempo: &PlaybackClock<'_>,
     ) -> Result<Vec<EnvelopePoint>, String> {
+        self.envelope_from(segments, &segments[0].start, release, initial, tempo)
+    }
+    pub fn envelope_from(
+        &self,
+        segments: &[&ResolvedEvent],
+        start: &Rational,
+        release: &Rational,
+        initial: u8,
+        tempo: &PlaybackClock<'_>,
+    ) -> Result<Vec<EnvelopePoint>, String> {
         if let Some(numeric) = &self.numeric {
-            return numeric.envelope(segments, release, initial, tempo);
+            return numeric.envelope(segments, start, release, initial, tempo);
         }
         let event = segments[0];
         let active = |at: &Rational| {
@@ -195,7 +208,7 @@ impl Expression {
                 .partition_point(|e| e.start <= *at)
                 .saturating_sub(1)]
         };
-        let start_seconds = tempo.seconds(&event.start)?;
+        let start_seconds = tempo.seconds(start)?;
         let duration = tempo.seconds(release)? - start_seconds;
         let mut boundaries = BTreeSet::new();
         let scopes: BTreeSet<_> = segments
@@ -209,14 +222,14 @@ impl Expression {
             if let Some(values) = self.intervals.assignments.get(&scope) {
                 // Include both starts and finite ends so a shadowed ancestor is
                 // restored at its CURRENT value, never a cached entry value.
-                let lo = values.partition_point(|d| d.end <= event.start);
+                let lo = values.partition_point(|d| d.end <= *start);
                 let hi = values.partition_point(|d| d.start < *release);
                 for d in &values[lo..hi] {
                     for at in [&d.start, &d.end] {
-                        if at > &event.start && at < release {
+                        if at > start && at < release {
                             boundaries.insert(at.clone());
                             let left = at - &"1/1000000000".parse().unwrap();
-                            if left > event.start {
+                            if left > *start {
                                 boundaries.insert(left);
                             }
                         }
@@ -224,14 +237,14 @@ impl Expression {
                 }
             }
             if let Some(values) = self.intervals.hairpins.get(&scope) {
-                let lo = values.partition_point(|h| h.end <= event.start);
+                let lo = values.partition_point(|h| h.end <= *start);
                 let hi = values.partition_point(|h| h.start < *release);
                 for h in &values[lo..hi] {
                     for at in [&h.start, &h.end] {
-                        if at > &event.start && at < release {
+                        if at > start && at < release {
                             boundaries.insert(at.clone());
                             let left = at - &"1/1000000000".parse().unwrap();
-                            if left > event.start {
+                            if left > *start {
                                 boundaries.insert(left);
                             }
                         }
@@ -239,13 +252,13 @@ impl Expression {
                 }
             }
         }
-        for at in tempo.boundaries(&event.start, release) {
+        for at in tempo.boundaries(start, release) {
             boundaries.insert(at.clone());
         }
         // Release uses the left-hand musical value, so an excluded terminal
         // anchor cannot change the tail of a note ending at that same instant.
         let left = release - &"1/1000000000".parse().unwrap();
-        let left = left.max(event.start.clone());
+        let left = left.max(start.clone());
         let last_value = self.value(active(&left), &left);
         let mut points = vec![EnvelopePoint {
             offset_seconds: 0.,
@@ -261,7 +274,7 @@ impl Expression {
             offset_seconds: duration,
             gain: last_value / f64::from(initial),
         });
-        let base = self.value(event, &event.start);
+        let base = self.value(event, start);
         if f64::from(initial) > base {
             let first = points
                 .iter()

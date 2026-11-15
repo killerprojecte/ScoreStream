@@ -143,6 +143,7 @@ fn prepare(
         performance_limits,
         LoweringProfile::ExplicitFermatas,
         Some(limits.maximum_rational_bits),
+        None,
     )
     .map_err(|e| vec![e])
 }

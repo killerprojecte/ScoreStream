@@ -21,7 +21,24 @@ fn parse_inner(
     source: &str,
     context: Option<&FragmentContext>,
 ) -> Result<Document, Vec<Diagnostic>> {
-    let mut document = read(source).map_err(|e| vec![e])?;
+    let document = read(source).map_err(|e| vec![e])?;
+    finish_document(document, context)
+}
+/// Parse a complete score with a read-only resource preflight before semantic
+/// validation. The preflight cannot change the AST or skip the normal validator.
+/// Lexical/AST parsing occurs first; this is not a parser-allocation limit.
+pub fn parse_with_prevalidation(
+    source: &str,
+    preflight: impl FnOnce(&Document) -> Result<(), Vec<Diagnostic>>,
+) -> Result<Document, Vec<Diagnostic>> {
+    let document = read(source).map_err(|e| vec![e])?;
+    preflight(&document)?;
+    finish_document(document, None)
+}
+fn finish_document(
+    mut document: Document,
+    context: Option<&FragmentContext>,
+) -> Result<Document, Vec<Diagnostic>> {
     let diagnostics = validate(&document, context);
     if diagnostics.iter().any(|d| d.severity == Severity::Error) {
         return Err(diagnostics);

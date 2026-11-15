@@ -1,0 +1,185 @@
+{
+  "diagnostics": [
+    {
+      "code": "grace.explicit_following_quarters",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Every grace duration derives from the caller's exact quarter allocation; no slash, written-value or equal-division duration was inferred.",
+      "object_id": "principal",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 44,
+        "end_line": 13,
+        "line": 13
+      }
+    },
+    {
+      "code": "grace.explicit_sound_window",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+      "object_id": "a-grace",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 90,
+        "end_line": 15,
+        "line": 15
+      }
+    },
+    {
+      "code": "grace.explicit_sound_window",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+      "object_id": "principal",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 44,
+        "end_line": 13,
+        "line": 13
+      }
+    },
+    {
+      "code": "grace.explicit_sound_window",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+      "object_id": "z-grace",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 79,
+        "end_line": 14,
+        "line": 14
+      }
+    }
+  ],
+  "duration_seconds": 1.625,
+  "event_positions": [
+    {
+      "end_seconds": 0.25,
+      "id": "lead",
+      "occurrence_id": "occ0:lead",
+      "start_seconds": 0.0
+    },
+    {
+      "end_seconds": 0.25,
+      "id": "a-grace",
+      "occurrence_id": "occ0:a-grace",
+      "start_seconds": 0.25
+    },
+    {
+      "end_seconds": 1.625,
+      "id": "principal",
+      "occurrence_id": "occ0:principal",
+      "start_seconds": 0.25
+    },
+    {
+      "end_seconds": 0.25,
+      "id": "z-grace",
+      "occurrence_id": "occ0:z-grace",
+      "start_seconds": 0.25
+    }
+  ],
+  "measures": [
+    {
+      "end_seconds": 1.625,
+      "id": "m",
+      "label": "1",
+      "occurrence_index": 0,
+      "part": "p",
+      "start_seconds": 0.0
+    }
+  ],
+  "notes": [
+    {
+      "duration_seconds": 0.0625,
+      "frequency_hz": 587.3295358348151,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0625
+        }
+      ],
+      "id": "occ0:z-grace",
+      "instrument": "piano",
+      "midi_note": 74.0,
+      "part": "p",
+      "start_seconds": 0.25,
+      "velocity": 45,
+      "voice": "v1_1",
+      "written_id": "z-grace"
+    },
+    {
+      "duration_seconds": 0.1875,
+      "frequency_hz": 659.2551138257398,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0625
+        },
+        {
+          "gain": 2.0,
+          "offset_seconds": 0.0625
+        },
+        {
+          "gain": 2.0,
+          "offset_seconds": 0.1875
+        }
+      ],
+      "id": "occ0:a-grace",
+      "instrument": "piano",
+      "midi_note": 76.0,
+      "part": "p",
+      "start_seconds": 0.3125,
+      "velocity": 45,
+      "voice": "v1_1",
+      "written_id": "a-grace"
+    },
+    {
+      "duration_seconds": 1.035,
+      "frequency_hz": 391.99543598174927,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 1.035
+        }
+      ],
+      "id": "occ0:principal",
+      "instrument": "piano",
+      "midi_note": 67.0,
+      "part": "p",
+      "start_seconds": 0.5,
+      "velocity": 90,
+      "voice": "v1_1",
+      "written_id": "principal"
+    }
+  ],
+  "routes": [
+    {
+      "instrument": "piano",
+      "part": "p"
+    }
+  ],
+  "warnings": [
+    "grace.explicit_following_quarters [principal]: Every grace duration derives from the caller's exact quarter allocation; no slash, written-value or equal-division duration was inferred.",
+    "grace.explicit_sound_window [a-grace]: Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+    "grace.explicit_sound_window [principal]: Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+    "grace.explicit_sound_window [z-grace]: Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times."
+  ]
+}

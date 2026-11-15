@@ -76,15 +76,17 @@ pub fn perform_document(
     if !errors.is_empty() {
         return Err(errors);
     }
-    perform(doc, limits, lower::LoweringProfile::Navigation, None).map_err(|e| vec![e])
+    perform(doc, limits, lower::LoweringProfile::Navigation, None, None).map_err(|e| vec![e])
 }
 pub(super) fn perform(
     doc: &Document,
     limits: PerformanceLimits,
     profile: lower::LoweringProfile,
     maximum_timing_bits: Option<u64>,
+    grace_budgets: Option<(usize, usize)>,
 ) -> Result<PerformedScore> {
     let fermatas = profile == lower::LoweringProfile::ExplicitFermatas;
+    let graces = profile == lower::LoweringProfile::ExplicitGraces;
     if !fermatas
         && doc
             .required_extensions
@@ -103,12 +105,22 @@ pub(super) fn perform(
                 .required_extensions
                 .iter()
                 .all(|e| e == crate::fermata_extension::EXTENSION || e == ext::EXTENSION)
+    } else if graces {
+        doc.required_extensions
+            .iter()
+            .any(|e| e == crate::grace_extension::EXTENSION)
+            && doc
+                .required_extensions
+                .iter()
+                .all(|e| e == crate::grace_extension::EXTENSION || e == ext::EXTENSION)
     } else {
         doc.required_extensions.as_slice() == [ext::EXTENSION]
     };
     if !supported {
         return Err(if fermatas {
             error("fermata.performance_capability", "Qualified fermata projection requires fermata@1 and optionally navigation@1; other required semantics cannot be ignored")
+        } else if graces {
+            error("grace.performance_capability", "Qualified grace projection requires grace@1 and optionally navigation@1; other required semantics cannot be ignored")
         } else {
             error("navigation.performance_capability", "Performed navigation requires exactly the supported navigation capability; other required semantics cannot be ignored")
         });
@@ -174,10 +186,11 @@ pub(super) fn perform(
         )
     })?;
     let written = lower::lower(doc, profile)?;
-    if written
-        .events
-        .iter()
-        .any(|e| e.grace.is_some() || e.role == EventRole::Grace)
+    if !graces
+        && written
+            .events
+            .iter()
+            .any(|e| e.grace.is_some() || e.role == EventRole::Grace)
     {
         return Err(error(
             "navigation.grace_unsupported",
@@ -227,6 +240,20 @@ pub(super) fn perform(
         events[i].push(e);
         event_measure.insert(e.id.clone(), i);
     }
+    let grace_counts: Vec<_> = if grace_budgets.is_some() {
+        events
+            .iter()
+            .map(|events| {
+                let graces: Vec<_> = events.iter().filter_map(|e| e.grace.as_ref()).collect();
+                let principals: BTreeSet<_> = graces.iter().map(|g| &g.anchor).collect();
+                (graces.len(), principals.len())
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+    let mut projected_graces = 0usize;
+    let mut projected_grace_groups = 0usize;
     let mut frames = vec![vec![]; measures.len()];
     for f in &doc.frames {
         if f.time < doc.end {
@@ -312,6 +339,28 @@ pub(super) fn perform(
                 }
                 previous_measure = Some(*i);
                 let m = &measures[*i];
+                if let Some((maximum_members, maximum_groups)) = grace_budgets {
+                    projected_graces = projected_graces
+                        .checked_add(grace_counts[*i].0)
+                        .ok_or_else(|| {
+                            error("grace.timing_budget", "Projected grace count overflow")
+                        })?;
+                    projected_grace_groups = projected_grace_groups
+                        .checked_add(grace_counts[*i].1)
+                        .ok_or_else(|| {
+                            error(
+                                "grace.timing_budget",
+                                "Projected grace group count overflow",
+                            )
+                        })?;
+                    if projected_graces > maximum_members || projected_grace_groups > maximum_groups
+                    {
+                        return Err(error(
+                            "grace.timing_budget",
+                            "Grace occurrence/group budget exceeded before occurrence allocation",
+                        ));
+                    }
+                }
                 // Reject rational growth on the qualified route before allocating
                 // this occurrence. Discovery shares this guard without a clock.
                 check_timing_bits(&at, maximum_timing_bits)?;
@@ -420,6 +469,9 @@ pub(super) fn perform(
                             .settings
                             .resolve_event(&mut e, explicit_staff[&original.id.0]);
                         e.id = occurrence_id(*occurrence_index, &original.id);
+                        if let Some(grace) = &mut e.grace {
+                            grace.anchor = occurrence_id(*occurrence_index, &grace.anchor);
+                        }
                         e.start = shift(&original.start)?;
                         check_timing_bits(&e.end(), maximum_timing_bits)?;
                         result.events.push(EventOccurrence {

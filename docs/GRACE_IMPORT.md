@@ -2,8 +2,10 @@
 
 The bounded MusicXML profile now preserves ordinary pitched before-principal
 grace groups through MusicXML → `ScoreDocument` → SFS 1.1 → common model →
-MusicXML. This is notation and explicit timing-intent preservation, **not grace
-playback or whole-original-score import**. No fixed grace duration is invented.
+MusicXML. This bridge preserves notation and explicit timing intent; the separate
+[qualified playback API](GRACE_PLAYBACK.md) can realize its bounded following-note
+profile only with a complete explicit policy. Whole-original-score import remains
+unsupported. No fixed grace duration is invented.
 
 ## Separate identity, placement, writing and timing
 
@@ -62,10 +64,11 @@ fields, unmarked graces, orphan marks and duplicate requirements reject. The
 capability cannot be introduced by a fragment.
 
 Both conversion directions report non-error `preserved / grace.authored_only`.
-Core validation reports `grace.realization_unavailable`; it does not invent time.
-Sounding lowering independently rejects `grace.performance_unsupported` whenever
-this required capability is present. A fermata or navigation policy does not
-authorize grace timing. Desktop preview explicitly withholds unsupported grace
+Core validation reports `grace.realization_unavailable` to require a separate
+explicit policy; it does not invent time. Ordinary sounding lowering rejects
+`grace.performance_unsupported` whenever this required capability is present. The
+[new source-qualified API](GRACE_PLAYBACK.md) is a separate bounded interpretation.
+A fermata or navigation policy does not authorize grace timing. Desktop preview explicitly withholds unsupported grace
 layout. No grace is silently omitted, converted to a normal attack or counted as
 successfully rendered audio in this route.
 

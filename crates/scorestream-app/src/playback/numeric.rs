@@ -104,11 +104,11 @@ impl NumericDynamics {
     pub fn envelope(
         &self,
         segments: &[&ResolvedEvent],
+        start: &Rational,
         release: &Rational,
         initial: u8,
         tempo: &PlaybackClock<'_>,
     ) -> Result<Vec<EnvelopePoint>, String> {
-        let start = &segments[0].start;
         let start_seconds = tempo.seconds(start)?;
         let duration = tempo.seconds(release)? - start_seconds;
         let active = |at: &Rational| {
