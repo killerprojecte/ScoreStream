@@ -99,3 +99,5 @@ The supported replacement policies are `duration_policy="preserve"` and `boundar
 The complete machine reference is `scorestream://spec/1.1/language`; grammar is `/grammar`; parsed AST schema is `/ast-schema`; this reference is `/agent-reference`. JSON Schema checks the AST structure. The parser and semantic validator additionally check text syntax, time, identity, references, scope, and music/edit constraints.
 
 Complete package examples cover an ensemble, tuplets and ties, a replacement fragment, and grace/percussion/cross-staff events. Retain the exact format version and capabilities in every read/generate/edit workflow.
+
+Part display labels: `!part f1 instrument=flute staves=1 display_name="Flute 1"` keeps the authored name separate from the instrument key. `display_name` is optional JSON-quoted plain text. Missing uses the instrument-label fallback; empty stays empty. It never changes sound routing.

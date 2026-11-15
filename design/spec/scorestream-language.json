@@ -107,8 +107,8 @@
     },
     {
       "prefix": "!part",
-      "syntax": "!part p instrument=piano staves=2",
-      "purpose": "Declare a part and its staff count."
+      "syntax": "!part p instrument=piano staves=2 display_name=\"Piano solo\"",
+      "purpose": "Declare instrument/staves; optional quoted display_name is plain text, not routing. Missing falls back to instrument; empty stays empty."
     },
     {
       "prefix": "!voice",

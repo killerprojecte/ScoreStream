@@ -3,6 +3,8 @@ import {Q,rhythm} from './exact';
 import {projectMarks} from './marks';
 import {readMetadata} from '../app/metadata';
 const esc=(s:unknown)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
+// Preserve authored label whitespace through XML text normalization.
+const labelEsc=(s:string)=>esc(s).replace(/[\t\n\r]/g,c=>`&#${c.charCodeAt(0)};`);
 export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.1';
 export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[]}{
  if(!view.valid)throw Error('Only Rust-validated snapshots may be projected.');
@@ -41,7 +43,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
    return `<staffDef n="${i+1}" lines="5" clef.shape="${clef[1]}" clef.line="${clef[2]}" meter.count="${meter[1]}" meter.unit="${meter[2]}" key.sig="${Math.abs(key)}${key<0?'f':key>0?'s':''}"/>`;
  });
  let staffOffset=0;
- const groupedStaffDefs=view.parts.map(p=>{const defs=staffDefXml.slice(staffOffset,staffOffset+p.staves).join('');staffOffset+=p.staves;return `<staffGrp label="${esc(p.instrument)}"${p.staves>1?' symbol="brace" bar.thru="true"':''}>${defs}</staffGrp>`;}).join('');
+ const groupedStaffDefs=view.parts.map(p=>{const defs=staffDefXml.slice(staffOffset,staffOffset+p.staves).join('');staffOffset+=p.staves;return `<staffGrp${p.staves>1?' symbol="brace" bar.thru="true"':''}><label>${labelEsc(p.display_name??p.instrument)}</label>${defs}</staffGrp>`;}).join('');
  const measureXml=measures.map((m,mi)=>{
    const start=new Q(m.time),end=start.add(new Q(m.length));
    return `<measure n="${esc(m.label??mi+1)}">${staffDefs.map((s,si)=>{

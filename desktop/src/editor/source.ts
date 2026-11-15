@@ -3,7 +3,7 @@ import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import type { Diagnostic } from '../types';
 (self as unknown as {MonacoEnvironment:unknown}).MonacoEnvironment={getWorker:()=>new EditorWorker()};
 monaco.languages.register({id:'scorestream'});
-monaco.languages.setMonarchTokensProvider('scorestream',{tokenizer:{root:[[/^\s*;.*$/,'comment'],[/![\w-]+/,'keyword'],[/@[\d/]+/,'number'],[/#[\w.-]+/,'type'],[/\b[A-G](?:[#b]+|\([^)]*\))?-?\d+/,'string'],[/\b(?:id|part|staff|instrument|staves|len|chord|unit|meter|clef|key|tempo|w|dots)=/,'attribute.name'],[/"(?:[^"\\]|\\.)*"/,'string'],[/\b\d+(?:\/\d+)?\b/,'number'],[/^[.=|+~]/,'keyword']]}});
+monaco.languages.setMonarchTokensProvider('scorestream',{tokenizer:{root:[[/^\s*;.*$/,'comment'],[/![\w-]+/,'keyword'],[/@[\d/]+/,'number'],[/#[\w.-]+/,'type'],[/\b[A-G](?:[#b]+|\([^)]*\))?-?\d+/,'string'],[/\b(?:id|part|staff|instrument|staves|display_name|len|chord|unit|meter|clef|key|tempo|w|dots)=/,'attribute.name'],[/"(?:[^"\\]|\\.)*"/,'string'],[/\b\d+(?:\/\d+)?\b/,'number'],[/^[.=|+~]/,'keyword']]}});
 // Opaque reading surfaces keep syntax stable across blur, layered and solid modes.
 export const editorPalettes = {
  light: {background:'#FAFAFC',foreground:'#36363A',comment:'#596579',keyword:'#70408D',string:'#246653',number:'#3E5F91',attribute:'#505F75',line:'#617086'},

@@ -168,7 +168,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     for p in &doc.parts {
         score.parts.push(ScorePart {
             id: PartId(p.id.clone()),
-            name: None,
+            name: p.display_name.clone(),
             instrument: Some(InstrumentId(p.instrument.clone())),
             staves: p.staves,
             voices: doc
@@ -523,9 +523,6 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         let instrument = match &p.instrument {
             Some(i) => i.0.clone(),
             None => {
-                if p.name.as_deref().is_some_and(|n| !n.is_empty()) {
-                    unsupported(&mut report, "part_display_name", &p.id.0);
-                }
                 report.push(
                     Format::Sfs,
                     MappingEffect::Normalized,
@@ -536,16 +533,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 "unknown".into()
             }
         };
-        if p.name
-            .as_ref()
-            .is_some_and(|name| name != &instrument && (p.instrument.is_some() || !name.is_empty()))
-        {
-            unsupported(&mut report, "part_display_name", &p.id.0);
-        }
         doc.parts.push(Part {
             id: pid.clone(),
             instrument,
             staves: p.staves,
+            display_name: p.name.clone(),
             source: SourceRange::default(),
         });
         for v in &p.voices {
@@ -753,16 +745,13 @@ mod tests {
         }
     }
     #[test]
-    fn reject_part_display_name_and_normalize_foreign_ids() {
+    fn preserve_part_display_name_and_normalize_foreign_ids() {
         let mut score = SfsAdapter.read(SOURCE).unwrap().value;
         score.parts[0].name = Some("A beautiful piano".into());
-        assert!(
-            SfsAdapter
-                .write(&score)
-                .unwrap_err()
-                .diagnostics
-                .iter()
-                .any(|d| d.feature == "part_display_name")
+        let named = SfsAdapter.write(&score).unwrap();
+        assert_eq!(
+            SfsAdapter.read(&named.value).unwrap().value.parts[0].name,
+            score.parts[0].name
         );
         score.parts[0].name = None;
         score.parts[0].measures[0].id = "1".into();
@@ -777,7 +766,7 @@ mod tests {
         assert!(SfsAdapter.read(&result.value).is_ok());
     }
     #[test]
-    fn unknown_instrument_requires_no_display_name() {
+    fn unknown_instrument_preserves_independent_display_name() {
         let mut score = SfsAdapter.read(SOURCE).unwrap().value;
         score.parts[0].instrument = None;
         let result = SfsAdapter.write(&score).unwrap();
@@ -790,7 +779,14 @@ mod tests {
                 .any(|d| d.feature == "instrument")
         );
         score.parts[0].name = Some("Solo".into());
-        assert!(SfsAdapter.write(&score).is_err());
+        let named = SfsAdapter.write(&score).unwrap();
+        assert!(named.value.contains("instrument=unknown"));
+        assert_eq!(
+            SfsAdapter.read(&named.value).unwrap().value.parts[0]
+                .name
+                .as_deref(),
+            Some("Solo")
+        );
     }
     #[test]
     fn preserves_measure_boundary_changes_and_additive_meter() {

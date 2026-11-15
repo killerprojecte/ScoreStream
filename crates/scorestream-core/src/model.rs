@@ -172,8 +172,22 @@ pub struct Part {
     pub id: String,
     pub instrument: String,
     pub staves: u32,
+    /// Plain authored label, independent of instrument routing. None uses the
+    /// instrument as a display fallback; Some("") is an explicitly empty label.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "part_display_name"
+    )]
+    pub display_name: Option<String>,
     #[serde(skip)]
     pub source: SourceRange,
+}
+fn part_display_name<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    // Absence is optional, but an explicitly supplied JSON null is not text.
+    String::deserialize(deserializer).map(Some)
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

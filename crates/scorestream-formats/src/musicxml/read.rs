@@ -852,7 +852,23 @@ fn note_type_parse(n: &Node, s: &str) -> Result<NoteType> {
 }
 
 fn reserve_ids(n: &Node, ids: &mut BTreeSet<String>) -> Result<()> {
-    if let Some(id) = n.attr("id").filter(|_| n.name != "part") {
+    reserve_ids_at(n, None, ids)
+}
+fn reserve_ids_at(n: &Node, parent: Option<&str>, ids: &mut BTreeSet<String>) -> Result<()> {
+    // These positively identified MusicXML attributes are IDREFs, not defining
+    // IDs. Their payloads remain rejected by the closed mapping profile; this
+    // does not admit MIDI metadata or silently discard instrument references.
+    let instrument_reference = matches!(
+        (parent, n.name.as_str()),
+        (
+            Some("score-part" | "sound"),
+            "midi-device" | "midi-instrument"
+        ) | (Some("note"), "instrument")
+    );
+    if let Some(id) = n
+        .attr("id")
+        .filter(|_| n.name != "part" && !instrument_reference)
+    {
         if !super::write::xml_id(id) {
             return Err(unsupported(
                 n,
@@ -865,7 +881,7 @@ fn reserve_ids(n: &Node, ids: &mut BTreeSet<String>) -> Result<()> {
         }
     }
     for child in &n.children {
-        reserve_ids(child, ids)?;
+        reserve_ids_at(child, Some(&n.name), ids)?;
     }
     Ok(())
 }

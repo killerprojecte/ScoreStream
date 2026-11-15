@@ -9,6 +9,25 @@ const note = {id: 'n1', voice: 'v', pitch: 'E4', time: '0', duration: '1', staff
 const view = {valid: true, source: '', diagnostics: [], events: [note], parts: [], voices: [], states: [], measures: [], document: {frames: []}, revision_id: 'r1', dirty: false, draft_seq: 0, can_undo: false, can_redo: false} satisfies View;
 
 describe('Inspector registry composition', () => {
+  it('renders authored labels as text and respects empty versus absent', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const host = document.createElement('div'); document.body.append(host);
+    const root = createRoot(host);
+    try {
+      const labeled: View = {...view, parts: [
+        {id: 'f1', instrument: 'flute', staves: 1, display_name: 'Flute 1 <script>literal</script>'},
+        {id: 'f2', instrument: 'flute', staves: 1, display_name: ''},
+        {id: 'f3', instrument: 'flute', staves: 1},
+      ]};
+      await act(async () => root.render(<Inspector view={labeled} selected={null} fileName="score.sfs" canEdit dirty={false} onCommit={async () => {}} onReveal={() => {}} />));
+      const labels = [...host.querySelectorAll('.property-entry dt')].map(node => node.textContent);
+      expect(labels).toContain('Flute 1 <script>literal</script>');
+      expect(labels).toContain(''); expect(labels).toContain('flute');
+      expect(host.querySelector('script')).toBeNull();
+    } finally {
+      await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals();
+    }
+  });
   it('uses official input groups, addon buttons, tooltip triggers and collapsible Button without native titles', async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     const host = document.createElement('div'); document.body.append(host);

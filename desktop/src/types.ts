@@ -1,6 +1,6 @@
 export interface Diagnostic { line:number; column:number; code:string; message:string; severity:string }
 export interface ScoreEvent { id:string; voice:string; pitch:string; time:string; duration:string; staff:number; chord:string|null; written_duration:string|null; dots:number; source_line:number|null; attributes?:Record<string,unknown> }
-export interface Part { id:string; instrument:string; staves:number }
+export interface Part { id:string; instrument:string; staves:number; display_name?:string }
 export interface Voice { id:string; part:string; staff:number }
 export interface Measure { id:string; part:string; time:string; length:string; label:string|null }
 export interface State { time:string; scope:string; values:Record<string,unknown> }

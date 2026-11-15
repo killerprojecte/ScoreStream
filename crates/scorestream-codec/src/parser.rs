@@ -1,7 +1,7 @@
 // Keep the short-lived, fail-fast diagnostic inline. The public codec returns
 // a Vec<Diagnostic>; an extra heap allocation here would immediately be undone.
 #![allow(clippy::result_large_err)]
-use crate::lexer::{tokenize, Token};
+use crate::lexer::{Token, tokenize};
 use scorestream_core::*;
 use std::collections::{BTreeMap, BTreeSet};
 type ParseResult<T> = Result<T, Diagnostic>;
@@ -174,13 +174,25 @@ fn read(source: &str) -> ParseResult<Document> {
                 "!part" => {
                     let id = identifier(words.get(1).copied(), location)?;
                     let attrs = raw_attributes(&tokens[2..], location)?;
-                    exact_keys(&attrs, &["instrument", "staves"], location)?;
+                    allowed_keys(&attrs, &["instrument", "staves", "display_name"], location)?;
                     let instrument =
                         atom(required(&attrs, "instrument", location)?, location)?.to_owned();
                     doc.parts.push(Part {
                         id: id.into(),
                         instrument,
                         staves: positive_u32(required(&attrs, "staves", location)?, location)?,
+                        display_name: attrs
+                            .get("display_name")
+                            .map(|value| {
+                                serde_json::from_str::<String>(value).map_err(|_| {
+                                    Diagnostic::error(
+                                        "string_invalid",
+                                        "display_name requires a valid JSON-quoted string",
+                                        location,
+                                    )
+                                })
+                            })
+                            .transpose()?,
                         source: location,
                     });
                 }
@@ -215,7 +227,7 @@ fn read(source: &str) -> ParseResult<Document> {
                         "record_unknown",
                         format!("Unknown declaration {head}"),
                         location,
-                    ))
+                    ));
                 }
             }
             continue;
@@ -449,7 +461,7 @@ fn convert_attributes(
                                 "field_value",
                                 format!("{key} must be true or false"),
                                 source,
-                            ))
+                            ));
                         }
                     }),
                     "positive_integer" | "integer" | "nonnegative_integer" | "nonzero_integer" => {
@@ -557,6 +569,13 @@ fn exact_keys(
     for key in allowed {
         required(attrs, key, source)?;
     }
+    allowed_keys(attrs, allowed, source)
+}
+fn allowed_keys(
+    attrs: &BTreeMap<String, String>,
+    allowed: &[&str],
+    source: SourceRange,
+) -> ParseResult<()> {
     if let Some(key) = attrs.keys().find(|k| !allowed.contains(&k.as_str())) {
         return Err(Diagnostic::error(
             "field_unknown",

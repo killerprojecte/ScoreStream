@@ -47,6 +47,15 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 part.source,
             ));
         }
+        if part.display_name.as_ref().is_some_and(|name| name.chars().any(|c| {
+            !matches!(c, '\t' | '\n' | '\r' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')
+        })) {
+            out.push(Diagnostic::error(
+                "part_display_name",
+                "Part display name must be plain text without XML-forbidden characters",
+                part.source,
+            ));
+        }
         if part.instrument.is_empty()
             || part
                 .instrument

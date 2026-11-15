@@ -368,14 +368,14 @@ pub(super) fn walk<R: BufRead>(
                     ));
                 }
                 let value = e
-                    .xml_content()
+                    .xml10_content()
                     .map_err(|e| fail("xml.encoding", e.to_string(), MappingEffect::Invalid))?;
                 fragment_bytes += append_text(&mut stack, &value, false)?;
                 None
             }
             Event::CData(e) => {
                 let value = e
-                    .xml_content()
+                    .xml10_content()
                     .map_err(|e| fail("xml.encoding", e.to_string(), MappingEffect::Invalid))?;
                 fragment_bytes += append_text(&mut stack, &value, true)?;
                 None

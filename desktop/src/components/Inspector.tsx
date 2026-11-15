@@ -188,7 +188,7 @@ function DocumentInspector({view}: Pick<InspectorProps, 'view'>) {
     {view && <section className="inspector-group document-facts">
       <h3>{t('Score')}</h3>
       <dl className="property-list" id="parts">
-        {view.parts.map(part => <div className="property-entry" key={part.id}><dt>{part.instrument}</dt><dd>{t(part.staves === 1 ? '{count} staff' : '{count} staves', {count: part.staves})}</dd></div>)}
+        {view.parts.map(part => <div className="property-entry" key={part.id}><dt>{part.display_name ?? part.instrument}</dt><dd>{t(part.staves === 1 ? '{count} staff' : '{count} staves', {count: part.staves})}</dd></div>)}
         <div className="property-entry"><dt>{t('Measures')}</dt><dd id="document-measures">{new Set(view.measures.map(measure => measure.time)).size}</dd></div>
         <div className="property-entry"><dt>{t('Events')}</dt><dd id="document-events">{view.events.length}</dd></div>
         {tempo && <>

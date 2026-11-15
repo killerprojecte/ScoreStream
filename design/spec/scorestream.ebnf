@@ -14,7 +14,7 @@ fragment_header = "!fragment", ws, "1.1", ws, "unit=q", ws,
                   "span=", positive_rational, nl ;
 declaration = part_decl | voice_decl | metadata_decl | requirement_decl ;
 part_decl = "!part", ws, identifier, ws, "instrument=", atom,
-            ws, "staves=", positive_integer, nl ;
+            ws, "staves=", positive_integer, [ ws, "display_name=", quoted_string ], nl ;
 voice_decl = "!voice", ws, identifier, ws, "part=", identifier,
              ws, "staff=", positive_integer, nl ;
 metadata_decl = "!meta", ws, metadata_field, { ws, metadata_field }, nl ;

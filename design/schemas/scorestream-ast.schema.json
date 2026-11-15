@@ -200,6 +200,10 @@
         "staves": {
           "type": "integer",
           "minimum": 1
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Optional plain authored part label, independent of instrument identity. Absence uses the instrument as a renderer fallback; an empty string is an explicitly empty label. Text must contain only XML 1.0 characters."
         }
       },
       "required": [

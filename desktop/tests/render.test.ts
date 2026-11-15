@@ -1,4 +1,6 @@
 import {describe,it,expect} from 'vitest';
+import createVerovioModule from 'verovio/wasm';
+import {VerovioToolkit} from 'verovio/esm';
 import {Q,rhythm} from '../src/render/exact';
 import {project} from '../src/render/project';
 import {LatestOnly} from '../src/render/scheduler';
@@ -7,6 +9,37 @@ const fixture=():View=>({valid:true,diagnostics:[],source:'backend-only',documen
 describe('bounded typed MEI projection',()=>{
  it('uses exact rhythm without floating point',()=>{expect(new Q('90071992547409930000000001/3').sub(new Q('90071992547409930000000000/3')).eq(new Q('1/3'))).toBe(true);expect(rhythm(new Q('3/2'))).toEqual({dur:4,dots:1});expect(()=>rhythm(new Q('1/3'))).toThrow();});
  it('escapes labels and keeps stable event identity',()=>{const result=project(fixture());expect(result.mei).toContain('Piano &amp; strings');expect(result.mei).toContain('accid="s"');expect(result.map).toEqual({'ss-e0':'n1','ss-e1':'n2'});});
+ it('uses independent escaped part labels without changing routing or events',()=>{
+  const v=fixture();v.parts[0].instrument='flute';v.parts[0].display_name='Flute 1 <solo> & "lead"\nnext\tline';
+  const result=project(v);
+  expect(result.mei).toContain('<label>Flute 1 &lt;solo&gt; &amp; &quot;lead&quot;&#10;next&#9;line</label>');
+  expect(result.mei).not.toContain('<solo>');expect(v.parts[0].instrument).toBe('flute');expect(result.map).toEqual({'ss-e0':'n1','ss-e1':'n2'});
+ });
+ it('distinguishes explicit empty part labels from missing labels',()=>{
+  const v=fixture();v.parts[0].display_name='';expect(project(v).mei).toContain('<staffGrp><label></label>');
+  delete v.parts[0].display_name;expect(project(v).mei).toContain('<staffGrp><label>Piano &amp; strings</label>');
+ });
+ it('keeps two labels for parts sharing one instrument',()=>{
+  const v=fixture();v.parts[0]={id:'p',instrument:'flute',staves:1,display_name:'Flute 1'};
+  v.parts.push({id:'p2',instrument:'flute',staves:1,display_name:'Flute 2'});
+  v.voices.push({id:'v2',part:'p2',staff:1});v.measures.push({...v.measures[0],part:'p2',id:'m2'});
+  v.states.push({...v.states[0],scope:'p2.s1'});
+  v.events.push({...v.events[0],id:'n3',voice:'v2'},{...v.events[1],id:'n4',voice:'v2'});
+  const result=project(v);expect(result.mei).toContain('<label>Flute 1</label>');expect(result.mei).toContain('<label>Flute 2</label>');expect(Object.keys(result.map)).toHaveLength(4);
+ });
+ it('engraves independent labels with the real pinned Verovio renderer',async()=>{
+  const toolkit=new VerovioToolkit(await createVerovioModule());
+  toolkit.setOptions({pageWidth:2100,pageHeight:2600,scale:40,adjustPageHeight:true,breaks:'auto',header:'none',footer:'none',font:'Bravura',spacingSystem:14,pageMarginTop:40,pageMarginBottom:40,pageMarginLeft:30,pageMarginRight:30,svgViewBox:true});
+  const v=fixture();v.parts[0]={id:'p',instrument:'flute',staves:1,display_name:'Flute 1 <script>literal</script> & lead'};
+  v.parts.push({id:'p2',instrument:'flute',staves:1,display_name:'Flute 2'});
+  v.voices.push({id:'v2',part:'p2',staff:1});v.measures.push({...v.measures[0],part:'p2',id:'m2'});v.states.push({...v.states[0],scope:'p2.s1'});
+  v.events.push({...v.events[0],id:'n3',voice:'v2'},{...v.events[1],id:'n4',voice:'v2'});
+  expect(toolkit.loadData(project(v).mei)).toBeTruthy();let svg=toolkit.renderToSVG(1).replaceAll('\u00a0',' ');
+  expect(svg).toContain('Flute 1 &lt;script&gt;literal&lt;/script&gt; &amp; lead');expect(svg).toContain('Flute 2');expect(svg).not.toContain('<script>');
+  v.parts[0].display_name='';delete v.parts[1].display_name;
+  expect(toolkit.loadData(project(v).mei)).toBeTruthy();svg=toolkit.renderToSVG(1).replaceAll('\u00a0',' ');
+  expect(svg).not.toContain('Flute 1');expect(svg).not.toContain('Flute 2');expect(svg.match(/>flute<\/tspan>/g)).toHaveLength(1);
+ },10000);
  it('refuses invalid snapshots and unsupported pitches',()=>{const v=fixture();v.valid=false;expect(()=>project(v)).toThrow('Rust-validated');v.valid=true;v.events[0].pitch='C(+1/3)4';expect(()=>project(v)).toThrow('not supported');});
  it('refuses missing measures instead of dropping events',()=>{const v=fixture();v.events[0].time='4';expect(()=>project(v)).toThrow('outside');});
  it('refuses unequal chord rhythms',()=>{const v=fixture();v.events[0].chord='c';v.events[1]={...v.events[1],pitch:'E4',time:'0',duration:'2',chord:'c'};expect(()=>project(v)).toThrow('Unequal-duration');});

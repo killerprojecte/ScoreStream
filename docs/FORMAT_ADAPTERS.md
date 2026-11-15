@@ -41,7 +41,7 @@ cargo run --locked -p scorestream-cli -- convert musicxml sfs crates/scorestream
 
 仅保留语义，不承诺逐字保留 XML 排版、注释、属性排列或原 divisions 数字。导出使用所需分母的最小公倍数，限制为 1,000,000,000；不能精确表示就拒绝，不四舍五入。微分音支持有限十进制，导出最多 32 位小数。MusicXML octave 限于 0–9，超出时报告。所支持 XML ID 为 ASCII 字母/下划线开头，后续字母数字/下划线/点/横线；其他合法但尚未映射的 Unicode ID 也会明确拒绝。
 
-MusicXML 的声轨编号是声部局部的，不等于 SFS 全局身份。MusicXML 没有独立的声轨默认谱表声明；若首音与 SFS 声轨默认谱表不同而无法保留这一作者默认值，导出也会拒绝。导入会分配确定的公共声轨 ID 并报告 `normalized`；SFS 需要的其它不合法 ID 也会报告重命名。MusicXML 未指定的事件/小节 ID 会生成不与原 ID 冲突的内部身份。MusicXML 只编码有序和弦成员而不编码和弦组 ID，所以导出会报告和弦组身份在再次导入时重新生成。单乐器 XML 的引用 ID 也会报告规范化，保留的是 instrument-name；有额外乐器引用的音符仍拒绝。MusicXML 的 part-name **不是**音色身份：模型分别保存名称和 instrument-name。SFS 不能保留独立显示名称时，转换失败；不把“钢琴独奏声部”冒充 instrument。XML 未提供乐器且名称为空时，SFS 才可以用报告中的 `unknown` 占位。
+MusicXML 的声轨编号是声部局部的，不等于 SFS 全局身份。MusicXML 没有独立的声轨默认谱表声明；若首音与 SFS 声轨默认谱表不同而无法保留这一作者默认值，导出也会拒绝。导入会分配确定的公共声轨 ID 并报告 `normalized`；SFS 需要的其它不合法 ID 也会报告重命名。MusicXML 未指定的事件/小节 ID 会生成不与原 ID 冲突的内部身份。MusicXML 只编码有序和弦成员而不编码和弦组 ID，所以导出会报告和弦组身份在再次导入时重新生成。单乐器 XML 的引用 ID 也会报告规范化，保留的是 instrument-name；有额外乐器引用的音符仍拒绝。MusicXML 的 part-name **不是**音色身份：模型分别保存名称和 instrument-name。SFS 的可选 `!part display_name="..."` 保存独立纯文本显示名称，不把“钢琴独奏声部”冒充 instrument。缺少名称与显式空名称分别保留；只有显示层在缺少时回退到 instrument。XML 未提供乐器时，SFS 使用报告中的 `unknown` 占位，同时保留名称。富文本 part-name-display、缩写、MIDI 设备/音色元数据仍未映射并明确拒绝。已知位置的 midi-device/midi-instrument/@id 和 note/instrument/@id 是 IDREF，不误报为重复定义；这不表示其内容已被接受。
 
 ## 明确的拒绝，不静默删掉
 

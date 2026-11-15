@@ -9,6 +9,22 @@ fn close(a: f64, b: f64) {
     assert!((a - b).abs() < 1e-9, "{a} != {b}");
 }
 #[test]
+fn part_display_name_does_not_change_playback_routing() {
+    let source = score("v C4:1 id=a\n.", "1");
+    let plain = plan_source(&source).unwrap();
+    for label in ["Flute 1", "", "<label> & strings"] {
+        let named = source.replace("instrument=piano staves=1", &format!(
+            "instrument=piano staves=1 display_name={}",
+            serde_json::to_string(label).unwrap(),
+        ));
+        let plan = plan_source(&named).unwrap();
+        assert_eq!(plan.notes[0].instrument, "piano");
+        assert_eq!(plan.notes[0].midi_note, plain.notes[0].midi_note);
+        assert_eq!(plan.notes[0].duration_seconds, plain.notes[0].duration_seconds);
+        assert_eq!(plan.duration_seconds, plain.duration_seconds);
+    }
+}
+#[test]
 fn tempo_units_and_changes_integrate_exactly() {
     let p=plan_source(&score("= score tempo=q.:60\nv C4:3 id=a\n+ #a articulation value=tenuto\n.\n@3\n= score tempo=e:120\nv D4:1 id=b\n+ #b articulation value=tenuto\n.","4")).unwrap();
     close(p.notes[0].duration_seconds, 2.);

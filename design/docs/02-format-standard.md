@@ -71,7 +71,7 @@ Timing values such as `2/4`, `0/3`, and `-0` are not canonical. Canonical forms 
 | Record | Meaning |
 |---|---|
 | `!score 1.1 unit=q` | Start a complete score |
-| `!part p instrument=piano staves=2` | Declare part alias, instrument key, and staff count |
+| `!part p instrument=piano staves=2 display_name="Piano solo"` | Declare part alias, instrument key, and staff count; optional JSON-quoted plain display label is independent of sound routing |
 | `!voice pr part=p staff=1` | Declare stable voice alias and its initial display staff |
 | `!meta title="Example" composer="Example Author"` | Intrinsic score metadata |
 | `!requires vendor.feature@1` | Require a versioned semantic extension |
@@ -324,3 +324,7 @@ Resources include:
 - `scorestream://spec/1.1/ast-schema`
 
 The primary format artifacts are `spec/scorestream.ebnf`, `spec/scorestream-language.json`, `schemas/scorestream-ast.schema.json`, this chapter, and the complete fixtures. If an artifact conflicts with another, the package must be corrected before a format release. The runtime must not silently invent a precedence rule to hide a contract inconsistency.
+
+### Independent part labels
+
+`!part` accepts optional `display_name="Flute 1"`. It does not change `instrument`, pitch, or playback. Absence uses the instrument as a presentation fallback; `display_name=""` preserves an explicitly empty label. Text is preserved, including Unicode, whitespace and escaped quotes, and must contain only XML 1.0 characters. Renderers and exporters escape the label as text, never execute it as markup. JSON AST parts omit an absent field; explicit null and non-string values are invalid.

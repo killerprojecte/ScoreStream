@@ -16,12 +16,28 @@ pub fn canonical(document: &Document) -> String {
         }
     }
     for part in &document.parts {
-        writeln!(
+        write!(
             output,
             "!part {} instrument={} staves={}",
             part.id, part.instrument, part.staves
         )
         .unwrap();
+        if let Some(name) = &part.display_name {
+            // JSON permits raw DEL/C1 characters, but SFS physical records do
+            // not. Escape these XML-legal label characters without changing
+            // their decoded text or weakening the lexer boundary.
+            let encoded = serde_json::to_string(name).expect("Unicode text");
+            let encoded = encoded.chars().fold(String::new(), |mut text, c| {
+                if matches!(c, '\u{7f}'..='\u{9f}') {
+                    write!(text, "\\u{:04x}", c as u32).unwrap();
+                } else {
+                    text.push(c);
+                }
+                text
+            });
+            write!(output, " display_name={}", encoded).unwrap();
+        }
+        output.push('\n');
     }
     for voice in &document.voices {
         writeln!(
