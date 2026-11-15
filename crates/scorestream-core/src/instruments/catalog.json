@@ -1,0 +1,432 @@
+[
+  {
+    "id": "violin",
+    "name": "Violin",
+    "family": "strings",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "viola",
+    "name": "Viola",
+    "family": "strings",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "cello",
+    "name": "Cello",
+    "family": "strings",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "violoncello"
+    ]
+  },
+  {
+    "id": "double_bass",
+    "name": "Double bass",
+    "family": "strings",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "contrabass",
+      "doublebass",
+      "double-bass"
+    ]
+  },
+  {
+    "id": "strings",
+    "name": "String ensemble",
+    "family": "strings",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "piccolo",
+    "name": "Piccolo",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "flute",
+    "name": "Flute",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "alto_flute",
+    "name": "Alto flute",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "alto-flute"
+    ]
+  },
+  {
+    "id": "bass_flute",
+    "name": "Bass flute",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "bass-flute"
+    ]
+  },
+  {
+    "id": "oboe",
+    "name": "Oboe",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "english_horn",
+    "name": "English horn",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "cor_anglais",
+      "cor-anglais",
+      "english-horn"
+    ]
+  },
+  {
+    "id": "clarinet",
+    "name": "Clarinet",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "eb_clarinet",
+    "name": "E-flat clarinet",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "e_flat_clarinet",
+      "e-flat-clarinet",
+      "eb-clarinet"
+    ]
+  },
+  {
+    "id": "bass_clarinet",
+    "name": "Bass clarinet",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "bass-clarinet"
+    ]
+  },
+  {
+    "id": "bassoon",
+    "name": "Bassoon",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "contrabassoon",
+    "name": "Contrabassoon",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "double_bassoon",
+      "double-bassoon"
+    ]
+  },
+  {
+    "id": "soprano_saxophone",
+    "name": "Soprano saxophone",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "soprano_sax",
+      "soprano-saxophone"
+    ]
+  },
+  {
+    "id": "alto_saxophone",
+    "name": "Alto saxophone",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "alto_sax",
+      "alto-saxophone"
+    ]
+  },
+  {
+    "id": "tenor_saxophone",
+    "name": "Tenor saxophone",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "tenor_sax",
+      "tenor-saxophone"
+    ]
+  },
+  {
+    "id": "baritone_saxophone",
+    "name": "Baritone saxophone",
+    "family": "woodwinds",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "baritone_sax",
+      "baritone-saxophone"
+    ]
+  },
+  {
+    "id": "horn",
+    "name": "Horn",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "french_horn",
+      "french-horn"
+    ]
+  },
+  {
+    "id": "trumpet",
+    "name": "Trumpet",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "cornet",
+    "name": "Cornet",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "alto_trombone",
+    "name": "Alto trombone",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "alto-trombone"
+    ]
+  },
+  {
+    "id": "trombone",
+    "name": "Trombone",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "tenor_trombone",
+      "tenor-trombone"
+    ]
+  },
+  {
+    "id": "bass_trombone",
+    "name": "Bass trombone",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "bass-trombone"
+    ]
+  },
+  {
+    "id": "tuba",
+    "name": "Tuba",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "euphonium",
+    "name": "Euphonium",
+    "family": "brass",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "harp",
+    "name": "Harp",
+    "family": "plucked_strings",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "piano",
+    "name": "Piano",
+    "family": "keyboards",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "celesta",
+    "name": "Celesta",
+    "family": "keyboards",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "celeste"
+    ]
+  },
+  {
+    "id": "harpsichord",
+    "name": "Harpsichord",
+    "family": "keyboards",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "organ",
+    "name": "Organ",
+    "family": "keyboards",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "pipe_organ",
+      "pipe-organ"
+    ]
+  },
+  {
+    "id": "timpani",
+    "name": "Timpani",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "kettledrums"
+    ]
+  },
+  {
+    "id": "glockenspiel",
+    "name": "Glockenspiel",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "xylophone",
+    "name": "Xylophone",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "marimba",
+    "name": "Marimba",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "vibraphone",
+    "name": "Vibraphone",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "tubular_bells",
+    "name": "Tubular bells",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": [
+      "chimes",
+      "tubular-bells"
+    ]
+  },
+  {
+    "id": "crotales",
+    "name": "Crotales",
+    "family": "pitched_percussion",
+    "pitch_kind": "pitched",
+    "aliases": []
+  },
+  {
+    "id": "snare_drum",
+    "name": "Snare drum",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "snare",
+      "snare-drum"
+    ]
+  },
+  {
+    "id": "bass_drum",
+    "name": "Orchestral bass drum",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "bass-drum"
+    ]
+  },
+  {
+    "id": "crash_cymbals",
+    "name": "Clash cymbals",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "clash_cymbals",
+      "clash-cymbals",
+      "crash-cymbals"
+    ]
+  },
+  {
+    "id": "suspended_cymbal",
+    "name": "Suspended cymbal",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "suspended-cymbal"
+    ]
+  },
+  {
+    "id": "triangle",
+    "name": "Triangle",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": []
+  },
+  {
+    "id": "tambourine",
+    "name": "Tambourine",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": []
+  },
+  {
+    "id": "tam_tam",
+    "name": "Tam-tam",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "tamtam",
+      "tam-tam"
+    ]
+  },
+  {
+    "id": "wood_block",
+    "name": "Wood block",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "wood-block"
+    ]
+  },
+  {
+    "id": "castanets",
+    "name": "Castanets",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": []
+  },
+  {
+    "id": "whip",
+    "name": "Whip",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": [
+      "slapstick"
+    ]
+  },
+  {
+    "id": "claves",
+    "name": "Claves",
+    "family": "unpitched_percussion",
+    "pitch_kind": "unpitched",
+    "aliases": []
+  }
+]

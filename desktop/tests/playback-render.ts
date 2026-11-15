@@ -1,6 +1,8 @@
 // Browser-only OfflineAudioContext regression, not imported by the application.
 import {scheduleBuiltInVoice} from '../src/playback/audio';
 import type {PlaybackNote} from '../src/playback/types';
+import {INSTRUMENT_CATALOG} from '../src/instruments/catalog';
+import {builtInProfile,builtInTimbre} from '../src/playback/timbres';
 
 const sampleRate=48000;
 const base:PlaybackNote={id:'n',part:'p',voice:'v',instrument:'flute',start_seconds:0,duration_seconds:1,midi_note:69,frequency_hz:400,velocity:100,gain_envelope:[]};
@@ -41,6 +43,29 @@ async function check(){
  for(const alias of ['violin','strings'])assert(maxDifference(signals.cello,await render([{...base,instrument:alias}]))<1e-6,`${alias} did not route to bowed strings.`);
  const fallback=await render([{...base,instrument:'unknown'}]);
  for(const instrument of ['Piano','constructor','__proto__'])assert(maxDifference(fallback,await render([{...base,instrument}]))<1e-6,'Fallback is not deterministic.');
+ // Render every declared pitched identity, checking actual audio rather than a
+ // map of names. Distinct profile checks do not pretend shared voices are unique.
+ const renderedProfiles=new Map<string,Float32Array>();
+ let pitched=0,unpitched=0;
+ for(const definition of INSTRUMENT_CATALOG){
+  const profile=builtInProfile(definition.id);
+  if(definition.pitch_kind==='unpitched'){
+   assert(profile===null,`${definition.id} falsely advertises a percussion renderer.`);unpitched++;continue;
+  }
+  assert(profile!==null,`${definition.id} has no synthesized voice.`);
+  const signal=await render([{...base,instrument:definition.id}]);
+  assert(rms(signal,.025,.08)>.001,`${definition.id} is silent.`);
+  assert(rms(signal,0,.019)===0&&rms(signal,1.021,1.09)===0,`${definition.id} exceeds note boundaries.`);
+  assert(maxDifference(signal,fallback)>.001,`${definition.id} is only the neutral fallback.`);
+  const existing=renderedProfiles.get(profile);
+  if(existing)assert(maxDifference(existing,signal)<1e-6,`${definition.id} did not use its declared shared profile.`);
+  else renderedProfiles.set(profile,signal);
+  for(const alias of definition.aliases)assert(builtInTimbre(alias)===builtInTimbre(definition.id),`${alias} changed its canonical voice.`);
+  pitched++;
+ }
+ const distinct=[...renderedProfiles];
+ for(let a=0;a<distinct.length;a++)for(let b=a+1;b<distinct.length;b++)
+  assert(maxDifference(distinct[a][1],distinct[b][1])>.001,`${distinct[a][0]} and ${distinct[b][0]} are not distinct voices.`);
  const quiet=await render([{...base,velocity:50}]);
  const velocityRatio=rms(quiet,.12,.22)/rms(signals.flute,.12,.22);
  assert(Math.abs(velocityRatio-.5)<.001,'Rust velocity scaling changed.');
@@ -57,6 +82,6 @@ async function check(){
  assert(maxDifference(mix,expected)<1e-6,'Concurrent part/instrument routing changed the rendered mix.');
  const tiny=await render([{...base,duration_seconds:.003}]);
  assert(rms(tiny,.02,.023)>0&&rms(tiny,.024,.09)===0,'Short-note gate or release changed.');
- return {status:'PASS',renderer:'OfflineAudioContext',sampleRate,harmonics,velocityRatio,cases:['spectral differentiation','exact routes and aliases','neutral fallback','velocity and held expression','seek continuity','concurrent voices','note boundaries and short gates'],hardwareVerified:false};
+ return {status:'PASS',renderer:'OfflineAudioContext',sampleRate,harmonics,velocityRatio,pitchedIdentities:pitched,unpitchedIdentitiesWithoutRenderer:unpitched,synthProfiles:renderedProfiles.size,cases:['spectral differentiation','exact routes and aliases','neutral fallback','velocity and held expression','seek continuity','concurrent voices','note boundaries and short gates'],hardwareVerified:false};
 }
 void check().then(result=>{document.body.textContent=JSON.stringify(result);document.body.dataset.status='PASS';}).catch(error=>{document.body.textContent=JSON.stringify({status:'FAIL',error:String(error)});document.body.dataset.status='FAIL';});

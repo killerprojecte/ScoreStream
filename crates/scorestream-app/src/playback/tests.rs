@@ -352,3 +352,49 @@ fn silent_cue_and_zero_duration_grace_keep_score_positions() {
     close(cue.end_seconds, 0.5);
     close(p.duration_seconds, 0.5);
 }
+
+#[test]
+fn catalog_identities_preserve_raw_routes_and_never_infer_transposition() {
+    use scorestream_codec::instruments::{InstrumentPitchKind, instrument_catalog};
+    for definition in instrument_catalog() {
+        if definition.pitch_kind != InstrumentPitchKind::Pitched {
+            continue;
+        }
+        for id in std::iter::once(&definition.id).chain(&definition.aliases) {
+            let source = score("v C4:1 id=a\n.", "1")
+                .replace("instrument=piano", &format!("instrument={id}"));
+            let plan = plan_source(&source).unwrap();
+            assert_eq!(plan.notes.len(), 1, "{id}");
+            assert_eq!(plan.notes[0].instrument, id.0);
+            assert_eq!(plan.routes[0].instrument, id.0);
+            close(plan.notes[0].midi_note, 60.);
+            close(plan.notes[0].frequency_hz, 440. * 2_f64.powf(-9. / 12.));
+            assert!(
+                scorestream_codec::canonical(&scorestream_codec::parse(&source).unwrap())
+                    .contains(&format!("instrument={id}"))
+            );
+        }
+    }
+}
+
+#[test]
+fn orchestral_identity_changes_preserve_explicit_octave_and_chromatic_state() {
+    let source = score("= p instrument=piccolo transpose_chromatic=0 transpose_diatonic=0 transpose_octaves=1\nv C4:1 id=a\n.\n@1\n= p instrument=contrabassoon transpose_chromatic=0 transpose_diatonic=0 transpose_octaves=-1\nv C4:1 id=b\n.\n@2\n= p instrument=tenor_trombone transpose_chromatic=-2 transpose_diatonic=-1 transpose_octaves=0\nv C4:1 id=c\n.", "3");
+    let plan = plan_source(&source).unwrap();
+    assert_eq!(
+        plan.notes.iter().map(|n| n.instrument.as_str()).collect::<Vec<_>>(),
+        ["piccolo", "contrabassoon", "tenor_trombone"]
+    );
+    assert_eq!(
+        plan.notes.iter().map(|n| n.midi_note).collect::<Vec<_>>(),
+        [72., 48., 58.]
+    );
+}
+
+#[test]
+fn percussion_catalog_membership_does_not_invent_a_drum_map() {
+    let source = score("v u.snare:1 id=a\n.", "1").replace("instrument=piano", "instrument=snare_drum");
+    let plan = plan_source(&source).unwrap();
+    assert!(plan.notes.is_empty());
+    assert!(plan.diagnostics.iter().any(|d| d.code == "percussion_unmapped"));
+}

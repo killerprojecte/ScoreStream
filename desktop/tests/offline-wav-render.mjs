@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {describe,it} from 'node:test';
 import {renderPcm16Wav} from '../src/playback/offline.ts';
 import {WebAudioOutput} from '../src/playback/audio.ts';
+import {INSTRUMENT_CATALOG} from '../src/instruments/catalog.ts';
 import {validatePcm16Plan} from '../src/playback/pcm.ts';
 const note=(changes={})=>({id:'n',part:'p',voice:'v',instrument:'piano',start_seconds:.25,duration_seconds:.5,midi_note:69,frequency_hz:440,velocity:80,gain_envelope:[],...changes});
 const plan=(changes={})=>({duration_seconds:1,notes:[note()],...changes});
@@ -59,6 +60,18 @@ describe('offline validation and shared graph (fake contexts only)',()=>{
    for(let index=0;index<notes.length;index++){
     assert.deepEqual(offline.oscillators[index].connections,[offline.gains[index*3+2]]);assert.deepEqual(offline.gains[index*3+2].connections,[offline.gains[index*3]]);assert.deepEqual(offline.gains[index*3].connections,[offline.gains[index*3+1]]);assert.deepEqual(offline.gains[index*3+1].connections,[offline.master]);
    }
+  }finally{if(original===undefined)delete globalThis.AudioContext;else globalThis.AudioContext=original;}
+ });
+ it('routes every pitched orchestral identity identically through live and WAV graphs',async()=>{
+  const notes=INSTRUMENT_CATALOG.filter(entry=>entry.pitch_kind==='pitched').map(entry=>note({instrument:entry.id}));
+  const environment=setup(),original=globalThis.AudioContext;let live;
+  globalThis.AudioContext=class extends FakeContext {constructor(){super({});live=this;}};
+  try{
+   const output=new WebAudioOutput();await output.resume();for(const entry of notes)output.schedule(entry,0,entry.start_seconds);output.dispose();
+   await renderPcm16Wav(plan({notes}),sink(),environment);const offline=environment.contexts[0];
+   assert.deepEqual(graph(offline),graph(live));assert.equal(offline.waves.length,25);
+   assert.equal(offline.oscillators.length,40);assert.ok(offline.oscillators.every(oscillator=>oscillator.wave));
+   assert.ok(offline.oscillators.every(oscillator=>oscillator.frequency.events[0][1]===440));
   }finally{if(original===undefined)delete globalThis.AudioContext;else globalThis.AudioContext=original;}
  });
  it('uses the platform OfflineAudioContext by default',async()=>{

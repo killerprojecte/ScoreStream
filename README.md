@@ -74,6 +74,10 @@ The Rust tests exercise the HTTP router and stream bodies in-process. The Python
 
 The separate desktop crate keeps platform WebView dependencies out of headless core/CLI builds. Desktop setup and platform verification are described in `desktop/README.md` when available.
 
+## Orchestral instrument identities
+
+The shared [instrument catalog](docs/ORCHESTRAL_INSTRUMENTS.md) now covers 51 standard orchestral and auxiliary identities. Live built-in playback and WAV export use 25 simple synthesis profiles for 40 pitched identities; the 11 unpitched percussion identities are cataloged but not yet rendered. Custom IDs and explicit pitch/transposition semantics are preserved. This is not a professional sample library or system MIDI/VST3 backend.
+
 ## Design and samples
 
 - [Original design package](design/README.md)
