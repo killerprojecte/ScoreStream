@@ -1,5 +1,10 @@
 use scorestream_formats::{ScoreAdapter, musicxml::MusicXml, sfs::SfsAdapter};
-use std::{env, fs, io::BufReader, process::ExitCode};
+use std::{
+    env, fs,
+    io::{BufReader, Read, Seek},
+    path::Path,
+    process::ExitCode,
+};
 fn main() -> ExitCode {
     let args: Vec<_> = env::args().collect();
     if args
@@ -37,7 +42,7 @@ fn main() -> ExitCode {
 
 fn usage() {
     eprintln!(
-        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml>\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
+        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml|input.mxl>\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
     );
 }
 fn adapter(name: &str) -> Option<Box<dyn ScoreAdapter>> {
@@ -60,7 +65,7 @@ fn conversion(args: &[String]) -> ExitCode {
                 return ExitCode::from(2);
             }
         };
-        return match scorestream_formats::musicxml::scan(BufReader::new(file)) {
+        return match musicxml_reader(file, &args[2]).and_then(scorestream_formats::musicxml::scan) {
             Ok(summary) => {
                 println!("{}", serde_json::to_string_pretty(&summary).unwrap());
                 ExitCode::SUCCESS
@@ -100,7 +105,7 @@ fn conversion(args: &[String]) -> ExitCode {
                 return ExitCode::from(2);
             }
         };
-        scorestream_formats::musicxml::read_reader(BufReader::new(file))
+        musicxml_reader(file, path).and_then(scorestream_formats::musicxml::read_reader)
     } else {
         // SFS has its own text parser; an XML byte budget must not reject valid SFS input.
         let source = match fs::read_to_string(path) {
@@ -143,4 +148,39 @@ fn conversion(args: &[String]) -> ExitCode {
     }
     print!("{text}");
     ExitCode::SUCCESS
+}
+
+// MusicXML's compressed representation shares the same semantic adapter. A ZIP
+// failure never falls back to XML or an arbitrary alternate archive member.
+fn musicxml_reader(
+    mut file: fs::File,
+    path: &str,
+) -> Result<BufReader<fs::File>, scorestream_formats::MappingReport> {
+    let mut signature = [0; 4];
+    let count = file
+        .read(&mut signature)
+        .and_then(|count| {
+            file.rewind()?;
+            Ok(count)
+        })
+        .map_err(|error| {
+            let mut report = scorestream_formats::MappingReport::default();
+            report.push(
+                scorestream_formats::Format::MusicXml,
+                scorestream_formats::MappingEffect::Invalid,
+                "input.io",
+                "/",
+                format!("cannot read MusicXML input: {error}"),
+            );
+            report
+        })?;
+    let mxl_extension = Path::new(path)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("mxl"));
+    if mxl_extension || (count >= 2 && &signature[..2] == b"PK") {
+        scorestream_formats::mxl::open(file).map(scorestream_formats::mxl::MxlRoot::into_reader)
+    } else {
+        Ok(BufReader::new(file))
+    }
 }

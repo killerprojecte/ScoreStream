@@ -1,6 +1,7 @@
 //! Strict adapters through ScoreDocument. No adapter passes markup to renderers.
 #![forbid(unsafe_code)]
 pub mod musicxml;
+pub mod mxl;
 pub mod sfs;
 mod validate;
 use scorestream_core::{SourceRange, score::ScoreDocument};

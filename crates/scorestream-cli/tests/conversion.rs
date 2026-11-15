@@ -141,3 +141,82 @@ fn conversion_cli_has_no_global_xml_or_sfs_byte_ceiling() {
     );
     std::fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn compressed_musicxml_uses_the_same_scanner_and_semantic_adapter() {
+    for args in [
+        vec!["scan-musicxml"],
+        vec!["inspect-format", "musicxml"],
+        vec!["convert", "musicxml", "sfs"],
+    ] {
+        let plain = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+            .args(&args)
+            .arg(fixture("two-staff.musicxml"))
+            .output()
+            .unwrap();
+        let compressed = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+            .args(&args)
+            .arg(fixture("two-staff.mxl"))
+            .output()
+            .unwrap();
+        assert!(
+            compressed.status.success(),
+            "{}",
+            String::from_utf8_lossy(&compressed.stderr)
+        );
+        assert_eq!(compressed.stdout, plain.stdout);
+        assert_eq!(compressed.stderr, plain.stderr);
+    }
+    let unsupported = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .args(["convert", "musicxml", "sfs"])
+        .arg(fixture("unsupported.mxl"))
+        .output()
+        .unwrap();
+    assert!(!unsupported.status.success());
+    assert!(unsupported.stdout.is_empty());
+    let report: serde_json::Value = serde_json::from_slice(&unsupported.stderr).unwrap();
+    assert!(
+        report["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|d| d["feature"] == "element.direction")
+    );
+}
+
+#[test]
+fn compressed_input_is_sniffed_and_invalid_mxl_never_falls_back() {
+    let directory = std::env::temp_dir().join(format!(
+        "scorestream-mxl-cli-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&directory).unwrap();
+    let renamed = directory.join("compressed.musicxml");
+    std::fs::copy(fixture("two-staff.mxl"), &renamed).unwrap();
+    let scan = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .arg("scan-musicxml")
+        .arg(&renamed)
+        .output()
+        .unwrap();
+    assert!(
+        scan.status.success(),
+        "{}",
+        String::from_utf8_lossy(&scan.stderr)
+    );
+    let invalid = directory.join("invalid.MXL");
+    std::fs::copy(fixture("two-staff.musicxml"), &invalid).unwrap();
+    let result = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .args(["convert", "musicxml", "sfs"])
+        .arg(&invalid)
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(result.stdout.is_empty());
+    let report: serde_json::Value = serde_json::from_slice(&result.stderr).unwrap();
+    assert_eq!(report["diagnostics"][0]["feature"], "mxl_container");
+    std::fs::remove_dir_all(directory).unwrap();
+}

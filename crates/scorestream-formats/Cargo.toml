@@ -11,6 +11,9 @@ sha2.workspace = true
 num-bigint.workspace = true
 num-traits.workspace = true
 quick-xml = "=0.38.4"
+rawzip = "=0.5.2"
+flate2 = { version = "=1.1.11", default-features = false, features = ["rust_backend"] }
+tempfile = "=3.27.0"
 
 [dev-dependencies]
 scorestream-app = { path = "../scorestream-app" }
