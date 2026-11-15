@@ -157,7 +157,11 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     if doc.span.is_some() {
         unsupported(&mut report, "span", "document");
     }
-    if !doc.required_extensions.is_empty() {
+    if doc
+        .required_extensions
+        .iter()
+        .any(|e| e != core::navigation_extension::EXTENSION)
+    {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
@@ -220,10 +224,40 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         .events()
         .filter_map(|(_, e)| e.id().map(str::to_owned))
         .collect();
+    // Generated event IDs must not collide with preserved authored identities.
+    used.extend(doc.parts.iter().map(|p| p.id.clone()));
+    used.extend(doc.voices.iter().map(|v| v.id.clone()));
+    for record in doc.frames.iter().flat_map(|f| &f.records) {
+        match record {
+            Record::Measure(m) => {
+                used.insert(m.id.clone());
+            }
+            Record::Mark(m) => {
+                if let Some(id) = m.attributes.get("id").and_then(Scalar::as_str) {
+                    used.insert(id.into());
+                }
+                if let Some(id) = m
+                    .attributes
+                    .get("source_id")
+                    .and_then(Scalar::as_str)
+                    .filter(|_| m.kind == scorestream_core::navigation_extension::KIND)
+                {
+                    used.insert(id.into());
+                }
+            }
+            Record::Relation(r) => {
+                used.insert(r.id.clone());
+            }
+            _ => {}
+        }
+    }
     for frame in &doc.frames {
         for record in &frame.records {
             match record {
                 Record::Measure(_) => {}
+                Record::Mark(m) if m.kind == core::navigation_extension::KIND => {
+                    crate::sfs_navigation::read_mark(m, &mut score, &mut report);
+                }
                 Record::Mark(m) if m.kind == "metronome" => {
                     crate::tempo::read_mark(m, &frame.time, &mut score, &mut report);
                 }
@@ -456,6 +490,10 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     }
     crate::tempo::normalize(&mut score.tempos, &mut report, Format::Sfs);
     report.append(validate_score(&score));
+    crate::sfs_navigation::sort_barlines(&mut score);
+    if !report.has_errors() {
+        crate::sfs_navigation::check_profile(&score, &mut report);
+    }
     report.finish(score)
 }
 
@@ -506,24 +544,29 @@ impl Ids {
 /// Export through the original codec after common and SFS semantic validation.
 pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, MappingReport> {
     let mut report = validate_score(score);
-    if !score.barlines.is_empty() {
-        unsupported(&mut report, "barline.sfs_mapping", "/barlines");
+    if !report.has_errors() {
+        crate::sfs_navigation::check_profile(score, &mut report);
     }
     if report.has_errors() {
         return Err(report);
     }
     let mut doc = Document::new(DocumentKind::Score);
     doc.metadata = score.metadata.clone();
-    let aliases: Vec<String> = score
+    if !score.barlines.is_empty() {
+        doc.required_extensions
+            .push(core::navigation_extension::EXTENSION.into());
+    }
+    let mut aliases: Vec<String> = score
         .parts
         .iter()
         .flat_map(|p| {
             std::iter::once(p.id.0.clone()).chain(p.voices.iter().map(|v| v.id.0.clone()))
         })
         .collect();
+    aliases.extend(score.barlines.iter().filter_map(|b| b.id.clone()));
     let mut parts = Ids::new(aliases.iter().cloned(), "part");
     let mut voices = Ids::new(aliases.into_iter(), "voice");
-    let objects: Vec<String> = score
+    let mut objects: Vec<String> = score
         .parts
         .iter()
         .flat_map(|p| {
@@ -532,6 +575,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             })
         })
         .collect();
+    objects.extend(score.barlines.iter().filter_map(|b| b.id.clone()));
     let mut measures = Ids::new(objects.iter().cloned(), "measure");
     let mut events = Ids::new(objects.into_iter(), "event");
     let mut chords = Ids::new(
@@ -712,6 +756,26 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     }));
             }
         }
+    }
+    let measure_index: BTreeMap<_, _> = score
+        .parts
+        .iter()
+        .flat_map(|p| p.measures.iter().map(|m| (m.id.as_str(), m)))
+        .collect();
+    for b in &score.barlines {
+        let m = measure_index[b.measure.as_str()];
+        let at = if b.location == BarlineLocation::Left {
+            m.start.clone()
+        } else {
+            &m.start + &m.length
+        };
+        crate::sfs_navigation::write_barline(
+            b,
+            parts.get(&b.part.0, &mut report),
+            measures.get(&b.measure, &mut report),
+            at,
+            &mut frames,
+        );
     }
     crate::tempo::write_tempos(score, &mut frames);
     for mark in &score.metronomes {

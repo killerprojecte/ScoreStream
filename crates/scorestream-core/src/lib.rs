@@ -4,6 +4,7 @@
 pub mod instruments;
 mod metadata;
 mod model;
+pub mod navigation_extension;
 pub mod notation;
 mod rational;
 mod registry;

@@ -26,6 +26,12 @@ fn main() -> ExitCode {
     };
     match scorestream_codec::parse(&source) {
         Ok(doc) => {
+            if !doc.diagnostics.is_empty() {
+                eprintln!(
+                    "{}",
+                    serde_json::to_string_pretty(&doc.diagnostics).unwrap()
+                );
+            }
             match args[1].as_str() {
                 "inspect" => println!("{}", serde_json::to_string_pretty(&doc).unwrap()),
                 "canonical" => print!("{}", scorestream_codec::canonical(&doc)),

@@ -101,3 +101,7 @@ The complete machine reference is `scorestream://spec/1.1/language`; grammar is 
 Complete package examples cover an ensemble, tuplets and ties, a replacement fragment, and grace/percussion/cross-staff events. Retain the exact format version and capabilities in every read/generate/edit workflow.
 
 Part display labels: `!part f1 instrument=flute staves=1 display_name="Flute 1"` keeps the authored name separate from the instrument key. `display_name` is optional JSON-quoted plain text. Missing uses the instrument-label fallback; empty stays empty. It never changes sound routing.
+
+## Authored navigation capability
+
+`!requires scorestream.navigation@1` enables `+ <part> scorestream.barline measure=<measure-id> side=left|right` with typed style, repeat/count and ending/pass/display fields from the descriptor. The frame must equal that measure's exact boundary. This is authored-only interchange: current playback lowering rejects, and inspection warns that engraving/replay is unavailable. Strict conversion supports ordinary closed repeats; an unclosed ending is preserved for inspection with an explicit diagnostic, never silently closed or played once.

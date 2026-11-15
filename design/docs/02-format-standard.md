@@ -328,3 +328,7 @@ The primary format artifacts are `spec/scorestream.ebnf`, `spec/scorestream-lang
 ### Independent part labels
 
 `!part` accepts optional `display_name="Flute 1"`. It does not change `instrument`, pitch, or playback. Absence uses the instrument as a presentation fallback; `display_name=""` preserves an explicitly empty label. Text is preserved, including Unicode, whitespace and escaped quotes, and must contain only XML 1.0 characters. Renderers and exporters escape the label as text, never execute it as markup. JSON AST parts omit an absent field; explicit null and non-string values are invalid.
+
+### Registered authored navigation capability
+
+`scorestream.navigation@1` registers the namespaced `scorestream.barline` mark. Its part target and `measure`/`side` fields locate an authored boundary exactly; optional typed style, repeat/count and ending/pass/display fields preserve its meaning. The normative field registry and `docs/SFS_NAVIGATION.md` define field pairing, identity, limits and failure behavior. Unknown readers must reject the mandatory capability. Current conversion supports ordinary closed-repeat roundtrip; performed lowering rejects rather than playing the written sequence once. An unclosed source ending remains unclosed and requires a separate explicit continuation decision, not a default import repair.

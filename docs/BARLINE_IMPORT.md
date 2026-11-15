@@ -1,6 +1,6 @@
 # Ordinary barline import and score replay planning
 
-This slice maps actual MusicXML boundary barlines into `ScoreDocument.barlines`, exports them back to MusicXML, and connects that common model to the typed repeat traversal core. It does not enable SFS repeat syntax, preview repeat engraving, performed note realization, or audio export of repeated scores. `SfsAdapter::write` explicitly rejects any authored barlines with `barline.sfs_mapping`, so a successful common-model import cannot silently become an un-repeated SFS performance.
+This slice maps actual MusicXML boundary barlines into `ScoreDocument.barlines`, exports them back to MusicXML, and connects that common model to the typed repeat traversal core. The subsequent [SFS navigation capability](SFS_NAVIGATION.md) adds authored-only closed-repeat SFS roundtrip. Preview repeat engraving, performed note realization and audio export of repeated scores remain unsupported; playback lowering explicitly rejects instead of silently playing the written sequence once.
 
 ## Authored source and derived route
 
@@ -36,10 +36,10 @@ cargo test --locked --offline -p scorestream-formats --test barlines
 SCORESTREAM_MXL_FIXTURES=/path/to/pinned/inputs cargo test --locked --offline -p scorestream-formats original_beethoven_barline_fragments_use_production_mapper -- --ignored
 ```
 
-## Later SFS and performance slice, not implemented here
+## Subsequent SFS capability and remaining performance work
 
-A lossless SFS extension should store authored boundary records, not pre-expanded notes, state snapshots or a second redundant route. Its typed vocabulary needs part/measure-boundary identity, left/right placement, line style, optional explicit forward/backward count, ending pass/phase/display fields, and preserved open endpoints. It must distinguish engraved placement from the score-wide performed graph. A versioned required extension or a deliberate new format version is preferable to unknown fields that an older player might ignore.
+The registered SFS capability stores authored boundary records, not pre-expanded notes, state snapshots or a second redundant route. Its typed vocabulary carries part/measure-boundary identity, left/right placement, line style, optional explicit forward/backward count, ending pass/phase/display fields, and preserved open endpoints. Engraved placement remains separate from the score-wide performed graph. The versioned required capability prevents older readers from silently ignoring these fields.
 
-The SFS reader, validator, common-model bridge and notation lowering must agree before serialization is enabled. Unsupported readers must reject the capability rather than play once. The playback layer then consumes the exact occurrence plan, restores scope-specific state at backward edges, replays controls in written order, omits skipped controls, and rebinds sounding relations by occurrence. Movement joins remain explicit; III→IV attacca inserts no pause and cannot infer instrument identity from repeated local part IDs. Full original import and listening acceptance remain later end-to-end checks.
+The SFS reader, validator and common-model bridge now agree on authored-only serialization; notation lowering explicitly rejects this capability until performed replay exists. Unsupported readers must reject the capability rather than play once. The playback layer then consumes the exact occurrence plan, restores scope-specific state at backward edges, replays controls in written order, omits skipped controls, and rebinds sounding relations by occurrence. Movement joins remain explicit; III→IV attacca inserts no pause and cannot infer instrument identity from repeated local part IDs. Full original import and listening acceptance remain later end-to-end checks.
 
 Primary references: [MusicXML barline](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/barline/), [repeat](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/repeat/), [ending](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/ending/).

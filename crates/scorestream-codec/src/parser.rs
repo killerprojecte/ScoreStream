@@ -1,7 +1,7 @@
 // Keep the short-lived, fail-fast diagnostic inline. The public codec returns
 // a Vec<Diagnostic>; an extra heap allocation here would immediately be undone.
 #![allow(clippy::result_large_err)]
-use crate::lexer::{Token, tokenize};
+use crate::lexer::{tokenize, Token};
 use scorestream_core::*;
 use std::collections::{BTreeMap, BTreeSet};
 type ParseResult<T> = Result<T, Diagnostic>;
@@ -590,6 +590,33 @@ fn assign_event_ids(doc: &mut Document) {
         .events()
         .filter_map(|(_, e)| e.id().map(str::to_owned))
         .collect();
+    // Generated event IDs must not collide with preserved authored identities.
+    used.extend(doc.parts.iter().map(|p| p.id.clone()));
+    used.extend(doc.voices.iter().map(|v| v.id.clone()));
+    for record in doc.frames.iter().flat_map(|f| &f.records) {
+        match record {
+            Record::Measure(m) => {
+                used.insert(m.id.clone());
+            }
+            Record::Mark(m) => {
+                if let Some(id) = m.attributes.get("id").and_then(Scalar::as_str) {
+                    used.insert(id.into());
+                }
+                if let Some(id) = m
+                    .attributes
+                    .get("source_id")
+                    .and_then(Scalar::as_str)
+                    .filter(|_| m.kind == scorestream_core::navigation_extension::KIND)
+                {
+                    used.insert(id.into());
+                }
+            }
+            Record::Relation(r) => {
+                used.insert(r.id.clone());
+            }
+            _ => {}
+        }
+    }
     let mut next = 1u64;
     for frame in &mut doc.frames {
         for record in &mut frame.records {

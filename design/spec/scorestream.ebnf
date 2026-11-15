@@ -88,3 +88,8 @@ comment_line = [ ws ], ";", { non_newline_character }, nl ;
    Empty authors is omitted. Metadata plain text is never markup.
    Production readers use a real lexer:
    splitting on '#' would corrupt pitch spellings and references. *)
+
+(* Registered capability scorestream.navigation@1 uses the existing mark grammar:
+   + <part> scorestream.barline measure=<id> side=left|right ...
+   Registered fields, exact boundary validation and authored-only execution limits
+   are defined by the language descriptor. Unknown readers reject !requires. *)

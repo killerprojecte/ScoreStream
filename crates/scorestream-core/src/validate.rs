@@ -20,12 +20,22 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             doc.source,
         ));
     }
+    let mut requirements = BTreeSet::new();
     for requirement in &doc.required_extensions {
-        out.push(Diagnostic::error(
-            "extension_unsupported",
-            format!("Required extension is not implemented: {requirement}"),
-            doc.source,
-        ));
+        if !requirements.insert(requirement) {
+            out.push(Diagnostic::error(
+                "extension_duplicate",
+                "Required extensions must be distinct",
+                doc.source,
+            ));
+        }
+        if requirement != crate::navigation_extension::EXTENSION {
+            out.push(Diagnostic::error(
+                "extension_unsupported",
+                format!("Required extension is not implemented: {requirement}"),
+                doc.source,
+            ));
+        }
     }
     out.extend(doc.metadata.validate(doc.source));
     let mut parts: BTreeMap<&str, u32> = BTreeMap::new();
@@ -425,6 +435,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             }
         }
     }
+    crate::navigation_extension::validate(doc, &mut out);
     validate_measures(&measures, &parts, &mut out);
     validate_references(doc, &events, &parts, &voices, &mut out);
     if doc.document_kind == DocumentKind::Fragment {

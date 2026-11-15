@@ -200,6 +200,7 @@ fn ordinal_constraint_mapping_tracks_canonical_meanings() {
         "Event-attached marks",
         "Fragments carry",
         "Unknown extension interpretation",
+        "scorestream.barline requires",
     ];
     assert_eq!(constraints.len(), prefixes.len());
     for (value, prefix) in constraints.iter().zip(prefixes) {

@@ -138,6 +138,17 @@ pub fn lower_document(doc: &Document) -> std::result::Result<ResolvedScore, Vec<
     lower(doc).map_err(|e| vec![e])
 }
 fn lower(doc: &Document) -> Result<ResolvedScore> {
+    if doc
+        .required_extensions
+        .iter()
+        .any(|e| e == crate::navigation_extension::EXTENSION)
+    {
+        return Err(Diagnostic::error(
+            "navigation.replay_unsupported",
+            "Authored repeats require occurrence-based control and relation replay; playing the written sequence once is not allowed",
+            doc.source,
+        ));
+    }
     if doc.document_kind != DocumentKind::Score {
         return Err(error(
             "Resolved playback notation requires a complete score",
@@ -316,7 +327,7 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                             return Err(error(
                                 format!("No typed lowering for mark {}", mark.kind),
                                 s,
-                            ))
+                            ));
                         }
                     };
                     let placement = match text(a, "placement") {
@@ -388,7 +399,7 @@ fn lower(doc: &Document) -> Result<ResolvedScore> {
                 return Err(error(
                     format!("No typed lowering for relation {}", first.kind),
                     first.source,
-                ))
+                ));
             }
         };
         let anchors = group

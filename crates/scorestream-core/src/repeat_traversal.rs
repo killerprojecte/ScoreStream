@@ -275,7 +275,17 @@ fn region(
 
 /// Compile ordinary non-nested repeats to typed state/replay steps. Unknown
 /// navigation must be rejected by the adapter, never omitted before calling this.
-pub fn traverse(movement: &Movement, policy: Policy) -> Result<MovementPlan, Error> {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Validation {
+    pub occurrences: usize,
+    pub diagnostics: Vec<Diagnostic>,
+}
+/// Validate and count a route without expanding any performed occurrences.
+pub fn validate(movement: &Movement, policy: Policy) -> Result<Validation, Error> {
+    let (_, validation) = prepare(movement, policy)?;
+    Ok(validation)
+}
+fn prepare(movement: &Movement, policy: Policy) -> Result<(Vec<Region>, Validation), Error> {
     if movement.id.is_empty() {
         return Err(Error::EmptyMovementId);
     }
@@ -311,6 +321,23 @@ pub fn traverse(movement: &Movement, policy: Policy) -> Result<MovementPlan, Err
     if occurrences > policy.maximum_occurrences {
         return Err(Error::OccurrenceBudget);
     }
+    Ok((
+        regions,
+        Validation {
+            occurrences,
+            diagnostics,
+        },
+    ))
+}
+pub fn traverse(movement: &Movement, policy: Policy) -> Result<MovementPlan, Error> {
+    let (
+        regions,
+        Validation {
+            occurrences,
+            diagnostics,
+        },
+    ) = prepare(movement, policy)?;
+    let n = movement.measure_labels.len();
     let mut plan = MovementPlan {
         movement_id: movement.id.clone(),
         steps: vec![Step::BeginMovement],

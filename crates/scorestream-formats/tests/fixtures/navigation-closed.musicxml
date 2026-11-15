@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic closed-repeat interchange fixture, not a replacement for a source score. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name><score-instrument id="I1"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list>
+  <part id="P1">
+    <measure id="m1" number="1">
+      <barline id="repeat.head" location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>
+      <attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time></attributes>
+      <note id="a"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure id="m2" number="2">
+      <barline location="left"><ending number="1" type="start" default-y="77.7">First &amp; only</ending></barline>
+      <note id="b"><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <barline location="right"><bar-style>light-heavy</bar-style><ending number="1" type="stop"/><repeat direction="backward"/></barline>
+    </measure>
+    <measure id="m3" number="3">
+      <barline location="left"><ending number="2" type="start"/></barline>
+      <note id="c"><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <barline location="right"><ending number="2" type="discontinue"/></barline>
+    </measure>
+    <measure id="m4" number="4">
+      <note id="d"><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+    </measure>
+  </part>
+</score-partwise>

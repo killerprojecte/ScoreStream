@@ -120,7 +120,14 @@ fn write_attributes(output: &mut String, category: &str, kind: &str, attributes:
         write!(output, " {key}=").unwrap();
         match value {
             Scalar::String(s) if is_text_attribute(category, kind, key) => {
-                output.push_str(&serde_json::to_string(s).expect("Unicode strings serialize"))
+                let encoded = serde_json::to_string(s).expect("Unicode strings serialize");
+                for c in encoded.chars() {
+                    if matches!(c, '\u{7f}'..='\u{9f}') {
+                        write!(output, "\\u{:04x}", c as u32).unwrap();
+                    } else {
+                        output.push(c);
+                    }
+                }
             }
             Scalar::String(s) => output.push_str(s),
             Scalar::Integer(i) => write!(output, "{i}").unwrap(),
