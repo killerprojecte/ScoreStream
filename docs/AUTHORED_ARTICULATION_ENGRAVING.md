@@ -111,6 +111,13 @@ header. It is not relabeled as a supported full score. Separate tests use explic
 Workspace fixtures for accepted engraving combinations; no new full MusicXML
 corpus import or new Rust snapshot-generation run is claimed.
 
+## Pause-family qualification
+
+The follow-up [pinned pause renderer probes](AUTHORED_PAUSE_RENDERER_PROBES.md)
+cover every named and omitted breath/caesura shape. They establish concrete
+font and after-note geometry blockers, not new runtime capability. The ten
+ordinary choices and all hidden-wrapper behavior above remain unchanged.
+
 ## Verification
 
 Pinned **Verovio 5.6.0 / Bravura** tests inspect real SVG: exact glyph references,

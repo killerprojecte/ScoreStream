@@ -516,6 +516,41 @@
       "target": "authored_articulations",
       "test": "passive_other_text_is_not_xml_or_a_performance_instruction"
     },
+    "authored-articulations.pause-probes.anchor-blockers": {
+      "assertion": "rejection",
+      "file": "desktop/tests/authored-pause-renderer-probes.test.ts",
+      "runner": "vitest",
+      "suite": "pinned pause renderer characterization not runtime support",
+      "test": "demonstrates startid on-head breath ignored horizontal offsets and release timestamp at the next note"
+    },
+    "authored-articulations.pause-probes.breath-blockers": {
+      "assertion": "rejection",
+      "file": "desktop/tests/authored-pause-renderer-probes.test.ts",
+      "runner": "vitest",
+      "suite": "pinned pause renderer characterization not runtime support",
+      "test": "proves omitted and all four breath forms including ignored overrides missing glyphs and empty alternate symbols"
+    },
+    "authored-articulations.pause-probes.dense-end-blockers": {
+      "assertion": "rejection",
+      "file": "desktop/tests/authored-pause-renderer-probes.test.ts",
+      "runner": "vitest",
+      "suite": "pinned pause renderer characterization not runtime support",
+      "test": "records full caesura extents at following-note columns and final barlines in dense passages"
+    },
+    "authored-articulations.pause-probes.runtime-withheld": {
+      "assertion": "rejection",
+      "file": "desktop/tests/authored-pause-renderer-probes.test.ts",
+      "runner": "vitest",
+      "suite": "pinned pause renderer characterization not runtime support",
+      "test": "keeps all visible authored pause shapes withheld without source mutation"
+    },
+    "authored-articulations.pause-probes.short-chord-blockers": {
+      "assertion": "rejection",
+      "file": "desktop/tests/authored-pause-renderer-probes.test.ts",
+      "runner": "vitest",
+      "suite": "pinned pause renderer characterization not runtime support",
+      "test": "reproduces midpoint failure on a short note and end-relative failure on displaced second chords"
+    },
     "authored-articulations.playback-reject": {
       "assertion": "rejection",
       "file": "crates/scorestream-formats/tests/authored_articulations.rs",
@@ -2693,7 +2728,7 @@
           "status": "blocked"
         },
         "render": {
-          "detail": "Bounded Verovio 5.6.0 adapter renders seven ordinary signs with automatic/explicit placement and stroke-correct spiccato, stress and unstress only with explicit placement. Deterministic leaf/component IDs, ordered hierarchy receipts, independent orientation, duplicates, compound stacking, chord/voice/staff hosts and hidden print wrappers are verified in actual SVG. Visible coordinates/styles, seven other choices and unresolved glyph orientation refuse the exact object. The original all-17 synthetic Rust snapshot still refuses unchanged.",
+          "detail": "Bounded Verovio 5.6.0 adapter renders seven ordinary signs with automatic/explicit placement and stroke-correct spiccato, stress and unstress only with explicit placement. Deterministic leaf/component IDs, ordered hierarchy receipts, independent orientation, duplicates, compound stacking, chord/voice/staff hosts and hidden print wrappers are verified in actual SVG. Visible coordinates/styles, seven other choices and unresolved glyph orientation refuse the exact object. The original all-17 synthetic Rust snapshot still refuses unchanged. Dormant pinned-SVG pause probes establish missing tick/upbow/Salzedo breath paths, empty symbol-based altsym output, short-note/second-chord horizontal anchor failures and thick-caesura extents across following-note columns/final barlines. These rejection receipts do not enable breath/caesura preview.",
           "evidence": [
             "authored-articulations.snapshot",
             "authored-articulations.render-reject",
@@ -2706,7 +2741,12 @@
             "authored-articulations.engraving.stacking",
             "authored-articulations.engraving.compound",
             "authored-articulations.engraving.polyphony",
-            "authored-articulations.engraving.all-ordinary"
+            "authored-articulations.engraving.all-ordinary",
+            "authored-articulations.pause-probes.breath-blockers",
+            "authored-articulations.pause-probes.anchor-blockers",
+            "authored-articulations.pause-probes.short-chord-blockers",
+            "authored-articulations.pause-probes.dense-end-blockers",
+            "authored-articulations.pause-probes.runtime-withheld"
           ],
           "implementation": [
             "desktop/src/render/authored-articulations.ts",
@@ -2716,7 +2756,7 @@
           "status": "partial"
         }
       },
-      "limitations": "No same-event mixing with tied/slur/fermata or legacy articulation marks; no editorial footnote/level, rest/unpitched/grace anchors, other notation families, full Unicode source-ID/NMTOKEN profile, arbitrary XML or attribute bags. Decimal input retains the existing 64-character bound and MusicXML output needs finite decimals within 32 places and 64 characters; native rational values remain exact. All authored-v1 playback effects remain withheld. Engraving is limited to the documented ten ordinary signs, three requiring explicit placement; visible appearance/coordinate fields and seven other choices remain unsupported. Hidden known objects are intentionally not printed and remain in typed receipts. MEI note children are not a lossless serialization of source wrapper/group topology. No inferred breath/caesura timing, pitch transitions, instrument technique or velocity policy. Wrapper/group/item order is exact; top-level event-association order follows XML voice serialization with explicit normalization reporting and remains exact in native SFS. Synthetic snapshots/probes do not establish untouched 32c acceptance; its independent metadata boundary is unchanged.",
+      "limitations": "No same-event mixing with tied/slur/fermata or legacy articulation marks; no editorial footnote/level, rest/unpitched/grace anchors, other notation families, full Unicode source-ID/NMTOKEN profile, arbitrary XML or attribute bags. Decimal input retains the existing 64-character bound and MusicXML output needs finite decimals within 32 places and 64 characters; native rational values remain exact. All authored-v1 playback effects remain withheld. Engraving is limited to the documented ten ordinary signs, three requiring explicit placement; visible appearance/coordinate fields and seven other choices remain unsupported. Hidden known objects are intentionally not printed and remain in typed receipts. MEI note children are not a lossless serialization of source wrapper/group topology. No inferred breath/caesura timing, pitch transitions, instrument technique or velocity policy. Wrapper/group/item order is exact; top-level event-association order follows XML voice serialization with explicit normalization reporting and remains exact in native SFS. Synthetic snapshots/probes do not establish untouched 32c acceptance; its independent metadata boundary is unchanged. Breath/caesura projection remains entirely withheld: correct caesura glyphs and local vertical duplicate/compound separation do not establish safe after-note horizontal geometry. No simple-host whitelist or timestamp heuristic is shipped; see docs/AUTHORED_PAUSE_RENDERER_PROBES.md.",
       "refs": [
         "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
         "musicxml:schema/complexType:articulations[1]/choice[1]/element:accent[1]",

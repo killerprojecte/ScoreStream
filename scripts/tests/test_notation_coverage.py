@@ -177,6 +177,16 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(report["choice_import_counts"]["authored-articulations"], {"partial": 17})
         self.assertEqual(report["choice_import_counts"]["articulations"], {"blocked": 13, "partial": 4})
 
+    def test_pause_probes_are_rejection_evidence_not_runtime_capability_credit(self):
+        authored = next(f for f in self.ledger["features"] if f["id"] == "authored-articulations")
+        receipts = [e for e in authored["layers"]["render"]["evidence"] if ".pause-probes." in e]
+        self.assertEqual(len(receipts), 5)
+        self.assertTrue(all(self.ledger["evidence"][e]["assertion"] == "rejection" for e in receipts))
+        self.assertIn("do not enable breath/caesura preview", authored["layers"]["render"]["detail"])
+        self.assertIn("entirely withheld", authored["limitations"])
+        self.assertEqual(authored["layers"]["render"]["status"], "partial")
+        self.assertEqual(authored["layers"]["playback"]["status"], "blocked")
+
     def test_authored_runtime_rejection_cannot_be_promoted_as_implementation(self):
         for layer in ["render", "playback"]:
             ledger = copy.deepcopy(self.ledger)
