@@ -1,0 +1,19 @@
+[package]
+name = "scorestream-audio"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Native offline PCM adapter for ScoreStream performance plans"
+
+# Deliberately isolated until the parent workspace integration is reviewed.
+[workspace]
+
+[dependencies]
+scorestream-app = { path = "../scorestream-app" }
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.145"
+sha2 = "=0.10.9"
+tempfile = "=3.27.0"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "=0.2.191"
