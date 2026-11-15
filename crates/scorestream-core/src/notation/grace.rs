@@ -341,7 +341,10 @@ fn prepare(
         vec![e]
     })
 }
-fn discover(doc: &Document, performed: &PerformedScore) -> Result<GraceDiscovery, Vec<Diagnostic>> {
+pub(super) fn discover(
+    doc: &Document,
+    performed: &PerformedScore,
+) -> Result<GraceDiscovery, Vec<Diagnostic>> {
     let written: BTreeMap<_, _> = doc
         .events()
         .map(|(at, e)| (e.id().unwrap(), (at, e)))
@@ -511,6 +514,19 @@ pub fn perform_document_with_explicit_graces(
     performance_limits: PerformanceLimits,
     limits: GraceTimingLimits,
 ) -> Result<QualifiedGracePerformance, Vec<Diagnostic>> {
+    preflight_policy(doc, policy, &limits)?;
+    let performed = prepare(doc, performance_limits, &limits)?;
+    let schedule = allocate(doc, &performed, policy, sound_policy, &limits)?;
+    Ok(QualifiedGracePerformance {
+        performed,
+        schedule,
+    })
+}
+pub(super) fn preflight_policy(
+    doc: &Document,
+    policy: &ExplicitGracePolicy,
+    limits: &GraceTimingLimits,
+) -> Result<(), Vec<Diagnostic>> {
     if policy.groups.len() > limits.maximum_groups {
         return Err(fail(
             doc,
@@ -532,12 +548,21 @@ pub fn perform_document_with_explicit_graces(
                 ));
             }
             for member in values {
-                check(doc, &member.quarters, &limits)?;
+                check(doc, &member.quarters, limits)?;
             }
         }
     }
-    let performed = prepare(doc, performance_limits, &limits)?;
-    let discovery = discover(doc, &performed)?;
+    Ok(())
+}
+/// The route is created exactly once by a source-qualified constructor.
+pub(super) fn allocate(
+    doc: &Document,
+    performed: &PerformedScore,
+    policy: &ExplicitGracePolicy,
+    sound_policy: GraceSoundPolicy,
+    limits: &GraceTimingLimits,
+) -> Result<GraceSchedule, Vec<Diagnostic>> {
+    let discovery = discover(doc, performed)?;
     let clock = ExactTempoMap::new(&performed.score, Some(limits.maximum_rational_bits))
         .map_err(|e| fail(doc, "grace.rational_budget", e))?;
     if clock.seconds(&performed.score.end) > limits.maximum_timeline_seconds {
@@ -589,7 +614,7 @@ pub fn perform_document_with_explicit_graces(
         }
         let first = occurrences[0];
         let duration = &first.principal_end - &first.principal_start;
-        check(doc, &duration, &limits)?;
+        check(doc, &duration, limits)?;
         let allocations = match &group.allocation {
             GraceAllocation::AuthoredFollowingPercent => {
                 if occurrences.len() != 1
@@ -607,7 +632,7 @@ pub fn perform_document_with_explicit_graces(
                     return Err(fail(doc,"grace.percentage_tempo_ambiguous","Authored following percentage across changing effective tempo is ambiguous"));
                 }
                 let product = &duration * first.timing.steal_following.as_ref().unwrap();
-                check(doc, &product, &limits)?;
+                check(doc, &product, limits)?;
                 vec![&product / &Rational::from_integer(100)]
             }
             GraceAllocation::ExplicitFollowingQuarters { members } => {
@@ -651,7 +676,7 @@ pub fn perform_document_with_explicit_graces(
         let mut cursor = first.principal_start.clone();
         let mut total = Rational::zero();
         for (occurrence, allocation) in occurrences.iter().zip(allocations) {
-            check(doc, &allocation, &limits)?;
+            check(doc, &allocation, limits)?;
             if !allocation.is_positive() {
                 return Err(fail(
                     doc,
@@ -660,7 +685,7 @@ pub fn perform_document_with_explicit_graces(
                 ));
             }
             total = &total + &allocation;
-            check(doc, &total, &limits)?;
+            check(doc, &total, limits)?;
             if total >= duration {
                 return Err(fail(doc,"grace.principal_remainder","Total grace allocation must be strictly shorter than the nominal principal duration"));
             }
@@ -672,14 +697,14 @@ pub fn perform_document_with_explicit_graces(
                 EventRole::Grace,
                 (cursor, end.clone()),
                 &clock,
-                &limits,
+                limits,
             )?);
             cursor = end;
         }
         let remainder = &duration - &total;
-        check(doc, &remainder, &limits)?;
+        check(doc, &remainder, limits)?;
         let gated = &remainder * &"23/25".parse().unwrap();
-        check(doc, &gated, &limits)?;
+        check(doc, &gated, limits)?;
         let release = &cursor + &gated;
         windows.push(window(
             doc,
@@ -688,7 +713,7 @@ pub fn perform_document_with_explicit_graces(
             EventRole::Note,
             (cursor, release),
             &clock,
-            &limits,
+            limits,
         )?);
         groups.push(GraceGroupRealization {
             principal: group.principal.clone(),
@@ -725,17 +750,14 @@ pub fn perform_document_with_explicit_graces(
         })
         .collect();
     windows.sort_by(|a, b| a.quarter_start.cmp(&b.quarter_start).then(a.id.cmp(&b.id)));
-    Ok(QualifiedGracePerformance {
-        performed,
-        schedule: GraceSchedule {
-            default_tempo_intervals,
-            discovery,
-            windows,
-            groups,
-            sound_policy,
-            clock,
-            maximum_rational_bits: limits.maximum_rational_bits,
-        },
+    Ok(GraceSchedule {
+        default_tempo_intervals,
+        discovery,
+        windows,
+        groups,
+        sound_policy,
+        clock,
+        maximum_rational_bits: limits.maximum_rational_bits,
     })
 }
 fn window(

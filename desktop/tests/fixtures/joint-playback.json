@@ -1,0 +1,252 @@
+{
+  "diagnostics": [
+    {
+      "code": "combined.explicit_order_boundary",
+      "effect": "policy",
+      "feature": "performance.grace_fermata",
+      "message": "Explicit quarter allocation precedes additive global fermata seconds. Grace and principal attacks use the final after-boundary clock: a hold at group onset finishes before grace attacks and boundary controls; holds inside or at the nominal principal endpoint are unsupported. Written grace markers remain zero-length.",
+      "object_id": "document",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 18,
+        "end_line": 1,
+        "line": 1
+      }
+    },
+    {
+      "code": "fermata.explicit_policy_hold",
+      "effect": "policy",
+      "feature": "fermata.hold",
+      "message": "Added 1 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+      "object_id": "explicit-0",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 37,
+        "end_line": 11,
+        "line": 11
+      }
+    },
+    {
+      "code": "fermata.terminal_gate_override",
+      "effect": "policy",
+      "feature": "fermata.sustain",
+      "message": "Explicit sustain-selected-anchor policy replaces the ordinary terminal gate with the exact written endpoint and includes its hold; ties remain one attack.",
+      "object_id": "held",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 37,
+        "end_line": 11,
+        "line": 11
+      }
+    },
+    {
+      "code": "grace.explicit_following_quarters",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Every grace duration derives from the caller's exact quarter allocation; no slash, written-value or equal-division duration was inferred.",
+      "object_id": "principal",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 42,
+        "end_line": 17,
+        "line": 17
+      }
+    },
+    {
+      "code": "grace.explicit_sound_window",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+      "object_id": "a-grace",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 90,
+        "end_line": 19,
+        "line": 19
+      }
+    },
+    {
+      "code": "grace.explicit_sound_window",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+      "object_id": "principal",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 42,
+        "end_line": 17,
+        "line": 17
+      }
+    },
+    {
+      "code": "grace.explicit_sound_window",
+      "effect": "policy",
+      "feature": "rhythm.grace",
+      "message": "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+      "object_id": "z-grace",
+      "policy": "sfs1.1-expression-v2",
+      "source": {
+        "column": 1,
+        "end_column": 79,
+        "end_line": 18,
+        "line": 18
+      }
+    }
+  ],
+  "duration_seconds": 2.625,
+  "event_positions": [
+    {
+      "end_seconds": 1.5,
+      "id": "held",
+      "occurrence_id": "occ0:held",
+      "start_seconds": 0.0
+    },
+    {
+      "end_seconds": 1.5,
+      "id": "a-grace",
+      "occurrence_id": "occ0:a-grace",
+      "start_seconds": 1.5
+    },
+    {
+      "end_seconds": 2.625,
+      "id": "principal",
+      "occurrence_id": "occ0:principal",
+      "start_seconds": 1.5
+    },
+    {
+      "end_seconds": 1.5,
+      "id": "z-grace",
+      "occurrence_id": "occ0:z-grace",
+      "start_seconds": 1.5
+    }
+  ],
+  "measures": [
+    {
+      "end_seconds": 2.625,
+      "id": "m",
+      "label": "1",
+      "occurrence_index": 0,
+      "part": "p",
+      "start_seconds": 0.0
+    }
+  ],
+  "notes": [
+    {
+      "duration_seconds": 1.5,
+      "frequency_hz": 261.6255653005986,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 1.5
+        }
+      ],
+      "id": "occ0:held",
+      "instrument": "piano",
+      "midi_note": 60.0,
+      "part": "p",
+      "start_seconds": 0.0,
+      "velocity": 45,
+      "voice": "v1_1",
+      "written_id": "held"
+    },
+    {
+      "duration_seconds": 0.125,
+      "frequency_hz": 587.3295358348151,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.125
+        }
+      ],
+      "id": "occ0:z-grace",
+      "instrument": "piano",
+      "midi_note": 74.0,
+      "part": "p",
+      "start_seconds": 1.5,
+      "velocity": 90,
+      "voice": "v1_1",
+      "written_id": "z-grace"
+    },
+    {
+      "duration_seconds": 0.1875,
+      "frequency_hz": 659.2551138257398,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.125
+        },
+        {
+          "gain": 0.5,
+          "offset_seconds": 0.125
+        },
+        {
+          "gain": 0.5,
+          "offset_seconds": 0.1875
+        }
+      ],
+      "id": "occ0:a-grace",
+      "instrument": "piano",
+      "midi_note": 76.0,
+      "part": "p",
+      "start_seconds": 1.625,
+      "velocity": 90,
+      "voice": "v1_1",
+      "written_id": "a-grace"
+    },
+    {
+      "duration_seconds": 0.7475,
+      "frequency_hz": 391.99543598174927,
+      "gain_envelope": [
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.0
+        },
+        {
+          "gain": 1.0,
+          "offset_seconds": 0.7475
+        }
+      ],
+      "id": "occ0:principal",
+      "instrument": "piano",
+      "midi_note": 67.0,
+      "part": "p",
+      "start_seconds": 1.8125,
+      "velocity": 45,
+      "voice": "v1_1",
+      "written_id": "principal"
+    }
+  ],
+  "routes": [
+    {
+      "instrument": "piano",
+      "part": "p"
+    }
+  ],
+  "warnings": [
+    "combined.explicit_order_boundary [document]: Explicit quarter allocation precedes additive global fermata seconds. Grace and principal attacks use the final after-boundary clock: a hold at group onset finishes before grace attacks and boundary controls; holds inside or at the nominal principal endpoint are unsupported. Written grace markers remain zero-length.",
+    "fermata.explicit_policy_hold [explicit-0]: Added 1 seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.",
+    "fermata.terminal_gate_override [held]: Explicit sustain-selected-anchor policy replaces the ordinary terminal gate with the exact written endpoint and includes its hold; ties remain one attack.",
+    "grace.explicit_following_quarters [principal]: Every grace duration derives from the caller's exact quarter allocation; no slash, written-value or equal-division duration was inferred.",
+    "grace.explicit_sound_window [a-grace]: Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+    "grace.explicit_sound_window [principal]: Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.",
+    "grace.explicit_sound_window [z-grace]: Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times."
+  ]
+}

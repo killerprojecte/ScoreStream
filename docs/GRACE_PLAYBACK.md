@@ -91,8 +91,9 @@ explicit contiguous measure coverage, closed ordinary navigation, numeric sound
 dynamics rather than sounding symbolic dynamics, and no unsupported expression
 spans or cross-jump ties. Unrelated supported ordinary tie chains remain intact.
 
-Combined grace and fermata capabilities reject in **both** qualified APIs. There
-is no defined ordering yet between donated grace time and fermata holds. Ordinary
+Combined grace and fermata capabilities still reject in **both** single-feature
+qualified APIs. A [separate joint API](COMBINED_PLAYBACK.md) proves a narrow
+nonoverlapping case without changing those guards. Ordinary
 imported-grace playback still rejects. Legacy SFS graces without the fidelity
 capability retain their previous warning/omission behavior, not this new policy.
 
@@ -130,4 +131,4 @@ The four untouched originals contain 237 graces in 140 groups, none with authore
 timing directives. Their inventory is documented and hash-pinned in
 [GRACE_IMPORT.md](GRACE_IMPORT.md). This API does not assign policies to them, strip
 their unsupported notation, or claim they now render. A UI policy-entry workflow,
-combined fermata realization and full-score sampled audio remain separate work.
+broader grace/fermata interactions and full-score sampled audio remain separate work.

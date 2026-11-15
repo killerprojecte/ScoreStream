@@ -85,8 +85,9 @@ pub(super) fn perform(
     maximum_timing_bits: Option<u64>,
     grace_budgets: Option<(usize, usize)>,
 ) -> Result<PerformedScore> {
-    let fermatas = profile == lower::LoweringProfile::ExplicitFermatas;
-    let graces = profile == lower::LoweringProfile::ExplicitGraces;
+    let combined = profile == lower::LoweringProfile::ExplicitGracesAndFermatas;
+    let fermatas = combined || profile == lower::LoweringProfile::ExplicitFermatas;
+    let graces = combined || profile == lower::LoweringProfile::ExplicitGraces;
     if !fermatas
         && doc
             .required_extensions
@@ -97,7 +98,19 @@ pub(super) fn perform(
         d.source = doc.source;
         return Err(d);
     }
-    let supported = if fermatas {
+    let supported = if combined {
+        [
+            crate::fermata_extension::EXTENSION,
+            crate::grace_extension::EXTENSION,
+        ]
+        .iter()
+        .all(|required| doc.required_extensions.iter().any(|e| e == required))
+            && doc.required_extensions.iter().all(|e| {
+                e == crate::fermata_extension::EXTENSION
+                    || e == crate::grace_extension::EXTENSION
+                    || e == ext::EXTENSION
+            })
+    } else if fermatas {
         doc.required_extensions
             .iter()
             .any(|e| e == crate::fermata_extension::EXTENSION)
@@ -117,7 +130,9 @@ pub(super) fn perform(
         doc.required_extensions.as_slice() == [ext::EXTENSION]
     };
     if !supported {
-        return Err(if fermatas {
+        return Err(if combined {
+            error("combined.performance_capability", "Combined projection requires grace@1 and fermata@1, optionally navigation@1; other required semantics cannot be ignored")
+        } else if fermatas {
             error("fermata.performance_capability", "Qualified fermata projection requires fermata@1 and optionally navigation@1; other required semantics cannot be ignored")
         } else if graces {
             error("grace.performance_capability", "Qualified grace projection requires grace@1 and optionally navigation@1; other required semantics cannot be ignored")

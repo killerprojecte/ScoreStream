@@ -2,6 +2,7 @@
 //! SFS parsing/lowering, expression policy, continuity, and tempo conversion are
 //! distinct modules. No UI, audio devices, markup or wire attributes enter here.
 mod clock;
+mod combined;
 mod continuity;
 mod diagnostic;
 mod expression;
@@ -11,6 +12,7 @@ mod numeric;
 mod plan;
 mod tempo;
 use clock::PlaybackClock;
+pub use combined::*;
 use continuity::Continuity;
 use diagnostic::Diagnostics;
 pub use diagnostic::{PerformanceDiagnostic, RealizationEffect};
@@ -67,16 +69,69 @@ fn compile_scheduled(
     timing: Option<&TimingProjection>,
     grace: Option<&GraceSchedule>,
 ) -> Result<PlaybackPlan, String> {
+    if timing.is_some() && grace.is_some() {
+        return Err("Combined fermata and grace sound policies are unsupported".into());
+    }
+    compile_with_graces(
+        score,
+        doc,
+        performed,
+        timing,
+        grace.map(GraceView::Standalone),
+    )
+}
+/// Only a complete source-qualified proof may enter the joint clock path.
+fn compile_combined(
+    doc: &Document,
+    qualified: &QualifiedCombinedPerformance,
+) -> Result<PlaybackPlan, String> {
+    let performed = qualified.performed();
+    compile_with_graces(
+        &performed.score,
+        doc,
+        Some(performed),
+        Some(qualified.timing()),
+        Some(GraceView::Combined(qualified)),
+    )
+}
+#[derive(Clone, Copy)]
+enum GraceView<'a> {
+    Standalone(&'a GraceSchedule),
+    Combined(&'a QualifiedCombinedPerformance),
+}
+impl<'a> GraceView<'a> {
+    fn windows(self) -> &'a [GraceSoundWindow] {
+        match self {
+            Self::Standalone(s) => s.windows(),
+            Self::Combined(q) => q.grace_windows(),
+        }
+    }
+    fn groups(self) -> &'a [GraceGroupRealization] {
+        match self {
+            Self::Standalone(s) => s.groups(),
+            Self::Combined(q) => q.grace_groups(),
+        }
+    }
+    fn default_tempo_intervals(self) -> &'a [GraceDefaultTempoInterval] {
+        match self {
+            Self::Standalone(s) => s.default_tempo_intervals(),
+            Self::Combined(q) => q.default_tempo_intervals(),
+        }
+    }
+}
+fn compile_with_graces(
+    score: &ResolvedScore,
+    doc: &Document,
+    performed: Option<&PerformedScore>,
+    timing: Option<&TimingProjection>,
+    grace: Option<GraceView<'_>>,
+) -> Result<PlaybackPlan, String> {
     if score.events.len() > 100_000 {
         return Err("Playback is limited to 100,000 events per score".into());
     }
-    let tempo = if let Some(grace) = grace {
-        if timing.is_some() {
-            return Err("Combined fermata and grace sound policies are unsupported".into());
-        }
-        PlaybackClock::Grace(grace)
-    } else {
-        PlaybackClock::new(score, timing)?
+    let tempo = match grace {
+        Some(GraceView::Standalone(schedule)) => PlaybackClock::Grace(schedule),
+        _ => PlaybackClock::new(score, timing)?,
     };
     let grace_windows: BTreeMap<_, _> = grace
         .into_iter()
@@ -152,6 +207,11 @@ fn compile_scheduled(
                 &d.message,
             );
         }
+    }
+    if matches!(grace, Some(GraceView::Combined(_))) {
+        warnings.add("combined.explicit_order_boundary", "performance.grace_fermata", RealizationEffect::Policy,
+            &Origin { object_id: "document".into(), source: doc.source },
+            "Explicit quarter allocation precedes additive global fermata seconds. Grace and principal attacks use the final after-boundary clock: a hold at group onset finishes before grace attacks and boundary controls; holds inside or at the nominal principal endpoint are unsupported. Written grace markers remain zero-length.");
     }
     let expression = Expression::new(score, &mut warnings)?;
     let continuity = Continuity::new(score, &expression, &mut warnings)?;

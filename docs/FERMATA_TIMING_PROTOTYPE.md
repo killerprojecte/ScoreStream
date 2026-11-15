@@ -91,3 +91,11 @@ A single `PlaybackClock` serves compiler markers, gates, symbolic-expression plu
 This is a Rust API and scheduler-contract integration, **not** a UI/CLI policy editor or a File Open playback option. Existing seconds-based transport accepts the corrected plan; current interpolated playhead geometry is not hold-aware and must not be presented as fixed. Callers needing a frozen cursor use the separate hold metadata and exact seek result. The native sampled adapter still rejects non-unity per-note/step envelopes, an existing backend limitation, so a plan accepted by the WebAudio scheduler is not automatically accepted by every sampler. No audition, waveform correctness or complete original Beethoven performance is claimed.
 
 `crates/scorestream-formats/tests/qualified_fermata_playback.rs` exercises synthetic MusicXML through the shared model and unchanged SFS into the real qualified compiler, including the named synchronization shapes, policies, ties, controls, repeats, errors and exact seek. `fermata-playback.musicxml` plus its deliberately assigned 1/4, 1/2 and 3/4 second holds regenerates `desktop/tests/fixtures/fermata-playback.json`; the desktop test consumes that real Rust plan for scheduler/transport regression. These are test fixtures, not user-facing mock audio.
+
+## Separate joint grace policy
+
+The [combined source-qualified API](COMBINED_PLAYBACK.md) supports explicitly
+allocated grace groups whose nominal principal intervals do not contain a global
+fermata hold boundary. It uses the same route and retains both source capabilities.
+The public prototype and standalone fermata API described above continue to
+reject grace input; their contracts are not relaxed.

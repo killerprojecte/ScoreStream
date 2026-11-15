@@ -209,9 +209,13 @@ pub(super) enum LoweringProfile {
     Navigation,
     ExplicitFermatas,
     ExplicitGraces,
+    ExplicitGracesAndFermatas,
 }
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
-    let graces = profile == LoweringProfile::ExplicitGraces;
+    let graces = matches!(
+        profile,
+        LoweringProfile::ExplicitGraces | LoweringProfile::ExplicitGracesAndFermatas
+    );
     if !graces
         && doc
             .required_extensions
@@ -225,7 +229,10 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
         ));
     }
     let navigation = profile != LoweringProfile::Written;
-    let fermatas = profile == LoweringProfile::ExplicitFermatas;
+    let fermatas = matches!(
+        profile,
+        LoweringProfile::ExplicitFermatas | LoweringProfile::ExplicitGracesAndFermatas
+    );
     if !fermatas
         && doc
             .required_extensions

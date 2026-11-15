@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic combined-policy regression, not an original Beethoven excerpt. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>8</divisions><time><beats>3</beats><beat-type>4</beat-type></time></attributes>
+    <sound tempo="120" dynamics="50"/>
+    <note id="held"><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>quarter</type><notations><fermata type="upright"/></notations></note>
+    <sound tempo="60" dynamics="100"/>
+    <sound tempo="120" dynamics="50"><offset>2</offset></sound>
+    <note id="z-grace"><grace/><pitch><step>D</step><octave>5</octave></pitch><voice>1</voice><type>16th</type></note>
+    <note id="a-grace"><grace slash="yes"/><pitch><step>E</step><octave>5</octave></pitch><voice>1</voice><type>16th</type></note>
+    <note id="principal"><pitch><step>G</step><octave>4</octave></pitch><duration>16</duration><voice>1</voice><type>half</type></note>
+  </measure></part>
+</score-partwise>

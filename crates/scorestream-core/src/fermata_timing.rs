@@ -342,6 +342,26 @@ pub fn interpret(
     policy: &ExplicitFermataPolicy,
     limits: TimingLimits,
 ) -> Result<TimingProjection> {
+    interpret_inner(source, performed, policy, limits, None)
+}
+/// Internal only: the schedule is privately allocated from this unchanged source
+/// and the same qualified route. Raw callers never gain an ignore-grace flag.
+pub(crate) fn interpret_qualified_graces(
+    source: &Document,
+    performed: &PerformedScore,
+    policy: &ExplicitFermataPolicy,
+    limits: TimingLimits,
+    schedule: &crate::notation::GraceSchedule,
+) -> Result<TimingProjection> {
+    interpret_inner(source, performed, policy, limits, Some(schedule))
+}
+fn interpret_inner(
+    source: &Document,
+    performed: &PerformedScore,
+    policy: &ExplicitFermataPolicy,
+    limits: TimingLimits,
+    schedule: Option<&crate::notation::GraceSchedule>,
+) -> Result<TimingProjection> {
     let hard_maximum = Rational::from_integer(6 * 60 * 60);
     if !limits.maximum_timeline_seconds.is_positive()
         || limits.maximum_timeline_seconds > hard_maximum
@@ -435,7 +455,7 @@ pub fn interpret(
     // Reject unsupported source attacks even if a supplied snapshot omits them.
     // This prototype cannot silently erase grace timing while checking only the
     // measured-event receipts of an otherwise plausible route.
-    if source.events().any(|(_, event)| event.is_grace()) {
+    if schedule.is_none() && source.events().any(|(_, event)| event.is_grace()) {
         return Err(error(
             "fermata.unsupported_grace",
             "Source grace timing is outside this prototype, including unvisited grace notes",
@@ -618,23 +638,39 @@ pub fn interpret(
             "Performed measures must retain every source part",
         ));
     }
+    let scheduled_graces: BTreeMap<_, _> = schedule
+        .into_iter()
+        .flat_map(|s| s.discovery().occurrences.iter().map(|g| (&g.id, g)))
+        .collect();
     let mut event_map = BTreeMap::new();
     for event in &performed.score.events {
         time(&event.start, end, &limits)?;
-        let value = event.duration.measured().ok_or_else(|| {
-            error(
-                "fermata.unsupported_grace",
-                "Grace timing is outside this prototype",
-            )
-        })?;
-        duration(value, &limits)?;
-        time(&event.end(), end, &limits)?;
-        if event.role == EventRole::Grace || event.grace.is_some() {
-            return Err(error(
-                "fermata.unsupported_grace",
-                "Grace timing is outside this prototype",
-            ));
+        if let Some(value) = event.duration.measured() {
+            duration(value, &limits)?;
+            if event.role == EventRole::Grace || event.grace.is_some() {
+                return Err(error(
+                    "fermata.unsupported_grace",
+                    "Grace timing is outside this prototype",
+                ));
+            }
+        } else {
+            let qualified = scheduled_graces.get(&event.id).is_some_and(|g| {
+                event.role == EventRole::Grace
+                    && event
+                        .grace
+                        .as_ref()
+                        .is_some_and(|metadata| metadata.anchor == g.principal)
+                    && event.start == g.anchor_quarter
+                    && event.part == g.part
+            });
+            if !qualified {
+                return Err(error(
+                    "fermata.unsupported_grace",
+                    "Unqualified grace marker in performed route",
+                ));
+            }
         }
+        time(&event.end(), end, &limits)?;
         if event_map.insert(event.id.clone(), event).is_some() {
             return Err(error(
                 "fermata.event_receipt",
@@ -667,6 +703,17 @@ pub fn interpret(
                     format!("Unknown written event {}", receipt.written_id),
                 )
             })?;
+        if original.is_grace()
+            && !scheduled_graces.get(&receipt.id).is_some_and(|g| {
+                g.written_id == receipt.written_id
+                    && g.measure_occurrence == receipt.measure_occurrence
+            })
+        {
+            return Err(error(
+                "fermata.event_receipt",
+                "Grace schedule does not match its source occurrence receipt",
+            ));
+        }
         if original.duration != event.duration
             || event.part.0 != *part
             || event.staff.part != event.part
@@ -722,6 +769,12 @@ pub fn interpret(
             });
         }
     }
+    if scheduled_graces.keys().any(|id| !receipt_ids.contains(*id)) {
+        return Err(error(
+            "fermata.event_receipt",
+            "A scheduled grace is missing its occurrence receipt",
+        ));
+    }
     if receipt_ids.len() != event_map.len() {
         return Err(error(
             "fermata.event_receipt",
@@ -732,7 +785,7 @@ pub fn interpret(
     // Index by part/time, so repeat completeness is bounded by visited events.
     let mut events_by_part: BTreeMap<&str, Vec<(&Rational, &EventId)>> = BTreeMap::new();
     for (id, (at, event, part)) in &source_events {
-        if event.duration.measured().is_some() {
+        if schedule.is_some() || event.duration.measured().is_some() {
             events_by_part.entry(part).or_default().push((at, id));
         }
     }
@@ -758,7 +811,7 @@ pub fn interpret(
                 if !written_occurrences.contains(&((*id).clone(), m.occurrence_index)) {
                     return Err(error(
                         "fermata.event_receipt",
-                        format!("Visited source measure omitted measured event {id}"),
+                        format!("Visited source measure omitted event {id}"),
                     ));
                 }
             }
@@ -899,10 +952,7 @@ pub fn interpret(
             part: event.part.clone(),
             written_quarter_start: source_at.clone(),
             written_quarter_end: source_at
-                + original
-                    .duration
-                    .measured()
-                    .expect("matched measured occurrence"),
+                + &original.duration.measured().cloned().unwrap_or_default(),
             quarter_start: event.start.clone(),
             quarter_end: event.end(),
             seconds_start: projection.after(&event.start),

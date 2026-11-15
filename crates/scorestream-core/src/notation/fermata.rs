@@ -153,6 +153,13 @@ fn prepare(
 pub fn discover_document_fermatas(doc: &Document) -> Result<FermataDiscovery, Vec<Diagnostic>> {
     let limits = TimingLimits::default();
     let performed = prepare(doc, PerformanceLimits::default(), &limits)?;
+    discover(doc, &performed, &limits)
+}
+pub(super) fn discover(
+    doc: &Document,
+    performed: &PerformedScore,
+    limits: &TimingLimits,
+) -> Result<FermataDiscovery, Vec<Diagnostic>> {
     let mut authored = Vec::new();
     let mut by_written = BTreeMap::new();
     for frame in &doc.frames {
@@ -232,6 +239,14 @@ pub fn perform_document_with_explicit_fermatas(
     let performed = prepare(doc, performance_limits, &timing_limits)?;
     let mut timing = fermata_timing::interpret(doc, &performed, policy, timing_limits)
         .map_err(|e| fail(doc, e.code, e.message))?;
+    retain_default_tempo_provenance(&performed, &mut timing);
+    Ok(QualifiedFermataPerformance { performed, timing })
+}
+
+pub(super) fn retain_default_tempo_provenance(
+    performed: &PerformedScore,
+    timing: &mut TimingProjection,
+) {
     // The route reducer inserts explicit checkpoint controls even for the default
     // tempo. Preserve that provenance, including restored default intervals.
     for (i, tempo) in performed.score.tempos.iter().enumerate() {
@@ -253,5 +268,4 @@ pub fn perform_document_with_explicit_fermatas(
             }
         }
     }
-    Ok(QualifiedFermataPerformance { performed, timing })
 }
