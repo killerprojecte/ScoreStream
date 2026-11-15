@@ -6,10 +6,179 @@ use scorestream_app::playback::{PlaybackPlan, PlaybackRoute, plan_source};
 use scorestream_audio::{
     AudioError, FluidSynthBackend, RenderOptions, RouteAssignment, default_soundfont,
 };
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     sync::atomic::{AtomicBool, Ordering},
 };
+
+#[test]
+#[ignore = "requires an already-installed system FluidSynth and local GM bank"]
+fn explicit_bank_and_patch_assertions_precede_pcm_and_publication() {
+    use scorestream_audio::BankVerification;
+    let backend = FluidSynthBackend::open_installed().unwrap();
+    let (plan, routes) = fixture();
+    let bank = default_soundfont().unwrap();
+    let hash = format!("{:x}", Sha256::digest(fs::read(&bank).unwrap()));
+    let baseline = backend
+        .render_pcm(
+            &plan,
+            &routes,
+            &bank,
+            &RenderOptions::default(),
+            &AtomicBool::new(false),
+            &mut |_, _: &[f32]| Ok(()),
+        )
+        .unwrap();
+    let expected = BankVerification {
+        sha256: hash,
+        preset_names: baseline
+            .routes
+            .iter()
+            .map(|r| r.preset_name.clone())
+            .collect(),
+    };
+    let mut options = RenderOptions {
+        bank_verification: Some(expected.clone()),
+        ..RenderOptions::default()
+    };
+    let mut frames = 0;
+    backend
+        .render_pcm(
+            &plan,
+            &routes,
+            &bank,
+            &options,
+            &AtomicBool::new(false),
+            &mut |_, samples: &[f32]| {
+                frames += samples.len() / 2;
+                Ok(())
+            },
+        )
+        .unwrap();
+    assert_eq!(frames as u64, baseline.frames);
+    let dir = tempfile::tempdir().unwrap();
+    for wrong_hash in [true, false] {
+        let mut altered = expected.clone();
+        if wrong_hash {
+            altered.sha256 = "0".repeat(64);
+        } else {
+            altered.preset_names[0] = "Not the selected patch".into();
+        }
+        options.bank_verification = Some(altered);
+        let mut called = false;
+        let err = backend
+            .render_pcm(
+                &plan,
+                &routes,
+                &bank,
+                &options,
+                &AtomicBool::new(false),
+                &mut |_, _: &[f32]| {
+                    called = true;
+                    Ok(())
+                },
+            )
+            .unwrap_err();
+        assert!(!called);
+        assert!(err.to_string().contains(if wrong_hash {
+            "SHA-256"
+        } else {
+            "preset names"
+        }));
+        let output = dir.path().join("must-not-publish.wav");
+        assert!(
+            backend
+                .render_wav(
+                    &plan,
+                    &routes,
+                    &bank,
+                    &options,
+                    &AtomicBool::new(false),
+                    &output
+                )
+                .is_err()
+        );
+        assert!(!output.exists());
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+}
+
+#[test]
+#[ignore = "requires an already-installed system FluidSynth and local GM bank"]
+fn qualified_source_selection_renders_only_its_authenticated_routes() {
+    use scorestream_audio::assignments::*;
+    let backend = FluidSynthBackend::open_installed().unwrap();
+    let bank = default_soundfont().unwrap();
+    let (plan, routes) = fixture();
+    let baseline = backend
+        .render_pcm(
+            &plan,
+            &routes,
+            &bank,
+            &RenderOptions::default(),
+            &AtomicBool::new(false),
+            &mut |_, _: &[f32]| Ok(()),
+        )
+        .unwrap();
+    let profile = LocalSampleProfile {
+        id: "installed-GM-QA".into(),
+        bank_path: bank,
+        bank_sha256: baseline.soundfont_sha256,
+        license: "external installed bank; not bundled".into(),
+        provenance_uri: "urn:scorestream:test:installed-gm".into(),
+        coverage_evidence_sha256: "a".repeat(64),
+        patches: vec![SamplePatch {
+            id: "clarinet".into(),
+            instrument: "clarinet".into(),
+            bank: 0,
+            program: 71,
+            exact_preset_name: baseline.routes[0].preset_name.clone(),
+            regions: vec![SampleCoverage {
+                key_low: 60,
+                key_high: 62,
+                velocity_low: 80,
+                velocity_high: 80,
+                max_note_seconds: 0.5,
+            }],
+        }],
+    };
+    let selections = vec![PartSampleSelection {
+        part: "p".into(),
+        expected_instrument: "clarinet".into(),
+        expected_source_instrument_id: None,
+        patch_id: "clarinet".into(),
+    }];
+    let source = "!score 1.1 unit=q\n!part p instrument=clarinet staves=1\n!voice v part=p staff=1\n@0\n| p m len=4\nv C4:1 id=a\n.\n@1\nv D4:1 id=b\n.\n!end at=4\n";
+    let checked = preflight_source(
+        source,
+        &source_sha256(source),
+        &profile,
+        &selections,
+        &RenderOptions::default(),
+    )
+    .unwrap();
+    assert!(!checked.report().bank_bytes_and_audible_presets_verified);
+    let mut last_frame = 0;
+    let report = checked
+        .into_qualified()
+        .unwrap()
+        .render_pcm(
+            &backend,
+            &AtomicBool::new(false),
+            &mut |start, samples: &[f32]| {
+                assert_eq!(start, last_frame);
+                last_frame += (samples.len() / 2) as u64;
+                Ok(())
+            },
+        )
+        .unwrap();
+    assert!(report.assignment.bank_bytes_and_audible_presets_verified);
+    assert_eq!(report.assignment.exact_sfs_sha256, source_sha256(source));
+    assert_eq!(report.audio.note_count, 2);
+    assert_eq!(last_frame, report.audio.frames);
+    assert!(report.audio.peak > 0.0001 && report.audio.peak < 1.0);
+}
 
 fn fixture() -> (PlaybackPlan, Vec<RouteAssignment>) {
     let plan = plan_source("!score 1.1 unit=q\n!part p instrument=clarinet staves=1\n!voice v part=p staff=1\n@0\n| p m len=4\nv r:1 id=rest\n.\n@1\nv C4:1 id=a\n.\n@2\nv D4:1 id=b\n.\n!end at=4\n").unwrap();

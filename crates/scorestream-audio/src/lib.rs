@@ -1,8 +1,10 @@
 //! Native offline PCM, not a MIDI-device or VST3 host. Musical interpretation
-//! belongs to scorestream-app. This adapter never reparses a score or invents a
-//! fallback patch. Unsupported performance features fail before any PCM output.
+//! belongs to scorestream-app. The source-bound assignment layer calls that real
+//! compiler without rewriting source or inventing a fallback patch. Unsupported
+//! performance features fail before any PCM output.
 #![deny(unsafe_op_in_unsafe_fn)]
 
+pub mod assignments;
 #[cfg(target_os = "linux")]
 mod native;
 mod plan;
@@ -83,6 +85,17 @@ pub struct RenderOptions {
     pub max_notes: usize,
     /// Bound the bank input, not native resident memory. Only one copy is loaded.
     pub max_soundfont_bytes: u64,
+    /// Optional caller assertion. Hash is checked before native parsing; preset
+    /// names are checked after loading the verified bank, before any PCM.
+    /// Source-qualified sample assignments always populate this assertion.
+    pub bank_verification: Option<BankVerification>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BankVerification {
+    pub sha256: String,
+    /// Exact native preset names in route order; no aliases or display-name match.
+    pub preset_names: Vec<String>,
 }
 impl Default for RenderOptions {
     fn default() -> Self {
@@ -94,6 +107,7 @@ impl Default for RenderOptions {
             polyphony: 4096,
             max_notes: 1_000_000,
             max_soundfont_bytes: 2 * 1024 * 1024 * 1024,
+            bank_verification: None,
         }
     }
 }

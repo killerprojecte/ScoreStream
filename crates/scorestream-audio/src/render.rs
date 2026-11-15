@@ -44,8 +44,26 @@ impl FluidSynthBackend {
         let prepared = Prepared::new(plan, routes, options)?;
         cancelled(cancel)?;
         let mut bank = Bank::open(bank_path, options, cancel)?;
+        if options
+            .bank_verification
+            .as_ref()
+            .is_some_and(|expected| !bank.hash.eq_ignore_ascii_case(&expected.sha256))
+        {
+            return Err(AudioError::InvalidPlan(
+                "Selected bank bytes do not match the explicitly assigned SHA-256".into(),
+            ));
+        }
         cancelled(cancel)?;
         let mut synth = Synth::new(&self.api, &mut bank, routes, options, cancel)?;
+        if options
+            .bank_verification
+            .as_ref()
+            .is_some_and(|expected| synth.names != expected.preset_names)
+        {
+            return Err(AudioError::InvalidPlan(
+                "Selected native preset names do not match the explicit sample profile".into(),
+            ));
+        }
         cancelled(cancel)?;
         let mut report = RenderReport {
             backend: self.api.capabilities.clone(),

@@ -74,6 +74,20 @@ impl Prepared {
         if plan.notes.len() > options.max_notes || routes.len() > 256 {
             return Err(invalid("Note or route budget exceeded"));
         }
+        if let Some(expected) = &options.bank_verification {
+            if expected.sha256.len() != 64
+                || !expected.sha256.bytes().all(|b| b.is_ascii_hexdigit())
+                || expected.preset_names.len() != routes.len()
+                || expected
+                    .preset_names
+                    .iter()
+                    .any(|name| name.is_empty() || name.len() > 4096 || name.contains('\0'))
+            {
+                return Err(invalid(
+                    "Invalid bank digest or exact preset-name assertions",
+                ));
+            }
+        }
         if !plan.duration_seconds.is_finite() || plan.duration_seconds < 0.0 {
             return Err(invalid("Invalid score duration"));
         }

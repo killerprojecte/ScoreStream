@@ -118,16 +118,109 @@ Example routes JSON: `[ { "part": "p", "instrument": "clarinet", "bank": 0,
 voice count, timing quantum, PCM statistics and propagated compiler diagnostics.
 It does not claim whole-orchestra coverage from one successful patch.
 
+## Source-bound local sample assignments
+
+`assignments::preflight_source` is a narrow, pure bridge from an exact SFS revision
+to explicitly selected patches in **one existing authorized local bank**. It reads
+no bank, loads no library and opens no device. It requires:
+
+- SHA-256 of the exact input SFS bytes, including comments and whitespace;
+- a reviewed `LocalSampleProfile`: absolute local path, bank SHA-256, license and
+  provenance reference, coverage-evidence SHA-256, and explicit patch IDs;
+- an exact native preset name, zero-based bank/program, instrument ID, and finite
+  key/velocity/note-hold coverage regions for each patch;
+- one `PartSampleSelection` per declared part: exact part ID, expected instrument
+  ID, expected authored source-instrument ID (including explicit absence), and
+  selected patch ID. Silent parts remain traced but allocate no audible route.
+
+Profile regions are **reviewed caller declarations**, not facts inferred or proven
+from arbitrary SF2 bytes. The evidence digest identifies a separately reviewed
+artifact; this module neither fetches it nor validates its claims or license.
+Maximum hold time concerns the note gate, not a guarantee of complete release
+tails, legato, round robins, sample continuity or other articulations. A successful
+two-note probe must not be described as coverage for every note in an orchestra.
+The profile digest binds normalized typed JSON serialization, not the original
+JSON file's whitespace or key order. The exact SFS digest is not the original
+MusicXML digest; keep the upstream import/conversion report to preserve that chain.
+
+The report retains the full typed authored instrument metadata, including empty
+device records, one-based source MIDI numbers, and optional exact rational volume
+and pan. These remain distinct from the profile's zero-based local patch numbers
+and native allocated channels. There is no alias lookup or GM-name substitution.
+Unknown parts, stale identities, unmapped pitches/velocities/holds and unsupported
+native contracts block qualification with part/note diagnostics. Reports cap
+assignment diagnostic entries at 256 and count omissions without changing blocked
+status. Original structured compiler diagnostics and warnings are retained in
+separate fields, with their source object IDs, ranges, effects and policy labels.
+
+The unmodified `scorestream-app::playback::plan_source` is the only note compiler
+used here. **Any authored MIDI device/instrument record still blocks rendering**,
+even an empty record or a source program that happens to equal a chosen local
+patch. A local selection is not permission to override professional source intent.
+The existing compiler guard stays intact. If compilation is blocked, the report
+explicitly marks sounding-note coverage unassessed. This API does not add an
+override policy or bypass other compiler requirements for score realization.
+In addition, this source-qualified path fails closed on every compiler `Omitted`
+or `Policy` diagnostic, because this API accepts no explicit musical-realization
+policy. This blocks omitted grace notes, ambiguous phrasing, partial-pedal
+threshold approximations and default hairpin targets instead of blessing the
+remaining notes as an authentic rendition. Unresolved arbitrary words also block;
+explicit notation-only metronome/dynamic signs remain visible without inventing
+sound. The lower-level legacy compiler/renderer behavior is not changed by these
+additional source-qualification checks. This conservative subset does not claim
+the current compiler can detect every possible fidelity issue.
+
+The current native adapter also cannot honor source channel volume/pan or
+independent fractional note gain envelopes. It fails rather than silently applying
+7-bit CC approximations, ignoring sustained crescendos, or treating MusicXML pan
+as a linear stereo slider. MusicXML pan has 0 degrees ahead, -90 left, +90 right,
+and +/-180 behind. Its channel volume is exact 0..100 percent; neither is already
+a MIDI CC integer. Missing mixers remain absent. Native defaults and the bank's
+own stereo samples are unchanged; no new source mixer values are invented.
+
+`contract_renderable=true` only says the pure source/route/coverage/native-contract
+checks passed. It is not a bank-existence, installation, license, acoustic-fidelity
+or runtime-support assertion. `bank_bytes_and_audible_presets_verified` remains false
+until a successful native render. This flag covers **only the bank bytes and
+presets used by audible routes**, not unused profile patches or selected silent
+parts. `into_qualified()` yields an opaque request that
+cannot have its notes, source digest, routes, profile or options swapped by a
+caller. Rendering authenticates the selected bank SHA-256 **before native parsing**
+and exact preset names **after loading that bank but before PCM**. The source-bound
+API always supplies these assertions, regardless of weaker caller options. On
+failure, no successful combined report is returned; WAV cleanup/no-clobber rules
+remain as described above. Streaming consumers must still discard partial output
+after any later native or sink error.
+
+The example is opt-in, with bounded local text inputs and no automatic discovery:
+
+```sh
+cargo build --manifest-path crates/scorestream-audio/Cargo.toml --locked --offline --example assign_samples
+# Execute the resulting artifact directly, not cargo run:
+assign_samples source.sfs EXACT_SFS_SHA256 profile.json selections.json
+# Only this explicit fifth argument requests native loading and a new WAV:
+assign_samples source.sfs EXACT_SFS_SHA256 profile.json selections.json new.wav
+```
+
+The first form prints a JSON preflight and returns failure if blocked, without
+native access. The second prints the combined assignment/native report after a
+successful render, or the blocked preflight without creating audio. Profiles use
+the public serde types; unknown fields are rejected. No profiles, sample banks,
+proprietary assets or private local paths are bundled in this crate. This library
+is not desktop playback, a multi-bank mixer, MIDI port sending or audible VST3
+support. Existing `render_pcm`/`render_wav` APIs remain available for already
+realized plans; they are lower-level APIs, not source-authorization proofs.
+
 ## Production integration gates
 
 1. Review this isolated crate, then decide workspace membership, opt-in desktop
    feature and CI runners with authorized installed banks. Normal builds must
    still work when the backend is unavailable. Native loading stays off until
    explicitly selected; do not use a silent fallback for export.
-2. Define audited sample profiles (key/velocity coverage, sustain behavior,
-   articulations, source licenses/hashes), per-route bank assignment and job-level
-   resource/progress/cancellation ownership. Preserve upstream expression or fail
-   before export until the selected backend supports it.
+2. Expand independently audited sample profiles beyond the current explicit
+   one-bank selection contract, adding multi-bank ownership, actual articulation
+   realization and job-level resource/progress/cancellation controls. Preserve
+   upstream expression or fail before export until the backend supports it.
 3. Integrate the actual imported-score compiler output and preserve its diagnostics
    and movement timeline. Validate complete works with sustained dynamics and
    attacca seams; a synthetic long test is capacity evidence, not music fidelity.
@@ -140,3 +233,5 @@ API references: [FluidSynth rendering](https://www.fluidsynth.org/api/group__aud
 [SoundFont loading](https://www.fluidsynth.org/api/group__soundfont__management.html),
 [synth settings](https://www.fluidsynth.org/api/settings_synth.html),
 [MIDI messages](https://www.fluidsynth.org/api/group__midi__messages.html).
+Source mixer semantics: [MusicXML volume](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/volume/)
+and [MusicXML pan](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/pan/).
