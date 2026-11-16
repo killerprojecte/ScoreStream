@@ -198,3 +198,72 @@ fn practice_discovery_is_source_bound_and_never_authorizes_audio() {
         .is_err()
     );
 }
+
+fn practice_fixture() -> (String, Config) {
+    let source=SOURCE.replace("v2_1 r:2 id=silence", "v2_1 C3:2 id=silence").replace("name=\"violin\" source_id=\"ip\"","name=\"violin\" source_id=\"ip\" device=\"\" device_ref=\"ip\" port=1 midi_ref=\"ip\" channel=1 program=41 volume=393701/5000 pan=0")
+        .replace("name=\"violin\" source_id=\"ir\"","name=\"violin\" source_id=\"ir\" device=\"\" device_ref=\"ir\" port=2 midi_ref=\"ir\" channel=1 program=41 volume=393701/5000 pan=0");
+    let mut c = config();
+    let mut silent = c["palette"][0].clone();
+    silent["part"] = "r".into();
+    c["palette"].as_array_mut().unwrap().push(silent);
+    c["source_sha256"] = scorestream_audio::assignments::source_sha256(&source).into();
+    (source, serde_json::from_value(c).unwrap())
+}
+#[test]
+fn practice_joint_clock_and_midi_receipt_are_explicit_without_default_bypass() {
+    use scorestream_audio::midi_mixer::LocalMidiPolicy;
+    use support::PracticeReviewPolicy;
+    let (source, c) = practice_fixture();
+    let q = Audition::compile_practice(
+        &source,
+        c,
+        PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        LocalMidiPolicy::InitialGmCc7CenteredV1,
+    )
+    .unwrap();
+    let r = q.preflight().unwrap();
+    assert_eq!(r["audible_notes"], 6);
+    assert_eq!(r["duration_seconds"], 3.0);
+    assert_eq!(r["pizzicato_attacks"], 2);
+    assert_eq!(
+        r["local_midi_mix"]["source_sha256"],
+        scorestream_audio::assignments::source_sha256(&source)
+    );
+    assert_eq!(
+        r["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|d| d["code"].as_str().unwrap().starts_with("practice."))
+            .count(),
+        5
+    );
+    let (source, c) = practice_fixture();
+    assert!(Audition::compile(&source, c).is_err());
+}
+#[test]
+#[ignore = "requires installed authorized TimGM6mb/FluidSynth; direct native binary"]
+fn source_matched_practice_midi_pizzicato_renders_with_mirrored_controllers() {
+    use scorestream_audio::midi_mixer::LocalMidiPolicy;
+    use support::PracticeReviewPolicy;
+    let (source, c) = practice_fixture();
+    let q = Audition::compile_practice(
+        &source,
+        c,
+        PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        LocalMidiPolicy::InitialGmCc7CenteredV1,
+    )
+    .unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let output = dir.path().join("rehearsal.wav");
+    let report = q
+        .render(&scorestream_audio::default_soundfont().unwrap(), &output)
+        .unwrap();
+    assert_eq!(report["report"]["render"]["note_count"], 6);
+    assert!(report["report"]["render"]["peak"].as_f64().unwrap() > 0.0001);
+    assert_eq!(report["report"]["technique_channels"][0]["attacks"], 2);
+    let serialized = serde_json::to_string(&report).unwrap();
+    assert!(serialized.contains("practice.ornaments_unrepresented"));
+    assert!(serialized.contains("inherited_from_native_channel"));
+    assert_eq!(&std::fs::read(&output).unwrap()[..4], b"RIFF");
+}

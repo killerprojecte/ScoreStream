@@ -235,7 +235,7 @@ fn prepare_profile(
     perform::perform(
         doc,
         performance,
-        if practice { LoweringProfile::PracticeJointDiscovery } else if articulation_policy.is_some() {
+        if practice { LoweringProfile::ExplicitPracticeJoint } else if articulation_policy.is_some() {
             LoweringProfile::ExplicitArticulationsGracesAndFermatas
         } else {
             LoweringProfile::ExplicitGracesAndFermatas
@@ -393,6 +393,21 @@ fn perform_combined(
     timing_limits: TimingLimits,
     articulation_policy: Option<ExplicitArticulationPolicy>,
 ) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
+    perform_combined_profile(doc,grace_policy,grace_sound_policy,fermata_policy,synchronization,performance_limits,grace_limits,timing_limits,articulation_policy,false)
+}
+#[allow(clippy::too_many_arguments)]
+fn perform_combined_profile(
+    doc: &Document,
+    grace_policy: &ExplicitGracePolicy,
+    grace_sound_policy: GraceSoundPolicy,
+    fermata_policy: &ExplicitFermataPolicy,
+    synchronization: Option<&[Rational]>,
+    performance_limits: PerformanceLimits,
+    grace_limits: GraceTimingLimits,
+    timing_limits: TimingLimits,
+    articulation_policy: Option<ExplicitArticulationPolicy>,
+    practice: bool,
+) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
     let (grace_limits, timing_limits) = limits(doc, &grace_limits, &timing_limits)?;
     if synchronization.is_some_and(|boundaries| {
         boundaries
@@ -407,12 +422,13 @@ fn perform_combined(
     }
     grace::preflight_policy(doc, grace_policy, &grace_limits)?;
     preflight_fermata_policy(doc, fermata_policy, &timing_limits)?;
-    let performed = prepare(
+    let performed = prepare_profile(
         doc,
         performance_limits,
         &grace_limits,
         &timing_limits,
         articulation_policy,
+        practice,
     )?;
     let articulations = articulation_policy
         .map(|policy| super::articulations::qualify_articulations(doc, &performed, policy))
@@ -542,4 +558,11 @@ pub(super) fn discover_practice(doc: &Document, articulation_policy: ExplicitArt
     let p=prepare_profile(doc,PerformanceLimits::default(),&grace,&timing,Some(articulation_policy),true)?;
     super::articulations::qualify_articulations(doc,&p,articulation_policy)?;
     Ok(CombinedPerformanceDiscovery { graces: grace::discover(doc,&p)?, fermatas: fermata::discover(doc,&p,&timing)? })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn perform_practice(doc:&Document, articulation:ExplicitArticulationPolicy, grace:&ExplicitGracePolicy, grace_sound:GraceSoundPolicy, holds:&fermata_timing::ExplicitSynchronizedFermataPolicy) -> Result<QualifiedCombinedPerformance,Vec<Diagnostic>> {
+    let policy=ExplicitFermataPolicy {groups:holds.groups.iter().map(|g|g.hold.clone()).collect()};
+    let boundaries:Vec<_>=holds.groups.iter().map(|g|g.boundary.clone()).collect();
+    perform_combined_profile(doc,grace,grace_sound,&policy,Some(&boundaries),PerformanceLimits::default(),GraceTimingLimits::default(),TimingLimits::default(),Some(articulation),true)
 }

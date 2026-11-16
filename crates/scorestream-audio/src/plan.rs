@@ -59,7 +59,7 @@ impl Prepared {
         if plan
             .diagnostics
             .iter()
-            .any(|d| d.code == "pizzicato.native_approximation_required")
+            .any(|d| d.code == "pizzicato.native_approximation_required" || d.code == "practice.native_receipt_required")
         {
             return Err(AudioError::Unsupported(
                 "Technique-bearing plan requires the opt-in pizzicato renderer and its receipt"

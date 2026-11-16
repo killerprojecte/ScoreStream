@@ -213,3 +213,33 @@ The current timing interpreter requires positive added seconds per group and
 complete exactly-once membership. Zero seconds and omitted signs are rejected;
 a no-added-hold rehearsal would require a separately named policy, not an empty
 or zero-valued existing hold policy.
+
+### Explicit practice plan preflight
+
+```
+audition preflight-practice source.sfs selected-policy.json written_notes_without_wedge_dashes_ornaments_slur_v1 initial_gm_cc7_centered_v1
+```
+
+Unlike discovery, this consumes the caller's complete positive hold policy and
+empty-or-explicit grace allocation. The existing qualified joint clock,
+articulation, continuity and attack-dynamics checks are reused. The opaque
+technique plan carries its exact source digest and four durable, named acoustic
+nonrealizations. Default native rendering rejects this plan; the opt-in renderer
+requires the matching sealed local MIDI mixer and audited palette. Only those
+four explicitly selected omissions are accepted by this practice preflight;
+other omissions remain errors. There is no `render-practice` command yet.
+
+A synthetic two-part fixture with six real authored notes, explicit synchronized
+rest hold, grace notes, MIDI assignments on both parts, and two pizzicato attacks
+has passed pure preflight and real local FluidSynth WAV rendering. Mirrored
+pizzicato controller receipts survive in the output report. This fixture is not
+an excerpt or proof of whole-Beethoven playability.
+
+For the unchanged movement-I source, the internally selected rehearsal policy
+uses the 16 separately named equal-release groups, 1/2 second each except the
+three distinct cadenza groups (1/4 second each), adding 29/4 seconds in total.
+That policy reaches the app's existing `note_dynamics.tie_continuation_unsupported`
+check at `occ34:mx_n11200`: this tied continuation carries its own authored
+`attack_dynamics=1611/25` after attack `mx_n11199` with `5889/100`.
+No continuation velocity has been discarded or reinterpreted, and no full
+movement plan or WAV was produced by this milestone.

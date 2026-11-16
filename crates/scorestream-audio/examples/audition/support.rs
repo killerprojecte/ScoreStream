@@ -107,8 +107,59 @@ pub struct Audition {
 }
 impl Audition {
     pub fn compile(source: &str, config: Config) -> Result<Self> {
+        Self::compile_selected(source, config, None)
+    }
+    pub fn compile_practice(
+        source: &str,
+        config: Config,
+        _practice: PracticeReviewPolicy,
+        midi: scorestream_audio::midi_mixer::LocalMidiPolicy,
+    ) -> Result<Self> {
+        Self::compile_selected(source, config, Some(midi))
+    }
+    fn compile_selected(
+        source: &str,
+        config: Config,
+        practice: Option<scorestream_audio::midi_mixer::LocalMidiPolicy>,
+    ) -> Result<Self> {
         if source_sha256(source) != config.source_sha256 {
             return Err("Source bytes differ from the policy receipt; rediscover and explicitly revise the configuration".into());
+        }
+        let routes: Vec<RouteAssignment> = config
+            .palette
+            .iter()
+            .map(|p| RouteAssignment {
+                part: p.part.clone(),
+                instrument: p.instrument.clone(),
+                bank: p.bank,
+                program: p.program,
+            })
+            .collect();
+
+        if practice.is_some()
+            && (!matches!(&config.timing, Timing::Joint { .. })
+                || !matches!(
+                    &config.pizzicato,
+                    Pizzicato::InstalledTimGm6mbSharedStringsV1
+                ))
+        {
+            return Err(
+                "Practice requires explicit joint policies and installed sample approximation"
+                    .into(),
+            );
+        }
+        let mix = practice
+            .map(|p| {
+                scorestream_audio::midi_mixer::prepare_local_midi_mix(
+                    source,
+                    &config.source_sha256,
+                    &routes,
+                    p,
+                )
+            })
+            .transpose()?;
+        if let Some(m) = &mix {
+            m.verify_source(source)?;
         }
         let sample_policy = PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation;
         let plan = match config.timing {
@@ -172,32 +223,36 @@ impl Audition {
                             .clone(),
                     ),
                     Pizzicato::InstalledTimGm6mbSharedStringsV1 => {
-                        Plan::Technique(plan_source_with_joint_policies_and_pizzicato(
-                            source,
-                            a,
-                            &grace,
-                            g,
-                            &hold,
-                            f,
-                            sample_policy,
-                        )?)
+                        if let Some(mix) = &mix {
+                            let selected = mix
+                                .routes()
+                                .iter()
+                                .map(|r| PracticeMidiSelection {
+                                    part: r.route.part.clone(),
+                                    instrument: r.route.instrument.clone(),
+                                    bank: r.route.bank,
+                                    program_zero_based: r.route.program,
+                                })
+                                .collect::<Vec<_>>();
+                            Plan::Technique(plan_source_with_practice_joint_policies_and_pizzicato(source,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
+                        } else {
+                            Plan::Technique(plan_source_with_joint_policies_and_pizzicato(
+                                source,
+                                a,
+                                &grace,
+                                g,
+                                &hold,
+                                f,
+                                sample_policy,
+                            )?)
+                        }
                     }
                 }
             }
         };
-        let routes = config
-            .palette
-            .iter()
-            .map(|p| RouteAssignment {
-                part: p.part.clone(),
-                instrument: p.instrument.clone(),
-                bank: p.bank,
-                program: p.program,
-            })
-            .collect();
         let r = config.rendering;
         let options = RenderOptions {
-            local_midi_mix: None,
+            local_midi_mix: mix,
             sample_rate: r.sample_rate,
             block_frames: r.block_frames,
             gain: r.gain,
@@ -238,12 +293,12 @@ impl Audition {
         if let Some(d) = plan
             .diagnostics
             .iter()
-            .find(|d| d.effect == RealizationEffect::Omitted)
+            .find(|d| d.effect == RealizationEffect::Omitted && !(self.options.local_midi_mix.is_some() && matches!(&self.plan, Plan::Technique(p) if !p.practice_nonrealizations().is_empty()) && matches!(d.code.as_str(),"practice.wedge_unrepresented"|"practice.dashes_unrepresented"|"practice.ornaments_unrepresented"|"practice.slur_unrepresented")))
         {
             return Err(format!("Audition refuses omitted source sound ({}): {}. Supply a supported explicit interpretation rather than a fallback.",d.code,d.message).into());
         }
         Ok(
-            json!({"schema":"scorestream.local-audition-preflight.v1","source_sha256":self.source_sha256,"audible_notes":plan.notes.len(),"duration_seconds":plan.duration_seconds,"pizzicato_attacks":techniques,"routes":self.routes,"warnings":plan.warnings,"diagnostics":plan.diagnostics,"native_bank_verified":false,"scope":"pure compiler/route/channel preflight only; render verifies existing bank bytes and actual preset names before PCM"}),
+            json!({"schema":"scorestream.local-audition-preflight.v1","source_sha256":self.source_sha256,"audible_notes":plan.notes.len(),"duration_seconds":plan.duration_seconds,"pizzicato_attacks":techniques,"routes":self.routes,"warnings":plan.warnings,"diagnostics":plan.diagnostics,"local_midi_mix":self.options.local_midi_mix,"native_bank_verified":false,"scope":"pure compiler/route/channel preflight only; render verifies existing bank bytes and actual preset names before PCM"}),
         )
     }
     pub fn render(&self, bank: &Path, output: &Path) -> Result<Value> {

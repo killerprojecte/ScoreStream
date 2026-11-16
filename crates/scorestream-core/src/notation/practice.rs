@@ -1,5 +1,5 @@
-//! Closed, non-playable discovery for an explicitly disclosed practice route.
-//! No constructor here returns a ResolvedScore or authorizes sound rendering.
+//! Source-retaining, explicitly disclosed practice discovery and joint timing.
+//! Native sound still requires a matching sealed local MIDI and sample receipt.
 use super::*;
 use crate::{Diagnostic, Document, Rational, Record, Severity, instrument_extension};
 use std::collections::BTreeSet;
@@ -45,6 +45,18 @@ pub fn discover_document_practice_joint(
     articulation: ExplicitArticulationPolicy,
     routes: &[PracticeMidiSelection],
 ) -> Result<PracticeJointDiscovery, Vec<Diagnostic>> {
+    validate_selections(doc, routes)?;
+    let discovery = super::combined::discover_practice(doc, articulation)?;
+    Ok(PracticeJointDiscovery {
+        source: doc.clone(),
+        discovery,
+    })
+}
+
+fn validate_selections(
+    doc: &Document,
+    routes: &[PracticeMidiSelection],
+) -> Result<(), Vec<Diagnostic>> {
     let errors: Vec<_> = crate::validate(doc, None)
         .into_iter()
         .filter(|d| d.severity == Severity::Error)
@@ -112,9 +124,37 @@ pub fn discover_document_practice_joint(
             ));
         }
     }
-    let discovery = super::combined::discover_practice(doc, articulation)?;
-    Ok(PracticeJointDiscovery {
+    Ok(())
+}
+/// Source-retaining interpretation with explicit nonrealizations. This is not
+/// the strict performance profile and does not certify a native bank/mixer.
+#[derive(Clone, Debug)]
+pub struct QualifiedPracticePerformance {
+    source: Document,
+    joint: QualifiedCombinedPerformance,
+}
+impl QualifiedPracticePerformance {
+    pub fn source(&self) -> &Document {
+        &self.source
+    }
+    pub fn joint(&self) -> &QualifiedCombinedPerformance {
+        &self.joint
+    }
+}
+#[allow(clippy::too_many_arguments)]
+pub fn perform_document_practice_joint(
+    doc: &Document,
+    _policy: PracticeDiscoveryPolicy,
+    routes: &[PracticeMidiSelection],
+    articulation: ExplicitArticulationPolicy,
+    grace: &ExplicitGracePolicy,
+    grace_sound: GraceSoundPolicy,
+    holds: &crate::fermata_timing::ExplicitSynchronizedFermataPolicy,
+) -> Result<QualifiedPracticePerformance, Vec<Diagnostic>> {
+    validate_selections(doc, routes)?;
+    let joint = super::combined::perform_practice(doc, articulation, grace, grace_sound, holds)?;
+    Ok(QualifiedPracticePerformance {
         source: doc.clone(),
-        discovery,
+        joint,
     })
 }

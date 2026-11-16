@@ -7,6 +7,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
     let usage = "Usage: audition review-practice source.sfs written_notes_without_wedge_dashes_ornaments_slur_v1 | audition trace-route source.sfs | audition discover-joint source.sfs simple_staccato_accent_v1 | audition preflight source.sfs policy.json | audition render source.sfs policy.json existing.sf2 new.wav";
     let value = match args.get(1).map(String::as_str) {
+        Some("preflight-practice")
+            if args.len() == 6
+                && args[4] == "written_notes_without_wedge_dashes_ornaments_slur_v1"
+                && args[5] == "initial_gm_cc7_centered_v1" =>
+        {
+            let source = std::fs::read_to_string(&args[2])?;
+            let config = serde_json::from_str(&std::fs::read_to_string(&args[3])?)?;
+            support::Audition::compile_practice(
+                &source,
+                config,
+                support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+                scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1,
+            )?
+            .preflight()?
+        }
+
         Some("discover-practice")
             if args.len() == 6
                 && args[4] == "written_notes_without_wedge_dashes_ornaments_slur_v1"

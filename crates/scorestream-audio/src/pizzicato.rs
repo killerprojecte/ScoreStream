@@ -37,6 +37,7 @@ fn lanes(
     options: &RenderOptions,
     _policy: PizzicatoSamplePolicy,
 ) -> Result<Lanes> {
+    if !plan.practice_nonrealizations().is_empty() && options.local_midi_mix.is_none() { return Err(invalid("Practice plan requires its matching sealed local MIDI mixer")); }
     let expected = options.bank_verification.as_ref().ok_or_else(|| {
         invalid("Pizzicato requires explicit bank SHA and exact base preset names")
     })?;

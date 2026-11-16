@@ -92,7 +92,7 @@ pub(super) fn perform(
         profile,
         lower::LoweringProfile::ExplicitArticulations
             | lower::LoweringProfile::ExplicitArticulationsGracesAndFermatas
-            | lower::LoweringProfile::PracticeJointDiscovery
+            | lower::LoweringProfile::ExplicitPracticeJoint
     );
     if !articulations {
         lower::reject_authored_articulations(doc)?;
@@ -101,7 +101,7 @@ pub(super) fn perform(
         profile,
         lower::LoweringProfile::ExplicitGracesAndFermatas
             | lower::LoweringProfile::ExplicitArticulationsGracesAndFermatas
-            | lower::LoweringProfile::PracticeJointDiscovery
+            | lower::LoweringProfile::ExplicitPracticeJoint
     );
     let fermatas = combined || profile == lower::LoweringProfile::ExplicitFermatas;
     let graces = combined || profile == lower::LoweringProfile::ExplicitGraces;
@@ -120,7 +120,7 @@ pub(super) fn perform(
     }
     super::passive::validate(doc)?;
     let pending: Vec<_> = doc.required_extensions.iter().filter(|e|super::passive::pending(e)).collect();
-    if profile != lower::LoweringProfile::PracticeJointDiscovery && !pending.is_empty() { return Err(error("performance.unresolved_families",format!("Required families may carry audible intent and have no selected closed realization in this route: {pending:?}; route trace discovery is not sound authorization"))); }
+    if profile != lower::LoweringProfile::ExplicitPracticeJoint && !pending.is_empty() { return Err(error("performance.unresolved_families",format!("Required families may carry audible intent and have no selected closed realization in this route: {pending:?}; route trace discovery is not sound authorization"))); }
     let supported = if articulations && !combined {
         doc.required_extensions
             .iter()
@@ -134,7 +134,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::PracticeJointDiscovery && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
             })
     } else if combined {
         doc.required_extensions.iter().any(|e|e == crate::fermata_extension::EXTENSION)
@@ -158,7 +158,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::PracticeJointDiscovery && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
             })
     } else if fermatas {
         doc.required_extensions
@@ -172,7 +172,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::PracticeJointDiscovery && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
             })
     } else if graces {
         doc.required_extensions
@@ -186,7 +186,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::PracticeJointDiscovery && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
             })
     } else {
         doc.required_extensions.iter().any(|e| e == ext::EXTENSION)
@@ -197,7 +197,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::PracticeJointDiscovery && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
             })
     };
     if !supported {
