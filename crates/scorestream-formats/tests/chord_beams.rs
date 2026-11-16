@@ -290,7 +290,7 @@ fn no_member_metadata_or_unsupported_layout_is_guessed() {
     }
     for tag in [
         "<notations><slur type=\"start\"/></notations>",
-        "<notehead>none</notehead>",
+        "<notehead filled=\"yes\">diamond</notehead>",
         "<lyric><text>x</text></lyric>",
     ] {
         assert!(

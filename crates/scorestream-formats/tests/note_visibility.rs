@@ -229,3 +229,49 @@ fn yes_no_tokens_normalize_only_xml_whitespace() {
         );
     }
 }
+
+#[test]
+fn authored_notehead_roundtrips_without_changing_playback() {
+    use scorestream_core::score::NoteheadShape;
+    let original = MusicXml.read(&xml(&note("n", "", PITCH))).unwrap().value;
+    let plan = |score: &ScoreDocument| scorestream_app::playback::plan_source(&SfsAdapter.write(score).unwrap().value).unwrap();
+    let expected_plan = plan(&original);
+    assert_eq!(original.parts[0].measures[0].events[0].notehead, None);
+    for (name, shape) in [
+        ("normal", NoteheadShape::Normal), ("x", NoteheadShape::X),
+        ("diamond", NoteheadShape::Diamond), ("triangle", NoteheadShape::Triangle),
+        ("slash", NoteheadShape::Slash), ("none", NoteheadShape::None),
+    ] {
+        let head = format!("<notehead>{name}</notehead>");
+        let score = MusicXml.read(&xml(&note("n", "", &format!("{PITCH}{head}")))).unwrap().value;
+        let (restored, wire) = roundtrip(&score);
+        assert_eq!(restored.parts[0].measures[0].events[0].notehead, Some(shape));
+        assert!(wire.contains(&format!("notehead={name}")));
+        assert!(MusicXml.write(&restored).unwrap().value.contains(&head));
+        assert_eq!(plan(&restored), expected_plan);
+    }
+}
+
+#[test]
+fn authored_notehead_does_not_drop_extra_attributes_or_custom_glyphs() {
+    let unsupported = [
+        "<notehead filled=\"no\">diamond</notehead>",
+        "<notehead smufl=\"noteheadClusterSquareWhite\">other</notehead>",
+        "<notehead>circle-x</notehead>",
+        "<notehead>none</notehead><notehead>normal</notehead>",
+        "<notehead/>",
+    ];
+    for tag in unsupported {
+        assert!(MusicXml.read(&xml(&note("n", "", &format!("{PITCH}{tag}")))).is_err(), "{tag}");
+    }
+}
+
+#[test]
+fn authored_grace_notehead_belongs_only_to_the_grace() {
+    let grace = note("g", "", "<grace slash=\"yes\"/><pitch><step>D</step><octave>4</octave></pitch><type>eighth</type><notehead>diamond</notehead>");
+    let score = MusicXml.read(&xml(&(grace + &note("n", "", PITCH)))).unwrap().value;
+    let (restored, _) = roundtrip(&score);
+    assert_eq!(restored.graces[0].notehead, Some(scorestream_core::score::NoteheadShape::Diamond));
+    assert_eq!(restored.graces[0].anchor.0, "n");
+    assert_eq!(restored.parts[0].measures[0].events[0].notehead, None);
+}

@@ -217,10 +217,14 @@ fn read_with_audit<R: BufRead + Seek>(
                     "movement-title",
                     "identification",
                     "credit",
+                    "defaults",
                     "part-list",
                 ]
                 .contains(&node.name.as_str())
                 {
+                    if node.name == "defaults" && (!part_nodes.is_empty() || headers.iter().any(|n: &Node|matches!(n.name.as_str(),"credit"|"part-list"))) {
+                        return Err(unsupported(node,"defaults.position","Score-wide defaults must precede credits, part-list and musical parts"));
+                    }
                     if node.name == "credit"
                         || !headers.iter().any(|n: &Node| n.name == node.name)
                     {
@@ -272,6 +276,7 @@ fn read_with_audit<R: BufRead + Seek>(
         ));
     }
     let mut score = ScoreDocument::default();
+    score.defaults=root.child("defaults").map(super::defaults::read).transpose()?;
     score.credits = root.children_named("credit")
         .map(super::credits::read).collect::<Result<Vec<_>>>()?;
     if let Some(work) = root.child("work") {
@@ -281,6 +286,7 @@ fn read_with_audit<R: BufRead + Seek>(
     score.metadata.movement_number = root.child("movement-number").map(|n| n.text.clone());
     score.metadata.movement = root.child("movement-title").map(|n| n.text.clone());
     if let Some(identification) = root.child("identification") {
+        score.provenance = super::provenance::read(identification)?;
         score.metadata.rights = identification.child("rights").map(|n| n.text.clone());
         score.metadata.source_description = identification.child("source").map(|n| n.text.clone());
         for creator in identification.children_named("creator") {
@@ -532,6 +538,7 @@ fn read_with_audit<R: BufRead + Seek>(
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"ornaments.authored","/ornaments","Authored ornament groups and notation order are retained. Ornament attacks and wavy-line spans are not inferred; playback uses the unornamented note durations and preview omits ornaments");
     }
     if score.parts.iter().flat_map(|p|&p.measures).flat_map(|m|&m.states).any(|s|s.meter.as_ref().is_some_and(|m|m.symbol.is_some())) { report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"time.authored_symbol","/time","Authored common/cut display symbols are retained separately from numeric meter. Preview uses numeric display; playback timing is unchanged"); }
+    if score.defaults.is_some(){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"defaults.authored","/defaults","Authored scaling, page layout, appearance and font defaults are retained. Preview chooses its own engraving and does not apply these defaults; playback is unchanged");}
     if !score.lyrics.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
     }
@@ -1169,6 +1176,7 @@ impl PartReader {
                     }
                     let event = ScoreEvent {
                         visible: super::appearance::visible(n)?,
+                        notehead: super::appearance::notehead(n)?,
                         attack_dynamics: super::note_dynamics::read(n)?,
                         id: EventId(id),
                         voice: v,

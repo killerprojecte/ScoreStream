@@ -512,7 +512,7 @@ fn grace_wrapper_identity_and_visibility_cannot_bypass_the_authored_scope_guard(
 fn unrelated_metadata_layout_and_notation_gates_remain_closed() {
     let xml = group("<strong-accent/>");
     // Synthetic boundary probe, NOT the untouched external MusicXML test suite.
-    rejects(&xml.replace("<part-list>","<identification><miscellaneous><miscellaneous-field name=\"test\">kept</miscellaneous-field></miscellaneous></identification><part-list>"),"element.miscellaneous");
+    rejects(&xml.replace("<part-list>","<identification><miscellaneous><miscellaneous-field name=\"test\">kept</miscellaneous-field></miscellaneous></identification><part-list>"),"element.miscellaneous-field");
     rejects(
         &xml.replace("<measure id=\"m\"", "<measure width=\"100\" id=\"m\""),
         "attribute.width",

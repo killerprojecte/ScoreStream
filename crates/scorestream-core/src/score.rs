@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreDocument {
+    /// Score-wide authored engraving defaults, not applied by preview or playback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub defaults: Option<crate::defaults::Defaults>,
+    /// Ordered descriptive encoding claims, never capabilities or performance policy.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<crate::provenance::Provenance>,
     /// Authored wedge endpoints in document order; no inferred performance curve.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub wedges: Vec<crate::wedges::WedgeEndpoint>,
@@ -414,6 +420,9 @@ pub struct ScoreEvent {
     /// Visual only: never changes pitch, sounding duration or note ownership.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visible: Option<bool>,
+    /// Authored glyph only; absent and explicit "normal" are distinct.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notehead: Option<NoteheadShape>,
     /// Explicit per-note NoteOn percentage of forte90, not a persistent scope state.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attack_dynamics: Option<Rational>,
@@ -483,6 +492,40 @@ impl AccidentalGlyph {
             Self::FlatFlat => "flat-flat",
             Self::QuarterSharp => "quarter-sharp",
             Self::QuarterFlat => "quarter-flat",
+        }
+    }
+}
+/// The six already registered SFS notehead shapes, shared by MusicXML.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NoteheadShape {
+    Normal,
+    X,
+    Diamond,
+    Triangle,
+    Slash,
+    None,
+}
+impl NoteheadShape {
+    pub fn from_name(value: &str) -> Option<Self> {
+        match value {
+            "normal" => Some(Self::Normal),
+            "x" => Some(Self::X),
+            "diamond" => Some(Self::Diamond),
+            "triangle" => Some(Self::Triangle),
+            "slash" => Some(Self::Slash),
+            "none" => Some(Self::None),
+            _ => None,
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::X => "x",
+            Self::Diamond => "diamond",
+            Self::Triangle => "triangle",
+            Self::Slash => "slash",
+            Self::None => "none",
         }
     }
 }
@@ -654,6 +697,9 @@ pub struct ScoreGraceNote {
     /// Authored print-object, independent of grace timing and slash appearance.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visible: Option<bool>,
+    /// Authored glyph only; absent and explicit "normal" are distinct.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notehead: Option<NoteheadShape>,
     /// Explicit per-note NoteOn percentage of forte90, not a persistent scope state.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attack_dynamics: Option<Rational>,

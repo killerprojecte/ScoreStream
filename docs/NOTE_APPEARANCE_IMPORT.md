@@ -1,4 +1,4 @@
-# Authored stems and full-measure rests
+# Authored stems, notehead shapes and full-measure rests
 
 This bounded bridge preserves exact MusicXML note fields through the common
 `ScoreDocument`, SFS 1.1, canonical text/JSON and MusicXML export. It is not a
@@ -25,10 +25,13 @@ complete-score import or audio acceptance claim.
 - Old common-model JSON omitting these fields remains valid. No imported source
   XML or foreign markup is added to the common model.
 
-Only attribute-free `stem` leaves and the `rest` measure flag are newly mapped.
-Stem coordinates/colors, rest display-step/octave, unknown descendants,
-accidental and notehead attributes remain blocking unless separately
-implemented. Direct note visibility now has its own
+The `stem` and `notehead` mappings accept attribute-free leaves only.
+`ScoreEvent.notehead` and `ScoreGraceNote.notehead` preserve the six existing
+SFS glyph tokens: `normal`, `x`, `diamond`, `triangle`, `slash`, and `none`.
+An absent head and explicit `normal` remain distinct. The authored `none`
+hides only the engraved head, not the stem, the whole note, or its sound.
+Stem coordinates/colors, rest display-step/octave, custom noteheads,
+and unsupported notehead attributes still block lossless conversion. Direct note visibility now has its own
 [typed bridge](NOTE_VISIBILITY_IMPORT.md). Coordinate regeneration still requires its unchanged explicit
 three-path policy; stems and rest identity are preserved, never regenerated.
 
@@ -51,7 +54,10 @@ common/XML/SFS model still preserves these valid authored cases exactly.
 
 Measured event roles and performance duration do not change. Tests compare actual
 playback plans with and without the new appearance fields. Imported grace and
-fermata fidelity guards are unchanged. A hidden rest is not deleted time: all
+fermata fidelity guards are unchanged. The desktop preview warns when a nonstandard
+head is retained but still drawn as a normal head. The unchanged movement III
+source has one `none` head, on the G3 half note in P7/244; its written
+stem, pitch, duration and slur remain independent fields. A hidden rest is not deleted time: all
 80 source hidden rests now retain their own optional visibility through the
 [visibility bridge](NOTE_VISIBILITY_IMPORT.md), rather than becoming absent events.
 

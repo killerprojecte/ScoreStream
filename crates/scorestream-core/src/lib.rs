@@ -34,6 +34,8 @@ pub use validate::validate;
 pub mod geometry;
 
 pub mod credits;
+pub mod defaults;
+pub mod provenance;
 pub mod print_layout;
 
 pub mod lyrics;

@@ -2907,6 +2907,488 @@
             },
             "description": "Requires scorestream.part_labels@1, a complete score, unique existing part target at time zero and XML-safe literal text. Additional label rendering is unimplemented; legacy part names and instrument routing remain independent."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.defaults"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "score"
+              },
+              "attributes": {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "root"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "scaling"
+                      },
+                      "millimeters": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "tenths": {
+                        "$ref": "#/$defs/Rational"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind",
+                      "millimeters",
+                      "tenths"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "page_layout"
+                      },
+                      "height": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "width": {
+                        "$ref": "#/$defs/Rational"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "dependentRequired": {
+                      "height": [
+                        "width"
+                      ],
+                      "width": [
+                        "height"
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "page_margins"
+                      },
+                      "left": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "right": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "top": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "bottom": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "margin_type": {
+                        "enum": [
+                          "odd",
+                          "even",
+                          "both"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind",
+                      "left",
+                      "right",
+                      "top",
+                      "bottom"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "appearance"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "line_width"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "line_type": {
+                        "enum": [
+                          "light barline",
+                          "heavy barline",
+                          "beam",
+                          "bracket",
+                          "dashes",
+                          "enclosure",
+                          "ending",
+                          "extend",
+                          "leger",
+                          "pedal",
+                          "octave shift",
+                          "slur middle",
+                          "slur tip",
+                          "staff",
+                          "stem",
+                          "tie middle",
+                          "tie tip",
+                          "tuplet bracket",
+                          "wedge"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind",
+                      "line_type",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "note_size"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "size_type": {
+                        "enum": [
+                          "cue",
+                          "grace",
+                          "grace-cue"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind",
+                      "size_type",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "music_font"
+                      },
+                      "size": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "family": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "word_font"
+                      },
+                      "size": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "family": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "kind": {
+                        "const": "lyric_font"
+                      },
+                      "size": {
+                        "$ref": "#/$defs/Rational"
+                      },
+                      "family": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "kind"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "description": "Requires scorestream.defaults@1. Time0 complete score, ordered singleton/container structure and contiguous global indices checked at runtime. Positive finite-decimal scaling/font sizes; signed finite-decimal page and line dimensions; nonnegative finite-decimal note sizes. Preserved source metadata only, not rendered defaults."
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.provenance"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "score"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "encoding_present": {
+                    "type": "boolean"
+                  },
+                  "miscellaneous_empty": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "encoding_present",
+                  "miscellaneous_empty"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.provenance.entry"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "score"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "kind": {
+                    "enum": [
+                      "software",
+                      "encoding_date",
+                      "supports"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "supported": {
+                    "type": "boolean"
+                  },
+                  "element": {
+                    "type": "string"
+                  },
+                  "attribute": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "index",
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "software"
+                      }
+                    },
+                    "required": [
+                      "text"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "date"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "supported"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "element"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "attribute"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "value"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "encoding_date"
+                      }
+                    },
+                    "required": [
+                      "date"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "text"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "supported"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "element"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "attribute"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "value"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "supports"
+                      }
+                    },
+                    "required": [
+                      "supported",
+                      "element"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "text"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "date"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "dependentRequired": {
+                  "value": [
+                    "attribute"
+                  ]
+                }
+              }
+            }
+          }
         }
       ]
     },

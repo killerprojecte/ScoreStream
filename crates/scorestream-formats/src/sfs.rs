@@ -173,7 +173,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::slur_extension::EXTENSION
             && e != core::articulation_extension::EXTENSION
             && e != core::notation_extension::EXTENSION
+            && e != core::provenance::EXTENSION
             && e != core::credits::EXTENSION
+            && e != core::defaults::EXTENSION
             && e != core::geometry::EXTENSION
             && e != core::print_layout::EXTENSION
             && e != core::wedges::EXTENSION
@@ -188,6 +190,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     }
     let mut part_labels=if doc.required_extensions.iter().any(|e|e==core::part_labels::EXTENSION) {core::part_labels::decode(doc).expect("validated part labels")} else {Default::default()};
     let mut score = ScoreDocument {
+        provenance: core::provenance::decode(doc).expect("validated provenance"),
         wedges: if doc.required_extensions.iter().any(|e|e==core::wedges::EXTENSION) {core::wedges::decode(doc).expect("validated wedge endpoints")} else {vec![]},
         dashes: if doc.required_extensions.iter().any(|e|e==core::dashes::EXTENSION) {core::dashes::decode(doc).expect("validated dashes endpoints")} else {vec![]},
         tuplets: if doc
@@ -209,6 +212,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         } else {
             vec![]
         },
+        defaults: core::defaults::decode(doc).expect("validated defaults"),
         credits: if doc
             .required_extensions
             .iter()
@@ -373,7 +377,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m)
                     if core::articulation_extension::is_kind(&m.kind)
                         || core::notation_extension::is_kind(&m.kind)
+                        || core::provenance::is_kind(&m.kind)
                         || m.kind == core::credits::KIND
+                        || core::defaults::is_kind(&m.kind)
                         || core::geometry::is_kind(&m.kind)
                         || core::print_layout::is_kind(&m.kind)
                         || core::wedges::is_kind(&m.kind)
@@ -576,7 +582,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                                 "anchor",
                                 "order",
                                 "slash",
-                                "stem", "attack_dynamics", "visible",
+                                "stem", "attack_dynamics", "visible", "notehead",
                             ],
                             e.id().unwrap_or(&e.voice),
                         );
@@ -595,6 +601,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         let id = e.id().expect("validated grace metadata target");
                         score.graces.push(ScoreGraceNote {
                             visible: e.attributes.get("visible").and_then(Scalar::as_bool),
+                            notehead: text(&e.attributes, "notehead").and_then(NoteheadShape::from_name),
                             attack_dynamics: text(&e.attributes, "attack_dynamics").map(|v| v.parse().expect("validated note dynamics")),
                             id: EventId(id.into()),
                             anchor: EventId(
@@ -626,7 +633,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             "tm_normal_type",
                             "tm_normal_dots",
                             "note_size",
-                            "stem", "attack_dynamics", "visible",
+                            "stem", "attack_dynamics", "visible", "notehead",
                             "measure_rest",
                         ],
                         e.id().unwrap_or(&e.voice),
@@ -673,6 +680,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     };
                     measure.events.push(ScoreEvent {
                         visible: e.attributes.get("visible").and_then(Scalar::as_bool),
+                        notehead: text(&e.attributes, "notehead").and_then(NoteheadShape::from_name),
                         attack_dynamics: text(&e.attributes, "attack_dynamics").map(|v| v.parse().expect("validated note dynamics")),
                         id: EventId(id.clone()),
                         voice: VoiceId(e.voice.clone()),
@@ -820,10 +828,12 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .cloned()
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
+    if score.provenance.is_some() {doc.required_extensions.push(core::provenance::EXTENSION.into());}
     if score.parts.iter().any(|p|p.labels.is_some()) {doc.required_extensions.push(core::part_labels::EXTENSION.into());}
     if !score.wedges.is_empty() {doc.required_extensions.push(core::wedges::EXTENSION.into());}
     if !score.dashes.is_empty() {doc.required_extensions.push(core::dashes::EXTENSION.into());}
     if !score.words.is_empty() {doc.required_extensions.push(core::words::EXTENSION.into());}
+    if score.defaults.is_some(){doc.required_extensions.push(core::defaults::EXTENSION.into());}
     if !score.credits.is_empty() {
         doc.required_extensions
             .push(core::credits::EXTENSION.into());
@@ -925,6 +935,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         &authored_source_ids,
     );
     let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
+    if let Some(d)=&score.defaults{frames.entry(Rational::zero()).or_default().extend(core::defaults::encode(d).into_iter().map(Record::Mark));}
+    if let Some(value)=&score.provenance {
+        frames.entry(Rational::zero()).or_default().extend(core::provenance::encode(value).into_iter().map(Record::Mark));
+    }
     for (i, credit) in score.credits.iter().enumerate() {
         frames.entry(Rational::zero()).or_default()
             .push(Record::Mark(core::credits::encode(credit, i)));
@@ -1064,6 +1078,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     put(&mut a, "stem", stem.name());
                 }
                 if let Some(visible) = e.visible { a.insert("visible".into(), Scalar::Boolean(visible)); }
+                if let Some(shape) = e.notehead { put(&mut a, "notehead", shape.name()); }
                 if let Some(full) = e.measure_rest {
                     a.insert("measure_rest".into(), Scalar::Boolean(full));
                 }
@@ -1125,6 +1140,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             Scalar::Integer(i64::from(anchor.event.staff)),
         );
         if let Some(visible) = g.visible { a.insert("visible".into(), Scalar::Boolean(visible)); }
+        if let Some(shape) = g.notehead { put(&mut a, "notehead", shape.name()); }
         if let Some(slash) = g.slash {
             a.insert("slash".into(), Scalar::Boolean(slash));
         }
@@ -1469,7 +1485,7 @@ mod tests {
     #[test]
     fn reject_unmapped_symbols_instead_of_dropping() {
         for input in [
-            SOURCE.replace("id=e3 w=2", "id=e3 w=2 notehead=diamond"),
+            SOURCE.replace("id=e3 w=2", "id=e3 w=2 notehead=unknown"),
             SOURCE.replace("@2", "@2\n= p.s1 key=2"),
             SOURCE.replace("id=e3 w=2", "id=e3 w=2\n+ score dynamic value=f"),
         ] {

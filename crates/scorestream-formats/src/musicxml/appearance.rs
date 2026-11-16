@@ -1,7 +1,21 @@
 //! Exact authored note appearance, never discarded as regenerable geometry.
 use super::{read::error, xml::Node};
 use crate::MappingReport;
-use scorestream_core::score::StemDirection;
+use scorestream_core::score::{NoteheadShape, StemDirection};
+
+pub(super) fn notehead(note: &Node) -> Result<Option<NoteheadShape>, MappingReport> {
+    note.child("notehead")
+        .map(|head| {
+            NoteheadShape::from_name(&head.text).ok_or_else(|| {
+                super::read::unsupported(
+                    head,
+                    "note.notehead",
+                    "The authored notehead is outside the six registered SFS glyph values",
+                )
+            })
+        })
+        .transpose()
+}
 /// Direct note visibility only. Other print-* attributes retain their own scope.
 pub(super) fn visible(note: &Node) -> Result<Option<bool>, MappingReport> {
     match note

@@ -16,3 +16,15 @@ describe('authored note visibility preview boundary',()=>{
   const result=project(v);expect(Object.values(result.map)).toEqual(['n','c']);expect(result.mei).toContain('<chord');expect(result.warnings.filter(w=>w.includes('Print-object'))).toHaveLength(1);
  });
 });
+
+describe('authored notehead preview boundary',()=>{
+ it('warns for none or a different shape without hiding the whole note',()=>{
+  const v=fixture(),baseline=project(v);
+  for(const notehead of ['none','diamond']){
+   v.events[0].attributes={notehead};const result=project(v);
+   expect(result.mei).toBe(baseline.mei);expect(result.map).toEqual(baseline.map);
+   expect(result.warnings).toContain('Authored notehead shapes are retained but this preview displays standard noteheads. Sounding pitches and timing are unchanged.');
+  }
+  v.events[0].attributes={notehead:'normal'};expect(project(v).warnings).toEqual(baseline.warnings);
+ });
+});

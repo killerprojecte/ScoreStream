@@ -37,7 +37,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::slur_extension::EXTENSION
             && requirement != crate::articulation_extension::EXTENSION
             && requirement != crate::notation_extension::EXTENSION
+            && requirement != crate::provenance::EXTENSION
             && requirement != crate::credits::EXTENSION
+            && requirement != crate::defaults::EXTENSION
             && requirement != crate::geometry::EXTENSION
             && requirement != crate::print_layout::EXTENSION
             && requirement != crate::wedges::EXTENSION
@@ -196,6 +198,8 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut has_words = false;
     let mut has_part_labels = false;
     let mut has_credits = false;
+    let mut has_defaults = false;
+    let mut has_provenance = false;
     let mut has_print = false;
     let mut has_lyrics = false;
     let mut has_tuplets = false;
@@ -493,7 +497,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     has_dashes |= crate::dashes::is_kind(&m.kind);
                     has_words |= crate::words::is_kind(&m.kind);
                     has_part_labels |= crate::part_labels::is_kind(&m.kind);
+                    has_defaults |= crate::defaults::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
+                    has_provenance |= crate::provenance::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
                     has_lyrics |= crate::lyrics::is_kind(&m.kind);
                     has_tuplets |= crate::tuplets::is_kind(&m.kind);
@@ -550,6 +556,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             Ok(_)=>out.push(Diagnostic::warning("part_labels.authored_only","Authored part abbreviations and name-display details are retained; current preview does not realize these extra labels. Legacy part names and instrument routing are unchanged",doc.source)),
         }
     }
+    if has_provenance || doc.required_extensions.iter().any(|e| e == crate::provenance::EXTENSION) {
+        if let Err(errors) = crate::provenance::decode(doc) { out.extend(errors); }
+    }
     crate::navigation_extension::validate(doc, &mut out);
     crate::fermata_extension::validate(doc, &mut out);
     crate::grace_extension::validate(doc, &mut out);
@@ -558,6 +567,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     crate::slur_extension::validate(doc, &mut out);
     crate::articulation_extension::validate(doc, &mut out);
     crate::notation_extension::validate(doc, &mut out);
+    if has_defaults || doc.required_extensions.iter().any(|e|e==crate::defaults::EXTENSION) {if let Err(errors)=crate::defaults::decode(doc){out.extend(errors);}}
     if has_credits || doc.required_extensions.iter().any(|e| e == crate::credits::EXTENSION) {
         if let Err(errors) = crate::credits::decode(doc) {
             out.extend(errors);

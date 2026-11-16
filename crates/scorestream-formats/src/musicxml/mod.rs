@@ -20,6 +20,7 @@ mod instruments;
 pub use geometry::GeometryPolicy;
 mod lyrics;
 mod print_layout;
+mod provenance;
 mod read;
 #[cfg(test)]
 mod slur_corpus;
@@ -85,6 +86,7 @@ pub(crate) fn type_name(value: NoteType) -> &'static str {
 }
 
 mod credits;
+mod defaults;
 
 mod note_dynamics;
 

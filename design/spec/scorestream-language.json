@@ -278,7 +278,7 @@
       },
       "notehead": {
         "type": "registered_string",
-        "meaning": "Core registered notehead token; other glyphs need a registered extension.",
+        "meaning": "Authored glyph only; absence and explicit normal are distinct. None removes the printed head, not the note, pitch, stem or sound. MusicXML maps these six unadorned glyph values; custom glyphs and their attributes are not inferred.",
         "values": [
           "normal",
           "x",
@@ -567,6 +567,38 @@
         "strokes",
         "number",
         "default_y"
+      ],
+      "scorestream.defaults": [
+        "index",
+        "kind",
+        "millimeters",
+        "tenths",
+        "height",
+        "width",
+        "left",
+        "right",
+        "top",
+        "bottom",
+        "value",
+        "size",
+        "margin_type",
+        "line_type",
+        "size_type",
+        "family"
+      ],
+      "scorestream.provenance": [
+        "encoding_present",
+        "miscellaneous_empty"
+      ],
+      "scorestream.provenance.entry": [
+        "index",
+        "kind",
+        "text",
+        "date",
+        "supported",
+        "element",
+        "attribute",
+        "value"
       ]
     },
     "relations": {
@@ -2074,6 +2106,172 @@
         },
         "required_extension": "scorestream.part_labels@1",
         "meaning": "Time-zero declared-part-owned authored abbreviation and/or ordered plain text, flat accidental, plain text name display. Independent from legacy display_name, instrument routing and performance."
+      },
+      "scorestream.defaults": {
+        "targets": [
+          "score"
+        ],
+        "required": [
+          "index",
+          "kind"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "kind": {
+            "type": "enum",
+            "values": [
+              "root",
+              "scaling",
+              "page_layout",
+              "page_margins",
+              "appearance",
+              "line_width",
+              "note_size",
+              "music_font",
+              "word_font",
+              "lyric_font"
+            ]
+          },
+          "millimeters": {
+            "type": "rational"
+          },
+          "tenths": {
+            "type": "rational"
+          },
+          "height": {
+            "type": "rational"
+          },
+          "width": {
+            "type": "rational"
+          },
+          "left": {
+            "type": "rational"
+          },
+          "right": {
+            "type": "rational"
+          },
+          "top": {
+            "type": "rational"
+          },
+          "bottom": {
+            "type": "rational"
+          },
+          "value": {
+            "type": "rational"
+          },
+          "size": {
+            "type": "rational"
+          },
+          "margin_type": {
+            "type": "enum",
+            "values": [
+              "odd",
+              "even",
+              "both"
+            ]
+          },
+          "line_type": {
+            "type": "string",
+            "values": [
+              "light barline",
+              "heavy barline",
+              "beam",
+              "bracket",
+              "dashes",
+              "enclosure",
+              "ending",
+              "extend",
+              "leger",
+              "pedal",
+              "octave shift",
+              "slur middle",
+              "slur tip",
+              "staff",
+              "stem",
+              "tie middle",
+              "tie tip",
+              "tuplet bracket",
+              "wedge"
+            ],
+            "meaning": "Exact supported XML type token; quoted native text because several allowed names contain spaces. Closed supported enum validated by defaults bridge."
+          },
+          "size_type": {
+            "type": "enum",
+            "values": [
+              "cue",
+              "grace",
+              "grace-cue"
+            ]
+          },
+          "family": {
+            "type": "string"
+          }
+        },
+        "required_extension": "scorestream.defaults@1",
+        "meaning": "Ordered typed score-wide engraving defaults. Index0 root marker retains explicit empty defaults; page_layout and appearance markers retain empty containers. No renderer or playback application is implied."
+      },
+      "scorestream.provenance": {
+        "targets": [
+          "score"
+        ],
+        "required": [
+          "encoding_present",
+          "miscellaneous_empty"
+        ],
+        "fields": {
+          "encoding_present": {
+            "type": "boolean"
+          },
+          "miscellaneous_empty": {
+            "type": "boolean"
+          }
+        },
+        "required_extension": "scorestream.provenance@1",
+        "meaning": "Ordered authored producer metadata at score start. Descriptive claims only: never change adapter capabilities, sound, timing, or network access. Header preserves absent/empty containers; entry indices are unique and contiguous with exact typed per-kind fields."
+      },
+      "scorestream.provenance.entry": {
+        "targets": [
+          "score"
+        ],
+        "required": [
+          "index",
+          "kind"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "kind": {
+            "type": "enum",
+            "values": [
+              "software",
+              "encoding_date",
+              "supports"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "supported": {
+            "type": "boolean"
+          },
+          "element": {
+            "type": "string"
+          },
+          "attribute": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required_extension": "scorestream.provenance@1",
+        "meaning": "Ordered authored producer metadata at score start. Descriptive claims only: never change adapter capabilities, sound, timing, or network access. Header preserves absent/empty containers; entry indices are unique and contiguous with exact typed per-kind fields."
       }
     }
   },
@@ -2270,6 +2468,18 @@
       "scorestream.part_labels@1": {
         "status": "authored declared-part label details; preview omits additional label rendering",
         "required_behavior": "Complete score, time-zero existing part target, at most one mark per part, at least abbreviation or complete name display triple; closed string fields and XML-safe exact text. name_accidental is flat in this verified profile. Preserve empty abbreviation versus absence; do not infer instruments, transposition, prefixes, sound or replace legacy display_name. Unsupported styling/layouts fail closed."
+      },
+      "scorestream.defaults@1": {
+        "status": "typed closed source preservation; renderer defaults remain independent; no sounding effect",
+        "required_behavior": "Complete score, target score at time0, contiguous unique indices. One first root record, optional scaling, optional page_layout with paired optional dimensions and up to2 ordered page_margins, optional appearance marker then ordered line_width followed by note_size entries, optional music_font and word_font, ordered lyric_font records. Positive finite-decimal scaling/font sizes; signed finite-decimal tenths for page dimensions/margins/line widths; nonnegative finite-decimal note-size percentage. Exactly19 supported line-width tokens and cue/grace/grace-cue note-size types. Preserve absence, zero, empty containers and ordered repetitions; unknown fields, orphan/duplicate singleton sections, reordering or unsupported source defaults reject. No raw XML/JSON payload."
+      },
+      "scorestream.provenance@1": {
+        "status": "typed descriptive producer claims; no capability, playback or network effect",
+        "mark_kinds": [
+          "scorestream.provenance",
+          "scorestream.provenance.entry"
+        ],
+        "required_behavior": "One score-start header. Entries require present encoding, unique contiguous indices, software XML text or timezone-free valid calendar date or an empty supports declaration with yes/no type and NMTOKEN element. Attribute/value presence is retained; value requires attribute. Explicit empty miscellaneous is separate from absence. Unknown substantive metadata rejects."
       }
     }
   },

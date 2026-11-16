@@ -423,6 +423,7 @@ pub fn write_with_options(
         || !score.metadata.authors.is_empty()
         || score.metadata.rights.is_some()
         || score.metadata.source_description.is_some()
+        || score.provenance.is_some()
     {
         out.push_str("  <identification>\n");
         for (role, value) in [
@@ -450,11 +451,14 @@ pub fn write_with_options(
         if let Some(rights) = &score.metadata.rights {
             writeln!(out, "    <rights>{}</rights>", escape(rights)).unwrap();
         }
+        super::provenance::write_encoding(&score.provenance, &mut out);
         if let Some(source) = &score.metadata.source_description {
             writeln!(out, "    <source>{}</source>", escape(source)).unwrap();
         }
+        if score.provenance.as_ref().is_some_and(|p|p.miscellaneous_empty) {out.push_str("    <miscellaneous/>\n");}
         out.push_str("  </identification>\n");
     }
+    if let Some(d)=&score.defaults{super::defaults::write(d,&mut out);}
     super::credits::write(&score.credits, &mut out);
     out.push_str("  <part-list>\n");
     for (i, p) in score.parts.iter().enumerate() {
@@ -671,6 +675,9 @@ pub fn write_with_options(
                     }
                     if let Some(stem) = e.stem {
                         writeln!(out, "        <stem>{}</stem>", stem.name()).unwrap();
+                    }
+                    if let Some(shape) = e.notehead {
+                        writeln!(out, "        <notehead>{}</notehead>", shape.name()).unwrap();
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
                     beams.write(&e.id, &mut out);

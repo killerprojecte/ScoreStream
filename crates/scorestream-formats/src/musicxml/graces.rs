@@ -59,6 +59,7 @@ pub(super) fn read<'a>(
         source: n,
         note: ScoreGraceNote {
             visible: super::appearance::visible(n)?,
+            notehead: super::appearance::notehead(n)?,
             attack_dynamics: super::note_dynamics::read(n)?,
             id,
             anchor: EventId(String::new()),
@@ -308,6 +309,9 @@ impl<'a> Export<'a> {
             }
             if let Some(stem) = g.stem {
                 write!(out, "<stem>{}</stem>", stem.name()).unwrap();
+            }
+            if let Some(shape) = g.notehead {
+                write!(out, "<notehead>{}</notehead>", shape.name()).unwrap();
             }
             write!(out, "<staff>{}</staff>", anchor.staff).unwrap();
             beams.write(&g.id, out);
