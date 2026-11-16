@@ -48,7 +48,7 @@ fn main() -> ExitCode {
 
 fn usage() {
     eprintln!(
-        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml|input.mxl>\nOptional convert/inspect-format suffix: --musicxml-irregular-measures <contracts.json> (exact JSON array; requires MusicXML input or output).\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
+        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml|input.mxl>\nOptional convert/inspect-format suffix: --musicxml-irregular-measures <contracts.json> (exact JSON array; requires MusicXML input or output).\nOptional conversion policy: --unclosed-final-ending continue-to-movement-end (requires SFS input or output; never inserts an authored ending endpoint).\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
     );
 }
 fn adapter(name: &str) -> Option<Box<dyn ScoreAdapter>> {
@@ -84,11 +84,11 @@ fn conversion(args: &[String]) -> ExitCode {
     }
     let inspect = args[1] == "inspect-format";
     let positional = if inspect { 4 } else { 5 };
-    if args.len() != positional && args.len() != positional + 2 {
+    if args.len() < positional || (args.len()-positional)%2 != 0 {
         usage();
         return ExitCode::from(2);
     }
-    let Some(input) = adapter(&args[2]) else {
+    let Some(_input) = adapter(&args[2]) else {
         usage();
         return ExitCode::from(2);
     };
@@ -108,23 +108,21 @@ fn conversion(args: &[String]) -> ExitCode {
         articulations: scorestream_formats::musicxml::ArticulationProfile::Automatic,
         ..Default::default()
     };
-    if args.len() > positional {
-        if args[positional] != "--musicxml-irregular-measures"
-            || (args[2] != "musicxml" && (inspect || args[3] != "musicxml"))
-        {
-            usage();
-            return ExitCode::from(2);
-        }
-        options.irregular_measures = match fs::File::open(&args[positional + 1])
-            .map_err(|e| e.to_string())
-            .and_then(|f| serde_json::from_reader(BufReader::new(f)).map_err(|e| e.to_string()))
-        {
-            Ok(value) => value,
-            Err(error) => {
-                eprintln!("Invalid irregular-measure contract file: {error}");
-                return ExitCode::from(2);
+    let mut sfs_options=scorestream_formats::sfs::SfsOptions::default();
+    let mut seen=std::collections::BTreeSet::new();
+    for option in args[positional..].chunks_exact(2) {
+        if !seen.insert(option[0].as_str()) { usage();return ExitCode::from(2); }
+        match option[0].as_str() {
+            "--musicxml-irregular-measures" if args[2]=="musicxml" || (!inspect && args[3]=="musicxml") => {
+                options.irregular_measures=match fs::File::open(&option[1]).map_err(|e|e.to_string()).and_then(|f|serde_json::from_reader(BufReader::new(f)).map_err(|e|e.to_string())) {
+                    Ok(value)=>value,Err(error)=>{eprintln!("Invalid irregular-measure contract file: {error}");return ExitCode::from(2);}
+                };
             }
-        };
+            "--unclosed-final-ending" if option[1]=="continue-to-movement-end" && (args[2]=="sfs" || (!inspect && args[3]=="sfs")) => {
+                sfs_options.unclosed_final_ending=scorestream_formats::sfs::UnclosedFinalEndingPolicy::ContinueToMovementEnd;
+            }
+            _=>{usage();return ExitCode::from(2);}
+        }
     }
     let path = &args[if inspect { 3 } else { 4 }];
     let result = if args[2] == "musicxml" {
@@ -147,7 +145,7 @@ fn conversion(args: &[String]) -> ExitCode {
                 return ExitCode::from(2);
             }
         };
-        input.read(&source)
+        scorestream_formats::sfs::read_with_options(&source,&sfs_options)
     };
     let converted = match result {
         Ok(v) => v,
@@ -157,11 +155,11 @@ fn conversion(args: &[String]) -> ExitCode {
         }
     };
     let mut report = converted.report;
-    let text = if let Some(output) = output {
+    let text = if let Some(_output) = output {
         let result = if args[3] == "musicxml" {
             scorestream_formats::musicxml::write_with_options(&converted.value, &options)
         } else {
-            output.write(&converted.value)
+            scorestream_formats::sfs::write_with_options(&converted.value,&sfs_options)
         };
         match result {
             Ok(result) => {

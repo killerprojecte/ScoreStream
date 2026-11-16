@@ -44,3 +44,35 @@ XML and MXL both advance to `attributes.mid_measure` in
 part7/measure110/attributes1 (line56875). Both failures emit zero converted
 bytes. Thus the CLI option exposes the existing contract but does not yet
 establish complete movement-I import or consumption across all18 parts.
+
+
+## Exact short numbered bars
+
+The same typed contract also permits positive source extents shorter than the
+written meter, but never equal to it. The ordinary converter's default behavior
+is unchanged. A contract must match the complete encoded cursor extent, including
+any authored forward, in every part/staff; it cannot cut notes or discard trailing
+cursor movement. Export retains the written meter, number and non-implicit status.
+
+For pinned movement III, `fifth-iii-irregular-measures.json` in the same fixture
+directory selects exactly ordinal/labels1,141,142,162, all written3/4, actual
+quarter lengths1,2,1,2. These match all18 parts. Use `--movement-iii-contract`
+with the original-family harness, alongside `--compare-note-events`; that contract
+is never passed to I, II or IV. This avoids the formerly added6quarters per part
+without inferring a general pickup policy or silently changing unrelated bars.
+
+## Pinned movement II terminal bar
+
+`fifth-ii-irregular-measures.json` selects only ordinal248, label247, written3/8,
+actual1quarter in every one of18 parts. `--movement-ii-contract` passes that
+contract only to movement II in the pinned harness. Ordinal1/label0 is an
+explicit `implicit=yes` pickup of1/2quarter and is deliberately not selected.
+Its existing import length must remain unchanged.
+
+The independent pinned source census found exactly these two uniform
+non-nominal bars in II and no asymmetric counterexamples. All446 movement-IV
+bars across23 parts have nominal extents, so this evidence supplies no IV
+short-bar contract. Uniformity alone does not establish authorial intent:
+II's terminal contract is additionally grounded in the real prior SFS export,
+which added a trailing1/2quarter to that bar in all18 parts while retaining
+all note-event lanes. No other II bar is changed by this scoped contract.

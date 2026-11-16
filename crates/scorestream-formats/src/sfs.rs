@@ -7,6 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct SfsAdapter;
+pub use scorestream_core::repeat_traversal::UnclosedFinalEndingPolicy;
 impl ScoreAdapter for SfsAdapter {
     fn read(&self, source: &str) -> Result<Conversion<ScoreDocument>, MappingReport> {
         let doc = scorestream_codec::parse(source).map_err(diagnostics)?;
@@ -19,6 +20,22 @@ impl ScoreAdapter for SfsAdapter {
             report: result.report,
         })
     }
+}
+/// Explicit conversion policy only; it is never inserted into authored navigation.
+#[derive(Clone, Copy, Debug)]
+pub struct SfsOptions {
+    pub unclosed_final_ending: core::repeat_traversal::UnclosedFinalEndingPolicy,
+}
+impl Default for SfsOptions {
+    fn default() -> Self { Self { unclosed_final_ending: core::repeat_traversal::UnclosedFinalEndingPolicy::Reject } }
+}
+pub fn read_with_options(source: &str, options: &SfsOptions) -> Result<Conversion<ScoreDocument>, MappingReport> {
+    let doc=scorestream_codec::parse(source).map_err(diagnostics)?;
+    from_document_with_options(&doc,options)
+}
+pub fn write_with_options(score: &ScoreDocument, options: &SfsOptions) -> Result<Conversion<String>, MappingReport> {
+    let result=to_document_with_options(score,options)?;
+    Ok(Conversion { value:scorestream_codec::canonical(&result.value),report:result.report })
 }
 fn diagnostics(ds: Vec<Diagnostic>) -> MappingReport {
     let mut report = MappingReport::default();
@@ -154,6 +171,9 @@ fn written(a: &Attributes, r: &mut MappingReport, path: &str) -> Option<WrittenD
 }
 /// Convert a validated SFS AST. Unsupported content is never silently discarded.
 pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, MappingReport> {
+    from_document_with_options(doc,&SfsOptions::default())
+}
+pub fn from_document_with_options(doc: &Document, options: &SfsOptions) -> Result<Conversion<ScoreDocument>, MappingReport> {
     let mut report = diagnostics(core::validate(doc, None));
     if report.has_errors() {
         return Err(report);
@@ -765,7 +785,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     report.append(validate_score(&score));
     crate::sfs_navigation::sort_barlines(&mut score);
     if !report.has_errors() {
-        crate::sfs_navigation::check_profile(&score, &mut report);
+        crate::sfs_navigation::check_profile(&score, &mut report,options.unclosed_final_ending);
     }
     report.finish(score)
 }
@@ -823,9 +843,12 @@ impl Ids {
 }
 /// Export through the original codec after common and SFS semantic validation.
 pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, MappingReport> {
+    to_document_with_options(score,&SfsOptions::default())
+}
+pub fn to_document_with_options(score: &ScoreDocument, options: &SfsOptions) -> Result<Conversion<Document>, MappingReport> {
     let mut report = validate_score(score);
     if !report.has_errors() {
-        crate::sfs_navigation::check_profile(score, &mut report);
+        crate::sfs_navigation::check_profile(score, &mut report,options.unclosed_final_ending);
     }
     if report.has_errors() {
         return Err(report);

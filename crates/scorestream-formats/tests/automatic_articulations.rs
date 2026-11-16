@@ -232,3 +232,55 @@ fn streaming_reader_uses_the_same_per_note_decision() {
         assert_eq!(buffered.report, string.report);
     }
 }
+
+#[test]
+fn thousands_of_retained_notes_have_one_exact_nonfatal_receipt() {
+    let mut xml = String::from(
+        r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name/></score-part></part-list><part id="p">"#,
+    );
+    for i in 0..2048 {
+        xml.push_str(&format!(r#"<measure number="{}"><attributes><divisions>1</divisions></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type><notations><articulations><breath-mark/></articulations></notations></note></measure>"#,i+1));
+    }
+    xml.push_str("</part></score-partwise>");
+    let result = musicxml::read_with_options(&xml, &options()).unwrap();
+    assert_eq!(result.value.parts[0].measures.len(), 2048);
+    let receipts: Vec<_> = result
+        .report
+        .diagnostics
+        .iter()
+        .filter(|d| d.feature == "articulation.automatic_retention")
+        .collect();
+    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts[0].occurrences, 2048);
+    assert!(receipts[0].source.is_some());
+    assert!(!result.report.has_errors());
+    assert!(
+        !result
+            .report
+            .diagnostics
+            .iter()
+            .any(|d| d.feature == "diagnostics.truncated")
+    );
+    let serialized = serde_json::to_string(&result.report).unwrap();
+    let decoded: scorestream_formats::MappingReport = serde_json::from_str(&serialized).unwrap();
+    let mut merged = decoded.clone();
+    merged.append(decoded);
+    assert_eq!(
+        merged
+            .diagnostics
+            .iter()
+            .find(|d| d.feature == "articulation.automatic_retention")
+            .unwrap()
+            .occurrences,
+        4096
+    );
+    // A late real model failure must still abort, not become accepted preservation.
+    let broken=xml.replacen("</part></score-partwise>","<measure number=\"2049\"><attributes><divisions>1</divisions></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note><attributes><key><fifths>2</fifths></key></attributes></measure></part></score-partwise>",1);
+    let failed = musicxml::read_with_options(&broken, &options()).unwrap_err();
+    assert!(
+        failed
+            .diagnostics
+            .iter()
+            .any(|d| d.feature == "attributes.mid_measure")
+    );
+}

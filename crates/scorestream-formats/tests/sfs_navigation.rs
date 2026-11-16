@@ -286,3 +286,28 @@ fn generated_event_ids_reserve_authored_ids_in_both_parse_and_ast_bridge() {
     assert_ne!(common.parts[0].measures[0].events[0].id.0, "event1");
     assert_eq!(common.barlines[0].id.as_deref(), Some("event1"));
 }
+
+#[test]
+fn explicit_final_ending_policy_roundtrips_open_authorship_without_audio_permission() {
+    use scorestream_formats::sfs::{self,SfsOptions};
+    let xml=XML.replace("<barline location=\"right\"><ending number=\"2\" type=\"discontinue\"/></barline>","");
+    let score=MusicXml.read(&xml).unwrap().value;
+    assert!(SfsAdapter.write(&score).is_err());
+    let options=SfsOptions{unclosed_final_ending:route::UnclosedFinalEndingPolicy::ContinueToMovementEnd};
+    let converted=sfs::write_with_options(&score,&options).unwrap();
+    has(&converted.report,"navigation.unclosed_final_ending_continues");
+    assert!(SfsAdapter.read(&converted.value).is_err());
+    let restored=sfs::read_with_options(&converted.value,&options).unwrap();
+    has(&restored.report,"navigation.unclosed_final_ending_continues");
+    assert_eq!(score,restored.value);
+    let exported=MusicXml.write(&restored.value).unwrap().value;
+    assert_eq!(MusicXml.read(&exported).unwrap().value.barlines,score.barlines);
+    assert!(scorestream_app::playback::plan_source(&converted.value).is_err());
+    // The choice is not a bypass for a malformed first ending.
+    let mut malformed=score.clone();
+    malformed.barlines.retain(|b|!b.ending.as_ref().is_some_and(|e|e.phase==EndingPhase::Stop));
+    assert!(sfs::write_with_options(&malformed,&options).is_err());
+    // Nor may an open final ending absorb a later repeat structure.
+    let malformed=xml.replace("<bar-style>light-heavy</bar-style></barline>","<bar-style>light-heavy</bar-style><repeat direction=\"backward\"/></barline>");
+    let parsed=MusicXml.read(&malformed).unwrap();assert!(sfs::write_with_options(&parsed.value,&options).is_err());
+}

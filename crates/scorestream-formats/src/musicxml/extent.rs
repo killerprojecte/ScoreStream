@@ -10,7 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// An explicit contract for one score-wide irregular bar. All declared parts and
 /// all their staves must match. Ordinal is one-based; label is not an identity.
-/// Only overfull bars are supported here. Short pickups keep the existing path.
+/// Short and overfull non-implicit bars require exact authored cursor evidence.
+/// Implicit pickups keep their existing path.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IrregularMeasure {
@@ -53,9 +54,9 @@ impl MusicXmlOptions {
                 || e.label.trim().is_empty()
                 || !valid_meter
                 || !e.actual_length.is_positive()
-                || (valid_meter && e.actual_length <= meter.quarters())
+                || (valid_meter && e.actual_length == meter.quarters())
             {
-                report.push(Format::MusicXml, MappingEffect::Invalid, "measure.extent_policy", "/options/irregular_measures", "Contract requires a unique positive ordinal, exact nonempty label, positive written meter and an actual length greater than that meter");
+                report.push(Format::MusicXml, MappingEffect::Invalid, "measure.extent_policy", "/options/irregular_measures", "Contract requires a unique positive ordinal, exact nonempty label, positive written meter and a positive actual length different from that meter");
             }
         }
         if report.has_errors() {

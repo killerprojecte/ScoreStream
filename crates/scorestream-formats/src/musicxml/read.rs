@@ -1168,13 +1168,12 @@ impl PartReader {
                                     .extend(super::mixed_notations::read(n, &EventId(id.clone())));
                             }
                             if options.articulations == super::ArticulationProfile::Automatic {
-                                report.push_source(
+                                report.preserve_repeated(
                                     crate::Format::MusicXml,
-                                    crate::MappingEffect::Preserved,
                                     "articulation.automatic_retention",
                                     &n.path,
                                     "This note requires authored retention to preserve its articulation groups, attributes or child order. Retention does not establish preview or playback readiness; consumer capability checks still apply.",
-                                    Some(n.source),
+                                    n.source,
                                 );
                             }
                             authored_articulations.push(authored);

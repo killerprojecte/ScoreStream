@@ -5,7 +5,7 @@ use scorestream_core::{
     repeat_traversal as route, score::*,
 };
 use std::collections::BTreeMap;
-pub(crate) fn check_profile(score: &ScoreDocument, report: &mut MappingReport) {
+pub(crate) fn check_profile(score: &ScoreDocument, report: &mut MappingReport, unclosed_final_ending: route::UnclosedFinalEndingPolicy) {
     if score.barlines.is_empty() {
         return;
     }
@@ -16,10 +16,10 @@ pub(crate) fn check_profile(score: &ScoreDocument, report: &mut MappingReport) {
             return;
         }
     };
-    let checked = match route::validate(&navigation.movement, route::Policy::default()) {
+    let checked = match route::validate(&navigation.movement, route::Policy{unclosed_final_ending,..route::Policy::default()}) {
         Ok(v) => v,
         Err(e) => {
-            report.push(Format::Sfs,MappingEffect::Unsupported,"navigation.route_policy","/barlines",format!("SFS navigation requires the supported closed ordinary-repeat profile: {e:?}. No endpoint or continuation policy is inferred."));
+            report.push(Format::Sfs,MappingEffect::Unsupported,"navigation.route_policy","/barlines",format!("SFS navigation requires the supported ordinary-repeat profile under the explicit selected policy: {e:?}. No endpoint or continuation policy is inferred."));
             return;
         }
     };
@@ -34,7 +34,8 @@ pub(crate) fn check_profile(score: &ScoreDocument, report: &mut MappingReport) {
                 "Backward repeat has no authored forward mark; route policy starts at movement entry without adding a sign",
             ),
             route::Diagnostic::UnclosedFinalEndingContinues { .. } => {
-                unreachable!("Strict conversion never enables final-ending continuation")
+                report.push(Format::Sfs,MappingEffect::PolicyApplied,"navigation.unclosed_final_ending_continues","/barlines","Caller explicitly selected continuation of the unclosed final ending to movement end. No missing ending endpoint is inserted; the authored boundary remains open. This conversion does not synthesize performed audio.");
+                continue;
             }
         };
         report.push(
@@ -45,7 +46,7 @@ pub(crate) fn check_profile(score: &ScoreDocument, report: &mut MappingReport) {
             message,
         );
     }
-    report.push(Format::Sfs,MappingEffect::Normalized,"navigation.authored_only","/barlines","Authored boundaries roundtrip through the required navigation capability; repeat engraving is unavailable and performed playback requires the separate supported closed-route projection");
+    report.push(Format::Sfs,MappingEffect::Normalized,"navigation.authored_only","/barlines","Authored boundaries roundtrip through the required navigation capability; repeat engraving is unavailable and performed playback requires the separately selected supported route projection");
 }
 pub(crate) fn read_mark(mark: &Mark, score: &mut ScoreDocument, report: &mut MappingReport) {
     match ext::decode(mark) {

@@ -157,13 +157,12 @@ fn exact_policy_rejects_changed_multipart_extent_label_meter_and_implicit_status
     );
 }
 #[test]
-fn no_blanket_length_switch_and_no_shortening() {
+fn no_blanket_length_switch_or_unmatched_shortening() {
     for (ordinal, beats, unit, length) in [
         (0, 2, 4, "10"),
         (1, 0, 4, "10"),
         (1, 2, 0, "10"),
         (1, 2, 4, "2"),
-        (1, 2, 4, "1"),
         (1, 2, 4, "0"),
     ] {
         let mut opts = options();
@@ -180,6 +179,15 @@ fn no_blanket_length_switch_and_no_shortening() {
                 .any(|d| d.feature == "measure.extent_policy")
         );
     }
+    let mut short = options();
+    short.irregular_measures[0].actual_length = r("1");
+    assert!(
+        musicxml::read_with_options(&fixture(), &short)
+            .unwrap_err()
+            .diagnostics
+            .iter()
+            .any(|d| d.feature == "measure.extent_policy_mismatch")
+    );
     let mut opts = options();
     opts.irregular_measures
         .push(opts.irregular_measures[0].clone());
@@ -389,4 +397,61 @@ fn repeated_irregular_measure_uses_actual_extent_and_keeps_sounding_cue_size() {
         .collect();
     assert_eq!(starts, [0.0, 5.0, 10.0]);
     assert_eq!(SfsAdapter.read(&text).unwrap().value, score);
+}
+
+#[test]
+fn exact_short_contract_preserves_authored_forward_meter_and_next_boundary() {
+    let declarations = (1..=2).map(|i|format!(r#"<score-part id="p{i}"><part-name>Piano</part-name><score-instrument id="i{i}"><instrument-name>piano</instrument-name></score-instrument></score-part>"#)).collect::<String>();
+    let parts = (1..=2).map(|i|format!(r#"<part id="p{i}"><measure number="141"><attributes><divisions>2</divisions><time><beats>3</beats><beat-type>4</beat-type></time></attributes><note><rest/><duration>2</duration><voice>1</voice><type>quarter</type></note><forward><duration>2</duration></forward></measure><measure number="142"><note><rest/><duration>6</duration><voice>1</voice><type>half</type><dot/></note></measure></part>"#)).collect::<String>();
+    let source = format!(
+        r#"<score-partwise version="4.0"><part-list>{declarations}</part-list>{parts}</score-partwise>"#
+    );
+    let mut opts = options();
+    let e = &mut opts.irregular_measures[0];
+    e.label = "141".into();
+    e.written_meter.beats = vec![3];
+    e.actual_length = r("2");
+    let ordinary = MusicXml.read(&source).unwrap().value;
+    assert_eq!(ordinary.parts[0].measures[0].length, r("3"));
+    let short = musicxml::read_with_options(&source, &opts).unwrap().value;
+    for part in &short.parts {
+        assert_eq!(part.measures[0].length, r("2"));
+        assert_eq!(part.measures[1].start, r("2"));
+        assert!(!part.measures[0].implicit);
+        assert_eq!(
+            part.measures[0].states[0].meter.as_ref().unwrap().beats,
+            vec![3]
+        );
+    }
+    let native = SfsAdapter.write(&short).unwrap().value;
+    let restored = SfsAdapter.read(&native).unwrap().value;
+    assert_eq!(short, restored);
+    assert!(MusicXml.write(&restored).is_err());
+    let xml = musicxml::write_with_options(&restored, &opts)
+        .unwrap()
+        .value;
+    assert!(xml.contains("<forward><duration>1</duration>"));
+    assert!(!xml.contains("implicit=\"yes\""));
+    assert_eq!(
+        musicxml::read_with_options(&xml, &opts).unwrap().value,
+        short
+    );
+    // The contract measures authored forward, not just the last note's end.
+    for bad in [
+        source.replacen("<forward><duration>2</duration></forward>", "", 1),
+        source.replacen(
+            "<forward><duration>2</duration></forward>",
+            "<forward><duration>4</duration></forward>",
+            1,
+        ),
+        source.replacen("<beats>3</beats>", "<beats>4</beats>", 1),
+    ] {
+        assert!(
+            musicxml::read_with_options(&bad, &opts)
+                .unwrap_err()
+                .diagnostics
+                .iter()
+                .any(|d| d.feature == "measure.extent_policy_mismatch")
+        );
+    }
 }

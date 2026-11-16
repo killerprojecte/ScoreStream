@@ -177,8 +177,17 @@ def compare(source, exported):
     if len(left) != len(right):
         raise TranscriptError("declared part count changed")
     for a, b in zip(left, right):
-        if a != b:
-            raise TranscriptError(f"part {a['part']}: note-event transcript differs (measure labels, lane assignments, time, pitch, chords, grace timing or sound ties)")
+        if len(a["measure_labels"]) != len(b["measure_labels"]):
+            raise TranscriptError(f"part {a['part']}: measure count changed from {len(a['measure_labels'])} to {len(b['measure_labels'])}")
+        for ordinal, (source_label, export_label) in enumerate(zip(a["measure_labels"], b["measure_labels"]), 1):
+            if source_label != export_label:
+                raise TranscriptError(f"part {a['part']}, measure {ordinal}: label changed from {source_label!r} to {export_label!r}")
+        for ordinal, (source_extent, export_extent) in enumerate(zip(a["encoded_extents"], b["encoded_extents"]), 1):
+            if source_extent != export_extent:
+                label = a["measure_labels"][ordinal - 1]
+                raise TranscriptError(f"part {a['part']}, measure {ordinal} ({label!r}): encoded extent differs: source {source_extent} quarters, export {export_extent} quarters; note durations and forward/backup cursor movement are compared without inferred meter padding")
+        if a["voices"] != b["voices"]:
+            raise TranscriptError(f"part {a['part']}: note-event transcript differs (lane assignments, time, pitch, chords, grace timing or sound ties)")
     return {"equal": True, "parts": len(left), "scope": "exact authored note events; not audio or complete performance equivalence"}
 
 

@@ -66,6 +66,17 @@ class TranscriptTests(unittest.TestCase):
         with self.assertRaisesRegex(TranscriptError, 'identity matching ambiguous'):
             transcript(self.b)
 
+    def test_short_numbered_bar_does_not_gain_inferred_meter_padding(self):
+        source = '<score-partwise><part-list><score-part id="p"/></part-list><part id="p"><measure number="1"><attributes><divisions>1</divisions><time><beats>3</beats><beat-type>4</beat-type></time></attributes><note><rest/><duration>1</duration><voice>1</voice></note></measure></part></score-partwise>'
+        self.a.write_text(source)
+        for implicit in ('', ' implicit="no"', ' implicit="yes"'):
+            padded = source.replace('<measure number="1">', f'<measure number="1"{implicit}>').replace('</measure>', '<forward><duration>2</duration></forward></measure>')
+            self.b.write_text(padded)
+            with self.assertRaisesRegex(TranscriptError, r"part 1, measure 1 .*source 1 quarters, export 3 quarters"):
+                compare(self.a, self.b)
+        self.b.write_text(source.replace('<measure number="1">', '<measure number="1" implicit="no">'))
+        self.assertTrue(compare(self.a, self.b)["equal"])
+
     def test_transposition_changes_are_detected(self):
         self.check_variant(score().replace('</divisions>', '</divisions><transpose><chromatic>2</chromatic></transpose>'))
 

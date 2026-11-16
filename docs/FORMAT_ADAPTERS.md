@@ -98,7 +98,7 @@ Strict MusicXML import and export still reject an overfull non-implicit measure
 by default. `musicxml::read_with_options`, `read_reader_with_options`, and
 `write_with_options` accept `MusicXmlOptions` with exact `IrregularMeasure`
 contracts: a one-based measure ordinal, exact source label, exact written
-`Meter`, and positive actual length greater than the meter. Every declared part
+`Meter`, and positive actual length different from the meter. Every declared part
 and staff must match. Duplicate, missing, stale, short-measure or implicit-measure
 contracts fail. A contract does not apply to the next bar. No arbitrary max-length,
 auto-shortening, padding correction or new time signature is inferred. For MXL,
