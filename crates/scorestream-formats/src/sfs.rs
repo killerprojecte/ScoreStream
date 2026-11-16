@@ -176,11 +176,13 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::credits::EXTENSION
             && e != core::geometry::EXTENSION
             && e != core::print_layout::EXTENSION
+            && e != core::wedges::EXTENSION
             && e != core::lyrics::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
+        wedges: if doc.required_extensions.iter().any(|e|e==core::wedges::EXTENSION) {core::wedges::decode(doc).expect("validated wedge endpoints")} else {vec![]},
         lyrics: if doc
             .required_extensions
             .iter()
@@ -356,6 +358,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         || m.kind == core::credits::KIND
                         || core::geometry::is_kind(&m.kind)
                         || core::print_layout::is_kind(&m.kind)
+                        || core::wedges::is_kind(&m.kind)
                         || core::lyrics::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
@@ -791,6 +794,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .cloned()
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
+    if !score.wedges.is_empty() {doc.required_extensions.push(core::wedges::EXTENSION.into());}
     if !score.credits.is_empty() {
         doc.required_extensions
             .push(core::credits::EXTENSION.into());
@@ -1256,6 +1260,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .or_default()
                 .push(Record::Mark(core::lyrics::encode(l, &id, index)));
         }
+    }
+    for (index,e) in score.wedges.iter().enumerate() {
+        let at = &geometry_measures[&(e.part.as_str(),e.measure.as_str())].clone() + &e.offset;
+        frames.entry(at).or_default().push(Record::Mark(core::wedges::encode(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index)));
     }
     for p in &score.print_layout {
         let at = geometry_measures[&(p.part.as_str(), p.measure.as_str())].clone();

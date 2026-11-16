@@ -268,7 +268,7 @@ fn source_higher_numeric_range_is_preserved_but_unrealizable_plan_rejects() {
 #[test]
 fn unsupported_words_glyphs_compounds_layout_wedges_and_sound_properties_block() {
     for (element, feature) in [
-        ("<wedge type=\"crescendo\"/>", "element.wedge"),
+        ("<wedge type=\"continue\"/>", "wedge.type"),
         (
             "<words font-family=\"Leland Text\">\u{e522}</words>",
             "element.words",

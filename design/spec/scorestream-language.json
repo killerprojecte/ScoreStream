@@ -1767,6 +1767,44 @@
         },
         "required_extension": "scorestream.geometry@1",
         "meaning": "Coordinates of an existing augmentation dot at zero-based authored index, owned by its exact-onset event. Sparse records, unique event/index, index below written dot count, and at least one exact finite-decimal coordinate. Does not create dots or change note value, duration or playback."
+      },
+      "scorestream.wedge": {
+        "targets": [
+          "measure"
+        ],
+        "required": [
+          "part",
+          "index",
+          "type"
+        ],
+        "fields": {
+          "part": {
+            "type": "identifier"
+          },
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "number": {
+            "type": "positive_integer"
+          },
+          "staff": {
+            "type": "positive_integer"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "spread": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.wedge@1",
+        "meaning": "Ordered authored measure-owned wedge endpoint at exact onset; no sounding hairpin or inferred target loudness. Unmatched chains preserved with explicit diagnostic."
       }
     }
   },
@@ -1936,6 +1974,13 @@
       "scorestream.lyrics@1": {
         "status": "lossless authored lyric interchange; preview omits with warning",
         "required_behavior": "Complete score, exact existing event onset, unique contiguous zero-based per-event indices, closed scalar fields. One syllabic plus text, optional verse string/color and exact finite-decimal coordinates. Reject unsupported elision, extend, markup, duplicate/gapped indices, wrong hosts and unknown versions. Do not reinterpret text as analytical annotation or sounding instruction."
+      },
+      "scorestream.wedge@1": {
+        "mark_kinds": [
+          "scorestream.wedge"
+        ],
+        "status": "authored ordered endpoints only; preview/expression unimplemented; no implicit sounding curve",
+        "required_behavior": "Complete score, exact owning part/measure, inclusive measure-local onset, valid optional staff, crescendo/diminuendo/stop, number 1..16 when present, finite-decimal default_y/spread, closed fields and contiguous global indices in canonical part/measure grouping. Preserve within-measure document order and unmatched chains; warn rather than invent endpoint pairings, velocity targets or rendering."
       }
     }
   },

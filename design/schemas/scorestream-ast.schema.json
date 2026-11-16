@@ -1827,6 +1827,69 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.wedge"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "part": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "type": {
+                    "enum": [
+                      "crescendo",
+                      "diminuendo",
+                      "stop"
+                    ]
+                  },
+                  "number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  },
+                  "staff": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "placement": {
+                    "enum": [
+                      "above",
+                      "below"
+                    ]
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "spread": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "part",
+                  "index",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "description": "Requires scorestream.wedge@1, owning measure/part, exact inclusive measure-local onset, valid staff, finite-decimal geometry and contiguous canonical endpoint indices. Unmatched endpoints are preserved with diagnostics, never repaired into sounding curves."
+          }
         }
       ]
     },

@@ -790,7 +790,8 @@ pub(super) fn schema_with_profile(
                 &["direction-type"],
                 false,
             ),
-            "direction-type" => (&[], &["metronome", "dynamics"], &[], &[], false),
+            "direction-type" => (&[], &["metronome", "dynamics", "wedge"], &[], &[], false),
+            "wedge" => (&["type", "number", "default-y", "spread"], &[], &[], &[], false),
             "dynamics" => (
                 &["default-x", "default-y", "relative-x", "relative-y"],
                 &[

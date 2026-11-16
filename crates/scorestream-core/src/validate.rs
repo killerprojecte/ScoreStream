@@ -40,6 +40,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::credits::EXTENSION
             && requirement != crate::geometry::EXTENSION
             && requirement != crate::print_layout::EXTENSION
+            && requirement != crate::wedges::EXTENSION
             && requirement != crate::lyrics::EXTENSION
         {
             out.push(Diagnostic::error(
@@ -185,6 +186,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut ids = BTreeSet::new();
     let mut mark_ids = BTreeSet::new();
     let mut has_geometry = false;
+    let mut has_wedges = false;
     let mut has_credits = false;
     let mut has_print = false;
     let mut has_lyrics = false;
@@ -467,6 +469,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                         }
                     }
                     has_geometry |= crate::geometry::is_kind(&m.kind);
+                    has_wedges |= crate::wedges::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
                     has_lyrics |= crate::lyrics::is_kind(&m.kind);
@@ -488,6 +491,16 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     }
     if let Some(source) = dynamic_qualifier_source {
         out.push(Diagnostic::warning("dynamics.qualifier_unrealized", "Ordered dynamic qualifier text is preserved but not rendered in the current reflow preview. Explicit sound=false keeps numeric playback unchanged without realizing qualifier expression; sounding qualifiers require an explicit interpretation", source));
+    }
+    if has_wedges || doc.required_extensions.iter().any(|e|e==crate::wedges::EXTENSION) {
+        match crate::wedges::decode(doc) {
+            Err(errors)=>out.extend(errors),
+            Ok(endpoints)=>{
+                out.push(Diagnostic::warning("wedge.authored_only", "Authored wedge endpoints are retained; current preview and performance do not realize wedge shape/expression. No target loudness or curve is inferred",doc.source));
+                let count=crate::wedges::unresolved_pairs(&endpoints);
+                if count>0 {out.push(Diagnostic::warning("wedge.pairing_unresolved",format!("{count} unmatched/ambiguous authored wedge endpoints; no pairing repair is inferred"),doc.source));}
+            }
+        }
     }
     crate::navigation_extension::validate(doc, &mut out);
     crate::fermata_extension::validate(doc, &mut out);
@@ -864,7 +877,7 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
-                    if m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
+                    if m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
                         continue;
                     }
                     if m.target.starts_with('#') {

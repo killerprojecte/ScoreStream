@@ -426,6 +426,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.geometry.append(&mut reader.geometry);
             score.print_layout.append(&mut reader.print_layout);
             score.lyrics.append(&mut reader.lyrics);
+            score.wedges.append(&mut reader.wedges);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -499,6 +500,13 @@ fn read_with_audit<R: BufRead + Seek>(
         report.push(crate::Format::MusicXml, crate::MappingEffect::Preserved, "articulation.authored_only", "/authored_articulations",
             "Authored articulations preserve exact optional attributes and passive custom text. Mixed hosts additionally retain typed wrapper child order; no new rendering or performance policy is inferred.");
     }
+    if !score.wedges.is_empty() {
+        let wedge_positions: std::collections::BTreeMap<_,_> = score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.as_str(),m.id.as_str()),&m.start))).collect();
+        score.wedges.sort_by(|a,b|a.part.cmp(&b.part).then(wedge_positions[&(a.part.as_str(),a.measure.as_str())].cmp(wedge_positions[&(b.part.as_str(),b.measure.as_str())])));
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"wedge.authored_only","/wedges","Ordered wedge endpoints retained without inferring velocity curves; preview and expressive performance are not realized");
+        let unresolved=scorestream_core::wedges::unresolved_pairs(&score.wedges);
+        if unresolved>0 {report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"wedge.pairing_unresolved","/wedges",format!("{unresolved} unmatched or ambiguous endpoints retained without pairing repair"));}
+    }
     if !score.print_layout.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"print.authored_layout","/print_layout",format!("Retained {} measure-owned print layouts; preview independently reflows and playback is unchanged",score.print_layout.len()));
     }
@@ -536,6 +544,7 @@ struct PartReader {
     geometry: Vec<scorestream_core::geometry::Geometry>,
     print_layout: Vec<scorestream_core::print_layout::PrintLayout>,
     lyrics: Vec<scorestream_core::lyrics::EventLyrics>,
+    wedges: Vec<scorestream_core::wedges::WedgeEndpoint>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -582,6 +591,7 @@ impl PartReader {
             geometry: vec![],
             print_layout: vec![],
             lyrics: vec![],
+            wedges: vec![],
             barlines: vec![],
         })
     }
@@ -615,6 +625,7 @@ impl PartReader {
             geometry,
             print_layout,
             lyrics,
+            wedges,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -831,6 +842,7 @@ impl PartReader {
                 }
                 "direction" | "sound" => {
                     previous = None;
+                    if let Some(endpoint)=super::wedges::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {wedges.push(endpoint);}
                     super::dynamics::read(
                         n,
                         part,

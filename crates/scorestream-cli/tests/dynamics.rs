@@ -37,14 +37,44 @@ fn cli_explicit_dynamics_preserve_absence_exact_values_and_held_steps() {
     assert_eq!(points.len(), 2);
     assert!((40.0 * points[0].gain - 39.996).abs() < 1e-10);
     assert!((40.0 * points[1].gain - 96.003).abs() < 1e-10);
-    let source = std::fs::read_to_string(fixture)
-        .unwrap()
-        .replace("<dynamics><p/></dynamics>", "<wedge type=\"crescendo\"/>");
+    let source = std::fs::read_to_string(fixture).unwrap();
     let path = std::env::temp_dir().join(format!(
-        "scorestream-dynamics-reject-{}.musicxml",
+        "scorestream-dynamics-wedge-{}.musicxml",
         std::process::id()
     ));
-    std::fs::write(&path, source).unwrap();
+    std::fs::write(
+        &path,
+        source.replace("<dynamics><p/></dynamics>", "<wedge type=\"crescendo\"/>"),
+    )
+    .unwrap();
+    let accepted = Command::new(env!("CARGO_BIN_EXE_scorestream"))
+        .args(["convert", "musicxml", "sfs"])
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(
+        accepted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&accepted.stderr)
+    );
+    let authored = String::from_utf8(accepted.stdout).unwrap();
+    assert!(authored.contains("scorestream.wedge@1"));
+    let authored_plan = scorestream_app::playback::plan_source(&authored).unwrap();
+    assert_eq!(
+        serde_json::to_value(&authored_plan.notes).unwrap(),
+        serde_json::to_value(&plan.notes).unwrap()
+    );
+    assert!(
+        authored_plan
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "wedge.pairing_unresolved")
+    );
+    std::fs::write(
+        &path,
+        source.replace("<dynamics><p/></dynamics>", "<wedge type=\"continue\"/>"),
+    )
+    .unwrap();
     let rejected = Command::new(env!("CARGO_BIN_EXE_scorestream"))
         .args(["convert", "musicxml", "sfs"])
         .arg(&path)
@@ -59,6 +89,6 @@ fn cli_explicit_dynamics_preserve_absence_exact_values_and_held_steps() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|d| d["feature"] == "element.wedge")
+            .any(|d| d["feature"] == "wedge.type")
     );
 }

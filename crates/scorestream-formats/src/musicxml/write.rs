@@ -35,14 +35,17 @@ fn divisions(
     dynamics_index: &super::dynamics::Export<'_>,
     part: &ScorePart,
     graces: &super::graces::Export<'_>,
+    wedges: &super::wedges::Export<'_>,
 ) -> Option<u64> {
     let mut n = 1;
     let offsets = tempo_index.positions(part, m);
     let dynamics_offsets = dynamics_index.offsets(part, m);
+    let wedge_offsets = wedges.offsets(&part.id.0,&m.id);
     for value in std::iter::once(&m.length)
         .chain(m.events.iter().flat_map(|e| [&e.offset, &e.duration]))
         .chain(offsets.iter())
         .chain(dynamics_offsets.iter())
+        .chain(wedge_offsets.iter())
         .chain(graces.make_times(m))
     {
         let d = value.denominator().to_u64()?;
@@ -53,7 +56,7 @@ fn divisions(
     }
     Some(n)
 }
-fn units(value: &Rational, div: u64) -> String {
+pub(super) fn units(value: &Rational, div: u64) -> String {
     (value * &Rational::from_big_integer(div.into()))
         .numerator()
         .to_string()
@@ -121,6 +124,7 @@ pub fn write_with_options(
     super::tempo::validate_export(score, &mut report);
     let tempo_index = super::tempo::Export::new(score);
     let dynamics_index = super::dynamics::Export::new(score, &mut report);
+    let wedge_index = super::wedges::Export::new(&score.wedges);
     let fermatas = super::fermatas::Export::new(score, &mut report);
     let beams = super::beams::Export::new(score);
     let articulations = super::articulations::Export::new(score);
@@ -222,7 +226,7 @@ pub fn write_with_options(
                     "Invalid or duplicate XML ID",
                 );
             }
-            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces) {
+            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces, &wedge_index) {
                 graces.validate_make_times(m, div, &mut report);
             } else {
                 issue(
@@ -489,7 +493,7 @@ pub fn write_with_options(
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
-            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces).unwrap();
+            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces, &wedge_index).unwrap();
             writeln!(
                 out,
                 "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\"{}>",
@@ -562,6 +566,7 @@ pub fn write_with_options(
             out.push_str("      </attributes>\n");
             super::tempo::write_measure(&tempo_index, p, m, div, &mut out);
             dynamics_index.write_measure(p, m, div, &mut out);
+            wedge_index.write(&p.id.0,&m.id,div,&mut out);
             for (vi, v) in p.voices.iter().enumerate() {
                 if vi > 0 {
                     writeln!(

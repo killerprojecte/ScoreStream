@@ -475,6 +475,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 // Validated page credits are authoring-only, not musical directions.
                 Record::Mark(mark) if mark.kind == crate::credits::KIND => {}
                 Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
+                Record::Mark(mark) if mark.kind == crate::wedges::KIND => {}
                 Record::Mark(mark) if crate::print_layout::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::lyrics::is_kind(&mark.kind) => {}
                 Record::Mark(mark)
