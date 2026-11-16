@@ -534,6 +534,11 @@
         "default_y",
         "relative_x",
         "relative_y"
+      ],
+      "scorestream.geometry.dot": [
+        "index",
+        "default_x",
+        "default_y"
       ]
     },
     "relations": {
@@ -1741,6 +1746,27 @@
         },
         "required_extension": "scorestream.lyrics@1",
         "meaning": "Authored note lyric, not semantic commentary. Preserve per-event ordered verse/tag and literal text, exact coordinate absence/zero and color. Current preview explicitly omits lyrics; playback unchanged."
+      },
+      "scorestream.geometry.dot": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "index"
+        ],
+        "fields": {
+          "default_x": {
+            "type": "rational"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "index": {
+            "type": "nonnegative_integer"
+          }
+        },
+        "required_extension": "scorestream.geometry@1",
+        "meaning": "Coordinates of an existing augmentation dot at zero-based authored index, owned by its exact-onset event. Sparse records, unique event/index, index below written dot count, and at least one exact finite-decimal coordinate. Does not create dots or change note value, duration or playback."
       }
     }
   },
@@ -1892,9 +1918,10 @@
         "status": "lossless coordinate interchange; preview independently reflows with an explicit warning",
         "mark_kinds": [
           "scorestream.geometry.event",
-          "scorestream.geometry.measure"
+          "scorestream.geometry.measure",
+          "scorestream.geometry.dot"
         ],
-        "required_behavior": "Unique exact-onset event or part-owned measure host, finite decimal tenths, no unknown fields. At least one coordinate per event; measure width required. Preserve presence, not lexical spelling. Coordinate metadata does not change sounding time."
+        "required_behavior": "Unique exact-onset event or part-owned measure host, finite decimal tenths, no unknown fields. At least one coordinate per event; measure width required. Preserve presence, not lexical spelling. Coordinate metadata does not change sounding time. Dot items require unique event/index and index below the authored written dot count; output follows numeric dot order, independent of record traversal."
       },
       "scorestream.credits@1": {
         "status": "authored text and page credit roundtrip; no rendering or audio realization",

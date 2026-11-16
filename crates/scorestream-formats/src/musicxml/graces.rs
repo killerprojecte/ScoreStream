@@ -286,8 +286,8 @@ impl<'a> Export<'a> {
                     write!(out, " size=\"{}\"", size.name()).unwrap();
                 }
                 write!(out, ">{}</type>", type_name(w.note_type)).unwrap();
-                for _ in 0..w.dots {
-                    out.push_str("<dot/>");
+                for index in 0..w.dots {
+                    write!(out, "<dot{}/>", geometry.dot(&g.id.0, index)).unwrap();
                 }
                 super::accidentals::write(g.accidental.as_ref(), out);
                 if let Some(t) = &w.time_modification {

@@ -12,4 +12,13 @@ describe('authored coordinate preservation',()=>{
   expect(result.warnings.filter(w=>w.includes('reflows notation independently'))).toHaveLength(1);
   expect(JSON.stringify(v)).toBe(before);
  });
+ it('retains dot coordinates without applying them or changing authored dot count',()=>{
+  const v=fixture();v.events[0].duration='3';v.events[0].written_duration='2';v.events[0].dots=1;
+  const baseline=project(v);v.document.required_extensions=['scorestream.geometry@1'];
+  v.document.frames=[{time:'0',records:[{record:'mark',kind:'scorestream.geometry.dot',target:'#a',attributes:{index:0,default_x:'0',default_y:'-1/8'}}]}];
+  const before=JSON.stringify(v),result=project(v);
+  expect(result.mei).toBe(baseline.mei);
+  expect(result.warnings).toContain('Original note, augmentation-dot and measure coordinates are retained in the score. This preview reflows notation independently and does not reproduce those authored positions.');
+  expect(JSON.stringify(v)).toBe(before);
+ });
 });

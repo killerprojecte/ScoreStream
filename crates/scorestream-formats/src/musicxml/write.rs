@@ -625,8 +625,9 @@ pub fn write_with_options(
                             .unwrap_or_default();
                         writeln!(out, "        <type{size}>{}</type>", type_name(w.note_type))
                             .unwrap();
-                        for _ in 0..w.dots {
-                            out.push_str("        <dot/>\n");
+                        for index in 0..w.dots {
+                            writeln!(out, "        <dot{}/>", geometry.dot(&e.id.0, index))
+                                .unwrap();
                         }
                         super::accidentals::write(e.accidental.as_ref(), &mut out);
                         if let Some(tm) = &w.time_modification {

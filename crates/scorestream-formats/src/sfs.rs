@@ -1270,7 +1270,8 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     }
     for geometry in &score.geometry {
         let (at, host, part) = match geometry {
-            core::geometry::Geometry::Event { event, .. } => (
+            core::geometry::Geometry::Event { event, .. }
+            | core::geometry::Geometry::Dot { event, .. } => (
                 geometry_positions[&EventId(event.clone())].clone(),
                 events.get(event, &mut report),
                 None,

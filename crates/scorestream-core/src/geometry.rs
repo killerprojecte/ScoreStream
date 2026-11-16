@@ -4,12 +4,21 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 pub const EXTENSION: &str = "scorestream.geometry@1";
 pub const EVENT: &str = "scorestream.geometry.event";
+pub const DOT: &str = "scorestream.geometry.dot";
 pub const MEASURE: &str = "scorestream.geometry.measure";
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "host", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Geometry {
     Event {
         event: String,
+        default_x: Option<Rational>,
+        default_y: Option<Rational>,
+    },
+    /// Coordinates of an existing augmentation dot, zero-based in authored order.
+    /// Sparse: unstyled dots need no record; this never creates or counts dots.
+    Dot {
+        event: String,
+        index: u32,
         default_x: Option<Rational>,
         default_y: Option<Rational>,
     },
@@ -46,6 +55,20 @@ pub fn encode(value: &Geometry, host: String, part: Option<String>) -> Mark {
             }
             EVENT
         }
+        Geometry::Dot {
+            index,
+            default_x,
+            default_y,
+            ..
+        } => {
+            attributes.insert("index".into(), Scalar::Integer(i64::from(*index)));
+            for (name, number) in [("default_x", default_x), ("default_y", default_y)] {
+                if let Some(number) = number {
+                    attributes.insert(name.into(), Scalar::String(number.to_string()));
+                }
+            }
+            DOT
+        }
         Geometry::Measure { width, .. } => {
             attributes.insert("width".into(), Scalar::String(width.to_string()));
             attributes.insert(
@@ -67,12 +90,23 @@ pub fn decode(doc: &Document) -> Result<Vec<Geometry>, Vec<Diagnostic>> {
     let enabled = doc.required_extensions.iter().any(|e| e == EXTENSION);
     let mut events = BTreeMap::new();
     let mut measures = BTreeMap::new();
+    let mut dots = BTreeMap::new();
     for frame in &doc.frames {
         for record in &frame.records {
             match record {
                 Record::Event(e) => {
                     if let Some(id) = e.id() {
                         events.insert(id, &frame.time);
+                        if e.attributes.get("w").and_then(Scalar::as_str).is_some() {
+                            if let Some(count) = e
+                                .attributes
+                                .get("dots")
+                                .and_then(Scalar::as_i64)
+                                .and_then(|n| u32::try_from(n).ok())
+                            {
+                                dots.insert(id, count);
+                            }
+                        }
                     }
                 }
                 Record::Measure(m) => {
@@ -100,7 +134,24 @@ pub fn decode(doc: &Document) -> Result<Vec<Geometry>, Vec<Diagnostic>> {
                 .target
                 .strip_prefix('#')
                 .ok_or_else(|| error("Geometry requires a host identity", m.source))?;
-            if !seen.insert((m.kind.as_str(), host)) {
+            let index = if m.kind == DOT {
+                Some(
+                    m.attributes
+                        .get("index")
+                        .and_then(Scalar::as_i64)
+                        .and_then(|n| u32::try_from(n).ok())
+                        .filter(|i| dots.get(host).is_some_and(|count| i < count))
+                        .ok_or_else(|| {
+                            error(
+                                "Dot geometry requires an existing written dot index",
+                                m.source,
+                            )
+                        })?,
+                )
+            } else {
+                None
+            };
+            if !seen.insert((m.kind.as_str(), host, index)) {
                 return Err(error("Duplicate geometry host", m.source));
             }
             let number = |key: &str| -> Result<Option<Rational>, Vec<Diagnostic>> {
@@ -118,11 +169,11 @@ pub fn decode(doc: &Document) -> Result<Vec<Geometry>, Vec<Diagnostic>> {
                 Ok(Some(value))
             };
             let value = match m.kind.as_str() {
-                EVENT => {
-                    if m.attributes
-                        .keys()
-                        .any(|k| !["default_x", "default_y"].contains(&k.as_str()))
-                        || events.get(host) != Some(&&frame.time)
+                EVENT | DOT => {
+                    if m.attributes.keys().any(|k| {
+                        !(["default_x", "default_y"].contains(&k.as_str())
+                            || m.kind == DOT && k == "index")
+                    }) || events.get(host) != Some(&&frame.time)
                     {
                         return Err(error(
                             "Invalid geometry event fields, host, or onset",
@@ -134,10 +185,19 @@ pub fn decode(doc: &Document) -> Result<Vec<Geometry>, Vec<Diagnostic>> {
                     if default_x.is_none() && default_y.is_none() {
                         return Err(error("Empty geometry event", m.source));
                     }
-                    Geometry::Event {
-                        event: host.into(),
-                        default_x,
-                        default_y,
+                    if let Some(index) = index {
+                        Geometry::Dot {
+                            event: host.into(),
+                            index,
+                            default_x,
+                            default_y,
+                        }
+                    } else {
+                        Geometry::Event {
+                            event: host.into(),
+                            default_x,
+                            default_y,
+                        }
                     }
                 }
                 MEASURE => {

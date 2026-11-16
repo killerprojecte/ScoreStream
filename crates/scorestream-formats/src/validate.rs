@@ -303,10 +303,28 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             );
         }
     }
+    let written_dots: BTreeMap<_, _> = score
+        .parts
+        .iter()
+        .flat_map(|p| &p.measures)
+        .flat_map(|m| &m.events)
+        .map(|e| {
+            (
+                e.id.0.as_str(),
+                e.written.as_ref().map(|w| w.dots).unwrap_or(0),
+            )
+        })
+        .chain(score.graces.iter().map(|g| {
+            (
+                g.id.0.as_str(),
+                g.written.as_ref().map(|w| w.dots).unwrap_or(0),
+            )
+        }))
+        .collect();
     let mut geometry_hosts = BTreeSet::new();
     for g in &score.geometry {
         use scorestream_core::geometry::Geometry;
-        let (kind, id, valid, numbers) = match g {
+        let (kind, id, index, valid, numbers) = match g {
             Geometry::Event {
                 event,
                 default_x,
@@ -314,7 +332,22 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             } => (
                 "event",
                 event,
+                None,
                 event_hosts.contains(event.as_str()),
+                vec![default_x.as_ref(), default_y.as_ref()],
+            ),
+            Geometry::Dot {
+                event,
+                index,
+                default_x,
+                default_y,
+            } => (
+                "dot",
+                event,
+                Some(*index),
+                written_dots
+                    .get(event.as_str())
+                    .is_some_and(|count| index < count),
                 vec![default_x.as_ref(), default_y.as_ref()],
             ),
             Geometry::Measure {
@@ -324,12 +357,13 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             } => (
                 "measure",
                 measure,
+                None,
                 measure_hosts.contains(&(part.as_str(), measure.as_str())),
                 vec![Some(width)],
             ),
         };
         if !valid
-            || !geometry_hosts.insert((kind, id))
+            || !geometry_hosts.insert((kind, id, index))
             || numbers.iter().all(|v| v.is_none())
             || numbers
                 .into_iter()

@@ -13,7 +13,7 @@ pub enum GeometryPolicy {
     /// Only direct measure/@width and note/@default-x, @default-y. Other geometry,
     /// semantic display fields, unknown elements and descendants remain blocking.
     RegenerateNoteAndMeasureCoordinates,
-    /// Retain typed event/measure coordinates without applying them to rendering.
+    /// Retain typed event/measure and ordered augmentation-dot coordinates without applying them to rendering.
     PreserveNoteAndMeasureCoordinates,
 }
 impl GeometryPolicy {
@@ -26,6 +26,8 @@ enum Field {
     MeasureWidth = 0,
     NoteX = 1,
     NoteY = 2,
+    DotX = 3,
+    DotY = 4,
 }
 impl Field {
     fn classify(n: &Node, key: &str) -> Option<Self> {
@@ -45,6 +47,12 @@ impl Field {
             (["score-partwise", "part", "measure", "note"], "note", "default-y") => {
                 Some(Self::NoteY)
             }
+            (["score-partwise", "part", "measure", "note", "dot"], "dot", "default-x") => {
+                Some(Self::DotX)
+            }
+            (["score-partwise", "part", "measure", "note", "dot"], "dot", "default-y") => {
+                Some(Self::DotY)
+            }
             _ => None,
         }
     }
@@ -53,6 +61,8 @@ impl Field {
             Self::MeasureWidth => "measure/@width",
             Self::NoteX => "note/@default-x",
             Self::NoteY => "note/@default-y",
+            Self::DotX => "note/dot/@default-x",
+            Self::DotY => "note/dot/@default-y",
         }
     }
 }
@@ -60,8 +70,8 @@ impl Field {
 /// truncation. The policy never changes the XML nodes or their source fingerprint.
 #[derive(Default)]
 pub(super) struct Audit {
-    counts: [u64; 3],
-    first: [Option<(String, SourceRange)>; 3],
+    counts: [u64; 5],
+    first: [Option<(String, SourceRange)>; 5],
     preserved: bool,
 }
 impl Audit {
@@ -80,6 +90,12 @@ impl Audit {
         let Some(field) = Field::classify(n, key) else {
             return false;
         };
+        // The older explicit regeneration policy covers only note/measure attrs.
+        if matches!(field, Field::DotX | Field::DotY)
+            && policy != GeometryPolicy::PreserveNoteAndMeasureCoordinates
+        {
+            return false;
+        }
         // Check exact XML decimal syntax without cloning
         // a measure or note subtree just to validate one scalar attribute.
         let mut scalar = n.scalar_attribute(key);
@@ -115,7 +131,13 @@ impl Audit {
     }
     pub(super) fn prepend_report(self, report: MappingReport) -> MappingReport {
         let mut out = MappingReport::default();
-        for field in [Field::MeasureWidth, Field::NoteX, Field::NoteY] {
+        for field in [
+            Field::MeasureWidth,
+            Field::NoteX,
+            Field::NoteY,
+            Field::DotX,
+            Field::DotY,
+        ] {
             let i = field as usize;
             if let Some((path, source)) = self.first[i].as_ref() {
                 out.push_source(Format::MusicXml, if self.preserved { MappingEffect::Preserved } else { MappingEffect::PolicyApplied },
@@ -125,7 +147,7 @@ impl Audit {
             }
         }
         // Appending through the bounded-report API keeps a blocking truncated
-        // summary blocking even when these three policy records take its slots.
+        // summary blocking even when these policy records take its slots.
         out.append(report);
         out
     }
@@ -135,36 +157,59 @@ pub(super) fn event(
     n: &Node,
     id: &str,
     policy: GeometryPolicy,
-) -> Result<Option<scorestream_core::geometry::Geometry>, MappingReport> {
+) -> Result<Vec<scorestream_core::geometry::Geometry>, MappingReport> {
+    use scorestream_core::geometry::Geometry;
     if policy != GeometryPolicy::PreserveNoteAndMeasureCoordinates {
-        return Ok(None);
+        return Ok(vec![]);
     }
-    let x = n
-        .attr("default-x")
-        .map(|_| exact_decimal(&n.scalar_attribute("default-x")))
-        .transpose()?;
-    let y = n
-        .attr("default-y")
-        .map(|_| exact_decimal(&n.scalar_attribute("default-y")))
-        .transpose()?;
-    Ok(if x.is_some() || y.is_some() {
-        Some(scorestream_core::geometry::Geometry::Event {
+    let coordinates = |node: &Node| -> Result<_, MappingReport> {
+        Ok((
+            node.attr("default-x")
+                .map(|_| exact_decimal(&node.scalar_attribute("default-x")))
+                .transpose()?,
+            node.attr("default-y")
+                .map(|_| exact_decimal(&node.scalar_attribute("default-y")))
+                .transpose()?,
+        ))
+    };
+    let mut values = vec![];
+    let (default_x, default_y) = coordinates(n)?;
+    if default_x.is_some() || default_y.is_some() {
+        values.push(Geometry::Event {
             event: id.into(),
-            default_x: x,
-            default_y: y,
-        })
-    } else {
-        None
-    })
+            default_x,
+            default_y,
+        });
+    }
+    for (index, dot) in n.children_named("dot").enumerate() {
+        let (default_x, default_y) = coordinates(dot)?;
+        if default_x.is_some() || default_y.is_some() {
+            values.push(Geometry::Dot {
+                event: id.into(),
+                index: u32::try_from(index).map_err(|_| {
+                    super::read::error(
+                        dot,
+                        "geometry.dot_index",
+                        "Dot index exceeds the written-duration representation",
+                    )
+                })?,
+                default_x,
+                default_y,
+            });
+        }
+    }
+    Ok(values)
 }
 pub(super) struct Export {
     events: std::collections::BTreeMap<String, String>,
+    dots: std::collections::BTreeMap<(String, u32), String>,
     measures: std::collections::BTreeMap<(String, String), String>,
 }
 impl Export {
     pub(super) fn new(score: &scorestream_core::score::ScoreDocument) -> Self {
         let mut result = Self {
             events: Default::default(),
+            dots: Default::default(),
             measures: Default::default(),
         };
         for g in &score.geometry {
@@ -185,6 +230,23 @@ impl Export {
                     }
                     result.events.insert(event.clone(), attrs);
                 }
+                scorestream_core::geometry::Geometry::Dot {
+                    event,
+                    index,
+                    default_x,
+                    default_y,
+                } => {
+                    let mut attrs = String::new();
+                    for (name, value) in [("default-x", default_x), ("default-y", default_y)] {
+                        if let Some(value) = value {
+                            attrs.push_str(&format!(
+                                " {name}=\"{}\"",
+                                decimal_text(value).expect("validated decimal")
+                            ));
+                        }
+                    }
+                    result.dots.insert((event.clone(), *index), attrs);
+                }
                 scorestream_core::geometry::Geometry::Measure {
                     part,
                     measure,
@@ -204,6 +266,12 @@ impl Export {
     }
     pub(super) fn event(&self, id: &str) -> &str {
         self.events.get(id).map(String::as_str).unwrap_or("")
+    }
+    pub(super) fn dot(&self, id: &str, index: u32) -> &str {
+        self.dots
+            .get(&(id.into(), index))
+            .map(String::as_str)
+            .unwrap_or("")
     }
     pub(super) fn measure(&self, part: &str, id: &str) -> &str {
         self.measures
