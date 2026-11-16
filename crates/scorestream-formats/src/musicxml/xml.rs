@@ -1065,9 +1065,13 @@ pub(super) fn schema_with_profile(
                 word.error(report, MappingEffect::Unsupported, "element.words",
                     "Standalone words are not mapped by the authored dashes profile");
             }
-            if types.len() > 1 || n.attr("system").is_some() {
-                n.error(report, MappingEffect::Unsupported, "direction.group",
-                    "Multiple direction types and direction system flags require a supported authored group");
+            if types.len() > 1 {
+                n.error(report, MappingEffect::Invalid, "xml.cardinality",
+                    "Repeated direction-type is outside the conversion profile");
+            }
+            if n.attr("system").is_some() {
+                n.error(report, MappingEffect::Unsupported, "attribute.system",
+                    "Attribute has no implemented typed mapping for this direction group");
             }
         }
     }
