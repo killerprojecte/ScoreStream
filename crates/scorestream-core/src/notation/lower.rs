@@ -435,6 +435,8 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 // do not change pitch, measured time, or grace/fermata policy.
                 Record::Mark(mark) if mark.kind == crate::beam_extension::KIND => {}
                 // Validated authored coordinates are visual metadata, not performance.
+                // Validated page credits are authoring-only, not musical directions.
+                Record::Mark(mark) if mark.kind == crate::credits::KIND => {}
                 Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}

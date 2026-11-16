@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreDocument {
+    /// Ordered authored page credits, not rendered page objects.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub credits: Vec<crate::credits::Credit>,
     /// Authored event and measure geometry in exact tenths; not a rendering promise.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub geometry: Vec<crate::geometry::Geometry>,

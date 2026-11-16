@@ -37,6 +37,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::slur_extension::EXTENSION
             && requirement != crate::articulation_extension::EXTENSION
             && requirement != crate::notation_extension::EXTENSION
+            && requirement != crate::credits::EXTENSION
             && requirement != crate::geometry::EXTENSION
         {
             out.push(Diagnostic::error(
@@ -182,6 +183,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut ids = BTreeSet::new();
     let mut mark_ids = BTreeSet::new();
     let mut has_geometry = false;
+    let mut has_credits = false;
     let mut measures = Vec::new();
     let mut previous: Option<&Rational> = None;
     for frame in &doc.frames {
@@ -431,6 +433,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 Record::Mark(m) => {
                     validate_attributes("mark", &m.kind, &m.attributes, m.source, &mut out);
                     has_geometry |= crate::geometry::is_kind(&m.kind);
+                    has_credits |= crate::credits::is_kind(&m.kind);
                     if let Some(id) = m.attributes.get("id").and_then(Scalar::as_str) {
                         if !mark_ids.insert(id) {
                             out.push(Diagnostic::error(
@@ -455,6 +458,11 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     crate::slur_extension::validate(doc, &mut out);
     crate::articulation_extension::validate(doc, &mut out);
     crate::notation_extension::validate(doc, &mut out);
+    if has_credits || doc.required_extensions.iter().any(|e| e == crate::credits::EXTENSION) {
+        if let Err(errors) = crate::credits::decode(doc) {
+            out.extend(errors);
+        }
+    }
     if has_geometry || doc.required_extensions.iter().any(|e| e == crate::geometry::EXTENSION) {
         crate::geometry::validate(doc, &mut out);
     }

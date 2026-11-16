@@ -663,12 +663,21 @@ pub(super) fn schema_with_profile(
                     "movement-number",
                     "movement-title",
                     "identification",
+                    "credit",
                     "part-list",
                     "part",
                 ],
-                &["part"],
+                &["part", "credit"],
                 &["part-list", "part"],
                 false,
+            ),
+            "credit" => (
+                &["page"], &["credit-type", "credit-words"], &[], &["credit-words"], false,
+            ),
+            "credit-type" => (&[], &[], &[], &[], true),
+            "credit-words" => (
+                &["default-x", "default-y", "font-size", "justify", "valign"],
+                &[], &[], &[], true,
             ),
             "work" => (&[], &["work-title", "work-number"], &[], &[], false),
             "identification" => (

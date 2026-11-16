@@ -88,7 +88,16 @@ fn parse_snapshot(source: &str) -> Result<Snapshot, Vec<ViewDiagnostic>> {
                 .events()
                 .filter_map(|(_, e)| e.id().map(|id| (id.to_string(), e.source.line)))
                 .collect();
-            let warnings = document.diagnostics.iter().map(view_diagnostic).collect();
+            let mut warnings: Vec<_> = document.diagnostics.iter().map(view_diagnostic).collect();
+            if document.required_extensions.iter().any(|e| e == scorestream_codec::credits::EXTENSION) {
+                warnings.push(ViewDiagnostic {
+                    line: 1,
+                    column: 1,
+                    code: "credits.preview_unavailable".into(),
+                    severity: "warning".into(),
+                    message: "Authored page credits are preserved in the source, but this reflow preview does not render page-credit text or placement.".into(),
+                });
+            }
             Ok(Snapshot {
                 source: source.into(),
                 document: value,

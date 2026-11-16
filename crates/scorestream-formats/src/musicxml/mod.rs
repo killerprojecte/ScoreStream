@@ -78,3 +78,5 @@ pub(crate) fn type_name(value: NoteType) -> &'static str {
         NoteType::N1024 => "1024th",
     }
 }
+
+mod credits;

@@ -139,7 +139,7 @@ fn semantic_fields_unknown_descendants_and_other_paths_stay_blocking() {
     for child in [
         "<defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>",
         "<defaults><concert-score/></defaults>",
-        "<credit><credit-words>Rights</credit-words></credit>",
+        "<credit><credit-words relative-x=\"1\">Rights</credit-words></credit>",
     ] {
         assert!(
             musicxml::read_with_options(

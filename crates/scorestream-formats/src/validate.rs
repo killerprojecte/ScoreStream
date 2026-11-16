@@ -28,6 +28,11 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             message,
         )
     };
+    for credit in &score.credits {
+        if !credit.valid() {
+            invalid("/credits", "credits.value", "Invalid page credit decimal or page");
+        }
+    }
     if score.parts.is_empty() {
         invalid("/", "parts", "Score requires at least one part");
     }

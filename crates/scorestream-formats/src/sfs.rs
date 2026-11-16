@@ -173,11 +173,17 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::slur_extension::EXTENSION
             && e != core::articulation_extension::EXTENSION
             && e != core::notation_extension::EXTENSION
+            && e != core::credits::EXTENSION
             && e != core::geometry::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
+        credits: if doc.required_extensions.iter().any(|e| e == core::credits::EXTENSION) {
+            core::credits::decode(doc).expect("validated credits")
+        } else {
+            Vec::new()
+        },
         geometry: if doc.required_extensions.iter().any(|e| e == core::geometry::EXTENSION) {
             core::geometry::decode(doc).expect("validated geometry")
         } else {
@@ -319,6 +325,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m)
                     if core::articulation_extension::is_kind(&m.kind)
                         || core::notation_extension::is_kind(&m.kind)
+                        || m.kind == core::credits::KIND
                         || core::geometry::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
@@ -752,6 +759,9 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .cloned()
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
+    if !score.credits.is_empty() {
+        doc.required_extensions.push(core::credits::EXTENSION.into());
+    }
     if !score.geometry.is_empty() {
         doc.required_extensions
             .push(core::geometry::EXTENSION.into());
@@ -837,6 +847,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         &authored_source_ids,
     );
     let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
+    for (i, credit) in score.credits.iter().enumerate() {
+        frames.entry(Rational::zero()).or_default()
+            .push(Record::Mark(core::credits::encode(credit, i)));
+    }
     for p in &score.parts {
         let pid = parts.get(&p.id.0, &mut report);
         if let Some(value) = &p.instrument_metadata {

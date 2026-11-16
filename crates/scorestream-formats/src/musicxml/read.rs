@@ -216,11 +216,14 @@ fn read_with_audit<R: BufRead + Seek>(
                     "movement-number",
                     "movement-title",
                     "identification",
+                    "credit",
                     "part-list",
                 ]
                 .contains(&node.name.as_str())
                 {
-                    if !headers.iter().any(|n: &Node| n.name == node.name) {
+                    if node.name == "credit"
+                        || !headers.iter().any(|n: &Node| n.name == node.name)
+                    {
                         headers.push(node.clone());
                     }
                 } else {
@@ -269,6 +272,8 @@ fn read_with_audit<R: BufRead + Seek>(
         ));
     }
     let mut score = ScoreDocument::default();
+    score.credits = root.children_named("credit")
+        .map(super::credits::read).collect::<Result<Vec<_>>>()?;
     if let Some(work) = root.child("work") {
         score.metadata.title = work.child("work-title").map(|n| n.text.clone());
         score.metadata.work_number = work.child("work-number").map(|n| n.text.clone());

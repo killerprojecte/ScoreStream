@@ -142,6 +142,7 @@ pub fn write_with_options(
         .into_iter()
         .filter_map(|(_, v)| v)
         .chain(score.metadata.authors.iter().map(String::as_str))
+        .chain(score.credits.iter().flat_map(|c| std::iter::once(c.text.as_str()).chain(c.credit_type.as_deref())))
         .chain(score.parts.iter().flat_map(|p| {
             p.name
                 .iter()
@@ -439,6 +440,7 @@ pub fn write_with_options(
         }
         out.push_str("  </identification>\n");
     }
+    super::credits::write(&score.credits, &mut out);
     out.push_str("  <part-list>\n");
     for (i, p) in score.parts.iter().enumerate() {
         let name = p

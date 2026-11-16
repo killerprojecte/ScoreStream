@@ -1555,6 +1555,46 @@
         },
         "required_extension": "scorestream.geometry@1",
         "meaning": "Authored exact decimal tenths; absent is distinct from zero. No coordinate realization is inferred."
+      },
+      "scorestream.credit": {
+        "targets": [
+          "score"
+        ],
+        "required": [
+          "index",
+          "text"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "page": {
+            "type": "positive_integer"
+          },
+          "text": {
+            "type": "string"
+          },
+          "credit_type": {
+            "type": "string"
+          },
+          "default_x": {
+            "type": "rational"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "font_size": {
+            "type": "positive_rational"
+          },
+          "justify": {
+            "type": "string"
+          },
+          "valign": {
+            "type": "string"
+          }
+        },
+        "required_extension": "scorestream.credits@1",
+        "meaning": "Ordered authored page credit at time zero. Contiguous unique indices, optional positive page, finite decimal geometry, left/center/right justification and top/middle/bottom/baseline vertical alignment. No layout or audio semantics."
       }
     }
   },
@@ -1709,6 +1749,12 @@
           "scorestream.geometry.measure"
         ],
         "required_behavior": "Unique exact-onset event or part-owned measure host, finite decimal tenths, no unknown fields. At least one coordinate per event; measure width required. Preserve presence, not lexical spelling. Coordinate metadata does not change sounding time."
+      },
+      "scorestream.credits@1": {
+        "status": "authored text and page credit roundtrip; no rendering or audio realization",
+        "mark_kinds": [
+          "scorestream.credit"
+        ]
       }
     }
   },

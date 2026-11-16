@@ -1397,6 +1397,72 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.credit"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "score"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4294967295
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "credit_type": {
+                    "type": "string"
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "font_size": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "justify": {
+                    "enum": [
+                      "left",
+                      "center",
+                      "right"
+                    ]
+                  },
+                  "valign": {
+                    "enum": [
+                      "top",
+                      "middle",
+                      "bottom",
+                      "baseline"
+                    ]
+                  }
+                },
+                "required": [
+                  "index",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "description": "Requires scorestream.credits@1, time zero, contiguous unique indices, finite-decimal coordinates and positive finite-decimal font size. Authored-only page text; no renderer or audio interpretation."
+          }
         }
       ]
     },
