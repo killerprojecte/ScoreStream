@@ -930,6 +930,18 @@
           "relative_y": {
             "type": "rational",
             "meaning": "Authored exact finite-decimal tenths. Absence differs from explicit zero. No layout or sound semantics."
+          },
+          "qualifier_text": {
+            "type": "string",
+            "meaning": "Exact nonblank plain text adjacent to the one dynamic glyph; paired with qualifier_position. Expressive intent is retained, never inferred or silently dropped by playback."
+          },
+          "qualifier_position": {
+            "type": "enum",
+            "values": [
+              "before",
+              "after"
+            ],
+            "meaning": "Authored order of qualifier text relative to the single standard dynamic symbol."
           }
         }
       },

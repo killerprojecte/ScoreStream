@@ -86,6 +86,10 @@ impl Expression {
         }
         let mut articulations = BTreeMap::<EventId, BTreeSet<Articulation>>::new();
         for d in &score.directions {
+            if matches!(&d.kind, DirectionKind::Dynamic { sound: false, qualifier: Some(_), .. }) {
+                warnings.add("dynamic_qualifier_not_realized", "dynamics.qualifier", RealizationEffect::NotationOnly, &d.origin,
+                    "Authored qualifier text and order are retained; sound=false leaves numeric playback unchanged, without interpreting qualifier expression.");
+            }
             if matches!(d.kind, DirectionKind::Dynamic { sound: false, .. }) {
                 warnings.add(
                     "dynamic_visual_only",

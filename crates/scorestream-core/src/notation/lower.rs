@@ -228,7 +228,31 @@ pub(super) fn reject_authored_articulations(doc: &Document) -> Result<()> {
     }
     Ok(())
 }
+/// Qualifiers such as dimin. and sempre più are not merely optical coordinates.
+/// Explicitly visual-only marks remain playable; no expressive trajectory is inferred.
+pub(super) fn reject_dynamic_qualifiers(doc: &Document) -> Result<()> {
+    for frame in &doc.frames {
+        for record in &frame.records {
+            if let Record::Mark(mark) = record {
+                if mark.kind == "dynamic"
+                    && (mark.attributes.contains_key("qualifier_text")
+                        || mark.attributes.contains_key("qualifier_position"))
+                {
+                    if mark.attributes.get("sound").and_then(Scalar::as_bool) != Some(false) {
+                        return Err(Diagnostic::error("dynamics.qualifier_performance_unsupported", "Sounding dynamic qualifier text requires an explicit expressive performance interpretation; set sound=false only when the mark is explicitly visual-only", mark.source));
+                    }
+                    if !mark.attributes.get("qualifier_text").and_then(Scalar::as_str).is_some_and(|s| !s.trim().is_empty())
+                        || !mark.attributes.get("qualifier_position").and_then(Scalar::as_str).is_some_and(|s| crate::score::DynamicQualifierPosition::from_name(s).is_some()) {
+                        return Err(Diagnostic::error("dynamics.qualifier", "Visual-only qualifiers still require exact nonblank text and explicit before/after order", mark.source));
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
+    reject_dynamic_qualifiers(doc)?;
     if !matches!(
         profile,
         LoweringProfile::ExplicitArticulations
@@ -465,6 +489,10 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                     let s = mark.source;
                     let kind = match mark.kind.as_str() {
                         "dynamic" => DirectionKind::Dynamic {
+                            qualifier: text(a, "qualifier_text").map(|value| crate::score::DynamicQualifier {
+                                text: value.into(),
+                                position: crate::score::DynamicQualifierPosition::from_name(text(a, "qualifier_position").expect("validated qualifier position")).expect("validated qualifier position"),
+                            }),
                             sign: dynamic(required(a, "value", s)?, s)?,
                             sound: flag(a, "sound", true),
                         },
@@ -757,6 +785,53 @@ mod authored_articulation_guards {
                 );
             }
             assert_eq!(doc, before);
+        }
+    }
+}
+
+#[cfg(test)]
+mod dynamic_qualifier_boundary {
+    use super::*;
+    #[test]
+    fn every_active_profile_rejects_sounding_qualifiers_even_in_unchecked_input() {
+        for field in ["qualifier_text", "qualifier_position"] {
+            let mut doc = Document::new(crate::DocumentKind::Score);
+            doc.frames.push(crate::Frame {
+                time: Rational::zero(),
+                records: vec![Record::Mark(crate::Mark {
+                    target: "score".into(),
+                    kind: "dynamic".into(),
+                    attributes: Attributes::from([(field.into(), Scalar::String("dolce".into()))]),
+                    source: SourceRange::default(),
+                })],
+                source: SourceRange::default(),
+            });
+            for profile in [
+                LoweringProfile::Written,
+                LoweringProfile::Navigation,
+                LoweringProfile::ExplicitFermatas,
+                LoweringProfile::ExplicitGraces,
+                LoweringProfile::ExplicitGracesAndFermatas,
+                LoweringProfile::ExplicitArticulations,
+                LoweringProfile::ExplicitArticulationsGracesAndFermatas,
+            ] {
+                assert_eq!(
+                    lower(&doc, profile).unwrap_err().code,
+                    "dynamics.qualifier_performance_unsupported"
+                );
+                assert_eq!(
+                    super::super::perform::perform(
+                        &doc,
+                        super::super::PerformanceLimits::default(),
+                        profile,
+                        None,
+                        None
+                    )
+                    .unwrap_err()
+                    .code,
+                    "dynamics.qualifier_performance_unsupported"
+                );
+            }
         }
     }
 }

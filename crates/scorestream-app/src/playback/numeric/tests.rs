@@ -172,7 +172,8 @@ fn sfs_lowering_retains_exact_control_and_sf_spelling() {
         d.kind,
         DirectionKind::Dynamic {
             sign: DynamicSign::Sforzato,
-            sound: false
+            sound: false,
+            ..
         }
     )));
     assert_eq!(plan_source(&text).unwrap().notes[0].velocity, 40);

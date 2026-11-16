@@ -17,19 +17,20 @@ scope, onset and exact percentage. Existing native symbolic sound semantics are
 unchanged. This is source-fidelity support only: the current reflow view does not
 promise to place dynamic marks at these authored coordinates.
 
-Only a single supported symbol is accepted. Multiple symbols, `other-dynamics`,
-words, custom glyphs, unmodeled font/layout attributes, and geometry attached to
-the wrong element still fail rather than being discarded.
+Only a single supported symbol is accepted, optionally accompanied by one
+unstyled plain-text `other-dynamics` qualifier before or after it. Multiple
+symbols, repeated qualifiers, nested markup, unmodeled font/layout attributes,
+and geometry attached to the wrong element still fail. See DYNAMIC_QUALIFIERS.md
+for the explicit sounding/visual-only boundary.
 
 ## Original evidence
 
 The four pinned Hauptstimme Fifth originals contain 755 / 757 / 522 / 1221
 `dynamics` nodes (3255 total). All have authored coordinates. Of those, 0 / 55 /
-62 / 157 contain unsupported composite `other-dynamics` children. The corpus gate
-checks unchanged source SHA-256 values, proves 2981 supported single-symbol nodes
-round-trip through the real typed parser, canonical SFS, and XML on dedicated
-minimal family fixtures, and verifies all 274 unsupported nodes still fail the
-schema gate. It does not rewrite, strip, or claim full import of the originals.
+62 / 157 contain one ordered plain-text `other-dynamics` qualifier. The corpus
+gate checks unchanged source SHA-256 values and proves all 3255 nodes, including
+these 274 qualifiers, round-trip through the real typed parser, canonical SFS,
+and XML on dedicated minimal family fixtures. It does not rewrite, strip, or claim full import of the originals.
 
 Generated tests cover negative/positive/zero/fractional coordinates, independent
 presence, exact playback audio/timing equality (diagnostic provenance remains source-specific), malformed XML decimals, unsupported

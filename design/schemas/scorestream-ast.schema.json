@@ -1670,12 +1670,30 @@
                   },
                   "relative_y": {
                     "$ref": "#/$defs/Rational"
+                  },
+                  "qualifier_text": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "qualifier_position": {
+                    "enum": [
+                      "before",
+                      "after"
+                    ]
                   }
                 },
                 "required": [
                   "value"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "dependentRequired": {
+                  "qualifier_text": [
+                    "qualifier_position"
+                  ],
+                  "qualifier_position": [
+                    "qualifier_text"
+                  ]
+                }
               }
             },
             "description": "Optional authored dynamics coordinates must be finite-decimal exact rational tenths. These do not change symbol, placement, sound assignment or playback, and are not a layout realization promise."

@@ -274,8 +274,8 @@ fn unsupported_words_glyphs_compounds_layout_wedges_and_sound_properties_block()
             "element.words",
         ),
         (
-            "<dynamics><other-dynamics>sf</other-dynamics><f/></dynamics>",
-            "element.other-dynamics",
+            "<dynamics><other-dynamics font-family=\"Custom\">sf</other-dynamics><f/></dynamics>",
+            "attribute.font-family",
         ),
         (
             "<dynamics font-family=\"Leland\"><p/></dynamics>",
@@ -494,7 +494,7 @@ fn dynamic_geometry_invalid_values_and_composite_symbols_remain_blocking() {
     }
     for value in [
         "<f/><p/>",
-        "<other-dynamics>sf</other-dynamics><f/>",
+        "<other-dynamics font-family=\"Custom\">sf</other-dynamics><f/>",
         "<unknown/>",
     ] {
         assert!(
@@ -526,4 +526,170 @@ fn dynamic_geometry_invalid_values_and_composite_symbols_remain_blocking() {
         }
     }
     assert!(scorestream_formats::sfs::from_document(&doc).is_err());
+}
+
+#[test]
+fn ordered_plain_text_qualifiers_preserve_authored_intent_without_inventing_performance() {
+    use scorestream_core::score::DynamicQualifierPosition::{After, Before};
+    for (text, position) in [
+        ("sempre ", Before),
+        ("sempre più ", Before),
+        ("più ", Before),
+        ("dimin. ", Before),
+        (" dolce", After),
+        ("\tsempre\n ", Before),
+    ] {
+        let other = format!("<other-dynamics>{text}</other-dynamics>");
+        let children = if position == Before {
+            format!("{other}<p/>")
+        } else {
+            format!("<p/>{other}")
+        };
+        let plain = full(&mark(
+            "p",
+            "",
+            "<staff>1</staff>",
+            "<sound dynamics=\"44.44\"/>",
+        ));
+        let source = plain.replace(
+            "<dynamics><p/>",
+            &format!("<dynamics default-y=\"-36.8\" relative-y=\"0\">{children}"),
+        );
+        let model = read(&source);
+        let q = model.dynamics[0].qualifier.as_ref().unwrap();
+        assert_eq!(q.text, text);
+        assert_eq!(q.position, position);
+        assert_eq!(model.sound_dynamics, read(&plain).sound_dynamics);
+        let sfs = SfsAdapter.write(&model).unwrap().value;
+        let restored = SfsAdapter.read(&sfs).unwrap().value;
+        let document = scorestream_codec::parse(&sfs).unwrap();
+        let lowered = scorestream_core::notation::lower_document(&document).unwrap();
+        assert!(lowered.directions.iter().any(|d| matches!(&d.kind, scorestream_core::notation::DirectionKind::Dynamic { qualifier: Some(value), sound: false, .. } if value == q)));
+        let mut unchecked = lowered.clone();
+        for direction in &mut unchecked.directions {
+            if let scorestream_core::notation::DirectionKind::Dynamic {
+                sound,
+                qualifier: Some(_),
+                ..
+            } = &mut direction.kind
+            {
+                *sound = true;
+            }
+        }
+        assert!(
+            scorestream_core::notation::resolve_expression(&unchecked)
+                .unwrap_err()
+                .iter()
+                .any(|d| d.code == "dynamics.qualifier_performance_unsupported")
+        );
+        assert_eq!(model, restored);
+        assert_eq!(sfs, SfsAdapter.write(&restored).unwrap().value);
+        let xml = MusicXml.write(&restored).unwrap().value;
+        assert_eq!(read(&xml), model);
+        let view = scorestream_app::Workspace::from_source(&sfs)
+            .unwrap()
+            .current();
+        assert!(view.valid);
+        assert!(
+            view.diagnostics
+                .iter()
+                .any(|d| d.code == "dynamics.qualifier_unrealized")
+        );
+        let mut actual =
+            serde_json::to_value(scorestream_app::playback::plan_source(&sfs).unwrap()).unwrap();
+        assert!(
+            actual["diagnostics"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|d| d["code"] == "dynamic_qualifier_not_realized")
+        );
+        let mut expected = serde_json::to_value(plan(&read(&plain))).unwrap();
+        actual.as_object_mut().unwrap().remove("diagnostics");
+        actual.as_object_mut().unwrap().remove("warnings");
+        expected.as_object_mut().unwrap().remove("diagnostics");
+        expected.as_object_mut().unwrap().remove("warnings");
+        assert_eq!(actual, expected);
+        let mut sounding = model.clone();
+        sounding.dynamics[0].sound = true;
+        let sounding_sfs = SfsAdapter.write(&sounding).unwrap().value;
+        assert!(
+            scorestream_app::playback::plan_source(&sounding_sfs)
+                .unwrap_err()
+                .contains("dynamics.qualifier_performance_unsupported")
+        );
+        let absent_sound = sounding_sfs.replace(" sound=true", "");
+        assert!(
+            scorestream_app::playback::plan_source(&absent_sound)
+                .unwrap_err()
+                .contains("dynamics.qualifier_performance_unsupported")
+        );
+        assert!(
+            scorestream_app::playback::plan_source(&SfsAdapter.write(&read(&plain)).unwrap().value)
+                .is_ok()
+        );
+    }
+}
+
+#[test]
+fn unsupported_qualifier_topology_and_incomplete_wire_fail_closed() {
+    let plain = full(&mark("p", "", "", ""));
+    for children in [
+        "<p/><other-dynamics>a</other-dynamics><other-dynamics>b</other-dynamics>",
+        "<p/><f/><other-dynamics>dolce</other-dynamics>",
+        "<other-dynamics>dolce</other-dynamics>",
+        "<p/><other-dynamics><words>dolce</words></other-dynamics>",
+        "<p/><other-dynamics font-family=\"Leland\">dolce</other-dynamics>",
+        "<p/><other-dynamics>  </other-dynamics>",
+        "<p/><other-dynamics/>",
+    ] {
+        assert!(
+            MusicXml.read(&plain.replace("<p/>", children)).is_err(),
+            "{children}"
+        );
+    }
+    let model = read(&plain.replace("<p/>", "<p/><other-dynamics> dolce</other-dynamics>"));
+    for mode in 0..4 {
+        let mut doc = scorestream_formats::sfs::to_document(&model).unwrap().value;
+        for frame in &mut doc.frames {
+            for record in &mut frame.records {
+                if let scorestream_core::Record::Mark(m) = record {
+                    if m.kind == "dynamic" {
+                        match mode {
+                            0 => {
+                                m.attributes.remove("qualifier_text");
+                            }
+                            1 => {
+                                m.attributes.remove("qualifier_position");
+                            }
+                            2 => {
+                                m.attributes.insert(
+                                    "qualifier_position".into(),
+                                    scorestream_core::Scalar::String("inside".into()),
+                                );
+                            }
+                            _ => {
+                                m.attributes.insert(
+                                    "qualifier_text".into(),
+                                    scorestream_core::Scalar::String("  ".into()),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        assert!(scorestream_formats::sfs::from_document(&doc).is_err());
+    }
+    let mut invalid = model.clone();
+    invalid.dynamics[0].qualifier.as_mut().unwrap().text.clear();
+    assert!(SfsAdapter.write(&invalid).is_err());
+    invalid = model;
+    invalid.dynamics[0]
+        .qualifier
+        .as_mut()
+        .unwrap()
+        .text
+        .push('\0');
+    assert!(MusicXml.write(&invalid).is_err());
 }

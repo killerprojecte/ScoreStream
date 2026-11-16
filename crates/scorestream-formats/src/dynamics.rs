@@ -83,6 +83,8 @@ pub(crate) fn read_mark(
             "default_y",
             "relative_x",
             "relative_y",
+            "qualifier_text",
+            "qualifier_position",
         ]
         .contains(&key.as_str())
         {
@@ -122,7 +124,21 @@ pub(crate) fn read_mark(
             .and_then(Scalar::as_str)
             .map(|v| v.parse().expect("validated dynamic decimal"))
     };
+    let qualifier = mark
+        .attributes
+        .get("qualifier_text")
+        .and_then(Scalar::as_str)
+        .map(|text| DynamicQualifier {
+            text: text.into(),
+            position: DynamicQualifierPosition::from_name(
+                mark.attributes["qualifier_position"]
+                    .as_str()
+                    .expect("validated qualifier position"),
+            )
+            .expect("validated qualifier position"),
+        });
     score.dynamics.push(ScoreDynamic {
+        qualifier,
         default_x: coordinate("default_x"),
         default_y: coordinate("default_y"),
         relative_x: coordinate("relative_x"),
@@ -179,6 +195,13 @@ pub(crate) fn write_mark(
         if let Some(value) = value {
             attributes.insert(key.into(), Scalar::String(value.to_string()));
         }
+    }
+    if let Some(q) = &d.qualifier {
+        attributes.insert("qualifier_text".into(), Scalar::String(q.text.clone()));
+        attributes.insert(
+            "qualifier_position".into(),
+            Scalar::String(q.position.name().into()),
+        );
     }
     if let Some(place) = d.placement {
         attributes.insert(
@@ -284,6 +307,18 @@ pub(crate) fn validate(score: &ScoreDocument, r: &mut MappingReport) {
         }
     }
     for d in &score.dynamics {
+        if d.qualifier
+            .as_ref()
+            .is_some_and(|q| q.text.trim().is_empty())
+        {
+            r.push(
+                Format::ScoreModel,
+                MappingEffect::Invalid,
+                "dynamics.qualifier",
+                d.at.to_string(),
+                "Dynamic qualifier text must not be empty or whitespace-only",
+            );
+        }
         if [&d.default_x, &d.default_y, &d.relative_x, &d.relative_y]
             .into_iter()
             .flatten()

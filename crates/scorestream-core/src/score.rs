@@ -184,6 +184,9 @@ pub struct ScorePartScope {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreDynamic {
+    /// Ordered plain-text qualifier; retained authoring intent, not a playback instruction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qualifier: Option<DynamicQualifier>,
     /// Authored MusicXML dynamics coordinates in tenths; not rendered or sounding controls.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default_x: Option<Rational>,
@@ -199,6 +202,33 @@ pub struct ScoreDynamic {
     pub placement: Option<crate::notation::Placement>,
     /// false for MusicXML printed dynamics; numeric sound is a separate lane.
     pub sound: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DynamicQualifier {
+    pub text: String,
+    pub position: DynamicQualifierPosition,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DynamicQualifierPosition {
+    Before,
+    After,
+}
+impl DynamicQualifierPosition {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Before => "before",
+            Self::After => "after",
+        }
+    }
+    pub fn from_name(s: &str) -> Option<Self> {
+        match s {
+            "before" => Some(Self::Before),
+            "after" => Some(Self::After),
+            _ => None,
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

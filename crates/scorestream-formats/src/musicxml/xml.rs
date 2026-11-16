@@ -795,7 +795,7 @@ pub(super) fn schema_with_profile(
                 &["default-x", "default-y", "relative-x", "relative-y"],
                 &[
                     "pppp", "ppp", "pp", "p", "mp", "mf", "f", "ff", "fff", "ffff", "sf", "sfz",
-                    "fp",
+                    "fp", "other-dynamics",
                 ],
                 &[],
                 &[],
@@ -803,6 +803,7 @@ pub(super) fn schema_with_profile(
             ),
             "pppp" | "ppp" | "pp" | "p" | "mp" | "mf" | "f" | "ff" | "fff" | "ffff" | "sf"
             | "sfz" | "fp" => (&[], &[], &[], &[], false),
+            "other-dynamics" => (&[], &[], &[], &[], true),
             "metronome" => (
                 &[],
                 &["beat-unit", "beat-unit-dot", "per-minute"],
@@ -1022,8 +1023,13 @@ pub(super) fn schema_with_profile(
             "A grace note must omit duration; every ordinary note must have duration",
         );
     }
-    if matches!(n.name.as_str(), "direction-type" | "dynamics") && n.children.len() != 1 {
-        n.error(report, MappingEffect::Unsupported, "dynamics.composite", "Exactly one typed metronome or dynamic symbol is supported; combined directions and compound dynamics are not discarded");
+    let invalid_dynamic = if n.name == "dynamics" {
+        let symbols = n.children.iter().filter(|c| crate::dynamics::symbol(&c.name).is_some()).count();
+        let qualifiers = n.children.iter().filter(|c| c.name == "other-dynamics").count();
+        symbols != 1 || qualifiers > 1 || n.children.len() != symbols + qualifiers
+    } else { false };
+    if n.name == "direction-type" && n.children.len() != 1 || invalid_dynamic {
+        n.error(report, MappingEffect::Unsupported, "dynamics.composite", "Exactly one native dynamic symbol with at most one ordered plain-text qualifier is supported; combined directions and arbitrary compound dynamics are not discarded");
     }
     for key in n.attrs.keys() {
         if !attrs.contains(&key.as_str()) && !geometry.attribute(n, key, policy, report) {

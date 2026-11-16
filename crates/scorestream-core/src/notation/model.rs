@@ -147,6 +147,8 @@ pub enum DirectionKind {
     },
     Dynamic {
         sign: DynamicSign,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        qualifier: Option<crate::score::DynamicQualifier>,
         #[serde(default = "default_sound")]
         sound: bool,
     },

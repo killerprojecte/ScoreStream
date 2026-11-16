@@ -42,13 +42,17 @@ pub(super) fn read(
         .child("direction-type")
         .and_then(|t| t.child("dynamics"))
     {
-        let symbol = d.children.first().ok_or_else(|| {
-            unsupported(
-                d,
-                "dynamics.empty",
-                "An explicit dynamic symbol is required",
-            )
-        })?;
+        let symbol = d
+            .children
+            .iter()
+            .find(|c| crate::dynamics::symbol(&c.name).is_some())
+            .ok_or_else(|| {
+                unsupported(
+                    d,
+                    "dynamics.empty",
+                    "An explicit dynamic symbol is required",
+                )
+            })?;
         let sign = crate::dynamics::symbol(&symbol.name).ok_or_else(|| {
             unsupported(
                 symbol,
@@ -67,7 +71,31 @@ pub(super) fn read(
                 .map(|_| super::geometry::exact_decimal(&d.scalar_attribute(key)))
                 .transpose()
         };
+        let qualifier = d
+            .children
+            .iter()
+            .position(|c| c.name == "other-dynamics")
+            .map(|index| {
+                let text = d.children[index].text.clone();
+                if text.trim().is_empty() {
+                    return Err(error(
+                        d,
+                        "dynamics.qualifier",
+                        "Dynamic qualifier text must not be empty or whitespace-only",
+                    ));
+                }
+                Ok(DynamicQualifier {
+                    text,
+                    position: if index == 0 {
+                        DynamicQualifierPosition::Before
+                    } else {
+                        DynamicQualifierPosition::After
+                    },
+                })
+            })
+            .transpose()?;
         marks.push(ScoreDynamic {
+            qualifier,
             default_x: coordinate("default-x")?,
             default_y: coordinate("default-y")?,
             relative_x: coordinate("relative-x")?,
@@ -224,7 +252,36 @@ impl<'a> Export<'a> {
                         .unwrap();
                     }
                 }
-                write!(out,"      <direction{placement}><direction-type><dynamics{geometry}><{symbol}/></dynamics></direction-type><offset sound=\"no\">{offset}</offset>").unwrap();
+                write!(
+                    out,
+                    "      <direction{placement}><direction-type><dynamics{geometry}>"
+                )
+                .unwrap();
+                let qualifier = mark
+                    .qualifier
+                    .as_ref()
+                    .map(|q| format!("<other-dynamics>{}</other-dynamics>", escape(&q.text)))
+                    .unwrap_or_default();
+                if mark
+                    .qualifier
+                    .as_ref()
+                    .is_some_and(|q| q.position == DynamicQualifierPosition::Before)
+                {
+                    out.push_str(&qualifier);
+                }
+                write!(out, "<{symbol}/>").unwrap();
+                if mark
+                    .qualifier
+                    .as_ref()
+                    .is_some_and(|q| q.position == DynamicQualifierPosition::After)
+                {
+                    out.push_str(&qualifier);
+                }
+                write!(
+                    out,
+                    "</dynamics></direction-type><offset sound=\"no\">{offset}</offset>"
+                )
+                .unwrap();
                 if let Some(staff) = mark.scope.staff {
                     write!(out, "<staff>{staff}</staff>").unwrap();
                     if staff_written.insert(staff)
@@ -263,7 +320,7 @@ mod geometry_corpus {
     use std::{fs::File, io::BufReader, path::PathBuf};
     #[test]
     #[ignore = "set SCORESTREAM_MXL_FIXTURES to the pinned original XML/MXL directory"]
-    fn original_dynamics_geometry_is_exact_and_composites_stay_unsupported() {
+    fn original_dynamics_geometry_and_qualifiers_roundtrip() {
         let root = PathBuf::from(std::env::var("SCORESTREAM_MXL_FIXTURES").unwrap());
         let hashes = [
             "5de9f153c72b3831757d43584c5d5ec792510d36cc5a389a4160aa90697fc17b",
@@ -284,21 +341,30 @@ mod geometry_corpus {
                         for d in t.children_named("dynamics") {
                             counts.0+=1;
                             let mut report=MappingReport::default(); xml::schema(d,&mut report);
-                            if d.children.len()!=1 || crate::dynamics::symbol(&d.children[0].name).is_none() {
-                                assert!(report.has_errors()); counts.1+=1; continue;
-                            }
+                            if d.child("other-dynamics").is_some() { counts.1 += 1; }
                             assert!(!report.has_errors(),"{report:?}");
                             let mut geometry=String::new();
                             for (key,value) in &d.attrs { write!(geometry," {key}=\"{}\"",escape(value)).unwrap(); }
+                            let mut content=String::new();
+                            for child in &d.children {
+                                if child.name == "other-dynamics" { write!(content,"<other-dynamics>{}</other-dynamics>",escape(&child.text)).unwrap(); }
+                                else { assert!(crate::dynamics::symbol(&child.name).is_some()); write!(content,"<{}/>",child.name).unwrap(); }
+                            }
                             // Family projection onto a named minimal fixture, not a stripped original.
-                            let snippet=format!(r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list><part id="p"><measure id="m" number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes><direction><direction-type><dynamics{geometry}><{}/></dynamics></direction-type></direction><note id="n"><rest/><duration>4</duration><voice>1</voice><type>whole</type></note></measure></part></score-partwise>"#,d.children[0].name);
+                            let snippet=format!(r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list><part id="p"><measure id="m" number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes><direction><direction-type><dynamics{geometry}>{content}</dynamics></direction-type></direction><note id="n"><rest/><duration>4</duration><voice>1</voice><type>whole</type></note></measure></part></score-partwise>"#);
                             let model=MusicXml.read(&snippet).unwrap().value;
                             let mark=&model.dynamics[0];
+                            if let Some(index)=d.children.iter().position(|c|c.name=="other-dynamics") {
+                                let q=mark.qualifier.as_ref().unwrap();
+                                assert_eq!(q.text,d.children[index].text);
+                                assert_eq!(q.position,if index==0 {DynamicQualifierPosition::Before} else {DynamicQualifierPosition::After});
+                            } else { assert!(mark.qualifier.is_none()); }
                             for (key,value) in [("default-x",&mark.default_x),("default-y",&mark.default_y),("relative-x",&mark.relative_x),("relative-y",&mark.relative_y)] {
                                 let exact=d.attr(key).map(|_| super::super::geometry::exact_decimal(&d.scalar_attribute(key)).unwrap());
                                 assert_eq!(*value,exact);
                             }
                             let sfs=SfsAdapter.write(&model).unwrap().value;
+                            if mark.qualifier.is_some() { assert!(scorestream_app::playback::plan_source(&sfs).unwrap().diagnostics.iter().any(|d|d.code=="dynamic_qualifier_not_realized")); }
                             let restored=SfsAdapter.read(&sfs).unwrap().value;
                             assert_eq!(restored,model);
                             assert_eq!(MusicXml.read(&MusicXml.write(&restored).unwrap().value).unwrap().value,model);
@@ -316,9 +382,9 @@ mod geometry_corpus {
             );
             assert_eq!(counts, (total, blocked));
             println!(
-                "movement {}: {total} unchanged original dynamic nodes, {} exact typed/SFS/XML roundtrips, {blocked} unsupported composites",
+                "movement {}: {total} unchanged original dynamic nodes, {} exact typed/SFS/XML roundtrips, {blocked} ordered plain-text qualifiers",
                 i + 1,
-                total - blocked
+                total
             );
         }
     }

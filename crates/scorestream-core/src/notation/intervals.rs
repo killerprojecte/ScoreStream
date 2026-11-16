@@ -88,7 +88,11 @@ pub fn resolve_expression(score: &ResolvedScore) -> Result<ExpressionIntervals, 
     let mut result = ExpressionIntervals::default();
     let mut errors = Vec::new();
     for direction in &score.directions {
-        let DirectionKind::Dynamic { sign, sound: true } = direction.kind else {
+        if matches!(&direction.kind, DirectionKind::Dynamic { sound: true, qualifier: Some(_), .. }) {
+            errors.push(diagnostic("dynamics.qualifier_performance_unsupported", "Sounding dynamic qualifier requires an explicit expressive interpretation", &direction.origin));
+            continue;
+        }
+        let DirectionKind::Dynamic { sign, sound: true, .. } = direction.kind else {
             continue;
         };
         let end = match &direction.scope {

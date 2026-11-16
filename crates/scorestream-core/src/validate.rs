@@ -186,6 +186,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut has_geometry = false;
     let mut has_credits = false;
     let mut has_print = false;
+    let mut dynamic_qualifier_source = None;
     let mut measures = Vec::new();
     let mut previous: Option<&Rational> = None;
     for frame in &doc.frames {
@@ -435,6 +436,15 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 Record::Mark(m) => {
                     validate_attributes("mark", &m.kind, &m.attributes, m.source, &mut out);
                     if m.kind == "dynamic" {
+                        let text = m.attributes.get("qualifier_text");
+                        let position = m.attributes.get("qualifier_position");
+                        if text.is_some() || position.is_some() {
+                            dynamic_qualifier_source.get_or_insert(m.source);
+                            if !text.and_then(Scalar::as_str).is_some_and(|s| !s.trim().is_empty())
+                                || !position.and_then(Scalar::as_str).is_some_and(|s| crate::score::DynamicQualifierPosition::from_name(s).is_some()) {
+                                out.push(Diagnostic::error("dynamics.qualifier", "A dynamic qualifier requires nonblank exact text and an explicit before/after position", m.source));
+                            }
+                        }
                         for key in ["default_x", "default_y", "relative_x", "relative_y"] {
                             if m.attributes.get(key).is_some_and(|value| {
                                 !value.as_str()
@@ -467,6 +477,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 }
             }
         }
+    }
+    if let Some(source) = dynamic_qualifier_source {
+        out.push(Diagnostic::warning("dynamics.qualifier_unrealized", "Ordered dynamic qualifier text is preserved but not rendered in the current reflow preview. Explicit sound=false keeps numeric playback unchanged without realizing qualifier expression; sounding qualifiers require an explicit interpretation", source));
     }
     crate::navigation_extension::validate(doc, &mut out);
     crate::fermata_extension::validate(doc, &mut out);
