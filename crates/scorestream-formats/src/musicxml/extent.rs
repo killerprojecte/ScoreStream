@@ -47,7 +47,7 @@ impl MusicXmlOptions {
         for e in &self.irregular_measures {
             let meter = &e.written_meter;
             let valid_meter =
-                !meter.beats.is_empty() && !meter.beats.contains(&0) && meter.beat_type > 0;
+                !meter.beats.is_empty() && !meter.beats.contains(&0) && meter.beat_type > 0 && meter.valid_symbol();
             if e.ordinal == 0
                 || !ordinals.insert(e.ordinal)
                 || e.label.trim().is_empty()
@@ -94,7 +94,7 @@ fn matches(
         && label == e.label
         && *length == e.actual_length
         && meters.len() == staves as usize
-        && (1..=staves).all(|staff| meters.get(&staff) == Some(&e.written_meter))
+        && (1..=staves).all(|staff| meters.get(&staff).is_some_and(|m|m.beats==e.written_meter.beats && m.beat_type==e.written_meter.beat_type))
 }
 fn policy_message(e: &IrregularMeasure) -> String {
     format!(
@@ -215,6 +215,7 @@ mod tests {
         let path = PathBuf::from(std::env::var("SCORESTREAM_MXL_FIXTURES").unwrap())
             .join("Beethoven_Op.67_1.musicxml");
         let meter = Meter {
+            symbol: None,
             beats: vec![2],
             beat_type: 4,
         };
@@ -251,6 +252,7 @@ mod tests {
                         meters.insert(
                             part.to_owned(),
                             Meter {
+                                symbol: None,
                                 beats: t
                                     .value("beats")
                                     .unwrap()

@@ -27,6 +27,7 @@ pub fn attribute_type(category: &str, kind: &str, key: &str) -> Option<&'static 
             "tempo" => Some("tempo"),
             "sound_dynamics" => Some("nonnegative_rational"),
             "meter" => Some("meter"),
+            "meter_symbol" => Some("time_symbol"),
             "key" => Some("key"),
             "clef" => Some("clef"),
             "staff" => Some("positive_integer"),
@@ -99,6 +100,7 @@ pub(crate) fn validate_attributes(
                     valid_beat(beat) && bpm.parse::<Rational>().is_ok_and(|n| n.is_positive())
                 })
             }),
+            "time_symbol" => text.is_some_and(|s|crate::score::TimeSymbol::from_name(s).is_some()),
             "meter" => text.is_some_and(|s| {
                 s == "none"
                     || s.split_once('/').is_some_and(|(n, d)| {

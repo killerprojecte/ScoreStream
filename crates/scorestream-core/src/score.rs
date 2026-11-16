@@ -382,10 +382,21 @@ pub struct KeySignature {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Meter {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<TimeSymbol>,
     pub beats: Vec<u32>,
     pub beat_type: u32,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TimeSymbol { Common, Cut }
+impl TimeSymbol {
+    pub fn name(self) -> &'static str { match self { Self::Common=>"common",Self::Cut=>"cut" } }
+    pub fn from_name(s:&str)->Option<Self> {match s {"common"=>Some(Self::Common),"cut"=>Some(Self::Cut),_=>None}}
+    pub fn matches(self,beats:&[u32],beat_type:u32)->bool {match self {Self::Common=>beats==[4]&&beat_type==4,Self::Cut=>beats==[2]&&beat_type==2}}
+}
 impl Meter {
+    pub fn valid_symbol(&self)->bool {self.symbol.is_none_or(|s|s.matches(&self.beats,self.beat_type))}
     pub fn quarters(&self) -> Rational {
         let beats = self.beats.iter().fold(Rational::zero(), |a, n| {
             &a + &Rational::from_integer(i64::from(*n))

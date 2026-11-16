@@ -368,7 +368,66 @@
           "$ref": "#/$defs/Scope"
         },
         "attributes": {
-          "$ref": "#/$defs/Attributes"
+          "allOf": [
+            {
+              "$ref": "#/$defs/Attributes"
+            },
+            {
+              "properties": {
+                "meter_symbol": {
+                  "enum": [
+                    "common",
+                    "cut"
+                  ]
+                }
+              },
+              "dependentRequired": {
+                "meter_symbol": [
+                  "meter"
+                ]
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "meter_symbol"
+                    ],
+                    "properties": {
+                      "meter_symbol": {
+                        "const": "common"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "meter": {
+                        "const": "4/4"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "required": [
+                      "meter_symbol"
+                    ],
+                    "properties": {
+                      "meter_symbol": {
+                        "const": "cut"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "meter": {
+                        "const": "2/2"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       },
       "required": [

@@ -835,7 +835,7 @@ pub(super) fn schema_with_profile(
             ),
             "key" => (&["number"], &["fifths"], &[], &["fifths"], false),
             "time" => (
-                &["number"],
+                &["number", "symbol"],
                 &["beats", "beat-type"],
                 &[],
                 &["beats", "beat-type"],

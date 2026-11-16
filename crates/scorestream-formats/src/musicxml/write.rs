@@ -531,7 +531,7 @@ pub fn write_with_options(
             }
             for s in &m.states {
                 if let Some(meter) = &s.meter {
-                    writeln!(out, "        <time number=\"{}\"><beats>{}</beats><beat-type>{}</beat-type></time>", s.staff, meter.beats.iter().map(ToString::to_string).collect::<Vec<_>>().join("+"), meter.beat_type).unwrap();
+                    writeln!(out, "        <time number=\"{}\"{}><beats>{}</beats><beat-type>{}</beat-type></time>", s.staff, meter.symbol.map(|v|format!(" symbol=\"{}\"",v.name())).unwrap_or_default(), meter.beats.iter().map(ToString::to_string).collect::<Vec<_>>().join("+"), meter.beat_type).unwrap();
                 }
             }
             if mi == 0 {

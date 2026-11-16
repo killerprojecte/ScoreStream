@@ -51,7 +51,8 @@
       "transpose_chromatic",
       "transpose_diatonic",
       "transpose_octaves",
-      "sound_dynamics"
+      "sound_dynamics",
+      "meter_symbol"
     ],
     "voice": [
       "staff"
@@ -380,6 +381,13 @@
         ],
         "syntax": "nonnegative rational percent",
         "meaning": "Explicit numeric playback dynamics as a percentage of MIDI-relative forte 90; separate from printed dynamics. Exact storage; no label substitution."
+      },
+      "meter_symbol": {
+        "scope": [
+          "staff"
+        ],
+        "syntax": "common | cut",
+        "meaning": "Authored optional common4/4 or cut2/2 display, paired with matching numeric meter in the same state record. Absence on a new meter means absent/default numeric display, not inherited symbol. No sounding time effect."
       }
     },
     "marks": {

@@ -157,7 +157,7 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
                 }
                 if s.meter
                     .as_ref()
-                    .is_some_and(|v| v.beats.is_empty() || v.beat_type == 0 || v.beats.contains(&0))
+                    .is_some_and(|v| v.beats.is_empty() || v.beat_type == 0 || v.beats.contains(&0) || !v.valid_symbol())
                 {
                     invalid(
                         &path,

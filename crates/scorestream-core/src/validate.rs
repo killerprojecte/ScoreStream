@@ -224,6 +224,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             ));
         }
         let mut assignments = BTreeMap::new();
+        let mut meter_displays = BTreeMap::new();
         for record in &frame.records {
             match record {
                 Record::Event(e) => {
@@ -359,7 +360,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                         let allowed = match key.as_str() {
                             "tempo" => scope == Some("score"),
                             "sound_dynamics" => matches!(scope, Some("part" | "staff")),
-                            "meter" | "key" | "clef" => scope == Some("staff"),
+                            "meter" | "meter_symbol" | "key" | "clef" => scope == Some("staff"),
                             "staff" => scope == Some("voice"),
                             "instrument" => scope == Some("part"),
                             "transpose_chromatic" | "transpose_diatonic" | "transpose_octaves" => {
@@ -384,6 +385,16 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                                 s.source,
                             ));
                         }
+                    }
+                    if s.attributes.contains_key("meter") {
+                        let symbol=s.attributes.get("meter_symbol");
+                        if meter_displays.insert(&s.target,symbol).is_some_and(|old|old!=symbol) {out.push(Diagnostic::error("meter_symbol_conflict","Conflicting authored symbol presence at one staff/onset",s.source));}
+                    }
+                    if let Some(symbol)=s.attributes.get("meter_symbol") {
+                        let valid=symbol.as_str().and_then(crate::score::TimeSymbol::from_name).is_some_and(|symbol| {
+                            s.attributes.get("meter").and_then(Scalar::as_str)==Some(match symbol {crate::score::TimeSymbol::Common=>"4/4",crate::score::TimeSymbol::Cut=>"2/2"})
+                        });
+                        if !valid {out.push(Diagnostic::error("meter_symbol","Display symbol needs its matching numeric meter in the same staff state record",s.source));}
                     }
                     if let Some(staff) = s.attributes.get("staff").and_then(Scalar::as_i64) {
                         if let Some((part, _)) = voices.get(s.target.as_str()) {

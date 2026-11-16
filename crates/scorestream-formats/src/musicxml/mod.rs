@@ -27,6 +27,8 @@ mod slurs;
 mod tempo;
 mod ties;
 mod tuplets;
+#[cfg(test)]
+mod time_display_corpus;
 mod write;
 mod xml;
 use crate::{Conversion, MappingReport, ScoreAdapter};

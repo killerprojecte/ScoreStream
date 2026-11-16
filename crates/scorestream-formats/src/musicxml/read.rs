@@ -530,6 +530,7 @@ fn read_with_audit<R: BufRead + Seek>(
     if score.tuplets.iter().any(scorestream_core::tuplets::has_ornaments) {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"ornaments.authored","/ornaments","Authored ornament groups and notation order are retained. Ornament attacks and wavy-line spans are not inferred; playback uses the unornamented note durations and preview omits ornaments");
     }
+    if score.parts.iter().flat_map(|p|&p.measures).flat_map(|m|&m.states).any(|s|s.meter.as_ref().is_some_and(|m|m.symbol.is_some())) { report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"time.authored_symbol","/time","Authored common/cut display symbols are retained separately from numeric meter. Preview uses numeric display; playback timing is unchanged"); }
     if !score.lyrics.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
     }
@@ -807,10 +808,13 @@ impl PartReader {
                                                 "Expected positive beats or additive beats",
                                             )
                                         })?;
+                                    let symbol=state.attr("symbol").map(|s|TimeSymbol::from_name(s).ok_or_else(||unsupported(state,"time.symbol","Only authored common 4/4 and cut 2/2 display symbols are supported"))).transpose()?;
                                     let meter = Meter {
+                                        symbol,
                                         beats,
                                         beat_type: uint(child(state, "beat-type")?)?,
                                     };
+                                    if !meter.valid_symbol() { return Err(unsupported(state,"time.symbol_meter","Display symbol must match exact 4/4 common or 2/2 cut numeric meter; no meter inference")); }
                                     if target.meter.is_some() {
                                         return Err(error(
                                             state,

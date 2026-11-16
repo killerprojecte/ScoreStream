@@ -457,6 +457,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         &[
                             "key",
                             "meter",
+                            "meter_symbol",
                             "clef",
                             "transpose_chromatic",
                             "transpose_diatonic",
@@ -515,6 +516,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     if let Some(m) = text(&s.attributes, "meter") {
                         state.meter = m.split_once('/').and_then(|(n, d)| {
                             Some(Meter {
+                                symbol: text(&s.attributes,"meter_symbol").and_then(TimeSymbol::from_name),
                                 beats: n
                                     .split('+')
                                     .map(str::parse)
@@ -1001,6 +1003,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     );
                 }
                 if let Some(t) = &s.meter {
+                    if let Some(symbol)=t.symbol {put(&mut a,"meter_symbol",symbol.name());}
                     put(
                         &mut a,
                         "meter",

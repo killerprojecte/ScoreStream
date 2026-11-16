@@ -15,6 +15,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  if(!view.events.length)throw Error('No measured events to engrave yet.');
  const warnings:string[]=[];
  if(view.events.some(e=>e.attributes?.visible===false))warnings.push('Authored hidden notes and rests are retained but are shown in this preview. Print-object visibility is not reproduced; sounding pitches and timing are unchanged.');
+ if(view.states.some(s=>s.values.meter_symbol!==undefined))warnings.push("Authored common/cut time symbols are retained but not drawn by this preview; numeric meter is shown instead. Playback timing is unchanged.");
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.geometry@1'))warnings.push('Original note, augmentation-dot and measure coordinates are retained in the score. This preview reflows notation independently and does not reproduce those authored positions.');
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.print@1'))warnings.push('Authored page, system and staff layout is retained in the score. This preview reflows independently and does not reproduce those print settings.');
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.lyrics@1'))warnings.push('Authored note lyrics, verse order and styling are retained in the score but are not drawn in this preview. Playback is unchanged.');

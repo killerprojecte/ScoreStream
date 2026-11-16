@@ -176,6 +176,7 @@ fn full_rest_validates_actual_irregular_extent_without_rewriting_meter() {
             ordinal: 1,
             label: "1".into(),
             written_meter: Meter {
+                symbol: None,
                 beats: vec![3],
                 beat_type: 4,
             },

@@ -19,6 +19,7 @@ fn options() -> MusicXmlOptions {
             ordinal: 1,
             label: "268".into(),
             written_meter: Meter {
+                symbol: None,
                 beats: vec![2],
                 beat_type: 4,
             },
@@ -331,6 +332,7 @@ fn irregular_length_is_not_inherited_and_export_contract_cannot_be_stale() {
     );
     let mut changed = score.clone();
     changed.parts[1].measures[0].states[0].meter = Some(Meter {
+        symbol: None,
         beats: vec![1],
         beat_type: 2,
     });
