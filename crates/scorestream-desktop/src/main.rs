@@ -1,6 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use scorestream_app::{ViewResponse, Workspace};
-use std::io::Write;
 use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 mod mcp_service;
@@ -161,10 +160,10 @@ async fn save_source_file(
     origin: State<'_, ImportOrigin>,
 ) -> Result<Option<String>, String> {
     // Validate with the same application authority before writing. No renderer data is saved.
-    let validated = source.clone();
-    tauri::async_runtime::spawn_blocking(move || Workspace::from_source(&validated).map(|_| ()))
-        .await
-        .map_err(|e| format!("Save validation failed: {e}"))??;
+    let validated =
+        tauri::async_runtime::spawn_blocking(move || source_files::ValidatedSave::prepare(source))
+            .await
+            .map_err(|e| format!("Save validation failed: {e}"))??;
     let Some(file) = rfd::AsyncFileDialog::new()
         .set_file_name("score.sfs")
         .add_filter("ScoreStream source", &["sfs"])
@@ -176,19 +175,7 @@ async fn save_source_file(
     let path = file.path().to_path_buf();
     let imported = origin.lock().map_err(|e| e.to_string())?.clone();
     tauri::async_runtime::spawn_blocking(move || -> Result<Option<String>, String> {
-        source_files::validate_destination(&path, imported.as_deref())?;
-        let parent = path.parent().ok_or("Invalid save destination")?;
-        let mut temporary = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
-        temporary
-            .write_all(source.as_bytes())
-            .map_err(|e| e.to_string())?;
-        temporary.as_file().sync_all().map_err(|e| e.to_string())?;
-        temporary.persist(&path).map_err(|e| {
-            format!(
-                "Atomic save failed; the previous file has been preserved: {}",
-                e.error
-            )
-        })?;
+        validated.persist(&path, imported.as_deref())?;
         Ok(Some(path.display().to_string()))
     })
     .await

@@ -3,7 +3,7 @@ use scorestream_app::{ViewResponse, Workspace};
 use scorestream_formats::{MappingReport, ScoreAdapter, musicxml, mxl, sfs::SfsAdapter};
 use std::{
     fs::File,
-    io::BufReader,
+    io::{BufReader, Write},
     path::{Path, PathBuf},
 };
 
@@ -63,9 +63,8 @@ pub fn read(path: &Path) -> Result<PreparedFile, String> {
         return Err("Choose a regular score file.".into());
     }
     if extension == "sfs" {
-        if metadata.len() > 4 * 1024 * 1024 {
-            return Err("This editor slice accepts SFS files up to 4 MiB.".into());
-        }
+        // The editor accepts the same source it can validate and save. Playback
+        // and WAV budgets are independent and must not prevent reopening a score.
         let source = std::io::read_to_string(file).map_err(|e| e.to_string())?;
         return Ok(PreparedFile {
             opened: OpenedFile {
@@ -108,6 +107,35 @@ pub fn read(path: &Path) -> Result<PreparedFile, String> {
         origin: Some(origin),
     })
 }
+/// SFS validated once before presenting a save chooser. This keeps invalid
+/// drafts away from the destination and makes the native atomic write testable.
+pub struct ValidatedSave {
+    source: String,
+}
+impl ValidatedSave {
+    pub fn prepare(source: String) -> Result<Self, String> {
+        Workspace::from_source(&source)?;
+        Ok(Self { source })
+    }
+
+    pub fn persist(self, path: &Path, imported: Option<&Path>) -> Result<(), String> {
+        validate_destination(path, imported)?;
+        let parent = path.parent().ok_or("Invalid save destination")?;
+        let mut temporary = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
+        temporary
+            .write_all(self.source.as_bytes())
+            .map_err(|e| e.to_string())?;
+        temporary.as_file().sync_all().map_err(|e| e.to_string())?;
+        temporary.persist(path).map_err(|e| {
+            format!(
+                "Atomic save failed; the previous file has been preserved: {}",
+                e.error
+            )
+        })?;
+        Ok(())
+    }
+}
+
 /// Picker filters are hints, not an overwrite policy.
 pub fn validate_destination(path: &Path, imported: Option<&Path>) -> Result<(), String> {
     if !path
@@ -132,6 +160,63 @@ mod tests {
             .join("../scorestream-formats/tests/fixtures")
             .join(path)
     }
+    #[test]
+    fn converted_large_score_saves_and_reopens_without_an_editor_only_size_limit() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("large.musicxml");
+        let mut xml = String::from(
+            r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name>piano</part-name></score-part></part-list><part id="p">"#,
+        );
+        let suffix = "a".repeat(900);
+        for i in 0..4800 {
+            xml.push_str(&format!(r#"<measure number="{}">"#, i + 1));
+            if i == 0 {
+                xml.push_str("<attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>");
+            }
+            xml.push_str(&format!(r#"<note id="n{i}_{suffix}"><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>"#));
+        }
+        xml.push_str("</part></score-partwise>");
+        std::fs::write(&path, &xml).unwrap();
+        let converted = read(&path).unwrap();
+        assert!(converted.opened.source.len() > 4 * 1024 * 1024);
+        let saved = dir.path().join("saved.sfs");
+        ValidatedSave::prepare(converted.opened.source.clone())
+            .unwrap()
+            .persist(&saved, Some(&path))
+            .unwrap();
+        let reopened = read(&saved).unwrap();
+        assert_eq!(reopened.opened.source, converted.opened.source);
+        assert!(
+            reopened.workspace.is_none(),
+            "SFS remains an editable draft"
+        );
+        let reopened_workspace = Workspace::from_source(&reopened.opened.source).unwrap();
+        assert!(reopened_workspace.current().valid);
+        assert_eq!(reopened_workspace.current().events.len(), 4800);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), xml);
+        let audio_error = scorestream_app::playback::plan_source(&reopened.opened.source)
+            .expect_err("playback budget is unchanged");
+        assert!(audio_error.contains("4 MiB"), "{audio_error}");
+        eprintln!(
+            "validated XML -> atomic save -> reopen for {} byte SFS",
+            converted.opened.source.len()
+        );
+    }
+    #[test]
+    fn invalid_save_preserves_existing_file_and_save_keeps_original_bytes() {
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("existing.sfs");
+        std::fs::write(&destination, b"existing content").unwrap();
+        assert!(ValidatedSave::prepare("invalid draft".into()).is_err());
+        assert_eq!(std::fs::read(&destination).unwrap(), b"existing content");
+        let source = Workspace::demo().unwrap().current().source;
+        ValidatedSave::prepare(source.clone())
+            .unwrap()
+            .persist(&destination, None)
+            .unwrap();
+        assert_eq!(read(&destination).unwrap().opened.source, source);
+    }
+
     #[test]
     fn activation_is_revision_checked_single_use_and_transactional() {
         let prepared = read(&fixture("two-staff.musicxml")).unwrap();
