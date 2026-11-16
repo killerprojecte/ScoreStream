@@ -114,7 +114,7 @@ fn recognized_idrefs_do_not_become_duplicate_definitions_or_allow_foreign_refere
 fn richer_part_labels_and_layout_fail_closed_but_standard_sound_is_preserved() {
     for extra in [
         "<part-name-display><display-text>Flute 1</display-text></part-name-display>",
-        "<part-abbreviation>Fl. 1</part-abbreviation>",
+        "<part-abbreviation font-style=\"italic\">Fl. 1</part-abbreviation>",
     ] {
         assert!(
             MusicXml

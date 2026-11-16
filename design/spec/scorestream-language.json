@@ -2052,6 +2052,28 @@
         },
         "required_extension": "scorestream.ornaments@1",
         "meaning": "Ordered preserve-only ornament groups and complete notation siblings. Nested group boundaries preserved through contiguous ornament_group; no ornament attacks or wavy-line pairing inferred. Tuplet children also require scorestream.tuplets@1."
+      },
+      "scorestream.part_labels": {
+        "targets": [
+          "part"
+        ],
+        "required": [],
+        "fields": {
+          "abbreviation": {
+            "type": "string"
+          },
+          "name_leading_text": {
+            "type": "string"
+          },
+          "name_accidental": {
+            "type": "string"
+          },
+          "name_trailing_text": {
+            "type": "string"
+          }
+        },
+        "required_extension": "scorestream.part_labels@1",
+        "meaning": "Time-zero declared-part-owned authored abbreviation and/or ordered plain text, flat accidental, plain text name display. Independent from legacy display_name, instrument routing and performance."
       }
     }
   },
@@ -2244,6 +2266,10 @@
       "scorestream.ornaments@1": {
         "status": "authored preservation only; ornaments omitted by preview and sounding projection",
         "required_behavior": "Complete measured host, exact onset, contiguous child indices and ornament groups; nonempty groups. Empty trill-mark, single tremolo strokes1..4, wavy-line start/stop with optional number1 and exact finite-decimal default_y. No spans or attacks inferred. Complete ordered sibling bijection, one unadorned notation wrapper. All marks on ornament-bearing host use scorestream.ornaments.child; existing tuplet endpoint requires both capabilities. Unsupported hierarchy/semantics reject."
+      },
+      "scorestream.part_labels@1": {
+        "status": "authored declared-part label details; preview omits additional label rendering",
+        "required_behavior": "Complete score, time-zero existing part target, at most one mark per part, at least abbreviation or complete name display triple; closed string fields and XML-safe exact text. name_accidental is flat in this verified profile. Preserve empty abbreviation versus absence; do not infer instruments, transposition, prefixes, sound or replace legacy display_name. Unsupported styling/layouts fail closed."
       }
     }
   },

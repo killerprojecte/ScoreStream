@@ -699,6 +699,8 @@ pub(super) fn schema_with_profile(
                 &["id"],
                 &[
                     "part-name",
+                    "part-abbreviation",
+                    "part-name-display",
                     "score-instrument",
                     "midi-device",
                     "midi-instrument",
@@ -783,6 +785,7 @@ pub(super) fn schema_with_profile(
             "left-margin" | "right-margin" | "top-system-distance" | "staff-distance" => {
                 (&[], &[], &[], &[], true)
             }
+            "part-name-display" => (&[],&["display-text","accidental-text"],&["display-text","accidental-text"],&[],false),
             "direction" => (
                 &["placement", "system"],
                 &["direction-type", "offset", "staff", "sound"],
@@ -1001,6 +1004,9 @@ pub(super) fn schema_with_profile(
             | "source"
             | "rights"
             | "part-name"
+            | "part-abbreviation"
+            | "display-text"
+            | "accidental-text"
             | "instrument-name"
             | "instrument-abbreviation"
             | "instrument-sound"

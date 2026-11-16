@@ -312,6 +312,9 @@ pub struct ScoreTie {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScorePart {
+    /// Authored abbreviation/name-display details, independent from name and routing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub labels: Option<crate::part_labels::PartLabels>,
     pub id: PartId,
     pub name: Option<String>,
     pub instrument: Option<InstrumentId>,

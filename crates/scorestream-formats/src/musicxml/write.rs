@@ -478,6 +478,7 @@ pub fn write_with_options(
                 "Required part-name derived from instrument label or left empty",
             );
         }
+        if let Some(labels)=&p.labels {super::part_labels::write(labels,&mut out);}
         if let Some(value) = &p.instrument_metadata {
             super::instruments::write(&mut out, value);
         } else if let Some(instrument) = &p.instrument {

@@ -179,12 +179,14 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::wedges::EXTENSION
             && e != core::dashes::EXTENSION
             && e != core::words::EXTENSION
+            && e != core::part_labels::EXTENSION
             && e != core::lyrics::EXTENSION
             && e != core::tuplets::EXTENSION
             && e != core::tuplets::ORNAMENT_EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
+    let mut part_labels=if doc.required_extensions.iter().any(|e|e==core::part_labels::EXTENSION) {core::part_labels::decode(doc).expect("validated part labels")} else {Default::default()};
     let mut score = ScoreDocument {
         wedges: if doc.required_extensions.iter().any(|e|e==core::wedges::EXTENSION) {core::wedges::decode(doc).expect("validated wedge endpoints")} else {vec![]},
         dashes: if doc.required_extensions.iter().any(|e|e==core::dashes::EXTENSION) {core::dashes::decode(doc).expect("validated dashes endpoints")} else {vec![]},
@@ -266,6 +268,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         .collect();
     for p in &doc.parts {
         score.parts.push(ScorePart {
+            labels:part_labels.remove(&p.id),
             id: PartId(p.id.clone()),
             name: p.display_name.clone(),
             instrument: Some(InstrumentId(p.instrument.clone())),
@@ -376,6 +379,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         || core::wedges::is_kind(&m.kind)
                         || core::dashes::is_kind(&m.kind)
                         || core::words::is_kind(&m.kind)
+                        || core::part_labels::is_kind(&m.kind)
                         || core::lyrics::is_kind(&m.kind)
                         || core::tuplets::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
@@ -816,6 +820,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .cloned()
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
+    if score.parts.iter().any(|p|p.labels.is_some()) {doc.required_extensions.push(core::part_labels::EXTENSION.into());}
     if !score.wedges.is_empty() {doc.required_extensions.push(core::wedges::EXTENSION.into());}
     if !score.dashes.is_empty() {doc.required_extensions.push(core::dashes::EXTENSION.into());}
     if !score.words.is_empty() {doc.required_extensions.push(core::words::EXTENSION.into());}
@@ -1319,6 +1324,9 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         let at = &geometry_measures[&(e.part.as_str(),e.measure.as_str())].clone() + &e.offset;
         frames.entry(at).or_default().push(Record::Mark(core::dashes::encode(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index)));
     }
+    for p in &score.parts {if let Some(labels)=&p.labels {
+        frames.entry(Rational::zero()).or_default().push(Record::Mark(core::part_labels::encode(labels,parts.get(&p.id.0,&mut report))));
+    }}
     for (index,e) in score.words.iter().enumerate() {
         let at = &geometry_measures[&(e.part.as_str(),e.measure.as_str())].clone() + &e.offset;
         frames.entry(at).or_default().push(Record::Mark(core::words::encode(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index)));

@@ -519,6 +519,7 @@ fn read_with_audit<R: BufRead + Seek>(
         let unresolved=scorestream_core::dashes::unresolved_pairs(&score.dashes);
         if unresolved>0 {report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"dashes.pairing_unresolved","/dashes",format!("{unresolved} unmatched or ambiguous endpoints retained without pairing repair"));}
     }
+    if score.parts.iter().any(|p|p.labels.is_some()) {report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"part_labels.authored_only","/parts","Authored abbreviations and name-display details retained; current preview omits these extra labels and routing/playback are unchanged");}
     if !score.words.is_empty() {
         let words_positions: std::collections::BTreeMap<_,_> = score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.as_str(),m.id.as_str()),&m.start))).collect();
         score.words.sort_by(|a,b|a.part.cmp(&b.part).then(words_positions[&(a.part.as_str(),a.measure.as_str())].cmp(words_positions[&(b.part.as_str(),b.measure.as_str())])));
@@ -587,6 +588,7 @@ impl PartReader {
             .map(|(id, value)| (Some(id), Some(value)))
             .unwrap_or_default();
         let part = ScorePart {
+            labels:super::part_labels::read(declared)?,
             id: PartId(id.into()),
             name: Some(child(declared, "part-name")?.text.clone()),
             instrument,

@@ -43,6 +43,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::wedges::EXTENSION
             && requirement != crate::dashes::EXTENSION
             && requirement != crate::words::EXTENSION
+            && requirement != crate::part_labels::EXTENSION
             && requirement != crate::lyrics::EXTENSION
             && requirement != crate::tuplets::EXTENSION
             && requirement != crate::tuplets::ORNAMENT_EXTENSION
@@ -193,6 +194,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut has_wedges = false;
     let mut has_dashes = false;
     let mut has_words = false;
+    let mut has_part_labels = false;
     let mut has_credits = false;
     let mut has_print = false;
     let mut has_lyrics = false;
@@ -490,6 +492,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     has_wedges |= crate::wedges::is_kind(&m.kind);
                     has_dashes |= crate::dashes::is_kind(&m.kind);
                     has_words |= crate::words::is_kind(&m.kind);
+                    has_part_labels |= crate::part_labels::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
                     has_lyrics |= crate::lyrics::is_kind(&m.kind);
@@ -539,6 +542,12 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             Ok(_)=>{
                 out.push(Diagnostic::warning("words.authored_only", "Authored score words are retained; current preview omits them and performance does not interpret their instructions. No gain, tempo, timbre or navigation behavior is inferred",doc.source));
             }
+        }
+    }
+    if has_part_labels || doc.required_extensions.iter().any(|e|e==crate::part_labels::EXTENSION) {
+        match crate::part_labels::decode(doc) {
+            Err(errors)=>out.extend(errors),
+            Ok(_)=>out.push(Diagnostic::warning("part_labels.authored_only","Authored part abbreviations and name-display details are retained; current preview does not realize these extra labels. Legacy part names and instrument routing are unchanged",doc.source)),
         }
     }
     crate::navigation_extension::validate(doc, &mut out);

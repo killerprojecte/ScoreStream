@@ -191,6 +191,8 @@ fn compile_with_graces(
         }
     }
     let mut warnings = Diagnostics::default();
+    for d in doc.diagnostics.iter().filter(|d|d.code.starts_with("part_labels.")) {warnings.add(&d.code,"engraving.part_labels",RealizationEffect::NotationOnly,&Origin {object_id:"document".into(),source:d.source},&d.message);}
+
     for d in doc.diagnostics.iter().filter(|d| d.code.starts_with("wedge.")) {
         warnings.add(&d.code,"engraving.wedge",RealizationEffect::NotationOnly,&Origin {object_id:"document".into(),source:d.source},&d.message);
     }

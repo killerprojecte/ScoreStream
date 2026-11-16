@@ -4,6 +4,8 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Validation for public typed input, including callers constructing it without a parser.
 pub fn validate_score(score: &ScoreDocument) -> MappingReport {
     let mut report = MappingReport::default();
+    for p in &score.parts {if p.labels.as_ref().is_some_and(|l|!l.valid()) {report.push(Format::ScoreModel,MappingEffect::Invalid,"part_labels.fields",p.id.0.clone(),"Part labels require nonempty declared fields and valid XML text");}}
+
     if !score.wedges.is_empty() {
         let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
         if !scorestream_core::wedges::valid(&score.wedges,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"wedge.fields","/wedges","Invalid wedge measure ownership, staff, position, number or decimal fields");}

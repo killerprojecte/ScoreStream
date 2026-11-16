@@ -2852,6 +2852,61 @@
             },
             "description": "Requires scorestream.ornaments@1; all siblings on a host share this kind. Tuplet children additionally require scorestream.tuplets@1. Preserves exact ornament group boundaries and order, never infers attacks or wavy-line pairing. Runtime checks complete typed sibling bijection and contiguous group indices."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.part_labels"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Identifier"
+              },
+              "attributes": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "abbreviation": {
+                    "type": "string"
+                  },
+                  "name_leading_text": {
+                    "type": "string"
+                  },
+                  "name_accidental": {
+                    "enum": [
+                      "flat"
+                    ]
+                  },
+                  "name_trailing_text": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "dependentRequired": {
+                  "name_leading_text": [
+                    "name_leading_text",
+                    "name_accidental",
+                    "name_trailing_text"
+                  ],
+                  "name_accidental": [
+                    "name_leading_text",
+                    "name_accidental",
+                    "name_trailing_text"
+                  ],
+                  "name_trailing_text": [
+                    "name_leading_text",
+                    "name_accidental",
+                    "name_trailing_text"
+                  ]
+                }
+              }
+            },
+            "description": "Requires scorestream.part_labels@1, a complete score, unique existing part target at time zero and XML-safe literal text. Additional label rendering is unimplemented; legacy part names and instrument routing remain independent."
+          }
         }
       ]
     },

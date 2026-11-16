@@ -73,7 +73,7 @@ fn document() -> Document {
 fn common() -> ScoreDocument {
     ScoreDocument {
         slurs: vec![slur("s", "a", "b")],
-        parts: vec![ScorePart {
+        parts: vec![ScorePart {labels:None,
             id: PartId("p".into()),
             name: None,
             instrument: None,

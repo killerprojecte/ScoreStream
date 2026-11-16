@@ -91,3 +91,4 @@ mod note_dynamics;
 mod wedges;
 mod dashes;
 mod words;
+mod part_labels;

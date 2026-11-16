@@ -40,7 +40,7 @@ fn source() -> SourceRange {
 fn common() -> ScoreDocument {
     ScoreDocument {
         beams: beams(),
-        parts: vec![ScorePart {
+        parts: vec![ScorePart {labels:None,
             id: PartId("p".into()),
             name: None,
             instrument: None,

@@ -42,3 +42,4 @@ pub mod wedges;
 pub mod dashes;
 pub mod tuplets;
 pub mod words;
+pub mod part_labels;
