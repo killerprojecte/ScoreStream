@@ -72,21 +72,7 @@ pub(super) fn read(
         words: n
             .child("direction-type")
             .and_then(|d| d.child("words"))
-            .map(|w| {
-                let number = |key| {
-                    w.attr(key)
-                        .map(|_| exact_decimal(&w.scalar_attribute(key)))
-                        .transpose()
-                };
-                Ok::<_, MappingReport>(scorestream_core::dashes::DashesWords {
-                    text: w.text.clone(),
-                    font_family: w.attr("font-family").map(str::to_owned),
-                    font_style: w.attr("font-style").map(str::to_owned),
-                    font_size: number("font-size")?,
-                    default_y: number("default-y")?,
-                    relative_x: number("relative-x")?,
-                })
-            })
+            .map(super::words::read_text)
             .transpose()?,
         system: n.attr("system").map(str::to_owned),
         part: part.into(),
@@ -142,30 +128,7 @@ impl<'a> Export<'a> {
             }
             out.push('>');
             if let Some(w) = &e.words {
-                out.push_str("<direction-type><words");
-                for (key, value) in [
-                    ("font-family", w.font_family.as_deref()),
-                    ("font-style", w.font_style.as_deref()),
-                ] {
-                    if let Some(value) = value {
-                        write!(out, " {key}=\"{}\"", escape(value)).unwrap();
-                    }
-                }
-                for (key, value) in [
-                    ("font-size", &w.font_size),
-                    ("default-y", &w.default_y),
-                    ("relative-x", &w.relative_x),
-                ] {
-                    if let Some(value) = value {
-                        write!(
-                            out,
-                            " {key}=\"{}\"",
-                            decimal_text(value).expect("validated words decimal")
-                        )
-                        .unwrap();
-                    }
-                }
-                write!(out, ">{}</words></direction-type>", escape(&w.text)).unwrap();
+                super::words::write_text(w, out);
             }
             write!(out, "<direction-type><dashes type=\"{}\"", e.kind.name()).unwrap();
             if let Some(n) = e.number {

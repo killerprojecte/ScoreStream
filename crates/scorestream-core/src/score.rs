@@ -16,6 +16,9 @@ pub struct ScoreDocument {
     /// Authored tuplet endpoints and exact single-wrapper sibling order, not spans.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tuplets: Vec<crate::tuplets::TupletNotation>,
+    /// Standalone authored score instructions, with no inferred performance.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub words: Vec<crate::words::WordsDirection>,
     /// Ordered authored lyric entries per event, independent of semantic commentary.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub lyrics: Vec<crate::lyrics::EventLyrics>,

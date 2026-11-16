@@ -35,12 +35,14 @@ fn divisions(
     dynamics_index: &super::dynamics::Export<'_>,
     part: &ScorePart,
     graces: &super::graces::Export<'_>,
+    words: &super::words::Export<'_>,
     dashes: &super::dashes::Export<'_>,
     wedges: &super::wedges::Export<'_>,
 ) -> Option<u64> {
     let mut n = 1;
     let offsets = tempo_index.positions(part, m);
     let dynamics_offsets = dynamics_index.offsets(part, m);
+    let words_offsets=words.offsets(&part.id.0,&m.id);
     let dashes_offsets = dashes.offsets(&part.id.0,&m.id);
     let wedge_offsets = wedges.offsets(&part.id.0,&m.id);
     for value in std::iter::once(&m.length)
@@ -49,6 +51,7 @@ fn divisions(
         .chain(dynamics_offsets.iter())
         .chain(wedge_offsets.iter())
         .chain(dashes_offsets.iter())
+        .chain(words_offsets.iter())
         .chain(graces.make_times(m))
     {
         let d = value.denominator().to_u64()?;
@@ -127,6 +130,7 @@ pub fn write_with_options(
     super::tempo::validate_export(score, &mut report);
     let tempo_index = super::tempo::Export::new(score);
     let dynamics_index = super::dynamics::Export::new(score, &mut report);
+    let words_index=super::words::Export::new(&score.words);
     let dashes_index = super::dashes::Export::new(&score.dashes);
     let wedge_index = super::wedges::Export::new(&score.wedges);
     let fermatas = super::fermatas::Export::new(score, &mut report);
@@ -151,6 +155,7 @@ pub fn write_with_options(
         .filter_map(|(_, v)| v)
         .chain(score.metadata.authors.iter().map(String::as_str))
         .chain(score.dynamics.iter().filter_map(|d| d.qualifier.as_ref().map(|q| q.text.as_str())))
+        .chain(score.words.iter().flat_map(|e|std::iter::once(e.words.text.as_str()).chain(e.words.font_family.as_deref())))
         .chain(score.dashes.iter().filter_map(|e|e.words.as_ref()).flat_map(|w| std::iter::once(w.text.as_str()).chain(w.font_family.as_deref())))
         .chain(score.credits.iter().flat_map(|c| std::iter::once(c.text.as_str()).chain(c.credit_type.as_deref())))
         .chain(score.parts.iter().flat_map(|p| {
@@ -231,7 +236,7 @@ pub fn write_with_options(
                     "Invalid or duplicate XML ID",
                 );
             }
-            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces, &dashes_index, &wedge_index) {
+            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces, &words_index, &dashes_index, &wedge_index) {
                 graces.validate_make_times(m, div, &mut report);
             } else {
                 issue(
@@ -499,7 +504,7 @@ pub fn write_with_options(
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
-            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces, &dashes_index, &wedge_index).unwrap();
+            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces, &words_index, &dashes_index, &wedge_index).unwrap();
             writeln!(
                 out,
                 "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\"{}>",
@@ -572,6 +577,7 @@ pub fn write_with_options(
             out.push_str("      </attributes>\n");
             super::tempo::write_measure(&tempo_index, p, m, div, &mut out);
             dynamics_index.write_measure(p, m, div, &mut out);
+            words_index.write(&p.id.0,&m.id,div,&mut out);
             dashes_index.write(&p.id.0,&m.id,div,&mut out);
             wedge_index.write(&p.id.0,&m.id,div,&mut out);
             for (vi, v) in p.voices.iter().enumerate() {

@@ -12,6 +12,10 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
         let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
         if !scorestream_core::dashes::valid(&score.dashes,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"dashes.fields","/dashes","Invalid dashes measure ownership, staff, position, number or decimal fields");}
     }
+    if !score.words.is_empty() {
+        let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
+        if !scorestream_core::words::valid(&score.words,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"words.fields","/words","Invalid words measure ownership, staff, position, number or decimal fields");}
+    }
     for d in score
         .metadata
         .validate(scorestream_core::SourceRange::default())

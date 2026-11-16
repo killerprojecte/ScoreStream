@@ -123,7 +123,7 @@ fn unsupported_composites_styles_shapes_and_invalid_native_fields_fail_closed() 
             "<direction system=\"anything\" placement",
         ),
         valid.replace("<offset sound=\"no\">0", "<offset sound=\"no\">9"),
-        r#"<direction><direction-type><words>cresc.</words></direction-type></direction>"#.into(),
+        r#"<direction><direction-type><words>cresc.</words></direction-type><direction-type><words>more</words></direction-type></direction>"#.into(),
         r#"<direction><direction-type><dashes type="start"/></direction-type></direction>"#.into(),
     ] {
         assert!(MusicXml.read(&score(&bad)).is_err(), "{bad}");

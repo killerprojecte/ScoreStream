@@ -42,6 +42,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::print_layout::EXTENSION
             && requirement != crate::wedges::EXTENSION
             && requirement != crate::dashes::EXTENSION
+            && requirement != crate::words::EXTENSION
             && requirement != crate::lyrics::EXTENSION
             && requirement != crate::tuplets::EXTENSION
         {
@@ -190,6 +191,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut has_geometry = false;
     let mut has_wedges = false;
     let mut has_dashes = false;
+    let mut has_words = false;
     let mut has_credits = false;
     let mut has_print = false;
     let mut has_lyrics = false;
@@ -475,6 +477,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     has_geometry |= crate::geometry::is_kind(&m.kind);
                     has_wedges |= crate::wedges::is_kind(&m.kind);
                     has_dashes |= crate::dashes::is_kind(&m.kind);
+                    has_words |= crate::words::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
                     has_lyrics |= crate::lyrics::is_kind(&m.kind);
@@ -515,6 +518,14 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 out.push(Diagnostic::warning("dashes.authored_only", "Authored dashes endpoints are retained; current preview and performance do not realize words/dashes shape or expression. No gain or tempo curve is inferred",doc.source));
                 let count=crate::dashes::unresolved_pairs(&endpoints);
                 if count>0 {out.push(Diagnostic::warning("dashes.pairing_unresolved",format!("{count} unmatched/ambiguous authored dashes endpoints; no pairing repair is inferred"),doc.source));}
+            }
+        }
+    }
+    if has_words || doc.required_extensions.iter().any(|e|e==crate::words::EXTENSION) {
+        match crate::words::decode(doc) {
+            Err(errors)=>out.extend(errors),
+            Ok(_)=>{
+                out.push(Diagnostic::warning("words.authored_only", "Authored score words are retained; current preview omits them and performance does not interpret their instructions. No gain, tempo, timbre or navigation behavior is inferred",doc.source));
             }
         }
     }
@@ -901,7 +912,7 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
-                    if m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
+                    if m.kind == crate::words::KIND || m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
                         continue;
                     }
                     if m.target.starts_with('#') {

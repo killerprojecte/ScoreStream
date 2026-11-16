@@ -2,7 +2,8 @@
 
 The closed MusicXML profile preserves a direction containing exactly two
 ordered direction-type children, plain words then start dashes, or one
-direction-type containing stop dashes alone. Standalone words, reversed groups,
+direction-type containing stop dashes alone. Standalone words now use the separate
+authored words profile (see AUTHORED_WORDS.md); reversed groups,
 markup, arbitrary composites and continuation are still rejected.
 
 Typed endpoints retain part, owning measure, exact logical offset, optional

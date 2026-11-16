@@ -792,7 +792,7 @@ pub(super) fn schema_with_profile(
             ),
             "direction-type" => (&[], &["metronome", "dynamics", "wedge", "dashes", "words"], &[], &[], false),
             "dashes" => (&["type","number","default-y","relative-x"],&[],&[],&[],false),
-            "words" => (&["font-family","font-size","font-style","default-y","relative-x"],&[],&[],&[],true),
+            "words" => (&["font-family","font-size","font-style","font-weight","default-x","default-y","relative-x","relative-y"],&[],&[],&[],true),
             "wedge" => (&["type", "number", "default-y", "spread"], &[], &[], &[], false),
             "dynamics" => (
                 &["default-x", "default-y", "relative-x", "relative-y"],
@@ -1043,36 +1043,23 @@ pub(super) fn schema_with_profile(
             "A grace note must omit duration; every ordinary note must have duration",
         );
     }
-    if n.name == "direction" {
-        let types: Vec<_> = n.children_named("direction-type").collect();
-        if let Some(dash) = types.iter().find_map(|d| d.child("dashes")) {
-            let valid = match dash.attr("type") {
-                Some("start") => {
-                    types.len() == 2
-                        && types[0].children.len() == 1
-                        && types[0].child("words").is_some()
-                        && types[1].children.len() == 1
-                        && types[1].child("dashes").is_some()
+    if n.name=="direction" {
+        let types:Vec<_>=n.children.iter().filter(|c|c.name=="direction-type").collect();
+        let dash=types.iter().find_map(|d|d.child("dashes"));
+        let valid=match dash.and_then(|d|d.attr("type")) {
+            Some("start")=>types.len()==2 && types[0].children.len()==1 && types[0].child("words").is_some() && types[1].children.len()==1 && types[1].child("dashes").is_some(),
+            Some("stop")=>types.len()==1 && types[0].children.len()==1,
+            Some(_)=>false,
+            None=>types.len()==1 && types[0].children.len()==1 && (types[0].child("words").is_some() || n.attr("system").is_none()),
+        };
+        if !valid {
+            if dash.is_some() {n.error(report,MappingEffect::Unsupported,"dashes.group","Only ordered words then start dashes, or stop dashes alone are supported");}
+            else {
+                for words in types.iter().flat_map(|d|d.children.iter()).filter(|c|c.name=="words") {
+                    words.error(report,MappingEffect::Unsupported,"element.words","Only one standalone plain words element is supported outside a dashes group; mixed direction layouts are not discarded");
                 }
-                Some("stop") => types.len() == 1 && types[0].children.len() == 1,
-                _ => false,
-            };
-            if !valid {
-                n.error(report, MappingEffect::Unsupported, "dashes.group",
-                    "Only ordered plain words then start dashes, or stop dashes alone, are supported; other dashes composites are not discarded");
-            }
-        } else {
-            for word in types.iter().flat_map(|d| d.children_named("words")) {
-                word.error(report, MappingEffect::Unsupported, "element.words",
-                    "Standalone words are not mapped by the authored dashes profile");
-            }
-            if types.len() > 1 {
-                n.error(report, MappingEffect::Invalid, "xml.cardinality",
-                    "Repeated direction-type is outside the conversion profile");
-            }
-            if n.attr("system").is_some() {
-                n.error(report, MappingEffect::Unsupported, "attribute.system",
-                    "Attribute has no implemented typed mapping for this direction group");
+                if types.len()>1 {n.error(report,MappingEffect::Invalid,"xml.cardinality","Repeated direction-type is outside the supported standalone profile");}
+                if n.attr("system").is_some() && !types.iter().any(|d|d.child("words").is_some()) {n.error(report,MappingEffect::Unsupported,"attribute.system","System relation is only represented for authored words/dashes directions");}
             }
         }
     }

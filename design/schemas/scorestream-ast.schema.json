@@ -2246,6 +2246,91 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.words"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "part": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "staff": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "placement": {
+                    "enum": [
+                      "above",
+                      "below"
+                    ]
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "system": {
+                    "enum": [
+                      "only-top",
+                      "also-top",
+                      "none"
+                    ]
+                  },
+                  "font_style": {
+                    "enum": [
+                      "normal",
+                      "italic"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "font_family": {
+                    "type": "string"
+                  },
+                  "font_size": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "font_weight": {
+                    "enum": [
+                      "normal",
+                      "bold"
+                    ]
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "part",
+                  "index",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "description": "Requires scorestream.words@1, complete score and exact measure/part/local offset with canonical contiguous indices. Literal plain score instructions retain styling and exact geometry; no analytical or performance reinterpretation."
+          }
         }
       ]
     },

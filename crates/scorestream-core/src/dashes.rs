@@ -25,16 +25,7 @@ impl DashesType {
         }
     }
 }
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DashesWords {
-    pub text: String,
-    pub font_family: Option<String>,
-    pub font_size: Option<Rational>,
-    pub font_style: Option<String>,
-    pub default_y: Option<Rational>,
-    pub relative_x: Option<Rational>,
-}
+pub type DashesWords = crate::words::WordsText;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DashesEndpoint {
@@ -74,14 +65,10 @@ pub fn valid(endpoints: &[DashesEndpoint], hosts: &Hosts) -> bool {
                 .is_none_or(|s| matches!(s, "only-top" | "also-top" | "none"))
             && (e.kind == DashesType::Start) == e.words.is_some()
             && e.words.as_ref().is_none_or(|w| {
-                w.font_style
-                    .as_deref()
-                    .is_none_or(|s| matches!(s, "normal" | "italic"))
-                    && w.font_size.as_ref().is_none_or(Rational::is_positive)
-                    && [&w.font_size, &w.default_y, &w.relative_x]
-                        .into_iter()
-                        .flatten()
-                        .all(crate::geometry::decimal)
+                w.valid()
+                    && w.font_weight.is_none()
+                    && w.default_x.is_none()
+                    && w.relative_y.is_none()
             })
             && e.number.is_none_or(|n| (1..=16).contains(&n))
             && [&e.default_y, &e.relative_x]
@@ -240,6 +227,9 @@ pub fn decode(doc: &Document) -> Result<Vec<DashesEndpoint>, Vec<Diagnostic>> {
             };
             let words = if let Some(text) = optional_text("text")? {
                 Some(DashesWords {
+                    font_weight: None,
+                    default_x: None,
+                    relative_y: None,
                     text,
                     font_family: optional_text("font_family")?,
                     font_style: optional_text("font_style")?,

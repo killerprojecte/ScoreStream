@@ -430,6 +430,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.wedges.append(&mut reader.wedges);
             score.dashes.append(&mut reader.dashes);
             tuplets.append(&mut reader.tuplets);
+            score.words.append(&mut reader.words);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -518,6 +519,11 @@ fn read_with_audit<R: BufRead + Seek>(
         let unresolved=scorestream_core::dashes::unresolved_pairs(&score.dashes);
         if unresolved>0 {report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"dashes.pairing_unresolved","/dashes",format!("{unresolved} unmatched or ambiguous endpoints retained without pairing repair"));}
     }
+    if !score.words.is_empty() {
+        let words_positions: std::collections::BTreeMap<_,_> = score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.as_str(),m.id.as_str()),&m.start))).collect();
+        score.words.sort_by(|a,b|a.part.cmp(&b.part).then(words_positions[&(a.part.as_str(),a.measure.as_str())].cmp(words_positions[&(b.part.as_str(),b.measure.as_str())])));
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"words.authored_only","/words","Ordered words endpoints retained without inferring velocity curves; preview and expressive performance are not realized");
+    }
     if !score.print_layout.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"print.authored_layout","/print_layout",format!("Retained {} measure-owned print layouts; preview independently reflows and playback is unchanged",score.print_layout.len()));
     }
@@ -561,6 +567,7 @@ struct PartReader {
     lyrics: Vec<scorestream_core::lyrics::EventLyrics>,
     wedges: Vec<scorestream_core::wedges::WedgeEndpoint>,
     dashes: Vec<scorestream_core::dashes::DashesEndpoint>,
+    words: Vec<scorestream_core::words::WordsDirection>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -610,6 +617,7 @@ impl PartReader {
             lyrics: vec![],
             wedges: vec![],
             dashes: vec![],
+            words: vec![],
             barlines: vec![],
         })
     }
@@ -646,6 +654,7 @@ impl PartReader {
             lyrics,
             wedges,
             dashes,
+            words,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -864,6 +873,7 @@ impl PartReader {
                     previous = None;
                     if let Some(endpoint)=super::wedges::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {wedges.push(endpoint);}
                     if let Some(endpoint)=super::dashes::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {dashes.push(endpoint);}
+                    if let Some(endpoint)=super::words::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {words.push(endpoint);}
                     super::dynamics::read(
                         n,
                         part,

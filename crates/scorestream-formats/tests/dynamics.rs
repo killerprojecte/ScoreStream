@@ -270,8 +270,8 @@ fn unsupported_words_glyphs_compounds_layout_wedges_and_sound_properties_block()
     for (element, feature) in [
         ("<wedge type=\"continue\"/>", "wedge.type"),
         (
-            "<words font-family=\"Leland Text\">\u{e522}</words>",
-            "element.words",
+            "<words font-family=\"Leland Text\"><b>\u{e522}</b></words>",
+            "element.b",
         ),
         (
             "<dynamics><other-dynamics font-family=\"Custom\">sf</other-dynamics><f/></dynamics>",

@@ -178,6 +178,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::print_layout::EXTENSION
             && e != core::wedges::EXTENSION
             && e != core::dashes::EXTENSION
+            && e != core::words::EXTENSION
             && e != core::lyrics::EXTENSION
             && e != core::tuplets::EXTENSION
     }) {
@@ -195,6 +196,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         } else {
             vec![]
         },
+        words: if doc.required_extensions.iter().any(|e|e==core::words::EXTENSION) {core::words::decode(doc).expect("validated words endpoints")} else {vec![]},
         lyrics: if doc
             .required_extensions
             .iter()
@@ -372,6 +374,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         || core::print_layout::is_kind(&m.kind)
                         || core::wedges::is_kind(&m.kind)
                         || core::dashes::is_kind(&m.kind)
+                        || core::words::is_kind(&m.kind)
                         || core::lyrics::is_kind(&m.kind)
                         || core::tuplets::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
@@ -810,6 +813,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     let mut doc = Document::new(DocumentKind::Score);
     if !score.wedges.is_empty() {doc.required_extensions.push(core::wedges::EXTENSION.into());}
     if !score.dashes.is_empty() {doc.required_extensions.push(core::dashes::EXTENSION.into());}
+    if !score.words.is_empty() {doc.required_extensions.push(core::words::EXTENSION.into());}
     if !score.credits.is_empty() {
         doc.required_extensions
             .push(core::credits::EXTENSION.into());
@@ -1305,6 +1309,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     for (index,e) in score.dashes.iter().enumerate() {
         let at = &geometry_measures[&(e.part.as_str(),e.measure.as_str())].clone() + &e.offset;
         frames.entry(at).or_default().push(Record::Mark(core::dashes::encode(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index)));
+    }
+    for (index,e) in score.words.iter().enumerate() {
+        let at = &geometry_measures[&(e.part.as_str(),e.measure.as_str())].clone() + &e.offset;
+        frames.entry(at).or_default().push(Record::Mark(core::words::encode(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index)));
     }
     for p in &score.print_layout {
         let at = geometry_measures[&(p.part.as_str(), p.measure.as_str())].clone();

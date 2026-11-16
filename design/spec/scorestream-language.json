@@ -1914,6 +1914,62 @@
         },
         "required_extension": "scorestream.tuplets@1",
         "meaning": "Ordered single-wrapper tuplet endpoints and typed sibling references. No pairing, nesting, span, or clock inference."
+      },
+      "scorestream.words": {
+        "targets": [
+          "measure"
+        ],
+        "required": [
+          "part",
+          "index",
+          "text"
+        ],
+        "fields": {
+          "part": {
+            "type": "identifier"
+          },
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "staff": {
+            "type": "positive_integer"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "relative_x": {
+            "type": "rational"
+          },
+          "system": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "font_family": {
+            "type": "string"
+          },
+          "font_style": {
+            "type": "string"
+          },
+          "font_size": {
+            "type": "rational"
+          },
+          "font_weight": {
+            "type": "string"
+          },
+          "default_x": {
+            "type": "rational"
+          },
+          "relative_y": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.words@1",
+        "meaning": "Ordered standalone authored plain score instruction with exact decoded text, style, geometry and logical ownership. Not analytical annotation; no inferred gain, tempo, timbre or navigation behavior."
       }
     }
   },
@@ -2098,6 +2154,10 @@
       "scorestream.tuplets@1": {
         "status": "lossless closed authored endpoint bridge; preview omits authored endpoints",
         "required_behavior": "Complete score, unique contiguous per-host child indices at measured event onset. One unadorned notations wrapper per host; retain start/stop and optional start bracket exactly. All sibling refs must bijectively match existing canonical-simple or authored articulation groups, ordinary tied endpoints, authored slurs and fermatas. Endpoint-only/open sequences are retained without inferred pairing. Unsupported shapes and ornament siblings still reject. Written time-modification and performed duration remain independent."
+      },
+      "scorestream.words@1": {
+        "status": "authored standalone plain words; current preview and expressive performance uncovered",
+        "required_behavior": "Complete score, exact measure ownership and inclusive local onset, contiguous indices and canonical part/measure grouping. Required literal text; optional font family, positive finite-decimal size, normal/italic style, normal/bold weight, all four finite-decimal coordinate axes, staff, placement and system relation. Preserve absence and whitespace. Reject complex mixed groups, unrepresented fields and malformed ownership; no invented gain/tempo/timbre/navigation from words."
       }
     }
   },

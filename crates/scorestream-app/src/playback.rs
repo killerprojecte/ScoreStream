@@ -197,6 +197,9 @@ fn compile_with_graces(
     for d in doc.diagnostics.iter().filter(|d| d.code.starts_with("dashes.")) {
         warnings.add(&d.code,"engraving.dashes",RealizationEffect::NotationOnly,&Origin {object_id:"document".into(),source:d.source},&d.message);
     }
+    for d in doc.diagnostics.iter().filter(|d| d.code.starts_with("words.")) {
+        warnings.add(&d.code,"engraving.words",RealizationEffect::NotationOnly,&Origin {object_id:"document".into(),source:d.source},&d.message);
+    }
     if let Some(performed) = performed {
         for d in &performed.diagnostics {
             warnings.add(

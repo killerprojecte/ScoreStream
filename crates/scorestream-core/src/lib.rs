@@ -41,3 +41,4 @@ pub mod lyrics;
 pub mod wedges;
 pub mod dashes;
 pub mod tuplets;
+pub mod words;
