@@ -1,7 +1,6 @@
 //! Experimental Linux local harness, deliberately not a desktop command.
 #[cfg(target_os = "linux")]
-#[path = "audition/support.rs"]
-mod support;
+use scorestream_audio::audition_session as support;
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();

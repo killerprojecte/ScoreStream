@@ -1,7 +1,8 @@
 //! Explicit local experiment. Probes discard PCM; optional verified readiness +
 //! new WAV path selects atomic publication after complete native replay equality.
-#[path = "audition/support.rs"]
-mod support;
+#[cfg(target_os = "linux")]
+use scorestream_audio::audition_session as support;
+#[cfg(target_os = "linux")]
 fn main()->Result<(),Box<dyn std::error::Error>> {
     let args:Vec<_>=std::env::args().collect();
     if !(args.len()==5 || ((args.len()==6 || args.len()==8) && args[5]=="until_native_idle")) || args[4]!="hold_last_gain_at_noteoff_v1" {return Err("Usage: dry_admission_probe SOURCE POLICY BANK hold_last_gain_at_noteoff_v1 [until_native_idle [READINESS_JSON NEW_WAV]]; WAV requires exact successful readiness and complete replay verification".into());}
@@ -18,4 +19,10 @@ fn main()->Result<(),Box<dyn std::error::Error>> {
         audition.dry_render_verified(&source,std::path::Path::new(&args[3]),&expected,std::path::Path::new(&args[7]))?
     } else if args.len()==6 { audition.dry_admission_until_idle(&source,std::path::Path::new(&args[3]))? } else { audition.dry_admission_probe(&source,std::path::Path::new(&args[3]))? })?);
     Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn main() -> std::process::ExitCode {
+    eprintln!("Native dry audition is available only on verified Linux hosts; no renderer was selected.");
+    std::process::ExitCode::FAILURE
 }

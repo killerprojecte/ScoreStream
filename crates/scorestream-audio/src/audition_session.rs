@@ -1,6 +1,8 @@
-//! Closed configuration for a local experimental audition, not product defaults.
+//! Explicit Linux audition session shared by CLI and future desktop adapters.
+//! Captures source bytes and compiled policy/palette witnesses; never changes
+//! default playback. Callers own chooser/window authority and cancellation.
 use scorestream_app::playback::{self as playback, *};
-use scorestream_audio::{assignments::source_sha256, pizzicato::*, *};
+use crate::{assignments::source_sha256, pizzicato::*, *};
 use scorestream_codec::{Rational, fermata_timing::*, notation::*};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -111,24 +113,74 @@ enum Plan {
     Ordinary(PlaybackPlan),
     Technique(TechniquePlaybackPlan),
 }
+/// Native readiness retained in the host, not round-tripped through a WebView.
+/// No Deserialize or public constructor can mint a prepared session from JSON.
+pub struct DryReadiness {
+    source_sha256: String,
+    bank: std::path::PathBuf,
+    report: Value,
+}
+impl DryReadiness {
+    pub fn report(&self) -> &Value { &self.report }
+    pub fn source_sha256(&self) -> &str { &self.source_sha256 }
+}
 pub struct Audition {
     plan: Plan,
     routes: Vec<RouteAssignment>,
     options: RenderOptions,
     source_sha256: String,
+    captured_source: String,
 }
 impl Audition {
-    pub fn dry_render_verified(&self, source: &str, bank: &Path, expected: &Value, output: &Path) -> Result<Value> {
+    /// Identifier of the captured source, not a claim that an editor is unchanged.
+    pub fn source_sha256(&self) -> &str { &self.source_sha256 }
+    pub fn verify_snapshot(&self, current_source: &str) -> Result<()> {
+        if self.captured_source != current_source {
+            return Err("Source snapshot changed; explicitly prepare a new audition session".into());
+        }
+        Ok(())
+    }
+    fn check_request(&self, source: &str, cancel: &AtomicBool) -> Result<()> {
+        self.verify_snapshot(source)?;
+        if cancel.load(std::sync::atomic::Ordering::Relaxed) {return Err(AudioError::Cancelled.into());}
+        Ok(())
+    }
+    /// A desktop worker may call this with its window-owned cancel token. It
+    /// never chooses a bank/path or starts default playback on the caller's behalf.
+    pub fn prepare_dry_snapshot(&self, current_source: &str, bank: &Path, cancel: &AtomicBool) -> Result<DryReadiness> {
+        self.check_request(current_source,cancel)?;
+        let Plan::Technique(plan)=&self.plan else {return Err("Dry probe requires opaque technique plan".into());};
+        let bank=bank.canonicalize()?;
+        let report=crate::dry_admission::probe_until_idle(&self.captured_source,plan,&self.routes,&bank,&self.options,crate::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,cancel)?;
+        // Match the exact serializer/parser comparison contract of the existing
+        // native atomic replay; callers cannot mutate this retained observation.
+        let report=serde_json::from_slice(&serde_json::to_vec(&report)?)?;
+        Ok(DryReadiness { source_sha256:self.source_sha256.clone(), bank, report })
+    }
+    pub fn render_prepared_snapshot(&self, current_source: &str, prepared: &DryReadiness, output: &Path, cancel: &AtomicBool) -> Result<Value> {
+        self.check_request(current_source,cancel)?;
+        if prepared.source_sha256!=self.source_sha256 {return Err("Readiness belongs to a different source snapshot".into());}
+        self.render_dry_snapshot(current_source,&prepared.bank,&prepared.report,output,cancel)
+    }
+    /// Rechecks the current source before opening any output. The native engine
+    /// freshly verifies readiness and publishes atomically only on complete match.
+    pub fn render_dry_snapshot(&self, current_source: &str, bank: &Path, expected: &Value, output: &Path, cancel: &AtomicBool) -> Result<Value> {
+        self.check_request(current_source,cancel)?;
         let Plan::Technique(plan)=&self.plan else {return Err("Dry render requires opaque technique plan".into());};
-        Ok(serde_json::to_value(scorestream_audio::dry_admission::render_verified_wav(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false),expected,output)?)?)
+        Ok(serde_json::to_value(crate::dry_admission::render_verified_wav(&self.captured_source,plan,&self.routes,bank,&self.options,crate::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,cancel,expected,output)?)?)
+    }
+    pub fn dry_render_verified(&self, source: &str, bank: &Path, expected: &Value, output: &Path) -> Result<Value> {
+        self.render_dry_snapshot(source,bank,expected,output,&AtomicBool::new(false))
     }
     pub fn dry_admission_until_idle(&self, source: &str, bank: &Path) -> Result<Value> {
         let Plan::Technique(plan)=&self.plan else {return Err("Dry probe requires opaque technique plan".into());};
-        Ok(serde_json::to_value(scorestream_audio::dry_admission::probe_until_idle(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
+        self.verify_snapshot(source)?;
+        Ok(serde_json::to_value(crate::dry_admission::probe_until_idle(&self.captured_source,plan,&self.routes,bank,&self.options,crate::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
     }
     pub fn dry_admission_probe(&self, source: &str, bank: &Path) -> Result<Value> {
+        self.verify_snapshot(source)?;
         let Plan::Technique(plan)=&self.plan else {return Err("Dry probe requires opaque technique plan".into());};
-        Ok(serde_json::to_value(scorestream_audio::dry_admission::probe(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
+        Ok(serde_json::to_value(crate::dry_admission::probe(&self.captured_source,plan,&self.routes,bank,&self.options,crate::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
     }
     pub fn compile(source: &str, config: Config) -> Result<Self> {
         Self::compile_selected(source, config, None, None, None, None)
@@ -140,7 +192,7 @@ impl Audition {
         note_expression: PracticeNoteExpressionPolicy,
         config: Config,
         _practice: PracticeReviewPolicy,
-        midi: scorestream_audio::midi_mixer::LocalMidiPolicy,
+        midi: crate::midi_mixer::LocalMidiPolicy,
     ) -> Result<Self> {
         Self::compile_selected(
             source,
@@ -154,7 +206,7 @@ impl Audition {
     fn compile_selected(
         source: &str,
         config: Config,
-        practice: Option<scorestream_audio::midi_mixer::LocalMidiPolicy>,
+        practice: Option<crate::midi_mixer::LocalMidiPolicy>,
         tie_note_on: Option<PracticeTieNoteOnPolicy>,
         endpoint: Option<PracticeHoldEndpointPolicy>,
         note_expression: Option<PracticeNoteExpressionPolicy>,
@@ -187,7 +239,7 @@ impl Audition {
         }
         let mix = practice
             .map(|p| {
-                scorestream_audio::midi_mixer::prepare_local_midi_mix(
+                crate::midi_mixer::prepare_local_midi_mix(
                     source,
                     &config.source_sha256,
                     &routes,
@@ -314,6 +366,7 @@ impl Audition {
             routes,
             options,
             source_sha256: config.source_sha256,
+            captured_source: source.to_owned(),
         };
         if practice.is_none() {
             result.preflight()?;
@@ -321,10 +374,10 @@ impl Audition {
         Ok(result)
     }
     /// Explicit listening approximation, never selected by compile_practice itself.
-    pub fn with_attack_only_rehearsal(mut self, policy:scorestream_audio::attack_rehearsal::RehearsalEnvelopePolicy)->Result<Self> {
+    pub fn with_attack_only_rehearsal(mut self, policy:crate::attack_rehearsal::RehearsalEnvelopePolicy)->Result<Self> {
         let Plan::Technique(plan)=&self.plan else {return Err("Attack-only rehearsal requires authenticated practice technique plan".into());};
         let mix=self.options.local_midi_mix.as_ref().ok_or("Missing same-source MIDI mixer")?;
-        self.options.attack_only_rehearsal=Some(scorestream_audio::attack_rehearsal::prepare_attack_only_rehearsal(plan,mix,policy)?);
+        self.options.attack_only_rehearsal=Some(crate::attack_rehearsal::prepare_attack_only_rehearsal(plan,mix,policy)?);
         Ok(self)
     }
     /// Planned event boundary, not a claim about native sample release completion.
@@ -487,7 +540,7 @@ pub fn review_practice(source: &str, policy: PracticeReviewPolicy) -> Result<Val
 /// exact source before permitting the narrowly scoped core discovery profile.
 pub fn discover_practice(
     source: &str,
-    mix: &scorestream_audio::midi_mixer::LocalMidiMix,
+    mix: &crate::midi_mixer::LocalMidiMix,
 ) -> Result<Value> {
     mix.verify_source(source)?;
     let doc = scorestream_codec::parse(source).map_err(|e| format!("{e:?}"))?;

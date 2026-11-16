@@ -1,6 +1,5 @@
 #![cfg(target_os = "linux")]
-#[path = "../examples/audition/support.rs"]
-mod support;
+use scorestream_audio::audition_session as support;
 use serde_json::{Value, json};
 use support::{Audition, Config};
 const SOURCE: &str = include_str!("../examples/audition/fixture.sfs");
@@ -296,4 +295,68 @@ fn boundary_policy_is_explicit_and_cannot_enter_ordinary_compiler() {
     let mut unknown = config();
     unknown["boundary_dynamics"] = json!("ignore_authored_dynamics");
     assert!(serde_json::from_value::<Config>(unknown).is_err());
+}
+
+fn captured_practice() -> (String, Audition) {
+    let (source, config)=practice_fixture();
+    let session=Audition::compile_practice(&source,
+        scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
+        scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
+        scorestream_app::playback::PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,
+        config,support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1).unwrap();
+    (source,session)
+}
+#[test]
+fn library_session_captures_source_and_rejects_stale_or_cancelled_work_before_io() {
+    fn assert_worker_safe<T:Send+Sync>() {}
+    assert_worker_safe::<Audition>();assert_worker_safe::<support::DryReadiness>();
+    let (mut source,session)=captured_practice();
+    let captured=source.clone();
+    assert_eq!(session.source_sha256(),scorestream_audio::assignments::source_sha256(&captured));
+    source.push('\n');assert!(session.verify_snapshot(&source).is_err());
+    session.verify_snapshot(&captured).unwrap();
+    let missing=std::path::Path::new("/not-a-selected-bank.sf2");
+    let err=session.prepare_dry_snapshot(&source,missing,&std::sync::atomic::AtomicBool::new(false)).err().unwrap();
+    assert!(err.to_string().contains("snapshot changed"));
+    let err=session.prepare_dry_snapshot(&captured,missing,&std::sync::atomic::AtomicBool::new(true)).err().unwrap();
+    assert!(err.to_string().contains("cancelled"));
+}
+#[test]
+#[ignore="requires installed trusted FluidSynth and exact local TimGM; no corpus assets"]
+fn library_session_reuses_native_readiness_and_atomic_export_on_one_captured_score() {
+    use std::{path::Path,sync::atomic::AtomicBool};
+    let (source,session)=captured_practice();
+    let cancel=AtomicBool::new(false);
+    let prepared=session.prepare_dry_snapshot(&source,Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),&cancel).unwrap();
+    assert_eq!(prepared.source_sha256(),session.source_sha256());
+    assert_eq!(prepared.report()["admitted_notes"],6);
+    assert_eq!(prepared.report()["playing_lanes_at_end"],0);
+    let directory=tempfile::tempdir().unwrap();let output=directory.path().join("captured.wav");
+    let mut other_config=config();
+    let mut extra=other_config["palette"][0].clone();extra["part"]="r".into();other_config["palette"].as_array_mut().unwrap().push(extra);
+    other_config["source_sha256"]=session.source_sha256().into();
+    other_config["timing"]["holds"][0]["added_seconds"]="3/4".into();
+    let other=Audition::compile_practice(&source,
+        scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
+        scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
+        scorestream_app::playback::PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,
+        serde_json::from_value(other_config).unwrap(),support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1).unwrap();
+    assert!(other.render_prepared_snapshot(&source,&prepared,&output,&cancel).is_err());
+    assert!(!output.exists());
+
+    assert!(session.render_prepared_snapshot(&(source.clone()+"\n"),&prepared,&output,&cancel).is_err());
+    assert!(!output.exists());
+    assert!(session.render_prepared_snapshot(&source,&prepared,&output,&AtomicBool::new(true)).is_err());
+    assert!(!output.exists());
+    let report=session.render_prepared_snapshot(&source,&prepared,&output,&cancel).unwrap();
+    let actual:Value=serde_json::from_slice(&serde_json::to_vec(&report).unwrap()).unwrap();
+    assert_eq!(actual,*prepared.report());
+    let bytes=std::fs::read(&output).unwrap();
+    assert_eq!(&bytes[..4],b"RIFF");
+    assert_eq!(bytes.len() as u64,44+4*report["completed_frames"].as_u64().unwrap());
+    assert!(bytes[44..].iter().any(|v|*v!=0));
+    assert!(session.render_prepared_snapshot(&source,&prepared,&output,&cancel).is_err());
+    assert_eq!(std::fs::read(&output).unwrap(),bytes);
 }

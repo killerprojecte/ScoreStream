@@ -5,6 +5,8 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 pub mod assignments;
+#[cfg(target_os = "linux")]
+pub mod audition_session;
 pub mod attack_rehearsal;
 pub mod dry_lanes;
 #[cfg(target_os = "linux")]
