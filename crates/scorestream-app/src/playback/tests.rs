@@ -13,14 +13,20 @@ fn part_display_name_does_not_change_playback_routing() {
     let source = score("v C4:1 id=a\n.", "1");
     let plain = plan_source(&source).unwrap();
     for label in ["Flute 1", "", "<label> & strings"] {
-        let named = source.replace("instrument=piano staves=1", &format!(
-            "instrument=piano staves=1 display_name={}",
-            serde_json::to_string(label).unwrap(),
-        ));
+        let named = source.replace(
+            "instrument=piano staves=1",
+            &format!(
+                "instrument=piano staves=1 display_name={}",
+                serde_json::to_string(label).unwrap(),
+            ),
+        );
         let plan = plan_source(&named).unwrap();
         assert_eq!(plan.notes[0].instrument, "piano");
         assert_eq!(plan.notes[0].midi_note, plain.notes[0].midi_note);
-        assert_eq!(plan.notes[0].duration_seconds, plain.notes[0].duration_seconds);
+        assert_eq!(
+            plan.notes[0].duration_seconds,
+            plain.notes[0].duration_seconds
+        );
         assert_eq!(plan.duration_seconds, plain.duration_seconds);
     }
 }
@@ -110,7 +116,7 @@ fn rests_are_silent_and_invalid_sources_do_not_play() {
     assert!(p.notes.is_empty());
     close(p.duration_seconds, 0.5);
     assert!(plan_source("invalid").is_err());
-    assert!(plan_source(&score("= score tempo=q:1/1000000000\nv C4:1 id=a\n.", "1")).is_err());
+    assert_eq!(plan_source(&score("= score tempo=q:1/1000000000\nv C4:1 id=a\n.", "1")).unwrap().duration_seconds, 60_000_000_000.0);
 }
 #[test]
 fn ten_thousand_events_remain_bounded_and_no_clock_drift() {
@@ -272,11 +278,11 @@ fn written_timeline_integrates_tempo_changes_inside_notes_and_rests() {
     .unwrap();
     assert_eq!(p.notes.len(), 1);
     assert_eq!(p.event_positions.len(), 3);
-    for (position, (id, start, end)) in p.event_positions.iter().zip([
-        ("held", 0., 1.5),
-        ("rest", 1.5, 3.),
-        ("spacer", 3., 3.5),
-    ]) {
+    for (position, (id, start, end)) in
+        p.event_positions
+            .iter()
+            .zip([("held", 0., 1.5), ("rest", 1.5, 3.), ("spacer", 3., 3.5)])
+    {
         assert_eq!(position.id, id);
         close(position.start_seconds, start);
         close(position.end_seconds, end);
@@ -339,10 +345,9 @@ fn written_intervals_do_not_inherit_articulation_gates_or_pedal() {
 
 #[test]
 fn older_serialized_plans_default_to_empty_timelines() {
-    let p: PlaybackPlan = serde_json::from_str(
-        r#"{"duration_seconds":0.0,"notes":[],"routes":[],"warnings":[]}"#,
-    )
-    .unwrap();
+    let p: PlaybackPlan =
+        serde_json::from_str(r#"{"duration_seconds":0.0,"notes":[],"routes":[],"warnings":[]}"#)
+            .unwrap();
     assert!(p.event_positions.is_empty());
     assert!(p.measures.is_empty());
     let current = plan_source(&score("v r:1 id=a\n.", "1")).unwrap();
@@ -395,10 +400,16 @@ fn catalog_identities_preserve_raw_routes_and_never_infer_transposition() {
 
 #[test]
 fn orchestral_identity_changes_preserve_explicit_octave_and_chromatic_state() {
-    let source = score("= p instrument=piccolo transpose_chromatic=0 transpose_diatonic=0 transpose_octaves=1\nv C4:1 id=a\n.\n@1\n= p instrument=contrabassoon transpose_chromatic=0 transpose_diatonic=0 transpose_octaves=-1\nv C4:1 id=b\n.\n@2\n= p instrument=tenor_trombone transpose_chromatic=-2 transpose_diatonic=-1 transpose_octaves=0\nv C4:1 id=c\n.", "3");
+    let source = score(
+        "= p instrument=piccolo transpose_chromatic=0 transpose_diatonic=0 transpose_octaves=1\nv C4:1 id=a\n.\n@1\n= p instrument=contrabassoon transpose_chromatic=0 transpose_diatonic=0 transpose_octaves=-1\nv C4:1 id=b\n.\n@2\n= p instrument=tenor_trombone transpose_chromatic=-2 transpose_diatonic=-1 transpose_octaves=0\nv C4:1 id=c\n.",
+        "3",
+    );
     let plan = plan_source(&source).unwrap();
     assert_eq!(
-        plan.notes.iter().map(|n| n.instrument.as_str()).collect::<Vec<_>>(),
+        plan.notes
+            .iter()
+            .map(|n| n.instrument.as_str())
+            .collect::<Vec<_>>(),
         ["piccolo", "contrabassoon", "tenor_trombone"]
     );
     assert_eq!(
@@ -409,8 +420,34 @@ fn orchestral_identity_changes_preserve_explicit_octave_and_chromatic_state() {
 
 #[test]
 fn percussion_catalog_membership_does_not_invent_a_drum_map() {
-    let source = score("v u.snare:1 id=a\n.", "1").replace("instrument=piano", "instrument=snare_drum");
+    let source =
+        score("v u.snare:1 id=a\n.", "1").replace("instrument=piano", "instrument=snare_drum");
     let plan = plan_source(&source).unwrap();
     assert!(plan.notes.is_empty());
-    assert!(plan.diagnostics.iter().any(|d| d.code == "percussion_unmapped"));
+    assert!(
+        plan.diagnostics
+            .iter()
+            .any(|d| d.code == "percussion_unmapped")
+    );
+}
+
+#[test]
+fn ordinary_playback_has_no_fixed_source_event_or_duration_ceiling() {
+    // Actual authored events, not comment padding: this crosses all three old gates.
+    let count = 100_001;
+    let mut source = String::from(
+        "!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n",
+    );
+    for i in 0..count {
+        source.push_str(&format!(
+            "@{i}\n| p measure_{i} len=1\nv C4:1 id=authored_event_{i}\n.\n"
+        ));
+    }
+    source.push_str(&format!("!end at={count}\n"));
+    assert!(source.len() > 4 * 1024 * 1024);
+    let plan = plan_source(&source).unwrap();
+    assert_eq!(plan.notes.len(), count);
+    assert_eq!(plan.event_positions.len(), count);
+    assert_eq!(plan.duration_seconds, count as f64 / 2.0);
+    assert!(plan.duration_seconds > 21_600.0);
 }

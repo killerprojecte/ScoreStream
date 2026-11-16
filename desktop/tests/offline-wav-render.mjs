@@ -36,12 +36,23 @@ describe('offline validation and shared graph (fake contexts only)',()=>{
   assert.equal(context.compressorCalls,1);assert.deepEqual(context.compressorArgs,[]);assert.deepEqual(context.master.connections,[context.destination]);assert.deepEqual(context.channelReads,[0,1]);assert.equal(output.calls.at(-1)[0],'complete');
  });
  it('validates scope, time, routes, pitch, gain and total graph budgets before allocation or sink calls',async()=>{
-  const invalid=[plan({duration_seconds:0}),plan({duration_seconds:120+1/48_000}),plan({duration_seconds:Infinity}),plan({notes:Array(4097).fill(note())}),plan({notes:[note({gain_envelope:Array(32769).fill({offset_seconds:0,gain:1})})]}),plan({notes:[note({start_seconds:NaN})]}),plan({notes:[note({duration_seconds:0})]}),plan({notes:[note({duration_seconds:1})]}),plan({notes:[note(),note({start_seconds:0})]}),plan({notes:[note({instrument:null})]}),plan({notes:[note({frequency_hz:24_000})]}),plan({notes:[note({velocity:.5})]}),plan({notes:[note({gain_envelope:[{offset_seconds:1,gain:1}]})]})];
+  const invalid=[plan({duration_seconds:0}),plan({duration_seconds:Infinity}),plan({notes:[note({start_seconds:NaN})]}),plan({notes:[note({duration_seconds:0})]}),plan({notes:[note({duration_seconds:1})]}),plan({notes:[note(),note({start_seconds:0})]}),plan({notes:[note({instrument:null})]}),plan({notes:[note({frequency_hz:24_000})]}),plan({notes:[note({velocity:.5})]}),plan({notes:[note({gain_envelope:[{offset_seconds:1,gain:1}]})]})];
   for(const input of invalid){const environment=setup(),output=sink();await assert.rejects(renderPcm16Wav(input,output,environment),RangeError);assert.equal(environment.contexts.length,0);assert.deepEqual(output.calls,[]);}
  });
  it('rejects missing sink callbacks and already aborted signals without taking a slot',async()=>{
   const environment=setup();await assert.rejects(renderPcm16Wav(plan(),{},environment),/sink callbacks/);const controller=new AbortController();controller.abort();const output=sink();
   await assert.rejects(renderPcm16Wav(plan(),output,{...environment,signal:controller.signal}),isAbort);assert.deepEqual(output.calls,[]);assert.equal(environment.contexts.length,0);await canRenderAgain();
+ });
+ it('passes former duration and count ceilings through to context setup without allocating a large render',async()=>{
+  const marker=new Error('test stops before audio allocation');
+  const inputs=[plan({duration_seconds:600}),plan({notes:Array(4097).fill(note())}),plan({notes:[note({gain_envelope:Array(32769).fill({offset_seconds:0,gain:1})})]})];
+  for(const input of inputs){
+   let requested;
+   const output=sink();
+   await assert.rejects(renderPcm16Wav(input,output,{createContext(options){requested=options;throw marker;}}),error=>error===marker);
+   assert.equal(requested.length,Math.ceil(input.duration_seconds*48000)+12000);
+   assert.deepEqual(output.calls.map(call=>call[0]),['abort']);
+  }
  });
  it('schedules every note once from score zero, retaining leading rests and exactly 12000 tail frames',async()=>{
   const notes=[note(),note({instrument:'flute',start_seconds:.5,duration_seconds:.5})],environment=setup();await renderPcm16Wav(plan({notes}),sink(),environment);const context=environment.contexts[0];

@@ -49,10 +49,10 @@ impl<'a> PlaybackClock<'a> {
             Self::Ordinary(tempo) => tempo.seconds(at),
             Self::Grace(schedule) => {
                 let seconds = schedule.seconds(at)?.to_f64();
-                if seconds.is_finite() && (0.0..=21_600.).contains(&seconds) {
+                if seconds.is_finite() && seconds >= 0.0 {
                     Ok(seconds)
                 } else {
-                    Err("Playback timeline must fit in six hours at the specified tempo".into())
+                    Err("Playback timeline must be finite and nonnegative at the audio clock boundary".into())
                 }
             }
             Self::Explicit { timing, .. } => {
@@ -62,10 +62,10 @@ impl<'a> PlaybackClock<'a> {
                     return Err("fermata.clock_range: Playback query/release lies outside the exact performed timeline".into());
                 }
                 let seconds = timing.after(at).to_f64();
-                if seconds.is_finite() && (0.0..=21_600.).contains(&seconds) {
+                if seconds.is_finite() && seconds >= 0.0 {
                     Ok(seconds)
                 } else {
-                    Err("Playback timeline must fit in six hours at the specified tempo".into())
+                    Err("Playback timeline must be finite and nonnegative at the audio clock boundary".into())
                 }
             }
         }

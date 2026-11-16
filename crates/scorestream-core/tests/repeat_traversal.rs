@@ -217,7 +217,7 @@ fn malformed_unsupported_and_over_budget_routes_fail_without_a_plan() {
     assert_eq!(
         traverse(
             &movement(4, vec![plain(0, 2, Some(u32::MAX))]),
-            Policy::default()
+            Policy { maximum_occurrences: 1_000, ..Policy::default() }
         ),
         Err(Error::OccurrenceBudget)
     );
@@ -493,4 +493,14 @@ fn exhaustive_small_closed_routes_preserve_every_expected_occurrence() {
             }
         }
     }
+}
+
+#[test]
+fn default_validation_counts_routes_beyond_the_old_million_occurrence_cap() {
+    let route = movement(2, vec![plain(0, 2, Some(500_001))]);
+    assert_eq!(validate(&route, Policy::default()).unwrap().occurrences, 1_000_002);
+    assert_eq!(validate(&route, Policy {
+        maximum_occurrences: 1_000_000,
+        ..Policy::default()
+    }), Err(Error::OccurrenceBudget));
 }

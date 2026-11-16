@@ -1,11 +1,11 @@
 //! Synthetic, independently constructed performed snapshots exercise only the
 //! opt-in pure clock. No test bypasses the ordinary source projector's guard.
 use scorestream_core::{
+    Attributes, Document, DocumentKind, Duration, Event, Frame, Mark, Measure, Part, Pitch,
+    Rational, Record, Scalar, SourceRange, Voice,
     fermata_extension::{EXTENSION, KIND},
     fermata_timing::*,
     notation::*,
-    Attributes, Document, DocumentKind, Duration, Event, Frame, Mark, Measure, Part, Pitch,
-    Rational, Record, Scalar, SourceRange, Voice,
 };
 use std::collections::BTreeMap;
 
@@ -437,10 +437,11 @@ fn exact_tempo_integration_and_hold_edges_without_float_rounding() {
     assert_eq!(r.events[1].seconds_end, q("3"));
     assert_eq!(r.events[2].seconds_start, q("3"));
     assert_eq!(r.measures[0].seconds_end, q("4"));
-    assert!(!r
-        .diagnostics
-        .iter()
-        .any(|d| matches!(d, TimingDiagnostic::DefaultQuarterTempo { .. })));
+    assert!(
+        !r.diagnostics
+            .iter()
+            .any(|d| matches!(d, TimingDiagnostic::DefaultQuarterTempo { .. }))
+    );
     for quarter in ["0", "1/3", "1", "2", "5/2", "3", "11/3", "4"] {
         assert_eq!(
             r.seek(&r.after(&q(quarter))),
@@ -793,7 +794,7 @@ fn dotted_beats_equivalent_duplicates_and_missing_initial_tempo() {
 }
 
 #[test]
-fn count_rational_and_six_hour_timeline_budgets_are_enforced() {
+fn caller_selected_count_rational_and_timeline_budgets_are_enforced() {
     let f = one();
     let limits = TimingLimits {
         maximum_events: 1,
@@ -850,14 +851,14 @@ fn count_rational_and_six_hour_timeline_budgets_are_enforced() {
         .code,
         "fermata.timing_budget"
     );
-    for cap in ["0", "-1", "21601"] {
+    for cap in ["0", "-1"] {
         assert_eq!(
             interpret(
                 &f.source,
                 &f.performed,
                 &one_policy(),
                 TimingLimits {
-                    maximum_timeline_seconds: q(cap),
+                    maximum_timeline_seconds: Some(q(cap)),
                     ..Default::default()
                 }
             )
@@ -886,7 +887,7 @@ fn count_rational_and_six_hour_timeline_budgets_are_enforced() {
             &f.performed,
             &one_policy(),
             TimingLimits {
-                maximum_timeline_seconds: q("2"),
+                maximum_timeline_seconds: Some(q("2")),
                 ..Default::default()
             }
         )
@@ -894,35 +895,39 @@ fn count_rational_and_six_hour_timeline_budgets_are_enforced() {
         .code,
         "fermata.timeline_budget"
     );
-    f.rejects(
-        policy(vec![group("too-long", &["occ0:a"], "21600")]),
-        "fermata.timeline_budget",
-    );
+    let long = f.interpret(policy(vec![group("long-hold", &["occ0:a"], "21600")]));
+    assert_eq!(long.duration_seconds(), &q("21602"));
     let exact = f.interpret(policy(vec![group("exact-limit", &["occ0:a"], "21598")]));
     assert_eq!(exact.duration_seconds(), &q("21600"));
     let mut f = one();
     f.performed.score.tempos = vec![tempo("0", "1/100")];
-    f.rejects(one_policy(), "fermata.timeline_budget");
+    assert!(f.interpret(one_policy()).duration_seconds() > &q("21600"));
 }
 
 #[test]
 fn ordinary_source_projectors_still_refuse_fermatas() {
     let f = one();
-    assert!(lower_document(&f.source)
-        .unwrap_err()
-        .iter()
-        .any(|d| d.code == "fermata.performance_unsupported"));
-    assert!(perform_document(&f.source, PerformanceLimits::default())
-        .unwrap_err()
-        .iter()
-        .any(|d| d.code == "fermata.performance_unsupported"));
-    assert!(interpret(
-        &f.source,
-        &f.performed,
-        &one_policy(),
-        TimingLimits::default()
-    )
-    .is_ok());
+    assert!(
+        lower_document(&f.source)
+            .unwrap_err()
+            .iter()
+            .any(|d| d.code == "fermata.performance_unsupported")
+    );
+    assert!(
+        perform_document(&f.source, PerformanceLimits::default())
+            .unwrap_err()
+            .iter()
+            .any(|d| d.code == "fermata.performance_unsupported")
+    );
+    assert!(
+        interpret(
+            &f.source,
+            &f.performed,
+            &one_policy(),
+            TimingLimits::default()
+        )
+        .is_ok()
+    );
     assert!(f.source.required_extensions.iter().any(|e| e == EXTENSION));
 }
 
@@ -978,11 +983,12 @@ fn omitted_source_grace_attack_is_rejected_even_with_complete_measured_receipts(
         errors.is_empty(),
         "Valid authored grace should pass core validation: {errors:?}"
     );
-    assert!(!f
-        .performed
-        .events
-        .iter()
-        .any(|e| e.written_id == id("grace")));
+    assert!(
+        !f.performed
+            .events
+            .iter()
+            .any(|e| e.written_id == id("grace"))
+    );
     f.rejects(one_policy(), "fermata.unsupported_grace");
 }
 
@@ -997,4 +1003,23 @@ fn oversized_source_time_is_rejected_before_tempo_integration() {
         &[0],
     );
     f.rejects(one_policy(), "fermata.rational_budget");
+}
+
+#[test]
+fn default_timeline_is_unbounded_and_long_caller_budget_is_valid() {
+    let f = one();
+    let mut policy = one_policy();
+    policy.groups[0].added_seconds = q("21601");
+    let unlimited = interpret(&f.source, &f.performed, &policy, TimingLimits::default()).unwrap();
+    assert!(unlimited.duration_seconds() > &q("21600"));
+    interpret(
+        &f.source,
+        &f.performed,
+        &policy,
+        TimingLimits {
+            maximum_timeline_seconds: Some(q("30000")),
+            ..Default::default()
+        },
+    )
+    .unwrap();
 }

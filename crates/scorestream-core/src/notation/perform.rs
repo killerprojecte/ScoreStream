@@ -18,9 +18,9 @@ pub struct PerformanceLimits {
 impl Default for PerformanceLimits {
     fn default() -> Self {
         Self {
-            maximum_occurrences: 100_000,
-            maximum_events: 100_000,
-            maximum_controls: 1_000_000,
+            maximum_occurrences: usize::MAX,
+            maximum_events: usize::MAX,
+            maximum_controls: usize::MAX,
         }
     }
 }

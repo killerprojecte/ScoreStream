@@ -28,7 +28,7 @@ const basename=(path:string)=>path.split(/[\\/]/).pop()||'WAV';
 const sameLayout=(a:Pcm16Layout,b:Pcm16Layout)=>a.frameCount===b.frameCount&&a.dataBytes===b.dataBytes&&a.fileBytes===b.fileBytes;
 const cancelled=()=>new DOMException('WAV export was cancelled.','AbortError');
 const failures={
- choosing:'Could not start WAV export. Check the source diagnostics and the 120-second limit, then choose a new filename in a writable folder.',
+ choosing:'Could not start WAV export. Check the source diagnostics, then choose a new filename in a writable folder.',
  rendering:'Could not render WAV audio. Try a shorter score and make sure this desktop WebView supports offline audio.',
  writing:'Could not write the WAV file. Check free disk space and folder permissions, then try again with a new filename.',
  finishing:'Could not finish the WAV file. Choose a new filename; existing files are never replaced.',
@@ -40,7 +40,7 @@ const nativeErrors:Record<string,string>={
  WAV_CLEANUP_FAILED:failures.cleanup,
  WAV_CHOOSER_FAILED:'Could not open or complete the WAV save dialog. Try again, or restart the desktop app if the problem continues.',
  WAV_SOURCE_INVALID:'WAV export needs a valid score. Fix the source diagnostics and try again.',
- WAV_LIMIT_EXCEEDED:'This score exceeds the WAV export limits (120 seconds, 4,096 notes, or 32,768 expression points). Shorten or simplify it and try again.',
+ WAV_LAYOUT_INVALID:'This score cannot be represented by the WAV output format. Check the audio diagnostics or use a shorter duration for the 32-bit WAV format.',
  WAV_DESTINATION_EXISTS:'A file already exists at this destination. Export again with a new filename; existing files are never replaced.',
  WAV_BUSY:'Another WAV export is active. Finish or cancel it before trying again.',
  WAV_BAD_REQUEST:'The WAV export request was rejected. Restart the desktop app and try again.',

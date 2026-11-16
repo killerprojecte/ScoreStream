@@ -108,8 +108,8 @@ describe('safe WAV export failures',()=>{
   let renders=0;const value=session();value.frameCount++;const {controller,calls}=setup({begin:async()=>value},async()=>{renders++;});await controller.start('score');
   assert.equal(renders,0);assert.deepEqual(calls,[['abort','opaque-session']]);assert.equal(controller.getSnapshot().phase,'failed');assert.match(controller.getSnapshot().error,/do not match/);
  });
- it('rejects an over-budget native plan before rendering',async()=>{
-  const value=session();value.plan.duration_seconds=121;let renders=0;const {controller,calls}=setup({begin:async()=>value},async()=>{renders++;});await controller.start('score');
+ it('rejects an unrepresentable native plan before rendering',async()=>{
+  const value=session();value.plan.duration_seconds=Number.MAX_VALUE;let renders=0;const {controller,calls}=setup({begin:async()=>value},async()=>{renders++;});await controller.start('score');
   assert.equal(renders,0);assert.deepEqual(calls,[['abort','opaque-session']]);assert.equal(controller.getSnapshot().phase,'failed');
  });
  it('rejects malformed sink header, chunk order and incomplete completion before publication',async()=>{
@@ -133,7 +133,7 @@ describe('safe WAV export failures',()=>{
   }
  });
  it('maps only known structured codes, including destination collision and invalid source',async()=>{
-  const expected={WAV_CHOOSER_FAILED:/WAV save dialog/,WAV_SOURCE_INVALID:/valid score/,WAV_LIMIT_EXCEEDED:/4,096/,WAV_DESTINATION_EXISTS:/new filename/,WAV_BUSY:/Another WAV export/,WAV_BAD_REQUEST:/rejected/,WAV_SESSION_NOT_FOUND:/session has ended/,WAV_CLEANUP_FAILED:/Restart/,WAV_IO:/Could not start/,constructor:/Could not start/,['__proto__']:/Could not start/,toString:/Could not start/};
+  const expected={WAV_CHOOSER_FAILED:/WAV save dialog/,WAV_SOURCE_INVALID:/valid score/,WAV_LAYOUT_INVALID:/WAV output format/,WAV_DESTINATION_EXISTS:/new filename/,WAV_BUSY:/Another WAV export/,WAV_BAD_REQUEST:/rejected/,WAV_SESSION_NOT_FOUND:/session has ended/,WAV_CLEANUP_FAILED:/Restart/,WAV_IO:/Could not start/,constructor:/Could not start/,['__proto__']:/Could not start/,toString:/Could not start/};
   for(const [code,pattern] of Object.entries(expected)){
    const {controller,calls}=setup({begin:async()=>{throw {code,message:'secret source'};}});await controller.start('score');assert.equal(controller.getSnapshot().phase,'failed');assert.match(controller.getSnapshot().error,pattern);assert.equal(calls.length,0);assert.ok(!controller.getSnapshot().error.includes('secret'));
   }

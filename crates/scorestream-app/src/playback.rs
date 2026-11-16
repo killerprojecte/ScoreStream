@@ -26,9 +26,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// Invalid drafts never play a last-good snapshot. This has no workspace effects.
 pub fn plan_source(source: &str) -> Result<PlaybackPlan, String> {
-    if source.len() > 4 * 1024 * 1024 {
-        return Err("Playback accepts score sources up to 4 MiB".into());
-    }
     let doc = scorestream_codec::parse(source).map_err(format_diagnostics)?;
     if doc
         .required_extensions
@@ -126,9 +123,6 @@ fn compile_with_graces(
     timing: Option<&TimingProjection>,
     grace: Option<GraceView<'_>>,
 ) -> Result<PlaybackPlan, String> {
-    if score.events.len() > 100_000 {
-        return Err("Playback is limited to 100,000 events per score".into());
-    }
     let tempo = match grace {
         Some(GraceView::Standalone(schedule)) => PlaybackClock::Grace(schedule),
         _ => PlaybackClock::new(score, timing)?,

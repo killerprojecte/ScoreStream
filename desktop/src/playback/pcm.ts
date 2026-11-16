@@ -1,22 +1,20 @@
 import type {PlaybackPlan} from './types';
 
-/** A bounded output profile, not an audio renderer or a native file writer. */
+/** A fixed output format, not an audio renderer or a native file writer. */
 export const PCM16_WAV = Object.freeze({
  sampleRate:48_000,
  channels:2,
  bitsPerSample:16,
  bytesPerFrame:4,
  headerBytes:44,
- maxScoreSeconds:120,
  // Reserved for the offline graph to drain after the score, not note time.
  tailSeconds:.25,
- maxVoices:4_096,
- maxExpressionPoints:32_768,
  maxChunkBytes:64*1024,
 });
 
 const tailFrames=PCM16_WAV.tailSeconds*PCM16_WAV.sampleRate;
-const maxFrames=PCM16_WAV.maxScoreSeconds*PCM16_WAV.sampleRate+tailFrames;
+// Match the native uint32 file size / byte-offset protocol, including header.
+const maxFrames=Math.floor((0xffffffff-PCM16_WAV.headerBytes)/PCM16_WAV.bytesPerFrame);
 const maxChunkFrames=PCM16_WAV.maxChunkBytes/PCM16_WAV.bytesPerFrame;
 
 export interface Pcm16Layout {
@@ -36,8 +34,8 @@ function layoutForFrames(frameCount:number):Pcm16Layout {
  integer(frameCount,0,maxFrames,'frame count');
  const dataBytes=frameCount*PCM16_WAV.bytesPerFrame;
  const fileBytes=PCM16_WAV.headerBytes+dataBytes;
- // Keep the RIFF uint32 invariant explicit even if the smaller profile changes.
- if(!Number.isSafeInteger(fileBytes)||dataBytes>0xffffffff||fileBytes-8>0xffffffff)
+ // Keep the native uint32 file size and RIFF header invariants explicit.
+ if(!Number.isSafeInteger(fileBytes)||dataBytes>0xffffffff||fileBytes>0xffffffff)
   fail('size exceeds classic RIFF limits');
  return Object.freeze({frameCount,dataBytes,fileBytes});
 }
@@ -45,30 +43,22 @@ function layoutForFrames(frameCount:number):Pcm16Layout {
 /**
  * Validate only the audio-facing Rust DTO fields before creating an audio graph,
  * rendered channel buffers or PCM storage. This neither parses a score nor
- * changes its performance policy. Counts are TOTAL notes/points, not polyphony.
+ * changes its performance policy. No fixed note-count or expression-count ceiling is imposed.
  * The caller must keep this same plan unchanged until rendering has finished.
  */
 export function validatePcm16Plan(plan:Pick<PlaybackPlan,'duration_seconds'|'notes'>):Pcm16Layout {
  if(!plan||typeof plan!=='object')fail('plan is missing');
  const duration=plan.duration_seconds;
- bounded(duration,0,PCM16_WAV.maxScoreSeconds,'score duration');
+ bounded(duration,0,Number.MAX_VALUE,'score duration');
  if(duration===0)fail('score duration must be positive');
  if(!Array.isArray(plan.notes))fail('notes must be an array');
- integer(plan.notes.length,0,PCM16_WAV.maxVoices,'voice count');
-
- // Check every work budget before iterating any expression points or allocating.
- let expressionPoints=0;
- for(const note of plan.notes){
-  if(!note||typeof note!=='object'||!Array.isArray(note.gain_envelope))fail('note envelope must be an array');
-  expressionPoints+=note.gain_envelope.length;
-  integer(expressionPoints,0,PCM16_WAV.maxExpressionPoints,'expression point count');
- }
 
  let previousStart=0;
  // Rust computes duration as end-start. Accommodate only floating-point roundoff
  // when that duration is added back to start, never a full sample of extra time.
  const timeTolerance=4*Number.EPSILON*Math.max(1,duration);
  for(const note of plan.notes){
+  if(!note||typeof note!=='object'||!Array.isArray(note.gain_envelope))fail('note envelope must be an array');
   for(const value of [note.id,note.part,note.voice,note.instrument])
    if(typeof value!=='string')fail('note identity and route must be strings');
   bounded(note.start_seconds,0,duration,'note start');

@@ -35,8 +35,10 @@ function checkSink(sink:Pcm16WavSink):void {
 /**
  * Render one complete, unchanged Rust plan, including leading rests and the
  * fixed PCM16 tail. Uses the live built-in voice/master graph, not samples.
- * Validation precedes every audio allocation; only one bounded offline buffer
- * and one <=64 KiB PCM chunk are produced at a time. The sink owns persistence.
+ * Validation precedes every audio allocation; one full-length stereo Float32 audio buffer
+ * is rendered, then PCM is encoded/written in <=64 KiB chunks. Audio memory
+ * scales with duration; platform allocation failures abort the export. The
+ * single context preserves oscillator phase and compressor/envelope continuity.
  *
  * OfflineAudioContext cannot be closed/cancelled. An aborted request drains an
  * outstanding render or sink callback before aborting the sink and freeing the

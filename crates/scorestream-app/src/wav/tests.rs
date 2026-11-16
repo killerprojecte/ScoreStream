@@ -16,7 +16,7 @@ fn plan() -> PlaybackPlan {
 }
 
 #[test]
-fn plan_budget_and_camel_case_metadata_match_frontend() {
+fn plan_layout_and_camel_case_metadata_match_frontend() {
     let layout = WavLayout::for_plan(&plan()).unwrap();
     assert_eq!(layout.frame_count(), 60_000);
     assert_eq!(layout.data_bytes(), 240_000);
@@ -25,9 +25,11 @@ fn plan_budget_and_camel_case_metadata_match_frontend() {
         "frameCount": 60_000, "dataBytes": 240_000, "fileBytes": 240_044,
     }));
     let mut score = plan();
-    score.duration_seconds = MAX_SCORE_SECONDS;
-    assert_eq!(WavLayout::for_plan(&score).unwrap().frame_count(), MAX_FRAMES);
+    score.duration_seconds = 600.0;
+    assert_eq!(WavLayout::for_plan(&score).unwrap().frame_count(), 600 * SAMPLE_RATE + TAIL_FRAMES);
     score.duration_seconds += 0.001;
+    assert!(WavLayout::for_plan(&score).is_ok());
+    score.duration_seconds = f64::MAX;
     assert!(WavLayout::for_plan(&score).is_err());
     score.duration_seconds = 1.0 / SAMPLE_RATE as f64;
     score.notes.clear();
@@ -35,17 +37,17 @@ fn plan_budget_and_camel_case_metadata_match_frontend() {
 }
 
 #[test]
-fn work_limits_are_total_not_polyphony() {
+fn former_note_and_expression_caps_do_not_reject_valid_plans() {
     let mut score = plan();
-    score.notes = vec![score.notes[0].clone(); MAX_NOTES];
+    score.notes = vec![score.notes[0].clone(); 4_096];
     assert!(WavLayout::for_plan(&score).is_ok());
     score.notes.push(score.notes[0].clone());
-    assert!(WavLayout::for_plan(&score).is_err());
+    assert!(WavLayout::for_plan(&score).is_ok());
     let mut score = plan();
-    score.notes[0].gain_envelope = vec![EnvelopePoint { offset_seconds: 0.0, gain: 1.0 }; MAX_EXPRESSION_POINTS];
+    score.notes[0].gain_envelope = vec![EnvelopePoint { offset_seconds: 0.0, gain: 1.0 }; 32_768];
     assert!(WavLayout::for_plan(&score).is_ok());
     score.notes[0].gain_envelope.push(EnvelopePoint { offset_seconds: 0.0, gain: 1.0 });
-    assert!(WavLayout::for_plan(&score).is_err());
+    assert!(WavLayout::for_plan(&score).is_ok());
 }
 
 #[test]

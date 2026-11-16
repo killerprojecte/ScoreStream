@@ -82,7 +82,7 @@ impl Default for Policy {
         Self {
             allow_implicit_movement_start: true,
             unclosed_final_ending: UnclosedFinalEndingPolicy::Reject,
-            maximum_occurrences: 1_000_000,
+            maximum_occurrences: usize::MAX,
         }
     }
 }

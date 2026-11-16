@@ -12,10 +12,9 @@
 //! returning a playable projection. This bare-snapshot API keeps its preconditions.
 //! Authored signs never specify seconds. Only an explicit policy supplies them.
 use crate::{
-    fermata_extension,
+    Document, Pitch, Rational, Record, Severity, fermata_extension,
     notation::{EventId, EventRole, PartId, PerformedScore},
     score::ScoreFermata,
-    Document, Pitch, Rational, Record, Severity,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -45,21 +44,21 @@ pub struct TimingLimits {
     pub maximum_source_records: usize,
     /// Applies to input times, durations, tempo values and policy seconds.
     pub maximum_rational_bits: u64,
-    /// Positive and at most six hours. Cannot relax the hard six-hour ceiling.
-    pub maximum_timeline_seconds: Rational,
+    /// Optional positive caller-selected duration budget; no fixed default ceiling.
+    pub maximum_timeline_seconds: Option<Rational>,
 }
 impl Default for TimingLimits {
     fn default() -> Self {
         Self {
-            maximum_events: 100_000,
-            maximum_measures: 100_000,
-            maximum_authored_fermatas: 100_000,
-            maximum_tempos: 100_000,
-            maximum_hold_groups: 100_000,
-            maximum_group_members: 100_000,
-            maximum_source_records: 1_000_000,
+            maximum_events: usize::MAX,
+            maximum_measures: usize::MAX,
+            maximum_authored_fermatas: usize::MAX,
+            maximum_tempos: usize::MAX,
+            maximum_hold_groups: usize::MAX,
+            maximum_group_members: usize::MAX,
+            maximum_source_records: usize::MAX,
             maximum_rational_bits: 4096,
-            maximum_timeline_seconds: Rational::from_integer(6 * 60 * 60),
+            maximum_timeline_seconds: None,
         }
     }
 }
@@ -362,12 +361,16 @@ fn interpret_inner(
     limits: TimingLimits,
     schedule: Option<&crate::notation::GraceSchedule>,
 ) -> Result<TimingProjection> {
-    let hard_maximum = Rational::from_integer(6 * 60 * 60);
-    if !limits.maximum_timeline_seconds.is_positive()
-        || limits.maximum_timeline_seconds > hard_maximum
+    if limits
+        .maximum_timeline_seconds
+        .as_ref()
+        .is_some_and(|limit| !limit.is_positive())
         || limits.maximum_rational_bits == 0
     {
-        return Err(error("fermata.invalid_limits", "Timeline limit must be positive and at most six hours; rational bit budget must be positive"));
+        return Err(error(
+            "fermata.invalid_limits",
+            "Configured timeline limit and rational bit budget must be positive",
+        ));
     }
     count(
         source.frames.len(),
@@ -914,7 +917,10 @@ fn interpret_inner(
             ));
         }
         if pair[1].support_start < pair[0].boundary {
-            return Err(error("fermata.overlapping_support", "Hold groups have overlapping support intervals; grouping/splitting is not inferred"));
+            return Err(error(
+                "fermata.overlapping_support",
+                "Hold groups have overlapping support intervals; grouping/splitting is not inferred",
+            ));
         }
     }
     let mut added = Rational::zero();
@@ -935,10 +941,14 @@ fn interpret_inner(
             });
     }
     projection.duration_seconds = &projection.base(end) + &added;
-    if projection.duration_seconds > limits.maximum_timeline_seconds {
+    if limits
+        .maximum_timeline_seconds
+        .as_ref()
+        .is_some_and(|limit| &projection.duration_seconds > limit)
+    {
         return Err(error(
             "fermata.timeline_budget",
-            "Exact total timeline exceeds configured limit (hard maximum six hours)",
+            "Exact total timeline exceeds configured limit",
         ));
     }
     rational(&projection.duration_seconds, &limits)?;
@@ -1042,10 +1052,14 @@ fn tempo_segments(
         let stop = controls.get(i + 1).map(|(at, _)| at).unwrap_or(end);
         let next = &elapsed + &(&(stop - at) * rate);
         rational(&next, limits)?;
-        if next > limits.maximum_timeline_seconds {
+        if limits
+            .maximum_timeline_seconds
+            .as_ref()
+            .is_some_and(|limit| &next > limit)
+        {
             return Err(error(
                 "fermata.timeline_budget",
-                "Base tempo timeline exceeds configured limit (hard maximum six hours)",
+                "Base tempo timeline exceeds configured limit",
             ));
         }
         segments.push(TempoSegment {

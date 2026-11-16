@@ -194,9 +194,8 @@ mod tests {
         assert!(reopened_workspace.current().valid);
         assert_eq!(reopened_workspace.current().events.len(), 4800);
         assert_eq!(std::fs::read_to_string(&path).unwrap(), xml);
-        let audio_error = scorestream_app::playback::plan_source(&reopened.opened.source)
-            .expect_err("playback budget is unchanged");
-        assert!(audio_error.contains("4 MiB"), "{audio_error}");
+        let plan = scorestream_app::playback::plan_source(&reopened.opened.source).unwrap();
+        assert_eq!(plan.notes.len(), 4800);
         eprintln!(
             "validated XML -> atomic save -> reopen for {} byte SFS",
             converted.opened.source.len()

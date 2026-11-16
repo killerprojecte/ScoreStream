@@ -1,13 +1,13 @@
 # Bounded PCM16 data preparation
 
-`desktop/src/playback/pcm.ts` is a pure frontend data component used by the [separate offline rendering API](OFFLINE_WAV_RENDER.md). It validates the audio-facing portion of the Rust `PlaybackPlan`, calculates bounded output sizes, builds a classic RIFF/WAVE header, and converts one stereo Float32 range into PCM16 bytes. This data component does **not** render audio, create an audio context, add an export command, invoke desktop IPC, open a save dialog, or write a file. Desktop audio export and external sampled instruments remain unimplemented.
+`desktop/src/playback/pcm.ts` is a pure frontend data component used by the [separate offline rendering API](OFFLINE_WAV_RENDER.md). It validates the audio-facing portion of the Rust `PlaybackPlan`, calculates bounded output sizes, builds a classic RIFF/WAVE header, and converts one stereo Float32 range into PCM16 bytes. This data component does **not** render audio, create an audio context, add an export command, invoke desktop IPC, open a save dialog, or write a file. The desktop export uses this API; external sampled instruments remain unimplemented.
 
 ## Fixed profile and allocation limits
 
 - 48,000 samples per second, two channels, signed 16-bit PCM, little-endian. No alternative format, sample-rate conversion, mixing, normalization, dither or metadata chunks.
-- Positive score duration up to 120 seconds, rounded up to a complete sample, followed by exactly 12,000 frames (250 ms). This reserved tail lets the offline graph drain after the score, not extend planned notes. Its adequacy for that graph still needs real signal validation.
-- At most 4,096 total note voices and 32,768 total expression points. These are offline work budgets, not a simultaneous-polyphony limit and not new limits on the Rust score model or real-time player.
-- At most 5,772,000 rendered frames: 23,088,000 PCM payload bytes and a 44-byte header. Two Float32 channels at that limit would occupy 46,176,000 bytes before audio-graph overhead. The component does not allocate those channels or the entire PCM file.
+- Finite positive score duration, rounded up to a complete sample, followed by exactly 12,000 frames (250 ms). This reserved tail lets the offline graph drain after the score, not extend planned notes. Its adequacy for that graph still needs real signal validation.
+- No fixed score-duration, total-note or expression-point ceiling. Invalid timing, pitch and envelope fields still report errors.
+- Output must fit the native unsigned 32-bit file-size/offset protocol and classic RIFF fields: at most floor((2^32 - 1 - 44) / 4) frames, including the tail. Header/layout tests exercise that boundary without allocating the payload. RF64 is not implemented.
 - Each encoded chunk is at most 16,384 complete stereo frames (65,536 bytes). A future writer must wait for each transfer before producing the next and must not collect every chunk in memory. The 64 KiB limit applies to raw PCM bytes, not any future IPC serialization overhead.
 - Frame counts must be safe integers within the profile. Header generation also checks classic RIFF's unsigned 32-bit size fields before allocating bytes. No RF64 support is implied.
 
@@ -31,4 +31,4 @@ cd desktop
 npm run test:pcm
 ```
 
-The tests cover exact/over-limit duration and work budgets, overflow-scale and non-finite inputs, ordering, fractional pitch, relative gain, header fields and sizes, endpoint quantization, clipping, little-endian channel order, subarray offsets, independent chunk buffers, range rejection before PCM allocation, and exact full/partial chunk assembly. This is byte-level and validation coverage only. No Vite, browser, audio device, native save dialog, file write or external sample engine runs in this harness. Audio rendering and desktop export acceptance require separate implementation and testing.
+The tests cover valid scores beyond the former duration/count ceilings and exact/overflowing representable output sizes, overflow-scale and non-finite inputs, ordering, fractional pitch, relative gain, header fields and sizes, endpoint quantization, clipping, little-endian channel order, subarray offsets, independent chunk buffers, range rejection before PCM allocation, and exact full/partial chunk assembly. This is byte-level and validation coverage only. No Vite, browser, audio device, native save dialog, file write or external sample engine runs in this harness. Audio rendering and desktop export acceptance require separate implementation and testing.

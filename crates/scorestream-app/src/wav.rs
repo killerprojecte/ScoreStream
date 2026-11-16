@@ -10,11 +10,9 @@ pub const BITS_PER_SAMPLE: u16 = 16;
 pub const BYTES_PER_FRAME: u32 = 4;
 pub const HEADER_BYTES: u32 = 44;
 pub const MAX_CHUNK_BYTES: usize = 64 * 1024;
-pub const MAX_SCORE_SECONDS: f64 = 120.0;
 pub const TAIL_FRAMES: u32 = 12_000;
-pub const MAX_FRAMES: u32 = 120 * SAMPLE_RATE + TAIL_FRAMES;
-pub const MAX_NOTES: usize = 4_096;
-pub const MAX_EXPRESSION_POINTS: usize = 32_768;
+// File sizes and sequential IPC offsets are unsigned 32-bit values.
+pub const MAX_FRAMES: u32 = (u32::MAX - HEADER_BYTES) / BYTES_PER_FRAME;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,20 +27,11 @@ fn bounded(value: f64, min: f64, max: f64) -> bool {
 }
 
 impl WavLayout {
-    /// Same fixed budget as desktop/src/playback/pcm.ts, before any file/graph.
+    /// Same representable output layout as desktop/src/playback/pcm.ts, before any file/graph.
     pub fn for_plan(plan: &PlaybackPlan) -> Result<Self, String> {
         let duration = plan.duration_seconds;
-        if !bounded(duration, 0.0, MAX_SCORE_SECONDS) || duration == 0.0 {
-            return Err("WAV score duration must be positive and at most 120 seconds".into());
-        }
-        if plan.notes.len() > MAX_NOTES {
-            return Err("WAV export accepts at most 4096 note voices".into());
-        }
-        let mut points = 0_usize;
-        for note in &plan.notes {
-            points = points.checked_add(note.gain_envelope.len())
-                .filter(|count| *count <= MAX_EXPRESSION_POINTS)
-                .ok_or("WAV export accepts at most 32768 expression points")?;
+        if !duration.is_finite() || duration <= 0.0 {
+            return Err("WAV score duration must be finite and positive".into());
         }
         let tolerance = 4.0 * f64::EPSILON * duration.max(1.0);
         let mut previous_start = 0.0;
@@ -70,13 +59,17 @@ impl WavLayout {
                 previous_offset = point.offset_seconds;
             }
         }
-        Self::for_frames((duration * SAMPLE_RATE as f64).ceil() as u32 + TAIL_FRAMES)
+        let frames = (duration * SAMPLE_RATE as f64).ceil() + TAIL_FRAMES as f64;
+        if !frames.is_finite() || frames > MAX_FRAMES as f64 {
+            return Err("WAV output exceeds the 32-bit file size and offset format".into());
+        }
+        Self::for_frames(frames as u32)
     }
 
     /// Zero frames is a valid primitive RIFF; source-based export requires time.
     pub fn for_frames(frame_count: u32) -> Result<Self, String> {
         if frame_count > MAX_FRAMES {
-            return Err("WAV frame count exceeds the fixed export budget".into());
+            return Err("WAV frame count exceeds the 32-bit file size and offset format".into());
         }
         let data_bytes = frame_count.checked_mul(BYTES_PER_FRAME)
             .ok_or("WAV data size overflow")?;

@@ -8,7 +8,7 @@ A native **Tauri 2 + Rust** application with a **React + shadcn/ui** view layer 
 - Automatic valid-draft preview, explicit Apply, expected-revision conflicts, session undo/redo.
 - Last good SVG visibly retained for invalid or unsupported drafts; obsolete jobs cannot overwrite newer input.
 - Built-in synthesized Web Audio playback driven by the authoritative Rust performance plan: play/pause/stop, Space outside editing/modal controls, seconds and measure seeking, score-time cursor/following, and note/rest click-to-seek.
-- **File → Export WAV…** renders the click-time source through the built-in synth to 48 kHz stereo PCM16. The native save dialog chooses a new destination; existing files are not replaced. Export is bounded to 120 seconds, is cancellable before finalization, and never applies a draft or changes SFS save/undo state. See [desktop WAV export](../docs/DESKTOP_WAV_EXPORT.md).
+- **File → Export WAV…** renders the click-time source through the built-in synth to 48 kHz stereo PCM16. The native save dialog chooses a new destination; existing files are not replaced. Export has no arbitrary duration or note-count cap, is cancellable before finalization, and never applies a draft or changes SFS save/undo state. See [desktop WAV export](../docs/DESKTOP_WAV_EXPORT.md).
 - Distinct synthesized piano, flute and bowed-string timbres, selected by the note's exact instrument identifier. `cello`, `violin` and `strings` share the bowed-string profile; other identifiers use a neutral triangle tone. These are not recorded instrument samples.
 - Stable event selection, Rust-provided source line navigation, committed pitch/duration inspector edits.
 - Bounded renderer queue: one running job and one replaceable pending job, off the UI thread.
@@ -81,6 +81,6 @@ An opt-in `smoke-test` Cargo feature adds a test-only report command. Native smo
 - `src/mcp/model.ts`: testable, stale-response-safe service lifecycle controller.
 - `../crates/scorestream-desktop`: thin native command/dialog/lifecycle adapters over the shared Rust authority.
 
-Each pending preview is invalidated on **every** keystroke, even if the new source is invalid. Draft keys distinguish session, sequence, SHA-256 content hash, base revision and renderer/layout identity. Graphical mutations are disabled for dirty text. Save writes source only after Rust validation; no unrestricted filesystem API is exposed to the WebView. File opens are bounded to 4 MiB.
+Each pending preview is invalidated on **every** keystroke, even if the new source is invalid. Draft keys distinguish session, sequence, SHA-256 content hash, base revision and renderer/layout identity. Graphical mutations are disabled for dirty text. Save writes source only after Rust validation; no unrestricted filesystem API is exposed to the WebView. SFS Open and Save use compatible file handling without a separate editor byte cutoff.
 
 The contextual inspector and explicit metronome/dynamics candidate are described in [Contextual refinement](../docs/UI_CONTEXTUAL_REFINEMENT.md). Those records describe the pre-React UI; consult the React migration validation record for current acceptance.

@@ -14,7 +14,7 @@ export function WavExportDialog({controller,state}:{controller:WavExportControll
  const busy=controller.busy,canCancel=state.phase==='rendering'||state.phase==='writing';
  return <Dialog open={state.phase!=='idle'} onOpenChange={open=>{if(!open&&!busy)controller.dismiss();}}>
   <DialogContent id="wav-export-dialog" className="glass glass--popup glass-plane glass-dialog" showCloseButton={false} onInteractOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>{if(busy){event.preventDefault();if(canCancel)controller.cancel();}}}>
-   <DialogHeader><DialogTitle>{t('Export WAV')}</DialogTitle><DialogDescription>{t('Exports the source captured when you choose Export WAV, without applying or saving your score. Built-in synthesized instruments only: 48 kHz stereo PCM16, up to 120 seconds.')}</DialogDescription></DialogHeader>
+   <DialogHeader><DialogTitle>{t('Export WAV')}</DialogTitle><DialogDescription>{t('Exports the source captured when you choose Export WAV, without applying or saving your score. Built-in synthesized instruments only: 48 kHz stereo PCM16. Long exports use more memory.')}</DialogDescription></DialogHeader>
    {busy&&<div className="flex items-center gap-2 text-sm" role="status"><Spinner aria-hidden="true"/>{t(phaseLabel[state.phase])}</div>}
    {state.phase==='writing'&&<p className="text-sm tabular-nums" aria-live="off">{t('{percent}% written',{percent:Math.floor(state.writtenBytes/state.totalBytes*100)})}</p>}
    {state.phase==='succeeded'&&<Alert id="wav-export-success" role="status"><AlertDescription>{t('Exported {name}.',{name:state.fileName})}</AlertDescription></Alert>}

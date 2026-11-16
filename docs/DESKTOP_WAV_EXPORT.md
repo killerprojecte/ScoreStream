@@ -4,13 +4,14 @@ Use **File → Export WAV…** in the native desktop editor. Choose a **new** `.
 
 On Linux, WAV export uses a GTK save dialog parented to the invoking editor window. It runs through main-thread response signals rather than a nested blocking dialog loop, accepts only local paths, and does not offer an overwrite confirmation. Explicit Cancel or window-close responses are quiet; an abnormal response, missing local filename, unavailable dispatch or unexpected destruction reports the stable `WAV_CHOOSER_FAILED` error in English/Chinese. Windows/macOS retain their existing native chooser route. Ordinary SFS Open/Save are unchanged.
 
-The export captures the current source at the menu action, including an unapplied draft. Rust validates and plans that source independently; invalid or over-budget input fails without changing the document. Export does not call SFS Open/Save, apply, undo, or redo. Editor file identity, saved-source marker, revision and undo history are unchanged.
+The export captures the current source at the menu action, including an unapplied draft. Rust validates and plans that source independently; invalid or unrepresentable input fails without changing the document. Export does not call SFS Open/Save, apply, undo, or redo. Editor file identity, saved-source marker, revision and undo history are unchanged.
 
 ## Output and limits
 
 - Built-in synthesized instruments, using the same voices/master graph as playback. This is **not** an external sampled instrument, SoundFont, VST or Audio Unit host.
 - Classic RIFF/WAV, 48 kHz, stereo, signed 16-bit PCM, with the existing 250 ms tail.
-- Up to 120 seconds of score time, 4,096 planned notes and 32,768 expression points.
+- No arbitrary source-size, duration, note-count or expression-point cap. The classic WAV and native 32-bit size/offset representation still determines the largest output.
+- Rendering currently retains full-length stereo Float32 audio and schedules each note once. Memory use grows with duration and note/envelope count; actual platform allocation failures are reported without publishing partial files. PCM encoding and writing remain sequential 64 KiB chunks.
 - One operation at a time, including the native chooser, rendering, writing, cancellation cleanup and finalization.
 - Cancel is available during rendering/writing. `OfflineAudioContext` cannot stop its pending render immediately, so cancellation waits for it or the current write to drain before discarding incomplete output. The finalization result is authoritative once commit starts.
 

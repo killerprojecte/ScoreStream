@@ -2,8 +2,8 @@
 //! unmeasured; the separately typed schedule is never an editable score.
 use super::{lower::LoweringProfile, perform, *};
 use crate::{
-    grace_extension, score::GraceTiming, tempo_clock::ExactTempoMap, Diagnostic, Document,
-    Rational, Record, Scalar, Severity,
+    Diagnostic, Document, Rational, Record, Scalar, Severity, grace_extension, score::GraceTiming,
+    tempo_clock::ExactTempoMap,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -48,18 +48,19 @@ pub struct GraceTimingLimits {
     pub maximum_groups: usize,
     pub maximum_members: usize,
     pub maximum_rational_bits: u64,
-    pub maximum_timeline_seconds: Rational,
+    /// Optional positive caller-selected duration budget; None imposes no fixed ceiling.
+    pub maximum_timeline_seconds: Option<Rational>,
 }
 impl Default for GraceTimingLimits {
     fn default() -> Self {
         Self {
-            maximum_source_records: 1_000_000,
-            maximum_events: 100_000,
-            maximum_controls: 1_000_000,
-            maximum_groups: 100_000,
-            maximum_members: 100_000,
+            maximum_source_records: usize::MAX,
+            maximum_events: usize::MAX,
+            maximum_controls: usize::MAX,
+            maximum_groups: usize::MAX,
+            maximum_members: usize::MAX,
             maximum_rational_bits: 4096,
-            maximum_timeline_seconds: Rational::from_integer(21_600),
+            maximum_timeline_seconds: None,
         }
     }
 }
@@ -223,13 +224,15 @@ pub fn preflight_grace_source(
     limits: &GraceTimingLimits,
 ) -> Result<(), Vec<Diagnostic>> {
     if limits.maximum_rational_bits == 0
-        || !limits.maximum_timeline_seconds.is_positive()
-        || limits.maximum_timeline_seconds > Rational::from_integer(21_600)
+        || limits
+            .maximum_timeline_seconds
+            .as_ref()
+            .is_some_and(|limit| !limit.is_positive())
     {
         return Err(fail(
             doc,
             "grace.invalid_limits",
-            "Positive bit budget and timeline at most six hours required",
+            "Positive bit budget and positive optional timeline limit required",
         ));
     }
     let records = doc
@@ -395,7 +398,11 @@ pub(super) fn discover(
                 || event.staff != principal.staff
                 || event.start != principal.start
             {
-                return Err(fail(doc, "grace.anchor_scope", "Grace and principal must share the effective performed part, voice, staff and anchor onset"));
+                return Err(fail(
+                    doc,
+                    "grace.anchor_scope",
+                    "Grace and principal must share the effective performed part, voice, staff and anchor onset",
+                ));
             }
             let (written_at, written_principal) = written[source.written_principal.0.as_str()];
             source.occurrence_ids.push(receipt.id.clone());
@@ -565,11 +572,15 @@ pub(super) fn allocate(
     let discovery = discover(doc, performed)?;
     let clock = ExactTempoMap::new(&performed.score, Some(limits.maximum_rational_bits))
         .map_err(|e| fail(doc, "grace.rational_budget", e))?;
-    if clock.seconds(&performed.score.end) > limits.maximum_timeline_seconds {
+    if limits
+        .maximum_timeline_seconds
+        .as_ref()
+        .is_some_and(|limit| clock.seconds(&performed.score.end) > *limit)
+    {
         return Err(fail(
             doc,
             "grace.timeline_budget",
-            "Grace performance exceeds the configured timeline, at most six hours",
+            "Grace performance exceeds the configured timeline",
         ));
     }
     let mut by_principal = BTreeMap::<EventId, Vec<&GraceOccurrence>>::new();
@@ -626,10 +637,18 @@ pub(super) fn allocate(
                         .as_ref()
                         .is_some_and(|p| p.is_positive() && p < &Rational::from_integer(100))
                 {
-                    return Err(fail(doc,"grace.authored_following_unsupported","Authored percentage requires a singleton with only 0 < steal-following < 100"));
+                    return Err(fail(
+                        doc,
+                        "grace.authored_following_unsupported",
+                        "Authored percentage requires a singleton with only 0 < steal-following < 100",
+                    ));
                 }
                 if !clock.constant_between(&first.principal_start, &first.principal_end) {
-                    return Err(fail(doc,"grace.percentage_tempo_ambiguous","Authored following percentage across changing effective tempo is ambiguous"));
+                    return Err(fail(
+                        doc,
+                        "grace.percentage_tempo_ambiguous",
+                        "Authored following percentage across changing effective tempo is ambiguous",
+                    ));
                 }
                 let product = &duration * first.timing.steal_following.as_ref().unwrap();
                 check(doc, &product, limits)?;
@@ -640,7 +659,11 @@ pub(super) fn allocate(
                     .iter()
                     .any(|o| o.timing != GraceTiming::default())
                 {
-                    return Err(fail(doc,"grace.authored_timing_conflict","Explicit quarter allocations require every authored timing field to be absent, including explicit zero"));
+                    return Err(fail(
+                        doc,
+                        "grace.authored_timing_conflict",
+                        "Explicit quarter allocations require every authored timing field to be absent, including explicit zero",
+                    ));
                 }
                 let expected: BTreeSet<_> = occurrences.iter().map(|o| &o.id).collect();
                 let mut assigned = BTreeMap::new();
@@ -687,7 +710,11 @@ pub(super) fn allocate(
             total = &total + &allocation;
             check(doc, &total, limits)?;
             if total >= duration {
-                return Err(fail(doc,"grace.principal_remainder","Total grace allocation must be strictly shorter than the nominal principal duration"));
+                return Err(fail(
+                    doc,
+                    "grace.principal_remainder",
+                    "Total grace allocation must be strictly shorter than the nominal principal duration",
+                ));
             }
             let end = &cursor + &allocation;
             windows.push(window(
@@ -790,7 +817,13 @@ fn window(
         || !b.is_finite()
         || b - a < 0.000_001
     {
-        return Err(fail(doc,"grace.clock_precision",format!("Positive grace/principal window {id} collapses or is shorter than the one-microsecond audio minimum")));
+        return Err(fail(
+            doc,
+            "grace.clock_precision",
+            format!(
+                "Positive grace/principal window {id} collapses or is shorter than the one-microsecond audio minimum"
+            ),
+        ));
     }
     Ok(GraceSoundWindow {
         id,

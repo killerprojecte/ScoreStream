@@ -125,10 +125,12 @@ fn reservation_close_drop_and_app_teardown_do_not_publish() {
 
 #[test]
 fn bounded_canonical_headers_and_path_free_errors() {
-    for value in ["", "00", "-1", "+1", " 44", "44 ", "1e3", "1.0", "123456789", "１２"] {
+    for value in ["", "00", "-1", "+1", " 44", "44 ", "1e3", "1.0", "4294967296", "12345678901", "１２"] {
         assert!(offset(value).is_err(), "{value}");
     }
     assert_eq!(offset("0").unwrap(), 0); assert_eq!(offset("23088044").unwrap(), 23_088_044);
+    assert_eq!(offset("4294967295").unwrap(), u32::MAX);
+    assert_eq!(offset("123456789").unwrap(), 123_456_789);
     for value in ["", "wav-1", "wav-000000000000000G", "other-window", "wav-0000000000000001-extra"] {
         assert!(!valid_id(value));
     }
@@ -166,7 +168,10 @@ fn source_preflight_returns_exact_plan_or_stable_error_before_file_setup() {
     let (plan, layout) = prepare(scorestream_app::DEMO_SOURCE).unwrap();
     assert_eq!(layout, WavLayout::for_plan(&plan).unwrap());
     assert_eq!(prepare("not a score").unwrap_err().code, "WAV_SOURCE_INVALID");
-    assert_eq!(prepare(&" ".repeat(MAX_SOURCE_BYTES + 1)).unwrap_err().code, "WAV_LIMIT_EXCEEDED");
+    let source = format!("{}{}", scorestream_app::DEMO_SOURCE, " ".repeat(4 * 1024 * 1024));
+    let (large_plan, large_layout) = prepare(&source).unwrap();
+    assert_eq!(large_plan.notes.len(), plan.notes.len());
+    assert_eq!(large_layout, layout);
 }
 
 // Pure response/channel tests: no GTK initialization, widgets or event loop.

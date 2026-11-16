@@ -6,10 +6,13 @@ impl TempoMap {
     }
     pub fn seconds(&self, at: &Rational) -> Result<f64, String> {
         let value = self.0.seconds(at).to_f64();
-        if value.is_finite() && (0.0..=21_600.).contains(&value) {
+        if value.is_finite() && value >= 0.0 {
             Ok(value)
         } else {
-            Err("Playback timeline must fit in six hours at the specified tempo".into())
+            Err(
+                "Playback timeline must be finite and nonnegative at the audio clock boundary"
+                    .into(),
+            )
         }
     }
     pub fn boundaries<'a>(

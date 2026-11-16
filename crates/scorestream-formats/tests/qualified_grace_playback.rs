@@ -905,11 +905,11 @@ fn precision_and_exact_rational_and_count_budgets_fail_without_partial_plan() {
             ..Default::default()
         },
         GraceTimingLimits {
-            maximum_timeline_seconds: r("1/4"),
+            maximum_timeline_seconds: Some(r("1/4")),
             ..Default::default()
         },
         GraceTimingLimits {
-            maximum_timeline_seconds: r("21601"),
+            maximum_timeline_seconds: Some(r("0")),
             ..Default::default()
         },
     ] {
@@ -927,7 +927,7 @@ fn precision_and_exact_rational_and_count_budgets_fail_without_partial_plan() {
     let precise = explicit(&s, &[("g", "1/1024")]);
     let limits = GraceTimingLimits {
         maximum_rational_bits: 8,
-        maximum_timeline_seconds: r("1"),
+        maximum_timeline_seconds: Some(r("1")),
         ..Default::default()
     };
     let errors = perform_document_with_explicit_graces(

@@ -2,9 +2,8 @@
 //! fermata seconds. No independent score/schedule pair or ignore flag is public.
 use super::{fermata, grace, lower::LoweringProfile, perform, *};
 use crate::{
-    fermata_extension,
+    Diagnostic, Document, Rational, Record, Severity, fermata_extension,
     fermata_timing::{self, ExplicitFermataPolicy, SeekPosition, TimingLimits, TimingProjection},
-    Diagnostic, Document, Rational, Record, Severity,
 };
 use std::collections::BTreeSet;
 
@@ -70,11 +69,11 @@ fn limits(
             &timing.maximum_timeline_seconds,
         ),
     ] {
-        if bits == 0 || !seconds.is_positive() || seconds > &Rational::from_integer(21_600) {
+        if bits == 0 || seconds.as_ref().is_some_and(|limit| !limit.is_positive()) {
             return Err(fail(
                 doc,
                 "combined.invalid_limits",
-                "Both profiles require a positive bit budget and timeline at most six hours",
+                "Both profiles require a positive bit budget and positive optional timeline limit",
             ));
         }
     }
@@ -83,10 +82,14 @@ fn limits(
     let bits = grace
         .maximum_rational_bits
         .min(timing.maximum_rational_bits);
-    let seconds = grace
-        .maximum_timeline_seconds
-        .clone()
-        .min(timing.maximum_timeline_seconds.clone());
+    let seconds = match (
+        &grace.maximum_timeline_seconds,
+        &timing.maximum_timeline_seconds,
+    ) {
+        (Some(a), Some(b)) => Some(a.min(b).clone()),
+        (Some(a), None) | (None, Some(a)) => Some(a.clone()),
+        (None, None) => None,
+    };
     let events = grace.maximum_events.min(timing.maximum_events);
     let records = grace
         .maximum_source_records
@@ -144,7 +147,11 @@ pub fn preflight_combined_source(
         || members > grace_limits.maximum_members
         || principals.len() > grace_limits.maximum_groups
     {
-        return Err(fail(doc, "combined.timing_budget", "Source signs, measures, controls or grace groups exceed the combined budget before validation"));
+        return Err(fail(
+            doc,
+            "combined.timing_budget",
+            "Source signs, measures, controls or grace groups exceed the combined budget before validation",
+        ));
     }
     Ok(())
 }
@@ -294,7 +301,19 @@ pub fn perform_document_with_explicit_graces_and_fermatas(
             .get(lo)
             .filter(|h| h.boundary <= group.principal_end)
         {
-            return Err(fail(doc, "combined.grace_hold_overlap", format!("Grace principal {} nominal interval [{}, {}] contains hold {} at boundary {} (members {:?}); only a hold at the principal onset is supported", group.principal, group.principal_start, group.principal_end, hold.id, hold.boundary, hold.members)));
+            return Err(fail(
+                doc,
+                "combined.grace_hold_overlap",
+                format!(
+                    "Grace principal {} nominal interval [{}, {}] contains hold {} at boundary {} (members {:?}); only a hold at the principal onset is supported",
+                    group.principal,
+                    group.principal_start,
+                    group.principal_end,
+                    hold.id,
+                    hold.boundary,
+                    hold.members
+                ),
+            ));
         }
     }
     let mut windows = schedule.windows().to_vec();
@@ -322,7 +341,14 @@ pub fn perform_document_with_explicit_graces_and_fermatas(
             || !end.is_finite()
             || end - start < 0.000_001
         {
-            return Err(fail(doc, "combined.clock_precision", format!("Final hold-aware window {} collapses or is shorter than the one-microsecond audio minimum", window.id)));
+            return Err(fail(
+                doc,
+                "combined.clock_precision",
+                format!(
+                    "Final hold-aware window {} collapses or is shorter than the one-microsecond audio minimum",
+                    window.id
+                ),
+            ));
         }
     }
     fermata::retain_default_tempo_provenance(&performed, &mut timing);

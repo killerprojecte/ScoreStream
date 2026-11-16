@@ -17,9 +17,8 @@ Save still validates SFS and performs an atomic write. Its validated source
 object is the same path used by native saves and file-level tests. SFS Open no
 longer imposes its former separate 4 MiB file cap: a document accepted by shared
 validation and saved by the editor can be read back as an SFS draft. This does
-not remove the parser's structural validation or the separate playback/WAV
-budgets, and it is not a claim of unbounded-memory or large-score rendering
-performance. The destination must end
+not remove the parser's structural validation and is not a claim of
+unbounded-memory or large-score rendering performance. The destination must end
 in `.sfs`; the original XML/MXL path and its existing hard-link/symlink aliases
 are rejected. Cancelling save leaves the import unsaved. Opening an SFS draft
 and discarding it restores the prior document's origin and import report.
@@ -47,7 +46,7 @@ identifiers produces 4,765,239 bytes of valid SFS. The previous desktop Open pat
 rejected that exact saved source solely because it exceeded 4 MiB. The regression
 now exercises XML conversion, shared source validation, the actual native atomic
 save helper, SFS reopen and shared workspace validation. It checks exact source
-bytes, unchanged XML, all 4,800 note events, and the unchanged audio-plan byte
-limit. This is a synthetic format-scale regression, not full Beethoven or native
-file-dialog acceptance. Nine file-helper tests pass, including invalid drafts,
+bytes, unchanged XML, all 4,800 note events, and successful playback planning
+for the reopened source. This is a synthetic format-scale regression, not full
+Beethoven, native file-dialog, or audible-performance acceptance. Nine file-helper tests pass, including invalid drafts,
 transactional activation and protected destinations.

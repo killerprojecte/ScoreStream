@@ -35,9 +35,6 @@ impl ExplicitFermataPlayback {
 }
 
 fn parse(source: &str) -> Result<scorestream_codec::Document, String> {
-    if source.len() > 4 * 1024 * 1024 {
-        return Err("Playback accepts score sources up to 4 MiB".into());
-    }
     scorestream_codec::parse(source).map_err(format_diagnostics)
 }
 

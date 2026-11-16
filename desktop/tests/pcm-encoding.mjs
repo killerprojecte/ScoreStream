@@ -9,7 +9,7 @@ const note=(changes={})=>({
  gain_envelope:[{offset_seconds:0,gain:1},{offset_seconds:1,gain:.5}],...changes,
 });
 const plan=(changes={})=>({duration_seconds:1,notes:[note()],...changes});
-const maxFrames=(PCM16_WAV.maxScoreSeconds+PCM16_WAV.tailSeconds)*PCM16_WAV.sampleRate;
+const maxFrames=Math.floor((0xffffffff-44)/4);
 const maxChunkFrames=PCM16_WAV.maxChunkBytes/PCM16_WAV.bytesPerFrame;
 const ascii=(bytes,start,end)=>String.fromCharCode(...bytes.slice(start,end));
 const samples=bytes=>{
@@ -45,26 +45,17 @@ describe('bounded audio-facing plan validation',()=>{
   assert.throws(()=>validatePcm16Plan(plan({notes:[note({start_seconds:.5,duration_seconds:.5+1e-8})]})),/ends after/);
  });
  it('rejects invalid, zero, overlong and overflow-scale durations',()=>{
-  for(const duration_seconds of [NaN,Infinity,-Infinity,-1,0,120+1/48_000,Number.MAX_VALUE,'1',null])
+  for(const duration_seconds of [NaN,Infinity,-Infinity,-1,0,Number.MAX_VALUE,'1',null])
    withoutByteAllocation(()=>assert.throws(()=>validatePcm16Plan(plan({duration_seconds})),RangeError));
   for(const value of [null,undefined,{},plan({notes:{length:1}}),plan({notes:[null]}),plan({notes:[note({gain_envelope:null})]})])
    assert.throws(()=>validatePcm16Plan(value),RangeError);
  });
- it('accepts exact total budgets, then rejects excessive voices before reading them',()=>{
-  const envelope=Array.from({length:8},(_,i)=>({offset_seconds:i/8,gain:1}));
-  const notes=Array.from({length:PCM16_WAV.maxVoices},()=>note({gain_envelope:envelope}));
+ it('accepts valid durations, voice counts and expression counts beyond former ceilings',()=>{
+  assert.equal(validatePcm16Plan(plan({duration_seconds:600})).frameCount,28_812_000);
+  const notes=Array.from({length:4097},()=>note());
   assert.doesNotThrow(()=>validatePcm16Plan(plan({notes})));
-  const oversized=new Array(PCM16_WAV.maxVoices+1);
-  Object.defineProperty(oversized,0,{get(){assert.fail('read over-budget notes');}});
-  assert.throws(()=>validatePcm16Plan(plan({notes:oversized})),/voice count/);
- });
- it('checks total expression budget before examining any point',()=>{
-  const excessive=new Array(PCM16_WAV.maxExpressionPoints+1);
-  Object.defineProperty(excessive,0,{get(){assert.fail('read over-budget expression points');}});
-  assert.throws(()=>validatePcm16Plan(plan({notes:[note({gain_envelope:excessive})]})),/expression point count/);
-  const points=Array.from({length:PCM16_WAV.maxExpressionPoints},()=>({offset_seconds:0,gain:1}));
+  const points=Array.from({length:32769},()=>({offset_seconds:0,gain:1}));
   assert.doesNotThrow(()=>validatePcm16Plan(plan({notes:[note({gain_envelope:points})]})));
-  assert.throws(()=>validatePcm16Plan(plan({notes:[note({gain_envelope:points}),note({gain_envelope:[{offset_seconds:0,gain:1}]})]})),/expression point count/);
  });
  it('rejects non-finite or out-of-range note fields, while retaining Rust fractional pitch',()=>{
   const invalid={
@@ -154,7 +145,9 @@ describe('bounded, interleaved stereo PCM16 encoding',()=>{
   for(const other of [null,[],new Float64Array(1),{length:1}])
    assert.throws(()=>encodePcm16StereoChunk(channel,other,0,1),RangeError);
   assert.throws(()=>encodePcm16StereoChunk(channel,new Float32Array(2),0,1),/lengths must match/);
-  const excessive=new Float32Array(maxFrames+1);
+  // Exercise size validation without reserving a multi-gigabyte buffer.
+  const excessive=new Float32Array(0);
+  Object.defineProperty(excessive,'length',{value:maxFrames+1});
   withoutByteAllocation(()=>assert.throws(()=>encodePcm16StereoChunk(excessive,excessive,0,1),/channel frame count/));
  });
  it('rejects overflow, out-of-bounds and non-integer ranges before allocating',()=>{

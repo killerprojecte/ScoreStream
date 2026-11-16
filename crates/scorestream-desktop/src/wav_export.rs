@@ -8,7 +8,6 @@ mod chooser;
 
 const SESSION_HEADER: &str = "x-scorestream-wav-session";
 const OFFSET_HEADER: &str = "x-scorestream-wav-offset";
-const MAX_SOURCE_BYTES: usize = 4 * 1024 * 1024;
 pub type WavExports = Arc<Mutex<Sessions>>;
 type Result<T> = std::result::Result<T, WavError>;
 
@@ -191,7 +190,7 @@ fn header<'a>(request: &'a Request<'_>, name: &str, max: usize) -> Result<&'a st
     value.to_str().map_err(|_| WavError::bad_request())
 }
 fn offset(value: &str) -> Result<u32> {
-    if value.is_empty() || value.len() > 8 || !value.bytes().all(|byte| byte.is_ascii_digit())
+    if value.is_empty() || value.len() > 10 || !value.bytes().all(|byte| byte.is_ascii_digit())
         || (value.len() > 1 && value.starts_with('0'))
     {
         return Err(WavError::bad_request());
@@ -200,12 +199,9 @@ fn offset(value: &str) -> Result<u32> {
 }
 
 fn prepare(source: &str) -> Result<(PlaybackPlan, WavLayout)> {
-    if source.len() > MAX_SOURCE_BYTES {
-        return Err(WavError::new("WAV_LIMIT_EXCEEDED", "The score exceeds the WAV export budget."));
-    }
     let plan = plan_source(source).map_err(|_| WavError::new("WAV_SOURCE_INVALID", "The score cannot be rendered."))?;
     let layout = WavLayout::for_plan(&plan)
-        .map_err(|_| WavError::new("WAV_LIMIT_EXCEEDED", "The score exceeds the WAV export budget."))?;
+        .map_err(|_| WavError::new("WAV_LAYOUT_INVALID", "The score cannot be represented by the WAV output format."))?;
     Ok((plan, layout))
 }
 
@@ -227,7 +223,7 @@ pub async fn wav_export_begin(source: String, window: WebviewWindow, state: Stat
     let state = state.inner().clone();
     let id = state.lock().map_err(|_| WavError::io())?.reserve(&owner)?;
     let mut reservation = Reservation { state: state.clone(), owner: owner.clone(), id: id.clone(), armed: true };
-    // Full source planning and the PCM budget precede the native chooser. No
+    // Full source planning and the WAV layout precede the native chooser. No
     // destination or file is authorized by merely supplying a plan or filename.
     let (plan, layout) = tauri::async_runtime::spawn_blocking(move || prepare(&source))
         .await.map_err(|_| WavError::io())??;
@@ -256,7 +252,7 @@ pub fn wav_export_write(window: WebviewWindow, request: Request<'_>, state: Stat
     let owner = owner(&window)?;
     let id = header(&request, SESSION_HEADER, 20)?;
     if !valid_id(id) { return Err(WavError::bad_request()); }
-    let cursor = header(&request, OFFSET_HEADER, 8).and_then(offset);
+    let cursor = header(&request, OFFSET_HEADER, 10).and_then(offset);
     let bytes = match request.body() {
         InvokeBody::Raw(bytes) if !bytes.is_empty() && bytes.len() <= scorestream_app::wav::MAX_CHUNK_BYTES => Ok(bytes.as_slice()),
         _ => Err(WavError::bad_request()),

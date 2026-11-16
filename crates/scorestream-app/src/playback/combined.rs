@@ -39,9 +39,6 @@ impl ExplicitCombinedPlayback {
     }
 }
 fn parse(source: &str) -> Result<scorestream_codec::Document, String> {
-    if source.len() > 4 * 1024 * 1024 {
-        return Err("Playback accepts score sources up to 4 MiB".into());
-    }
     scorestream_codec::parse_with_prevalidation(source, |doc| {
         preflight_combined_source(doc, &GraceTimingLimits::default(), &TimingLimits::default())
     })

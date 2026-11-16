@@ -117,8 +117,34 @@ describe('bounded authored family transport and receipts',()=>{
   for(const malformed of ['scorestream.articulation@1',null,{},[1],['scorestream.articulation@1',null]]){const v=fixture();v.document.required_extensions=malformed;expect(()=>project(v)).toThrow('required_extensions must be an array of strings');}
   expect(()=>project(fixture())).toThrow('requires event records');const v=marked('accent');record(v,'future',{event_index:0});expect(()=>project(v)).toThrow('unknown reserved kind');
  });
- it('refuses excessive hierarchy and validates hidden hosts against actual rendered staff/measure coverage',()=>{
-  const v=marked('accent');while(v.document.frames!.length<=10000)v.document.frames!.push(v.document.frames![0]);expect(()=>project(v)).toThrow('limited to 10000');
+ it('projects more than 10000 typed hierarchy records and item indices without truncation',()=>{
+  const v=fixture();attach(v,[Array.from({length:10002},()=>({sign:'accent'}))]);
+  const result=project(v),items=result.authoredArticulations!.events[0].notations[0].groups[0].items;
+  expect(items).toHaveLength(10002);
+  expect(items[10001].id).toBe('ss-aa-0-0-0-10001');
+  expect(result.map['ss-aa-0-0-0-10001']).toBe('a');
+  expect(result.mei.match(/<artic /g)).toHaveLength(10002);
+ });
+ it('decodes exact appearance scalars beyond 128 characters without losing digits',()=>{
+  const v=fixture(),value='1'+'0'.repeat(150)+'/3';
+  attach(v,[[{sign:'accent',default_x:value}]],0,0,{print_object:false});
+  expect(project(v).authoredArticulations!.events[0].notations[0].groups[0].items[0].style.default_x).toBe(value);
+  (v.document.frames![1].records[0] as MarkRecord).attributes.print_object=true;
+  expect(()=>project(v)).toThrow('unsupported appearance/coordinate field default_x');
+  for(const invalid of ['1/0','1/-3','1.2','1/2/3']){
+   (v.document.frames![3].records[0] as MarkRecord).attributes.default_x=invalid;
+   expect(()=>decodeAuthoredArticulations(v)).toThrow('invalid exact default_x');
+  }
+ });
+ it('still rejects non-exact, negative and non-contiguous hierarchy indices',()=>{
+  for(const index of [-1,0.5,Number.MAX_SAFE_INTEGER+1,Infinity,NaN]){
+   const v=marked('accent');(v.document.frames![3].records[0] as MarkRecord).attributes.item_index=index;
+   expect(()=>decodeAuthoredArticulations(v)).toThrow('invalid item_index');
+  }
+  const v=marked('accent');(v.document.frames![3].records[0] as MarkRecord).attributes.item_index=10000;
+  expect(()=>decodeAuthoredArticulations(v)).toThrow('item indices must be contiguous');
+ });
+ it('validates hidden hosts against actual rendered staff/measure coverage',()=>{
   const outside=fixture();attach(outside,[[{sign:'accent'}]],0,0,{print_object:false});outside.events[0].time='8';for(const f of outside.document.frames!)f.time='8';expect(()=>project(outside)).toThrow('host outside engraved');
  });
 });

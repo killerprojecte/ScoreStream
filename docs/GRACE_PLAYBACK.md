@@ -97,10 +97,11 @@ nonoverlapping case without changing those guards. Ordinary
 imported-grace playback still rejects. Legacy SFS graces without the fidelity
 capability retain their previous warning/omission behavior, not this new policy.
 
-Default limits include 4 MiB source text, 100,000 events/groups/members, bounded
-source records/controls, 4096-bit exact rationals and at most six hours. Source
-budget checks precede semantic validation in the qualified parser, but lexical
-and AST parsing still precede that callback. Allocation counts, cumulative
+Default planning has no fixed source-byte, event-count or total-duration
+cutoff. Qualified callers can choose count and timeline budgets; the default
+4096-bit exact-rational arithmetic bound remains. Caller-selected source
+budget checks precede semantic validation in the qualified parser, after
+lexical and AST parsing. Allocation counts, cumulative
 projection positions and exact clock intermediates are checked. Positive windows
 that collapse at the final floating output boundary or fall below the existing
 one-microsecond audio minimum reject. This is not a general parser sandbox or

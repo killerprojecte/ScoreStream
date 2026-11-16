@@ -42,7 +42,7 @@ function choice<T extends string>(a:Record<string,Scalar>,key:string,values:read
  const value=string(a,key,object);if(value!==undefined&&!values.includes(value as T))fail(object,`invalid ${key}`);return value as T|undefined;
 }
 function rational(value:string,object:string,key:string){
- if(value.length>128||!/^[-+]?\d+(?:\/\d+)?$/.test(value))fail(object,`invalid exact ${key}`);
+ if(!/^[-+]?\d+(?:\/\d+)?$/.test(value))fail(object,`invalid exact ${key}`);
  try {new Q(value);}catch{fail(object,`invalid exact ${key}`);}
 }
 function decodeItem(row:Row,hidden:boolean):AuthoredItem {
@@ -93,11 +93,10 @@ export function decodeAuthoredArticulations(view:View):AuthoredProjection|null {
  if(!requirements.length&&!entries.length)return null;
  if(requirements.length!==1||requirements[0]!==`${namespace}@1`)fail('capability','requires exactly scorestream.articulation@1');
  if(!entries.length)fail('capability','requires event records');
- if(entries.length>10000)fail('capability','preview is limited to 10000 authored hierarchy records');
  const rows:Row[]=entries.map(({time,record:mark})=>{
   const depth=kinds.indexOf(mark.kind.slice(namespace.length+1));
   if(depth<0)fail(mark.target,'unknown reserved kind');
-  const path=indexNames.slice(0,depth+1).map(key=>{const n=mark.attributes[key];if(typeof n!=='number'||!Number.isSafeInteger(n)||n<0||n>=10000)fail(mark.target,`invalid ${key}`);return n;});
+  const path=indexNames.slice(0,depth+1).map(key=>{const n=mark.attributes[key];if(typeof n!=='number'||!Number.isSafeInteger(n)||n<0)fail(mark.target,`invalid ${key}`);return n;});
   const row={time,mark,path};
   if(depth<3){const allowed=[...indexNames.slice(0,depth+1),...(depth===1?['source_id','print_object']:depth===2?['source_id']:[])];for(const key of Object.keys(mark.attributes))if(!allowed.includes(key))fail(objectName(row),`unknown field ${key}`);}
   return row;

@@ -1122,11 +1122,11 @@ fn exact_count_rational_and_combined_duration_limits_are_not_weakened() {
             ..Default::default()
         },
         GraceTimingLimits {
-            maximum_timeline_seconds: r("3/2"),
+            maximum_timeline_seconds: Some(r("3/2")),
             ..Default::default()
         },
         GraceTimingLimits {
-            maximum_timeline_seconds: r("21601"),
+            maximum_timeline_seconds: Some(r("0")),
             ..Default::default()
         },
     ] {
@@ -1173,11 +1173,11 @@ fn exact_count_rational_and_combined_duration_limits_are_not_weakened() {
             ..Default::default()
         },
         TimingLimits {
-            maximum_timeline_seconds: r("3/2"),
+            maximum_timeline_seconds: Some(r("3/2")),
             ..Default::default()
         },
         TimingLimits {
-            maximum_timeline_seconds: r("21601"),
+            maximum_timeline_seconds: Some(r("0")),
             ..Default::default()
         },
     ] {
@@ -1207,7 +1207,7 @@ fn exact_count_rational_and_combined_duration_limits_are_not_weakened() {
         assert!(
             qualify(
                 GraceTimingLimits {
-                    maximum_timeline_seconds: limits.clone(),
+                    maximum_timeline_seconds: Some(limits.clone()),
                     ..Default::default()
                 },
                 TimingLimits::default(),
@@ -1219,7 +1219,7 @@ fn exact_count_rational_and_combined_duration_limits_are_not_weakened() {
             qualify(
                 GraceTimingLimits::default(),
                 TimingLimits {
-                    maximum_timeline_seconds: limits,
+                    maximum_timeline_seconds: Some(limits),
                     ..Default::default()
                 },
                 PerformanceLimits::default()
@@ -1227,7 +1227,15 @@ fn exact_count_rational_and_combined_duration_limits_are_not_weakened() {
             .is_err()
         );
     }
-    reject(&s, &gp, &holds(&s, &[("1", "21600")]), "fermata.");
+    let long = plan_source_with_explicit_graces_and_fermatas(
+        &s,
+        &gp,
+        GraceSoundPolicy::FullGraceThenGatedRemainder,
+        &holds(&s, &[("1", "21600")]),
+        FermataSoundPolicy::SustainSelectedAnchors,
+    )
+    .unwrap();
+    assert!(long.plan().duration_seconds > 21600.0);
 }
 
 #[test]
@@ -1312,9 +1320,17 @@ fn combined_clock_cannot_silently_ignore_initial_midi_intent() {
     let grace = explicit(&plain, &[("z-grace", "1/8"), ("a-grace", "1/4")]);
     let fermata = holds(&plain, &[("1", "1")]);
     assert!(play(&plain, &grace, &fermata).is_ok());
-    let mark = plain.lines().find(|l| l.contains(" scorestream.instrument ")).unwrap();
+    let mark = plain
+        .lines()
+        .find(|l| l.contains(" scorestream.instrument "))
+        .unwrap();
     // Empty device is still authored intent, not permission to choose an output.
     let assigned = plain.replace(mark, &format!("{mark} device=\"\""));
     assert!(SfsAdapter.read(&assigned).is_ok());
-    reject(&assigned, &grace, &fermata, "instrument.performance_unsupported");
+    reject(
+        &assigned,
+        &grace,
+        &fermata,
+        "instrument.performance_unsupported",
+    );
 }
