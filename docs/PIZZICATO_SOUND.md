@@ -22,7 +22,10 @@ this first profile; separate supported tempo and dynamic directions are unchange
 
 ## Sound realization boundary
 
-There is no verified selectable pizzicato timbre route in the current renderer.
+The default/browser renderer has no selectable pizzicato timbre route. An explicit
+Linux offline-only sample approximation is separately available through the
+[technique-aware native API](../crates/scorestream-audio/PIZZICATO.md); it does not
+change default compilation or browser playback.
 The model reports `pizzicato.not_realized`, not successful rendition. Playback
 checks the actual sounding attack, including qualified grace attacks, and rejects
 an active authored yes state with an actionable error. Rest-only passages, cues,

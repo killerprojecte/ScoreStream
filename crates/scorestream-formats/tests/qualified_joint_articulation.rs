@@ -182,3 +182,15 @@ fn tie_tail_articulation_away_from_holds_works_but_articulated_held_chain_reject
             .contains("articulation.hold_interpretation")
     );
 }
+#[test]
+fn explicit_native_pizzicato_receipts_use_the_qualified_joint_clock() {
+    let xml=XML.replace("<instrument-name>piano</instrument-name>","<instrument-name>violin</instrument-name>")
+        .replace("<note id=\"g\">","<direction><direction-type><words>pizz.</words></direction-type><sound pizzicato=\"yes\"/></direction><note id=\"g\">");
+    let s=source(&xml);let (g,f)=policies(&s);
+    assert!(play(&s).unwrap_err().contains("pizzicato.not_realized"));
+    let p=playback::plan_source_with_joint_policies_and_pizzicato(&s,POLICY,&g,GraceSoundPolicy::FullGraceThenGatedRemainder,&f,FermataSoundPolicy::SustainSelectedAnchors,playback::PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation).unwrap();
+    assert_eq!(p.pizzicato_attacks().len(),2);
+    let baseline=play(&source(&xml.replace("pizzicato=\"yes\"","pizzicato=\"no\""))).unwrap();
+    assert_eq!(p.plan().notes,baseline.plan().notes);assert_eq!(p.plan().duration_seconds,3.0);
+    assert_eq!(p.plan().notes[3].start_seconds,2.5);assert_eq!(p.plan().notes[4].start_seconds,2.625);
+}

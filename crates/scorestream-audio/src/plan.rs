@@ -56,6 +56,24 @@ impl Prepared {
         routes: &[RouteAssignment],
         options: &RenderOptions,
     ) -> Result<Self> {
+        if plan
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "pizzicato.native_approximation_required")
+        {
+            return Err(AudioError::Unsupported(
+                "Technique-bearing plan requires the opt-in pizzicato renderer and its receipt"
+                    .into(),
+            ));
+        }
+        Self::new_with_channels(plan, routes, options, &BTreeMap::new())
+    }
+    pub(crate) fn new_with_channels(
+        plan: &PlaybackPlan,
+        routes: &[RouteAssignment],
+        options: &RenderOptions,
+        channels: &BTreeMap<String, u16>,
+    ) -> Result<Self> {
         if !(8000..=192_000).contains(&options.sample_rate)
             || !(1..=4096).contains(&options.block_frames)
         {
@@ -178,7 +196,7 @@ impl Prepared {
                 }
             }
             notes.push(Note {
-                channel,
+                channel: channels.get(&note.id).copied().unwrap_or(channel),
                 key: key as u8,
                 velocity: note.velocity,
                 start,

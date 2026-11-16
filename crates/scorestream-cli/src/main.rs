@@ -48,7 +48,7 @@ fn main() -> ExitCode {
 
 fn usage() {
     eprintln!(
-        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml|input.mxl>\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
+        "Usage:\n  scorestream <validate|inspect|canonical> <score.sfs>\n  scorestream inspect-format <sfs|musicxml> <input>\n  scorestream convert <sfs|musicxml> <sfs|musicxml> <input>\n  scorestream scan-musicxml <input.musicxml|input.mxl>\nOptional convert/inspect-format suffix: --musicxml-irregular-measures <contracts.json> (exact JSON array; requires MusicXML input or output).\nConverted text goes to stdout; structured diagnostics go to stderr. Unsupported mappings produce no output."
     );
 }
 fn adapter(name: &str) -> Option<Box<dyn ScoreAdapter>> {
@@ -83,7 +83,8 @@ fn conversion(args: &[String]) -> ExitCode {
         };
     }
     let inspect = args[1] == "inspect-format";
-    if args.len() != if inspect { 4 } else { 5 } {
+    let positional = if inspect { 4 } else { 5 };
+    if args.len() != positional && args.len() != positional + 2 {
         usage();
         return ExitCode::from(2);
     }
@@ -102,6 +103,29 @@ fn conversion(args: &[String]) -> ExitCode {
             }
         }
     };
+    let mut options = scorestream_formats::musicxml::MusicXmlOptions {
+        geometry: scorestream_formats::musicxml::GeometryPolicy::PreserveNoteAndMeasureCoordinates,
+        articulations: scorestream_formats::musicxml::ArticulationProfile::Automatic,
+        ..Default::default()
+    };
+    if args.len() > positional {
+        if args[positional] != "--musicxml-irregular-measures"
+            || (args[2] != "musicxml" && (inspect || args[3] != "musicxml"))
+        {
+            usage();
+            return ExitCode::from(2);
+        }
+        options.irregular_measures = match fs::File::open(&args[positional + 1])
+            .map_err(|e| e.to_string())
+            .and_then(|f| serde_json::from_reader(BufReader::new(f)).map_err(|e| e.to_string()))
+        {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("Invalid irregular-measure contract file: {error}");
+                return ExitCode::from(2);
+            }
+        };
+    }
     let path = &args[if inspect { 3 } else { 4 }];
     let result = if args[2] == "musicxml" {
         let file = match fs::File::open(path) {
@@ -112,11 +136,6 @@ fn conversion(args: &[String]) -> ExitCode {
             }
         };
         musicxml_reader(file, path).and_then(|reader| {
-            let options = scorestream_formats::musicxml::MusicXmlOptions {
-                geometry: scorestream_formats::musicxml::GeometryPolicy::PreserveNoteAndMeasureCoordinates,
-                articulations: scorestream_formats::musicxml::ArticulationProfile::Automatic,
-                ..Default::default()
-            };
             scorestream_formats::musicxml::read_reader_with_options(reader, &options)
         })
     } else {
@@ -139,7 +158,12 @@ fn conversion(args: &[String]) -> ExitCode {
     };
     let mut report = converted.report;
     let text = if let Some(output) = output {
-        match output.write(&converted.value) {
+        let result = if args[3] == "musicxml" {
+            scorestream_formats::musicxml::write_with_options(&converted.value, &options)
+        } else {
+            output.write(&converted.value)
+        };
+        match result {
             Ok(result) => {
                 report.append(result.report);
                 result.value

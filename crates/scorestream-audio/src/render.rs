@@ -42,6 +42,19 @@ impl FluidSynthBackend {
         sink: &mut impl PcmSink,
     ) -> Result<RenderReport> {
         let prepared = Prepared::new(plan, routes, options)?;
+        self.render_prepared(plan, routes, bank_path, options, cancel, sink, prepared)
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_prepared(
+        &self,
+        plan: &PlaybackPlan,
+        routes: &[RouteAssignment],
+        bank_path: &Path,
+        options: &RenderOptions,
+        cancel: &AtomicBool,
+        sink: &mut impl PcmSink,
+        prepared: Prepared,
+    ) -> Result<RenderReport> {
         cancelled(cancel)?;
         let mut bank = Bank::open(bank_path, options, cancel)?;
         if options

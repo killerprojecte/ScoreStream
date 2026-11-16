@@ -27,26 +27,26 @@ impl<'a> State<'a> {
         }
         Ok(Self(parts))
     }
-    pub fn check(&self, event: &ResolvedEvent, at: &Rational) -> Result<(), String> {
+    pub fn active(&self, event: &ResolvedEvent, at: &Rational) -> bool {
         let Some(values) = self.0.get(&event.part) else {
-            return Ok(());
+            return false;
         };
         let i = values.partition_point(|d| d.at <= *at);
-        if i > 0 {
-            let d = values[i - 1];
-            if d.end.as_ref().is_none_or(|end| at < end)
-                && matches!(
-                    d.kind,
-                    DirectionKind::Pizzicato {
-                        mode: Some(PizzicatoMode::Pizzicato)
-                    }
-                )
-            {
-                return Err(format!(
-                    "pizzicato.not_realized: part {} note {} attacks under authored pizzicato=yes; select a supported pizzicato sound route before playback",
-                    event.part.0, event.id.0
-                ));
-            }
+        i > 0
+            && values[i - 1].end.as_ref().is_none_or(|end| at < end)
+            && matches!(
+                values[i - 1].kind,
+                DirectionKind::Pizzicato {
+                    mode: Some(PizzicatoMode::Pizzicato)
+                }
+            )
+    }
+    pub fn check(&self, event: &ResolvedEvent, at: &Rational) -> Result<(), String> {
+        if self.active(event, at) {
+            return Err(format!(
+                "pizzicato.not_realized: part {} note {} attacks under authored pizzicato=yes; select a supported pizzicato sound route before playback",
+                event.part.0, event.id.0
+            ));
         }
         Ok(())
     }

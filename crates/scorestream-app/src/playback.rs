@@ -13,6 +13,8 @@ mod fermata;
 mod grace;
 mod numeric;
 mod pizzicato;
+mod technique;
+pub use technique::*;
 mod plan;
 mod tempo;
 use clock::PlaybackClock;
@@ -126,6 +128,13 @@ fn compile_with_graces(
     performed: Option<&PerformedScore>,
     timing: Option<&TimingProjection>,
     grace: Option<GraceView<'_>>,
+) -> Result<PlaybackPlan, String> {
+    compile_with_technique(score, doc, performed, timing, grace, None)
+}
+fn compile_with_technique(
+    score: &ResolvedScore, doc: &Document, performed: Option<&PerformedScore>,
+    timing: Option<&TimingProjection>, grace: Option<GraceView<'_>>,
+    mut technique: Option<&mut BTreeSet<String>>,
 ) -> Result<PlaybackPlan, String> {
     let tempo = match grace {
         Some(GraceView::Standalone(schedule)) => PlaybackClock::Grace(schedule),
@@ -359,7 +368,7 @@ fn compile_with_graces(
             continuity.release(&score.events[tail], tail)
         };
         let attack = window.map(|w| &w.quarter_start).unwrap_or(&event.start);
-        pizzicato.check(event, attack)?;
+
         let start = tempo.seconds(attack)?;
         let end = tempo.seconds(&release)?;
         let duration = end - start;
@@ -387,6 +396,12 @@ fn compile_with_graces(
             velocity = override_velocity;
             envelope = override_envelope;
         }
+        if let Some(attacks) = technique.as_deref_mut() {
+            if pizzicato.active(event, attack) {
+                attacks.insert(event.id.0.clone());
+                warnings.add("pizzicato.native_approximation_required","performance.pizzicato",RealizationEffect::Policy,&event.origin,"Authored attack requests explicit GM shared-string pizzicato approximation; only the technique-aware verified native renderer may consume this plan.");
+            }
+        } else { pizzicato.check(event, attack)?; }
         routes.insert(PlaybackRoute {
             part: event.part.0.clone(),
             instrument: event.instrument.0.clone(),

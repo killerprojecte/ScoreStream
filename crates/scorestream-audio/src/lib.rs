@@ -6,6 +6,8 @@
 
 pub mod assignments;
 #[cfg(target_os = "linux")]
+pub mod pizzicato;
+#[cfg(target_os = "linux")]
 mod native;
 mod plan;
 #[cfg(target_os = "linux")]

@@ -34,7 +34,7 @@ fn header(frames: u64, rate: u32) -> Result<[u8; 44]> {
     result[40..44].copy_from_slice(&bytes.to_le_bytes());
     Ok(result)
 }
-struct Sink<'a> {
+pub(crate) struct Sink<'a> {
     file: &'a mut fs::File,
     frame: u64,
     bytes: Vec<u8>,
@@ -68,7 +68,18 @@ pub(crate) fn render(
     output: &Path,
 ) -> Result<RenderReport> {
     let prepared = Prepared::new(plan, routes, options)?;
-    let expected_header = header(prepared.frames, options.sample_rate)?;
+    render_with(prepared.frames, options, cancel, output, |sink| {
+        backend.render_pcm(plan, routes, bank, options, cancel, sink)
+    })
+}
+pub(crate) fn render_with(
+    frames: u64,
+    options: &RenderOptions,
+    cancel: &AtomicBool,
+    output: &Path,
+    render: impl FnOnce(&mut Sink<'_>) -> Result<RenderReport>,
+) -> Result<RenderReport> {
+    let expected_header = header(frames, options.sample_rate)?;
     if cancel.load(Ordering::Relaxed) {
         return Err(AudioError::Cancelled);
     }
@@ -95,14 +106,14 @@ pub(crate) fn render(
         frame: 0,
         bytes: Vec::with_capacity(options.block_frames * 4),
     };
-    let report = backend.render_pcm(plan, routes, bank, options, cancel, &mut sink)?;
-    if sink.frame != prepared.frames {
+    let report = render(&mut sink)?;
+    if sink.frame != frames {
         return Err(AudioError::Native("Incomplete PCM output".into()));
     }
     temporary.flush()?;
     temporary.as_file_mut().sync_all()?;
     let actual_size = temporary.seek(SeekFrom::End(0))?;
-    if actual_size != 44 + prepared.frames * 4 {
+    if actual_size != 44 + frames * 4 {
         return Err(AudioError::Native("WAV byte count mismatch".into()));
     }
     if cancel.load(Ordering::Relaxed) {

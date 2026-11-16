@@ -235,3 +235,9 @@ API references: [FluidSynth rendering](https://www.fluidsynth.org/api/group__aud
 [MIDI messages](https://www.fluidsynth.org/api/group__midi__messages.html).
 Source mixer semantics: [MusicXML volume](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/volume/)
 and [MusicXML pan](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/pan/).
+
+## Explicit pizzicato opt-in
+
+See [PIZZICATO.md](PIZZICATO.md) for the separately selected, hash/preset-verified
+local TimGM6mb shared-string approximation. It preserves instrument identities
+and uses attack-specific native channels without changing default/browser behavior.

@@ -165,6 +165,9 @@ fn repeat_restores_unspecified_before_prior_pass_pizzicato() {
             .len(),
         2
     );
+    let with_notes = xml.replace("<note><rest/><duration>2</duration><voice>1</voice></note>", "<note id=\"plucked\"><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice></note>");
+    let p = scorestream_app::playback::plan_source_with_pizzicato(&wire(&with_notes), scorestream_app::playback::PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation).unwrap();
+    assert_eq!(p.plan().notes.len(),4); assert_eq!(p.pizzicato_attacks().len(),2);
     let arco = xml.replace("<note id=\"n\">", &(control("no", "0") + "<note id=\"n\">"));
     assert_eq!(scorestream_app::playback::plan_source(&wire(&arco)).unwrap().notes.len(), 2);
     let terminal = xml.replace(&control("yes", "0"), "").replace("<barline location=\"right\">", &(control("yes", "0") + "<barline location=\"right\">"));
