@@ -18,6 +18,7 @@ pub(crate) mod geometry;
 mod graces;
 mod instruments;
 pub use geometry::GeometryPolicy;
+mod print_layout;
 mod read;
 #[cfg(test)]
 mod slur_corpus;

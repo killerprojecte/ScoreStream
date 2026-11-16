@@ -424,6 +424,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.graces.append(&mut reader.graces);
             score.beams.append(&mut reader.beams);
             score.geometry.append(&mut reader.geometry);
+            score.print_layout.append(&mut reader.print_layout);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -497,6 +498,9 @@ fn read_with_audit<R: BufRead + Seek>(
         report.push(crate::Format::MusicXml, crate::MappingEffect::Preserved, "articulation.authored_only", "/authored_articulations",
             "Authored articulations preserve exact optional attributes and passive custom text. Mixed hosts additionally retain typed wrapper child order; no new rendering or performance policy is inferred.");
     }
+    if !score.print_layout.is_empty() {
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"print.authored_layout","/print_layout",format!("Retained {} measure-owned print layouts; preview independently reflows and playback is unchanged",score.print_layout.len()));
+    }
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
     report.finish(score)
@@ -526,6 +530,7 @@ struct PartReader {
     graces: Vec<ScoreGraceNote>,
     beams: Vec<ScoreBeam>,
     geometry: Vec<scorestream_core::geometry::Geometry>,
+    print_layout: Vec<scorestream_core::print_layout::PrintLayout>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -570,6 +575,7 @@ impl PartReader {
             graces: vec![],
             beams: vec![],
             geometry: vec![],
+            print_layout: vec![],
             barlines: vec![],
         })
     }
@@ -601,6 +607,7 @@ impl PartReader {
             graces,
             beams,
             geometry,
+            print_layout,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -637,6 +644,7 @@ impl PartReader {
         let mut extent = Rational::zero();
         let mut moved = false;
         let mut attributes_seen = false;
+        let mut print_seen = false;
         let mut previous: Option<usize> = None;
         let mut pending_graces = Vec::<super::graces::Pending>::new();
         for n in &measure.children {
@@ -648,6 +656,18 @@ impl PartReader {
                 ));
             }
             match n.name.as_str() {
+                "print" => {
+                    if moved || print_seen {
+                        return Err(unsupported(
+                            n,
+                            "print.position",
+                            "Only one measure-start print block is supported; authored breaks are never moved",
+                        ));
+                    }
+                    print_layout.push(super::print_layout::read(n, &part.id.0, &m.id)?);
+                    print_seen = true;
+                    previous = None;
+                }
                 "barline" => {
                     previous = None;
                 }

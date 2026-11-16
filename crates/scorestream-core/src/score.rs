@@ -13,6 +13,8 @@ pub struct ScoreDocument {
     /// Authored event and measure geometry in exact tenths; not a rendering promise.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub geometry: Vec<crate::geometry::Geometry>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub print_layout: Vec<crate::print_layout::PrintLayout>,
     pub metadata: DocumentMetadata,
     pub parts: Vec<ScorePart>,
     /// Ordinary printed and sounding ties. Written notes remain separate events.

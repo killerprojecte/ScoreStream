@@ -479,6 +479,11 @@ pub fn write_with_options(
     }
     out.push_str("  </part-list>\n");
     let geometry = super::geometry::Export::new(score);
+    let print_layout: BTreeMap<_, _> = score
+        .print_layout
+        .iter()
+        .map(|p| ((p.part.as_str(), p.measure.as_str()), p))
+        .collect();
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
@@ -492,6 +497,9 @@ pub fn write_with_options(
                 geometry.measure(&p.id.0, &m.id)
             )
             .unwrap();
+            if let Some(p) = print_layout.get(&(p.id.0.as_str(), m.id.as_str())) {
+                out.push_str(&super::print_layout::write(p));
+            }
             barlines.emit(&mut out, &m.id, BarlineLocation::Left);
             writeln!(out, "      <attributes><divisions>{div}</divisions>").unwrap();
             for s in &m.states {

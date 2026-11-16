@@ -39,6 +39,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::notation_extension::EXTENSION
             && requirement != crate::credits::EXTENSION
             && requirement != crate::geometry::EXTENSION
+            && requirement != crate::print_layout::EXTENSION
         {
             out.push(Diagnostic::error(
                 "extension_unsupported",
@@ -184,6 +185,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut mark_ids = BTreeSet::new();
     let mut has_geometry = false;
     let mut has_credits = false;
+    let mut has_print = false;
     let mut measures = Vec::new();
     let mut previous: Option<&Rational> = None;
     for frame in &doc.frames {
@@ -434,6 +436,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     validate_attributes("mark", &m.kind, &m.attributes, m.source, &mut out);
                     has_geometry |= crate::geometry::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
+                    has_print |= crate::print_layout::is_kind(&m.kind);
                     if let Some(id) = m.attributes.get("id").and_then(Scalar::as_str) {
                         if !mark_ids.insert(id) {
                             out.push(Diagnostic::error(
@@ -463,8 +466,21 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             out.extend(errors);
         }
     }
-    if has_geometry || doc.required_extensions.iter().any(|e| e == crate::geometry::EXTENSION) {
+    if has_geometry
+        || doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::geometry::EXTENSION)
+    {
         crate::geometry::validate(doc, &mut out);
+    }
+    if has_print
+        || doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::print_layout::EXTENSION)
+    {
+        crate::print_layout::validate(doc, &mut out);
     }
     validate_measures(&measures, &parts, &mut out);
     validate_measure_rests(doc, &measures, &voices, &mut out);
@@ -804,7 +820,7 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
-                    if m.kind == crate::geometry::MEASURE {
+                    if m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
                         continue;
                     }
                     if m.target.starts_with('#') {

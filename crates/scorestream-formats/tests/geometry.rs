@@ -299,6 +299,6 @@ fn original_coordinate_counts_are_exact_but_xml_and_mxl_still_reject_semantics()
                 .iter()
                 .any(|d| d.feature == "element.defaults")
         );
-        assert!(xml.diagnostics.iter().any(|d| d.feature == "element.print"));
+        assert!(!xml.diagnostics.iter().any(|d| d.feature == "element.print"));
     }
 }

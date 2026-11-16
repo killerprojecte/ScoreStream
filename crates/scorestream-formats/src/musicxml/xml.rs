@@ -731,6 +731,7 @@ pub(super) fn schema_with_profile(
                 &["number", "implicit", "id"],
                 &[
                     "attributes",
+                    "print",
                     "note",
                     "backup",
                     "forward",
@@ -740,6 +741,7 @@ pub(super) fn schema_with_profile(
                 ],
                 &[
                     "attributes",
+                    "print",
                     "note",
                     "backup",
                     "forward",
@@ -750,6 +752,37 @@ pub(super) fn schema_with_profile(
                 &[],
                 false,
             ),
+            "print" => (
+                &["new-page", "page-number"],
+                &["system-layout", "staff-layout"],
+                &[],
+                &[],
+                false,
+            ),
+            "system-layout" => (
+                &[],
+                &["system-margins", "top-system-distance"],
+                &[],
+                &["system-margins", "top-system-distance"],
+                false,
+            ),
+            "system-margins" => (
+                &[],
+                &["left-margin", "right-margin"],
+                &[],
+                &["left-margin", "right-margin"],
+                false,
+            ),
+            "staff-layout" => (
+                &["number"],
+                &["staff-distance"],
+                &[],
+                &["staff-distance"],
+                false,
+            ),
+            "left-margin" | "right-margin" | "top-system-distance" | "staff-distance" => {
+                (&[], &[], &[], &[], true)
+            }
             "direction" => (
                 &["placement"],
                 &["direction-type", "offset", "staff", "sound"],

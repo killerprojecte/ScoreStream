@@ -1463,6 +1463,159 @@
             },
             "description": "Requires scorestream.credits@1, time zero, contiguous unique indices, finite-decimal coordinates and positive finite-decimal font size. Authored-only page text; no renderer or audio interpretation."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.print"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "part": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "layout": {
+                    "enum": [
+                      "none",
+                      "system",
+                      "staff"
+                    ]
+                  },
+                  "new_page": {
+                    "type": "boolean"
+                  },
+                  "page_number": {
+                    "type": "string"
+                  },
+                  "left_margin": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "right_margin": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "top_system_distance": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "staff": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "staff_distance": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "part",
+                  "layout"
+                ],
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "layout": {
+                        "const": "none"
+                      }
+                    },
+                    "required": [],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "left_margin"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "right_margin"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "top_system_distance"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "staff"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "staff_distance"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "layout": {
+                        "const": "system"
+                      }
+                    },
+                    "required": [
+                      "left_margin",
+                      "right_margin",
+                      "top_system_distance"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "staff"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "staff_distance"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "layout": {
+                        "const": "staff"
+                      }
+                    },
+                    "required": [
+                      "staff",
+                      "staff_distance"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "left_margin"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "right_margin"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "top_system_distance"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
         }
       ]
     },

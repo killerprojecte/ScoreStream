@@ -508,6 +508,17 @@
       "scorestream.geometry.measure": [
         "part",
         "width"
+      ],
+      "scorestream.print": [
+        "part",
+        "layout",
+        "new_page",
+        "page_number",
+        "left_margin",
+        "right_margin",
+        "top_system_distance",
+        "staff",
+        "staff_distance"
       ]
     },
     "relations": {
@@ -1595,6 +1606,51 @@
         },
         "required_extension": "scorestream.credits@1",
         "meaning": "Ordered authored page credit at time zero. Contiguous unique indices, optional positive page, finite decimal geometry, left/center/right justification and top/middle/bottom/baseline vertical alignment. No layout or audio semantics."
+      },
+      "scorestream.print": {
+        "targets": [
+          "measure"
+        ],
+        "required": [
+          "part",
+          "layout"
+        ],
+        "fields": {
+          "part": {
+            "type": "identifier"
+          },
+          "layout": {
+            "type": "enum",
+            "values": [
+              "none",
+              "system",
+              "staff"
+            ]
+          },
+          "new_page": {
+            "type": "boolean"
+          },
+          "page_number": {
+            "type": "string"
+          },
+          "left_margin": {
+            "type": "rational"
+          },
+          "right_margin": {
+            "type": "rational"
+          },
+          "top_system_distance": {
+            "type": "rational"
+          },
+          "staff": {
+            "type": "positive_integer"
+          },
+          "staff_distance": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.print@1",
+        "meaning": "Closed measure-start authored page/system/staff layout. Exact finite decimal tenths; absent flags and labels stay absent. Preview reflows independently, performance unchanged."
       }
     }
   },
@@ -1755,6 +1811,10 @@
         "mark_kinds": [
           "scorestream.credit"
         ]
+      },
+      "scorestream.print@1": {
+        "status": "lossless interchange; preview independently reflows with explicit warning",
+        "required_behavior": "One print per owning part/measure at exact onset, complete score only. layout=none excludes dimensions, system requires left_margin/right_margin/top_system_distance, staff requires staff/staff_distance. Reject mixed variants, foreign fields, nondecimal rational values, duplicate or dangling hosts. No page rendering or playback timing inferred."
       }
     }
   },

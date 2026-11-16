@@ -260,6 +260,27 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
                 .map(move |m| (p.id.0.as_str(), m.id.as_str()))
         })
         .collect();
+    let print_staves: BTreeMap<_, _> = score
+        .parts
+        .iter()
+        .map(|p| (p.id.0.as_str(), p.staves))
+        .collect();
+    let mut print_hosts = BTreeSet::new();
+    for p in &score.print_layout {
+        if !measure_hosts.contains(&(p.part.as_str(), p.measure.as_str()))
+            || !print_hosts.insert(p.measure.as_str())
+            || !scorestream_core::print_layout::valid_fields(p)
+            || matches!(&p.layout,scorestream_core::print_layout::Layout::Staff{number,..} if print_staves.get(p.part.as_str()).is_none_or(|n|number>n))
+        {
+            report.push(
+                Format::ScoreModel,
+                MappingEffect::Invalid,
+                "print.invalid",
+                &p.measure,
+                "Print layout requires a unique owning measure and exact finite decimal fields",
+            );
+        }
+    }
     let mut geometry_hosts = BTreeSet::new();
     for g in &score.geometry {
         use scorestream_core::geometry::Geometry;

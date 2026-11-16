@@ -175,6 +175,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::notation_extension::EXTENSION
             && e != core::credits::EXTENSION
             && e != core::geometry::EXTENSION
+            && e != core::print_layout::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -184,7 +185,20 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         } else {
             Vec::new()
         },
-        geometry: if doc.required_extensions.iter().any(|e| e == core::geometry::EXTENSION) {
+        print_layout: if doc
+            .required_extensions
+            .iter()
+            .any(|e| e == core::print_layout::EXTENSION)
+        {
+            core::print_layout::decode(doc).expect("validated print layout")
+        } else {
+            vec![]
+        },
+        geometry: if doc
+            .required_extensions
+            .iter()
+            .any(|e| e == core::geometry::EXTENSION)
+        {
             core::geometry::decode(doc).expect("validated geometry")
         } else {
             Vec::new()
@@ -326,7 +340,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     if core::articulation_extension::is_kind(&m.kind)
                         || core::notation_extension::is_kind(&m.kind)
                         || m.kind == core::credits::KIND
-                        || core::geometry::is_kind(&m.kind) => {}
+                        || core::geometry::is_kind(&m.kind)
+                        || core::print_layout::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
                 }
@@ -761,6 +776,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     let mut doc = Document::new(DocumentKind::Score);
     if !score.credits.is_empty() {
         doc.required_extensions.push(core::credits::EXTENSION.into());
+    }
+    if !score.print_layout.is_empty() {
+        doc.required_extensions
+            .push(core::print_layout::EXTENSION.into());
     }
     if !score.geometry.is_empty() {
         doc.required_extensions
@@ -1205,6 +1224,17 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .map(move |m| ((p.id.0.as_str(), m.id.as_str()), &m.start))
         })
         .collect();
+    for p in &score.print_layout {
+        let at = geometry_measures[&(p.part.as_str(), p.measure.as_str())].clone();
+        frames
+            .entry(at)
+            .or_default()
+            .push(Record::Mark(core::print_layout::encode(
+                p,
+                parts.get(&p.part, &mut report),
+                measures.get(&p.measure, &mut report),
+            )));
+    }
     for geometry in &score.geometry {
         let (at, host, part) = match geometry {
             core::geometry::Geometry::Event { event, .. } => (
