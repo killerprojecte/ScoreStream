@@ -27,6 +27,7 @@ remove or override the loader checks. Use the normal unchanged launch environmen
 AUDITION=/actual/build/path/debug/examples/audition
 CASE=crates/scorestream-audio/examples/audition
 
+"$AUDITION" trace-route "$CASE/fixture.sfs"
 "$AUDITION" discover-joint "$CASE/fixture.sfs" simple_staccato_accent_v1
 "$AUDITION" preflight "$CASE/fixture.sfs" "$CASE/fixture.json"
 "$AUDITION" render "$CASE/fixture.sfs" "$CASE/fixture.json" \
@@ -122,3 +123,59 @@ produce the unchanged full SFS, discover its actual performed route, select exac
 policies/palette, and run preflight. Work on the first observed semantic or native
 blocker with a source-qualified regression. The example is already reusable for
 supported sources; whole-work fidelity still needs those independent milestones.
+
+## Non-playable route trace versus qualified sound discovery
+
+`trace-route source.sfs` validates the complete unchanged source and reuses the
+closed navigation reconciler/traversal. It returns written-event and repeat-visit
+counts, exact fermata occurrence IDs/quarter intervals, capability inventories
+and disclosed navigation conventions. It returns **no resolved score or playback
+plan**, does not choose hold seconds, and cannot authorize sound. In particular,
+slurs, wedges, dashes and ornaments remain in the source and capability inventory.
+A successful trace does not certify tie realization across jumps, gain envelopes,
+articulation semantics, pitches, timbres or rendering.
+
+`discover-joint` is the stricter policy-entry route. It now accepts an actually
+grace-free source without inventing `grace@1` or a grace event. For actual joint
+compilation such a source must receive an explicitly empty grace-group policy;
+a nonempty invented allocation still fails. The same qualified hold clock is
+used. Typed passive provenance, metronome presentation, part labels, defaults,
+credits, lyric text, print layout and geometry may coexist, with a retained
+passive-receipt disclosure. This does not turn a printed metronome into sound tempo.
+
+See [qualified route audit](../../../../docs/QUALIFIED_ROUTE_CAPABILITIES.md) for
+the individual family decisions and the observed original Beethoven I trace.
+
+### Explicit practice review, not render permission
+
+```
+audition review-practice source.sfs written_notes_without_wedge_dashes_ornaments_slur_v1
+```
+
+This closed opt-in produces a durable `scorestream.practice-review.v1` JSON report
+bound to the exact SFS SHA. It validates the complete source and route, retains
+original typed instrument metadata (including external channel/port, one-based
+program, exact volume percent and pan degrees), and names all four deliberately
+unrepresented acoustic behaviors. Unknown policy names and malformed source fail.
+The report is **not** a playable plan, a changed score, or an acoustic qualifier.
+`contract_renderable` and `playback_plan_created` are always false. It also records
+the actual strict joint-discovery errors and independently checks the existing
+MIDI-intent guard; that latter observation is not a claim that all preceding
+performance checks have passed.
+
+The unchanged movement-I source SHA
+`ffac34c86e31df50b028ca7afe0e91f822c2b122af28b55c5e0c1ba10769f77b`
+contains 18 authored MIDI assignments, each with volume `393701/5000` and pan `0`.
+The next route obstacle is `instrument.performance_unsupported`, not missing
+notes or a file-size ceiling. Merely choosing a bank/preset does not realize the
+source mixer intent. P11/P12 have no source port; absence must not become port 1.
+
+A subsequent sealed local-MIDI receipt must separate external addresses from
+internal channels, compare source programs against explicit selected presets,
+and disclose any volume/pan quantization. A subsequent practice compiler must
+carry each nonrealization into its immutable result and final native report,
+retain the original source, and reuse existing joint articulation/grace/fermata
+qualification without guessed holds. No such permissive compiler or render
+profile is introduced by this review command. Native overlap, independent gain
+envelope, sample coverage, tie/clock and output checks remain unresolved until a
+real plan reaches them. Do not describe a review report as a faithful rendition.

@@ -84,3 +84,7 @@ last-wins, moving 44.44 to the printed p, and coalescing with 106.67 are forbidd
 - Pure desktop test verifies explicit preview refusal without source mutation.
 
 No full workspace suite or whole-original acceptance claim is included.
+
+An explicitly selected occurrence inspection API is now described in
+AUTHORED_DYNAMIC_OCCURRENCE_SCHEDULE.md. It qualifies only proven adjacent
+performed visits and emits no gains; normal playback remains withheld.

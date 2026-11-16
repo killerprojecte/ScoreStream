@@ -10,6 +10,9 @@ mod intervals;
 mod lower;
 mod model;
 mod perform;
+mod passive;
+mod trace;
+pub use trace::*;
 pub use combined::*;
 pub use fermata::*;
 pub use grace::*;
@@ -18,3 +21,6 @@ pub use lower::lower_document;
 pub use model::*;
 
 pub use perform::*;
+
+mod authored_dynamic_schedule;
+pub use authored_dynamic_schedule::*;

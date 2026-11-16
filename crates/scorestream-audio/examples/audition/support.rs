@@ -282,3 +282,81 @@ pub fn discover(source: &str) -> Result<Value> {
         json!({"source_sha256":source_sha256(source),"selected_articulation_policy":"simple_staccato_accent_v1","graces":d.graces.occurrences.iter().map(|g|json!({"event":g.id,"written_event":g.written_id,"principal":g.principal,"part":g.part,"order":g.order,"principal_start":g.principal_start,"principal_end":g.principal_end,"authored_timing":g.timing})).collect::<Vec<_>>(),"fermatas":d.fermatas.occurrences.iter().map(|f|json!({"event":f.id,"written_event":f.written_id,"part":f.part,"start":f.quarter_start,"end":f.quarter_end})).collect::<Vec<_>>(),"policy":"No duration, grouping or sample assignment has been chosen."}),
     )
 }
+
+/// Non-playable trace; it deliberately does not call the sound-qualified discovery API.
+pub fn trace(source: &str) -> Result<Value> {
+    let doc = scorestream_codec::parse(source).map_err(|e| format!("{e:?}"))?;
+    let trace =
+        scorestream_codec::notation::trace_document_route(&doc).map_err(|e| format!("{e:?}"))?;
+    Ok(json!({"source_sha256":source_sha256(source),"trace":trace}))
+}
+
+/// A closed, explicit review request. This is not permission to render: no
+/// compiler profile accepts it yet, and it cannot construct a playback plan.
+#[derive(Clone, Copy, Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PracticeReviewPolicy {
+    WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+}
+/// Durable source-bound readiness evidence. All typed source records remain
+/// unchanged. Missing acoustic behavior is named even when no plan can be made.
+pub fn review_practice(source: &str, policy: PracticeReviewPolicy) -> Result<Value> {
+    use scorestream_codec::{Record, instrument_extension};
+    let doc = scorestream_codec::parse(source).map_err(|e| format!("{e:?}"))?;
+    let route = trace_document_route(&doc).map_err(|e| format!("{e:?}"))?;
+    let descriptions = [
+        (
+            "scorestream.wedge@1",
+            "No crescendo/diminuendo gain trajectory is realized from authored wedges.",
+        ),
+        (
+            "scorestream.dashes@1",
+            "No acoustic continuation or termination is inferred from authored dashed direction spans.",
+        ),
+        (
+            "scorestream.ornaments@1",
+            "No ornamental auxiliary attacks, tremolo repetitions, pitch alteration or timing are added.",
+        ),
+        (
+            "scorestream.slur@1",
+            "No legato overlap, phrasing, bowing or articulation change is inferred from authored slurs.",
+        ),
+    ];
+    let disclosures: Vec<_> = descriptions
+        .into_iter()
+        .map(|(family, behavior)| {
+            json!({
+                "family":family,"present":doc.required_extensions.iter().any(|e|e==family),
+                "unrepresented_behavior":behavior,"source_records_retained":true
+            })
+        })
+        .collect();
+    let mut metadata = Vec::new();
+    for record in doc.frames.iter().flat_map(|f| &f.records) {
+        if let Record::Mark(mark) = record {
+            if mark.kind == instrument_extension::KIND {
+                let authored = instrument_extension::decode(mark).map_err(|e| e.to_string())?;
+                metadata.push(json!({"part":mark.target,"authored":authored}));
+            }
+        }
+    }
+    let midi_blocker = instrument_extension::has_midi_intent(&doc);
+    let strict_result = discover_document_joint_performance(
+        &doc,
+        ExplicitArticulationPolicy::SimpleStaccatoAccentV1,
+    );
+    let strict_errors = match strict_result {
+        Ok(_) => Vec::new(),
+        Err(errors) => errors.into_iter().map(|e| e.to_string()).collect(),
+    };
+    Ok(json!({
+        "schema":"scorestream.practice-review.v1","source_sha256":source_sha256(source),
+        "selected_review_policy":policy,"disclosures":disclosures,"authored_instruments":metadata,
+        "route":route,"strict_joint_discovery_errors":strict_errors,
+        "independently_verified_midi_route_blocker":midi_blocker,
+        "midi_route_blocker_code":if midi_blocker {Some("instrument.performance_unsupported")} else {None},
+        "midi_scope":"Source channel and port are external addresses, not local synth channel allocations. Programs require explicit bank/preset selection; exact volume percent and pan degrees have no selected realization. No rounding, gain substitution or external MIDI delivery occurred.",
+        "playback_plan_created":false,"contract_renderable":false,
+        "remaining_requirements":["A separate sealed practice compiler and renderer receipt must explicitly carry the four nonrealizations.","Resolve authored instrument routing and mixer semantics without discarding them.","Choose and validate explicit source-qualified grace/fermata policies; no hold duration is selected by this review.","Validate real note/tie/clock semantics and native palette, overlap, envelope and tail preflight before rendering."]
+    }))
+}

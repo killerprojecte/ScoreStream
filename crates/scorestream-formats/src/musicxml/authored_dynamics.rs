@@ -318,6 +318,16 @@ mod corpus {
             model.authored_dynamics = entries;
             let sfs = SfsAdapter.write(&model).unwrap().value;
             assert_eq!(SfsAdapter.read(&sfs).unwrap().value, model);
+            let doc=crate::sfs::to_document(&model).unwrap().value;
+            let schedule=scorestream_core::notation::inspect_authored_dynamic_schedule(&doc,scorestream_core::notation::AuthoredDynamicSchedulePolicy::AdjacentWrittenOwnersV1,scorestream_core::notation::PerformanceLimits::default()).unwrap();
+            assert!(schedule.execution_withheld);
+            assert_eq!(schedule.written_statements,model.authored_dynamics);
+            assert_eq!(schedule.statements.len(),2);
+            assert_eq!(schedule.boundaries.len(),1);
+            assert_eq!(schedule.boundaries[0].ordering,scorestream_core::notation::BoundaryOrdering::AdjacentTerminalBeforeOpening);
+            assert_eq!(schedule.boundaries[0].at.to_string(),"3/2");
+            assert_eq!(schedule.statements[0].performed_visual_at.to_string(),"2/3");
+
             let xml = MusicXml.write(&model).unwrap().value;
             assert_eq!(MusicXml.read(&xml).unwrap().value, model);
             assert!(scorestream_app::playback::plan_source(&sfs)

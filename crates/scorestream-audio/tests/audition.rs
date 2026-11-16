@@ -91,3 +91,38 @@ fn configured_qualified_audition_publishes_verified_atomic_wav() {
     assert!(bad.render(&bank, &absent).is_err());
     assert!(!absent.exists());
 }
+
+#[test]
+fn explicit_practice_review_retains_exact_midi_intent_without_sound_authority() {
+    use support::{PracticeReviewPolicy, review_practice};
+    let source = SOURCE.replace("name=\"violin\" source_id=\"ip\"", "name=\"violin\" source_id=\"ip\" device=\"\" device_ref=\"ip\" port=2 midi_ref=\"ip\" channel=12 program=41 volume=393701/5000 pan=0");
+    let before = source.clone();
+    let r = review_practice(
+        &source,
+        PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+    )
+    .unwrap();
+    assert_eq!(source, before);
+    assert_eq!(
+        r["source_sha256"],
+        scorestream_audio::assignments::source_sha256(&source)
+    );
+    assert_eq!(r["disclosures"].as_array().unwrap().len(), 4);
+    assert_eq!(r["independently_verified_midi_route_blocker"], true);
+    assert_eq!(r["contract_renderable"], false);
+    assert_eq!(r["playback_plan_created"], false);
+    let a = &r["authored_instruments"][0]["authored"];
+    assert_eq!(a["midi_device"]["port"], 2);
+    assert_eq!(a["midi_instrument"]["channel"], 12);
+    assert_eq!(a["midi_instrument"]["program"], 41);
+    assert_eq!(a["midi_instrument"]["volume"], "393701/5000");
+    let invalid = source.replace("program=41", "program=129");
+    assert!(
+        review_practice(
+            &invalid,
+            PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1
+        )
+        .is_err()
+    );
+    assert!(serde_json::from_str::<PracticeReviewPolicy>("\"ignore_everything\"").is_err());
+}

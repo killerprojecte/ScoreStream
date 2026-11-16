@@ -5,8 +5,20 @@ mod support;
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
-    let usage = "Usage: audition discover-joint source.sfs simple_staccato_accent_v1 | audition preflight source.sfs policy.json | audition render source.sfs policy.json existing.sf2 new.wav";
+    let usage = "Usage: audition review-practice source.sfs written_notes_without_wedge_dashes_ornaments_slur_v1 | audition trace-route source.sfs | audition discover-joint source.sfs simple_staccato_accent_v1 | audition preflight source.sfs policy.json | audition render source.sfs policy.json existing.sf2 new.wav";
     let value = match args.get(1).map(String::as_str) {
+        Some("review-practice")
+            if args.len() == 4
+                && args[3] == "written_notes_without_wedge_dashes_ornaments_slur_v1" =>
+        {
+            support::review_practice(
+                &std::fs::read_to_string(&args[2])?,
+                support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+            )?
+        }
+        Some("trace-route") if args.len() == 3 => {
+            support::trace(&std::fs::read_to_string(&args[2])?)?
+        }
         Some("discover-joint") if args.len() == 4 && args[3] == "simple_staccato_accent_v1" => {
             support::discover(&std::fs::read_to_string(&args[2])?)?
         }

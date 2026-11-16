@@ -211,21 +211,14 @@ fn authored_slurs_remain_blocked_in_each_qualified_performance_composition() {
     let grace_source = source(&with_grace);
     let fermata_source = source(&with_fermata);
     let combined_source = source(&combined);
-    assert!(
-        discover_source_graces(&grace_source)
-            .unwrap_err()
-            .contains("capability")
-    );
-    assert!(
-        discover_source_fermatas(&fermata_source)
-            .unwrap_err()
-            .contains("capability")
-    );
-    assert!(
-        discover_source_graces_and_fermatas(&combined_source)
-            .unwrap_err()
-            .contains("capability")
-    );
+    for error in [
+        discover_source_graces(&grace_source).unwrap_err(),
+        discover_source_fermatas(&fermata_source).unwrap_err(),
+        discover_source_graces_and_fermatas(&combined_source).unwrap_err(),
+    ] {
+        assert!(error.contains("performance.unresolved_families"), "{error}");
+        assert!(error.contains("scorestream.slur@1"), "{error}");
+    }
     assert!(combined_source.contains("!requires scorestream.slur@1"));
     assert!(combined_source.contains("!requires scorestream.grace@1"));
     assert!(combined_source.contains("!requires scorestream.fermata@1"));

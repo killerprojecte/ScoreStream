@@ -116,6 +116,9 @@ pub(super) fn perform(
         d.source = doc.source;
         return Err(d);
     }
+    super::passive::validate(doc)?;
+    let pending: Vec<_> = doc.required_extensions.iter().filter(|e|super::passive::pending(e)).collect();
+    if !pending.is_empty() { return Err(error("performance.unresolved_families",format!("Required families may carry audible intent and have no selected closed realization in this route: {pending:?}; route trace discovery is not sound authorization"))); }
     let supported = if articulations && !combined {
         doc.required_extensions
             .iter()
@@ -128,14 +131,13 @@ pub(super) fn perform(
                     || e == crate::beam_extension::EXTENSION
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
+                    || super::passive::is_passive(e)
             })
     } else if combined {
-        [
-            crate::fermata_extension::EXTENSION,
-            crate::grace_extension::EXTENSION,
-        ]
-        .iter()
-        .all(|required| doc.required_extensions.iter().any(|e| e == required))
+        doc.required_extensions.iter().any(|e|e == crate::fermata_extension::EXTENSION)
+            && (doc.required_extensions.iter().any(|e|e == crate::grace_extension::EXTENSION)
+                || (!doc.events().any(|(_,e)|e.is_grace())
+                    && !doc.frames.iter().flat_map(|f| &f.records).any(|r|matches!(r, Record::Mark(m) if m.kind.starts_with("scorestream.grace")))))
             && (!articulations
                 || doc
                     .required_extensions
@@ -152,6 +154,7 @@ pub(super) fn perform(
                     || e == crate::beam_extension::EXTENSION
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
+                    || super::passive::is_passive(e)
             })
     } else if fermatas {
         doc.required_extensions
@@ -164,6 +167,7 @@ pub(super) fn perform(
                     || e == crate::beam_extension::EXTENSION
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
+                    || super::passive::is_passive(e)
             })
     } else if graces {
         doc.required_extensions
@@ -176,6 +180,7 @@ pub(super) fn perform(
                     || e == crate::beam_extension::EXTENSION
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
+                    || super::passive::is_passive(e)
             })
     } else {
         doc.required_extensions.iter().any(|e| e == ext::EXTENSION)
@@ -185,6 +190,7 @@ pub(super) fn perform(
                     || e == crate::beam_extension::EXTENSION
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
+                    || super::passive::is_passive(e)
             })
     };
     if !supported {
@@ -253,6 +259,7 @@ pub(super) fn perform(
                 Record::Mark(m) if m.kind == ext::KIND => bars.push(ext::decode(m)?),
                 // Owned words are metadata; their explicit sound position is projected below.
                 Record::Mark(m) if crate::words::is_kind(&m.kind) => (),
+                Record::Mark(m) if m.kind == crate::credits::KIND || crate::defaults::is_kind(&m.kind) || crate::provenance::is_kind(&m.kind) || crate::geometry::is_kind(&m.kind) || crate::print_layout::is_kind(&m.kind) || crate::lyrics::is_kind(&m.kind) || m.kind == crate::part_labels::KIND || m.kind == crate::metronome_display::KIND => (),
                 Record::State(_) | Record::Mark(_) | Record::Event(_) if frame.time == doc.end => {
                     return Err(error(
                         "navigation.final_boundary_control",
@@ -439,6 +446,8 @@ pub(super) fn perform(
         measures: vec![],
         diagnostics: vec![],
     };
+    let passive: Vec<_> = doc.required_extensions.iter().filter(|e|super::passive::is_passive(e)).collect();
+    if !passive.is_empty() {result.diagnostics.push(Diagnostic::warning("performance.passive_receipts",format!("Typed-validated printed/provenance families retained without inferred sound changes: {passive:?}"),doc.source));}
     let mut occurrences = vec![];
     let mut previous_measure = None;
     let mut run = 0;
