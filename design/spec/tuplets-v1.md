@@ -53,13 +53,13 @@ exact-rational capability and the verified ordinary playback cases stay usable.
   articulation hosts.
 - `desktop/tests/tuplets.test.ts` verifies unchanged preview MEI plus disclosure.
 - With `SCORESTREAM_MXL_FIXTURES`, run ignored
-  `original_tuplet_endpoint_projection_and_unsupported_siblings`. It verifies
+  `original_tuplet_endpoint_projection_and_ornament_siblings`. It verifies
   source SHA-256 and literal XML/MXL equality, then projects the endpoint family
   through typed native/XML roundtrip: 2,142 endpoints (II 420; IV 1,722), with
   bracket yes/no/absent counts 10/1,061/1,071.
 
 That receipt is explicitly an **endpoint-family projection**, not a full score
-or full note import. The 103 original hosts that also contain unsupported
-ornaments remain rejected by the complete bridge; the test verifies that they
-cannot lose those siblings silently. Other family validators can still reject
+or full note import. The 103 original hosts that also contain ornaments are now supported by the
+separate `scorestream.ornaments@1` capability and ordered bridge, with exact
+whole-wrapper receipts documented in `ornaments-v1.md`. Other family validators can still reject
 other context. No untouched original is claimed fully imported by this slice.

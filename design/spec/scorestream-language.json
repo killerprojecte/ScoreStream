@@ -547,6 +547,18 @@
         "bracket",
         "group_index",
         "relation"
+      ],
+      "scorestream.ornaments.child": [
+        "index",
+        "kind",
+        "phase",
+        "bracket",
+        "group_index",
+        "relation",
+        "ornament_group",
+        "strokes",
+        "number",
+        "default_y"
       ]
     },
     "relations": {
@@ -1970,6 +1982,68 @@
         },
         "required_extension": "scorestream.words@1",
         "meaning": "Ordered standalone authored plain score instruction with exact decoded text, style, geometry and logical ownership. Not analytical annotation; no inferred gain, tempo, timbre or navigation behavior."
+      },
+      "scorestream.ornaments.child": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "index",
+          "kind"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "kind": {
+            "type": "enum",
+            "values": [
+              "tuplet",
+              "articulations",
+              "tied",
+              "slur",
+              "fermata",
+              "trill_mark",
+              "tremolo",
+              "wavy_line"
+            ]
+          },
+          "phase": {
+            "type": "enum",
+            "values": [
+              "start",
+              "stop"
+            ]
+          },
+          "bracket": {
+            "type": "boolean"
+          },
+          "group_index": {
+            "type": "nonnegative_integer"
+          },
+          "relation": {
+            "type": "identifier"
+          },
+          "ornament_group": {
+            "type": "nonnegative_integer"
+          },
+          "strokes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "number": {
+            "type": "enum",
+            "values": [
+              "1"
+            ]
+          },
+          "default_y": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.ornaments@1",
+        "meaning": "Ordered preserve-only ornament groups and complete notation siblings. Nested group boundaries preserved through contiguous ornament_group; no ornament attacks or wavy-line pairing inferred. Tuplet children also require scorestream.tuplets@1."
       }
     }
   },
@@ -2153,11 +2227,15 @@
       },
       "scorestream.tuplets@1": {
         "status": "lossless closed authored endpoint bridge; preview omits authored endpoints",
-        "required_behavior": "Complete score, unique contiguous per-host child indices at measured event onset. One unadorned notations wrapper per host; retain start/stop and optional start bracket exactly. All sibling refs must bijectively match existing canonical-simple or authored articulation groups, ordinary tied endpoints, authored slurs and fermatas. Endpoint-only/open sequences are retained without inferred pairing. Unsupported shapes and ornament siblings still reject. Written time-modification and performed duration remain independent."
+        "required_behavior": "Complete score, unique contiguous per-host child indices at measured event onset. One unadorned notations wrapper per host; retain start/stop and optional start bracket exactly. All sibling refs must bijectively match existing canonical-simple or authored articulation groups, ordinary tied endpoints, authored slurs and fermatas. Endpoint-only/open sequences are retained without inferred pairing. Ornament siblings require scorestream.ornaments@1 and its canonical host mark kind. Unsupported shapes still reject. Written time-modification and performed duration remain independent."
       },
       "scorestream.words@1": {
         "status": "authored standalone plain words; current preview and expressive performance uncovered",
         "required_behavior": "Complete score, exact measure ownership and inclusive local onset, contiguous indices and canonical part/measure grouping. Required literal text; optional font family, positive finite-decimal size, normal/italic style, normal/bold weight, all four finite-decimal coordinate axes, staff, placement and system relation. Preserve absence and whitespace. Reject complex mixed groups, unrepresented fields and malformed ownership; no invented gain/tempo/timbre/navigation from words."
+      },
+      "scorestream.ornaments@1": {
+        "status": "authored preservation only; ornaments omitted by preview and sounding projection",
+        "required_behavior": "Complete measured host, exact onset, contiguous child indices and ornament groups; nonempty groups. Empty trill-mark, single tremolo strokes1..4, wavy-line start/stop with optional number1 and exact finite-decimal default_y. No spans or attacks inferred. Complete ordered sibling bijection, one unadorned notation wrapper. All marks on ornament-bearing host use scorestream.ornaments.child; existing tuplet endpoint requires both capabilities. Unsupported hierarchy/semantics reject."
       }
     }
   },

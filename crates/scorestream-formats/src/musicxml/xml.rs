@@ -909,8 +909,8 @@ pub(super) fn schema_with_profile(
             "tie" => (&["type", "time-only"], &[], &[], &[], false),
             "notations" if authored => (
                 &["id", "print-object"],
-                &["tied", "fermata", "slur", "articulations", "tuplet"],
-                &["tied", "fermata", "slur", "articulations", "tuplet"],
+                &["tied", "fermata", "slur", "articulations", "tuplet", "ornaments"],
+                &["tied", "fermata", "slur", "articulations", "tuplet", "ornaments"],
                 &[],
                 false,
             ),
@@ -930,11 +930,15 @@ pub(super) fn schema_with_profile(
             ),
             "notations" => (
                 &[],
-                &["tied", "fermata", "slur", "articulations", "tuplet"],
-                &["tied", "fermata", "slur", "tuplet"],
+                &["tied", "fermata", "slur", "articulations", "tuplet", "ornaments"],
+                &["tied", "fermata", "slur", "tuplet", "ornaments"],
                 &[],
                 false,
             ),
+            "ornaments" => (&[], &["trill-mark", "tremolo", "wavy-line"], &["trill-mark", "tremolo", "wavy-line"], &[], false),
+            "trill-mark" => (&[], &[], &[], &[], false),
+            "tremolo" => (&["type"], &[], &[], &[], true),
+            "wavy-line" => (&["type", "number", "default-y"], &[], &[], &[], false),
             "tuplet" => (&["type", "bracket"], &[], &[], &[], false),
             "slur" => (
                 &[

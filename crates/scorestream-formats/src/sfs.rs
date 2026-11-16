@@ -181,6 +181,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::words::EXTENSION
             && e != core::lyrics::EXTENSION
             && e != core::tuplets::EXTENSION
+            && e != core::tuplets::ORNAMENT_EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -190,7 +191,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         tuplets: if doc
             .required_extensions
             .iter()
-            .any(|e| e == core::tuplets::EXTENSION)
+            .any(|e| e == core::tuplets::EXTENSION || e == core::tuplets::ORNAMENT_EXTENSION)
         {
             core::tuplets::decode(doc).expect("validated tuplets")
         } else {
@@ -818,10 +819,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         doc.required_extensions
             .push(core::credits::EXTENSION.into());
     }
-    if !score.tuplets.is_empty() {
+    if score.tuplets.iter().any(core::tuplets::has_tuplets) {
         doc.required_extensions
             .push(core::tuplets::EXTENSION.into());
     }
+    if score.tuplets.iter().any(core::tuplets::has_ornaments) { doc.required_extensions.push(core::tuplets::ORNAMENT_EXTENSION.into()); }
     if !score.lyrics.is_empty() {
         doc.required_extensions.push(core::lyrics::EXTENSION.into());
     }

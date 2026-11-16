@@ -527,10 +527,13 @@ fn read_with_audit<R: BufRead + Seek>(
     if !score.print_layout.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"print.authored_layout","/print_layout",format!("Retained {} measure-owned print layouts; preview independently reflows and playback is unchanged",score.print_layout.len()));
     }
+    if score.tuplets.iter().any(scorestream_core::tuplets::has_ornaments) {
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"ornaments.authored","/ornaments","Authored ornament groups and notation order are retained. Ornament attacks and wavy-line spans are not inferred; playback uses the unornamented note durations and preview omits ornaments");
+    }
     if !score.lyrics.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
     }
-    if !score.tuplets.is_empty() {
+    if score.tuplets.iter().any(scorestream_core::tuplets::has_tuplets) {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"tuplet.authored_endpoints","/tuplets","Authored start/stop and bracket absence retained in exact wrapper order. No spans, nesting, closed pairing or timing are inferred; existing time-modification and event duration remain authoritative.");
     }
     options.complete(&score, &mut report);

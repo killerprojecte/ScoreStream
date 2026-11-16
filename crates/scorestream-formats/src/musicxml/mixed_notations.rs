@@ -24,7 +24,7 @@ pub(super) fn read(note: &Node, event: &EventId) -> Option<Pending> {
             wrapper
                 .children
                 .iter()
-                .filter(|child| child.name != "tuplet")
+                .filter(|child| !matches!(child.name.as_str(), "tuplet" | "ornaments"))
                 .map(|child| {
                     let phase = if child.attr("type") == Some("start") {
                         NotationPhase::Start

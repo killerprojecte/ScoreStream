@@ -45,6 +45,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::words::EXTENSION
             && requirement != crate::lyrics::EXTENSION
             && requirement != crate::tuplets::EXTENSION
+            && requirement != crate::tuplets::ORNAMENT_EXTENSION
         {
             out.push(Diagnostic::error(
                 "extension_unsupported",
@@ -570,7 +571,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
         || doc
             .required_extensions
             .iter()
-            .any(|e| e == crate::tuplets::EXTENSION)
+            .any(|e| e == crate::tuplets::EXTENSION || e == crate::tuplets::ORNAMENT_EXTENSION)
     {
         crate::tuplets::validate(doc, &mut out);
     }

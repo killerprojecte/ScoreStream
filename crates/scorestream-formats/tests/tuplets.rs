@@ -135,7 +135,7 @@ fn wider_shapes_and_native_corruption_do_not_silently_flatten() {
         "<notations><tuplet type=\"continue\"/></notations>",
         "<notations><tuplet type=\"stop\" bracket=\"no\"/></notations>",
         "<notations><tuplet type=\"start\"><tuplet-actual/></tuplet></notations>",
-        "<notations><tuplet type=\"start\"/><ornaments><trill-mark/></ornaments></notations>",
+        "<notations><tuplet type=\"start\"/><ornaments><turn/></ornaments></notations>",
         "<notations><tuplet type=\"start\"/></notations><notations/>",
     ] {
         assert!(

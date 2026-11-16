@@ -184,7 +184,7 @@ fn invalid_and_unimplemented_input_still_returns_source_diagnostics() {
         ("<staccato placement=\"above\"/>", "<unknown/>"),
         (
             "<articulations><staccato placement=\"above\"/></articulations>",
-            "<ornaments><trill-mark/></ornaments>",
+            "<ornaments><turn/></ornaments>",
         ),
     ] {
         let xml = STUDY.replacen(old, new, 1);

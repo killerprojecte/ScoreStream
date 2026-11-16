@@ -77,7 +77,7 @@ fn unsupported_paths_are_reported_and_no_document_returned() {
         report
             .diagnostics
             .iter()
-            .any(|d| d.feature == "element.ornaments" && d.source.unwrap().line > 0)
+            .any(|d| d.feature == "element.turn" && d.source.unwrap().line > 0)
     );
     for input in [
         TWO.replace(

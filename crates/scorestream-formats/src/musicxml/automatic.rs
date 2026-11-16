@@ -20,7 +20,7 @@ pub(super) fn is_canonical_simple(note: &Node) -> bool {
     let mut previous_rank = None;
     for child in &wrapper.children {
         // The tuplet bridge independently retains exact endpoint insertion order.
-        if child.name == "tuplet" {
+        if matches!(child.name.as_str(), "tuplet" | "ornaments") {
             continue;
         }
         let rank = match child.name.as_str() {

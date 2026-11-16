@@ -1,4 +1,4 @@
-//! Authored tuplet endpoints and their single-wrapper child order. No pairing or clock inference.
+//! Shared single-wrapper topology for authored tuplets and ornaments. No pairing or clock inference.
 use crate::{
     Diagnostic, Document, DocumentKind, Mark, Record, RelationPhase, Scalar, SourceRange,
     notation::{EventId, RelationId},
@@ -8,6 +8,8 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 pub const EXTENSION: &str = "scorestream.tuplets@1";
+pub const ORNAMENT_EXTENSION: &str = "scorestream.ornaments@1";
+pub const ORNAMENT_KIND: &str = "scorestream.ornaments.child";
 pub const KIND: &str = "scorestream.tuplets.child";
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -22,12 +24,56 @@ pub enum TupletChild {
         phase: NotationPhase,
         bracket: Option<bool>,
     },
+    Ornament {
+        group_index: usize,
+        ornament: Ornament,
+    },
     Existing {
         notation: NotationChild,
     },
 }
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Ornament {
+    TrillMark {},
+    Tremolo {
+        strokes: u8,
+    },
+    WavyLine {
+        phase: NotationPhase,
+        number: Option<String>,
+        default_y: Option<crate::Rational>,
+    },
+}
+impl Ornament {
+    pub fn valid(&self) -> bool {
+        match self {
+            Self::TrillMark {} => true,
+            Self::Tremolo { strokes } => (1..=4).contains(strokes),
+            Self::WavyLine {
+                number, default_y, ..
+            } => {
+                number.as_ref().is_none_or(|n| n == "1")
+                    && default_y.as_ref().is_none_or(crate::geometry::decimal)
+            }
+        }
+    }
+}
+pub fn has_ornaments(g: &TupletNotation) -> bool {
+    g.children
+        .iter()
+        .any(|c| matches!(c, TupletChild::Ornament { .. }))
+}
+pub fn has_tuplets(g: &TupletNotation) -> bool {
+    g.children
+        .iter()
+        .any(|c| matches!(c, TupletChild::Tuplet { .. }))
+}
 pub fn is_kind(k: &str) -> bool {
-    k == "scorestream.tuplets" || k.starts_with("scorestream.tuplets.")
+    k == "scorestream.tuplets"
+        || k.starts_with("scorestream.tuplets.")
+        || k == "scorestream.ornaments"
+        || k.starts_with("scorestream.ornaments.")
 }
 fn error(s: SourceRange, message: &str) -> Vec<Diagnostic> {
     vec![Diagnostic::error("tuplets.wire", message, s)]
@@ -37,8 +83,29 @@ fn valid(group: &TupletNotation, expected: &BTreeSet<NotationChild>, groups: usi
     let mut next_group = 0;
     let mut endpoints = 0;
     let mut start = false;
+    let mut ornament_group = None;
+    let mut next_ornament_group = 0;
     for c in &group.children {
+        if !matches!(c, TupletChild::Ornament { .. }) {
+            ornament_group = None;
+        }
         match c {
+            TupletChild::Ornament {
+                group_index,
+                ornament,
+            } => {
+                if !ornament.valid() {
+                    return false;
+                }
+                if ornament_group != Some(*group_index) {
+                    if *group_index != next_ornament_group {
+                        return false;
+                    }
+                    next_ornament_group += 1;
+                    ornament_group = Some(*group_index);
+                }
+                endpoints += 1;
+            }
             TupletChild::Tuplet { phase, bracket } => {
                 if *phase == NotationPhase::Stop && bracket.is_some() {
                     return false;
@@ -81,6 +148,11 @@ fn valid(group: &TupletNotation, expected: &BTreeSet<NotationChild>, groups: usi
     endpoints > 0 && next_group == groups && seen == *expected
 }
 pub fn encode(group: &TupletNotation, id: &str) -> Vec<Mark> {
+    let wire_kind = if has_ornaments(group) {
+        ORNAMENT_KIND
+    } else {
+        KIND
+    };
     group
         .children
         .iter()
@@ -88,6 +160,35 @@ pub fn encode(group: &TupletNotation, id: &str) -> Vec<Mark> {
         .map(|(i, c)| {
             let mut a = BTreeMap::from([("index".into(), Scalar::Integer(i as i64))]);
             let (kind, phase) = match c {
+                TupletChild::Ornament {
+                    group_index,
+                    ornament,
+                } => {
+                    a.insert(
+                        "ornament_group".into(),
+                        Scalar::Integer(*group_index as i64),
+                    );
+                    match ornament {
+                        Ornament::TrillMark {} => ("trill_mark", None),
+                        Ornament::Tremolo { strokes } => {
+                            a.insert("strokes".into(), Scalar::Integer(i64::from(*strokes)));
+                            ("tremolo", None)
+                        }
+                        Ornament::WavyLine {
+                            phase,
+                            number,
+                            default_y,
+                        } => {
+                            if let Some(n) = number {
+                                a.insert("number".into(), Scalar::String(n.clone()));
+                            }
+                            if let Some(y) = default_y {
+                                a.insert("default_y".into(), Scalar::String(y.to_string()));
+                            }
+                            ("wavy_line", Some(*phase))
+                        }
+                    }
+                }
                 TupletChild::Tuplet { phase, bracket } => {
                     if let Some(v) = bracket {
                         a.insert("bracket".into(), Scalar::Boolean(*v));
@@ -123,7 +224,7 @@ pub fn encode(group: &TupletNotation, id: &str) -> Vec<Mark> {
             }
             Mark {
                 target: format!("#{id}"),
-                kind: KIND.into(),
+                kind: wire_kind.into(),
                 attributes: a,
                 source: SourceRange::default(),
             }
@@ -132,6 +233,11 @@ pub fn encode(group: &TupletNotation, id: &str) -> Vec<Mark> {
 }
 pub fn decode(doc: &Document) -> Result<Vec<TupletNotation>, Vec<Diagnostic>> {
     let enabled = doc.required_extensions.iter().any(|e| e == EXTENSION);
+    let ornaments_enabled = doc
+        .required_extensions
+        .iter()
+        .any(|e| e == ORNAMENT_EXTENSION);
+    let mut wire_kinds = BTreeMap::new();
     let hosts: BTreeMap<_, _> = doc
         .events()
         .filter(|(_, e)| !e.is_grace())
@@ -150,11 +256,19 @@ pub fn decode(doc: &Document) -> Result<Vec<TupletNotation>, Vec<Diagnostic>> {
                     "Invalid tuplet capability, host/onset, index, or closed child fields",
                 )
             };
-            if !enabled || doc.document_kind != DocumentKind::Score || m.kind != KIND {
+            if doc.document_kind != DocumentKind::Score
+                || !((enabled && m.kind == KIND) || (ornaments_enabled && m.kind == ORNAMENT_KIND))
+            {
                 return Err(fail());
             }
             let id = m.target.strip_prefix('#').ok_or_else(fail)?;
             if hosts.get(id) != Some(&&f.time) {
+                return Err(fail());
+            }
+            if wire_kinds
+                .insert(id.to_string(), m.kind.clone())
+                .is_some_and(|k| k != m.kind)
+            {
                 return Err(fail());
             }
             let a = &m.attributes;
@@ -171,7 +285,41 @@ pub fn decode(doc: &Document) -> Result<Vec<TupletNotation>, Vec<Diagnostic>> {
             };
             let mut allowed = vec!["index", "kind"];
             let child = match a.get("kind").and_then(Scalar::as_str) {
-                Some("tuplet") => {
+                Some("trill_mark" | "tremolo" | "wavy_line")
+                    if ornaments_enabled && m.kind == ORNAMENT_KIND =>
+                {
+                    allowed.push("ornament_group");
+                    let ornament = match a.get("kind").and_then(Scalar::as_str).unwrap() {
+                        "trill_mark" => Ornament::TrillMark {},
+                        "tremolo" => {
+                            allowed.push("strokes");
+                            Ornament::Tremolo {
+                                strokes: u8::try_from(index("strokes")?).map_err(|_| fail())?,
+                            }
+                        }
+                        _ => {
+                            allowed.extend(["phase", "number", "default_y"]);
+                            Ornament::WavyLine {
+                                phase: phase()?,
+                                number: a
+                                    .get("number")
+                                    .map(|s| s.as_str().map(str::to_owned).ok_or_else(fail))
+                                    .transpose()?,
+                                default_y: a
+                                    .get("default_y")
+                                    .map(|s| {
+                                        s.as_str().ok_or_else(fail)?.parse().map_err(|_| fail())
+                                    })
+                                    .transpose()?,
+                            }
+                        }
+                    };
+                    TupletChild::Ornament {
+                        group_index: index("ornament_group")?,
+                        ornament,
+                    }
+                }
+                Some("tuplet") if enabled => {
                     allowed.extend(["phase", "bracket"]);
                     TupletChild::Tuplet {
                         phase: phase()?,
@@ -240,6 +388,17 @@ pub fn decode(doc: &Document) -> Result<Vec<TupletNotation>, Vec<Diagnostic>> {
             event,
             children: children.into_values().collect(),
         });
+    }
+    if enabled != out.iter().any(has_tuplets)
+        || ornaments_enabled != out.iter().any(has_ornaments)
+        || out
+            .iter()
+            .any(|g| (wire_kinds[&g.event.0] == ORNAMENT_KIND) != has_ornaments(g))
+    {
+        return Err(error(
+            doc.source,
+            "Topology capability and canonical host kind must match retained endpoint/ornament families",
+        ));
     }
     let authored = if doc
         .required_extensions

@@ -2331,6 +2331,468 @@
             },
             "description": "Requires scorestream.words@1, complete score and exact measure/part/local offset with canonical contiguous indices. Literal plain score instructions retain styling and exact geometry; no analytical or performance reinterpretation."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.ornaments.child"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "kind": {
+                    "enum": [
+                      "tuplet",
+                      "articulations",
+                      "tied",
+                      "slur",
+                      "fermata",
+                      "trill_mark",
+                      "tremolo",
+                      "wavy_line"
+                    ]
+                  },
+                  "phase": {
+                    "enum": [
+                      "start",
+                      "stop"
+                    ]
+                  },
+                  "bracket": {
+                    "type": "boolean"
+                  },
+                  "group_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "relation": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "ornament_group": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "strokes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4
+                  },
+                  "number": {
+                    "const": "1"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "index",
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "tuplet"
+                      }
+                    },
+                    "required": [
+                      "phase"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "ornament_group"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "phase": {
+                              "const": "stop"
+                            }
+                          }
+                        },
+                        "then": {
+                          "not": {
+                            "required": [
+                              "bracket"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "articulations"
+                      }
+                    },
+                    "required": [
+                      "group_index"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "ornament_group"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "tied"
+                      }
+                    },
+                    "required": [
+                      "phase"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "ornament_group"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "slur"
+                      }
+                    },
+                    "required": [
+                      "phase",
+                      "relation"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "ornament_group"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "fermata"
+                      }
+                    },
+                    "required": [],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "ornament_group"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "trill_mark"
+                      }
+                    },
+                    "required": [
+                      "ornament_group"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "tremolo"
+                      }
+                    },
+                    "required": [
+                      "ornament_group",
+                      "strokes"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "number"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "default_y"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "wavy_line"
+                      }
+                    },
+                    "required": [
+                      "ornament_group",
+                      "phase"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "strokes"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "description": "Requires scorestream.ornaments@1; all siblings on a host share this kind. Tuplet children additionally require scorestream.tuplets@1. Preserves exact ornament group boundaries and order, never infers attacks or wavy-line pairing. Runtime checks complete typed sibling bijection and contiguous group indices."
+          }
         }
       ]
     },

@@ -169,8 +169,8 @@ fn invalid_unknown_and_unmapped_notation_never_disappears() {
         ),
         ("<fermata/><slur type=\"start\"/>", "slur.unmatched"),
         (
-            "<fermata/><ornaments><trill-mark/></ornaments>",
-            "element.ornaments",
+            "<fermata/><ornaments><turn/></ornaments>",
+            "element.turn",
         ),
     ] {
         error(&with_sign(sign), feature);

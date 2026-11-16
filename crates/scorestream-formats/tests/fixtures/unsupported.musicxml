@@ -3,6 +3,6 @@
   <part id="P1"><measure number="1">
     <attributes><divisions>1</divisions></attributes>
     <direction><direction-type><words>dolce</words><dynamics><p/></dynamics></direction-type></direction>
-    <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><notations><ornaments><trill-mark/></ornaments></notations></note>
+    <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><notations><ornaments><turn/></ornaments></notations></note>
   </measure></part>
 </score-partwise>
