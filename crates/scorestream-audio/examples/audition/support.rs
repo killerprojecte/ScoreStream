@@ -107,17 +107,25 @@ pub struct Audition {
 }
 impl Audition {
     pub fn compile(source: &str, config: Config) -> Result<Self> {
-        Self::compile_selected(source, config, None, None, None)
+        Self::compile_selected(source, config, None, None, None, None)
     }
     pub fn compile_practice(
         source: &str,
         tie_note_on: PracticeTieNoteOnPolicy,
         endpoint: PracticeHoldEndpointPolicy,
+        note_expression: PracticeNoteExpressionPolicy,
         config: Config,
         _practice: PracticeReviewPolicy,
         midi: scorestream_audio::midi_mixer::LocalMidiPolicy,
     ) -> Result<Self> {
-        Self::compile_selected(source, config, Some(midi), Some(tie_note_on), Some(endpoint))
+        Self::compile_selected(
+            source,
+            config,
+            Some(midi),
+            Some(tie_note_on),
+            Some(endpoint),
+            Some(note_expression),
+        )
     }
     fn compile_selected(
         source: &str,
@@ -125,6 +133,7 @@ impl Audition {
         practice: Option<scorestream_audio::midi_mixer::LocalMidiPolicy>,
         tie_note_on: Option<PracticeTieNoteOnPolicy>,
         endpoint: Option<PracticeHoldEndpointPolicy>,
+        note_expression: Option<PracticeNoteExpressionPolicy>,
     ) -> Result<Self> {
         if source_sha256(source) != config.source_sha256 {
             return Err("Source bytes differ from the policy receipt; rediscover and explicitly revise the configuration".into());
@@ -238,7 +247,7 @@ impl Audition {
                                     program_zero_based: r.route.program,
                                 })
                                 .collect::<Vec<_>>();
-                            Plan::Technique(plan_source_with_practice_joint_policies_and_pizzicato(source,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
+                            Plan::Technique(plan_source_with_practice_joint_policies_and_pizzicato(source,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,note_expression.ok_or("Practice requires explicit note expression policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
                         } else {
                             Plan::Technique(plan_source_with_joint_policies_and_pizzicato(
                                 source,
@@ -275,8 +284,17 @@ impl Audition {
             options,
             source_sha256: config.source_sha256,
         };
-        result.preflight()?;
+        if practice.is_none() {
+            result.preflight()?;
+        }
         Ok(result)
+    }
+    pub fn practice_preflight_report(&self) -> Value {
+        let Plan::Technique(p) = &self.plan else {
+            return json!({"compiled":false,"error":"Not a technique plan"});
+        };
+        let native = self.preflight();
+        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"local_midi_mix":self.options.local_midi_mix,"native_bank_verified":false})
     }
     pub fn preflight(&self) -> Result<Value> {
         let (plan, techniques) = match &self.plan {

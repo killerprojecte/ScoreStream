@@ -296,6 +296,12 @@ fn explicit_final_ending_policy_roundtrips_open_authorship_without_audio_permiss
     let options=SfsOptions{unclosed_final_ending:route::UnclosedFinalEndingPolicy::ContinueToMovementEnd};
     let converted=sfs::write_with_options(&score,&options).unwrap();
     has(&converted.report,"navigation.unclosed_final_ending_continues");
+    let doc=scorestream_codec::parse(&converted.value).unwrap();
+    assert!(scorestream_core::notation::trace_document_route(&doc).is_err());
+    let trace=scorestream_core::notation::trace_document_route_with_final_ending(&doc,route::UnclosedFinalEndingPolicy::ContinueToMovementEnd).unwrap();
+    assert!(trace.navigation_disclosures.iter().any(|d|d.contains("UnclosedFinalEndingContinues")));
+    assert_eq!(scorestream_codec::parse(&converted.value).unwrap(),doc);
+
     assert!(SfsAdapter.read(&converted.value).is_err());
     let restored=sfs::read_with_options(&converted.value,&options).unwrap();
     has(&restored.report,"navigation.unclosed_final_ending_continues");

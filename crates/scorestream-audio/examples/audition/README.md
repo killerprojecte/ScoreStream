@@ -278,3 +278,46 @@ source and previously selected 16 holds, all hold-overlap checks pass, but note
 NoteOn percentage intersects changing loudness. This is not a tied continuation
 and is not covered by the inert continuation policy. No complete movement plan,
 native preflight success, or whole-movement WAV is claimed.
+
+### Exact NoteOn with separately authored relative expression
+
+The additional explicit policy/CLI argument
+`authored_note_on_with_relative_trajectory_v1` preserves each original envelope
+point and its exact existing playback offset. For a positive authored NoteOn and
+a changing envelope, it uses `authored_percent * 9/10` as the exact attack value,
+rounds to the existing integer NoteOn representation, and carries the fractional
+residual times `original_gain / original_onset_gain` as independent gain. No
+scope dynamic is applied twice, no timing boundary is moved, and duplicate-offset
+steps remain steps. A changing envelope with zero, nonfinite or unrepresentable
+onset baseline remains rejected. Static envelopes retain the existing fixed
+NoteOn rule. Strict compilation still rejects the changing-envelope combination.
+
+The opaque technique plan's `note_dynamics_receipts()` and the native
+`PizzicatoRenderReport.note_dynamics_receipts` preserve typed provenance:
+`event`, exact rational `authored_percent`/`exact_note_on`, integer velocity,
+fractional residual, original baseline, `relative_trajectory_applied`, and both
+complete envelope vectors. Receipts distinguish note-local residuals from other
+expression instead of guessing their origin from floating-point shape.
+
+`preflight-practice` now returns a durable report even if a successfully compiled
+practice plan cannot be realized by the current native renderer. It separately
+reports `compiled`, `native_preflight_passed`, `native_preflight_error`, original
+policy diagnostics, MIDI receipt and note-dynamics receipts. A failure before
+compilation still fails the command. There is still no whole-movement render
+command or implicit permission to drop an envelope.
+
+The unchanged movement-I source compiles to 10,922 audible notes, 38 pizzicato
+attacks, and 362.92292644757435 seconds under the previously selected holds.
+There are 941 fresh NoteOn receipts: 4 carry changing relative trajectories and
+904 contain fractional residuals (these classifications overlap). There are 36
+verified tied-continuation inert receipts and 4 unmarked pre-hold endpoint
+receipts. `occ61:mx_n6430` has exact NoteOn `12249/250`, integer velocity 49,
+original gains `1.00003125 → 0.416625` at the unchanged 0.5555555555555571-second
+step, realized gains `0.9999183673469388 → 0.4165779717343018`, and the unchanged
+7.177777777777784-second sounding-chain duration. The other three changing cases
+are its paired horn and their repeat occurrences.
+
+After setting the local allocation budget to the actual compiled count (10,922,
+not the small fixture's 100), genuine native preflight refuses independent
+per-note gain envelopes. Those envelopes are retained, not collapsed into channel
+expression. No full movement WAV is produced by this milestone.

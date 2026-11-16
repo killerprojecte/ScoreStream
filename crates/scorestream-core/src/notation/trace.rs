@@ -2,8 +2,8 @@
 //! score and cannot authorize audio or select any musical interpretation.
 use super::{EventId, PartId};
 use crate::{
-    Diagnostic, Document, Duration, Rational, Record, Scalar, Severity, SourceRange,
-    navigation as nav, navigation_extension as ext, repeat_traversal as route,
+    navigation as nav, navigation_extension as ext, repeat_traversal as route, Diagnostic,
+    Document, Duration, Rational, Record, Scalar, Severity, SourceRange,
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -17,6 +17,29 @@ pub struct TraceFermataOccurrence {
     pub end: Rational,
 }
 #[derive(Clone, Debug, Serialize)]
+pub struct TraceGraceOccurrence {
+    pub event: EventId,
+    pub written_event: EventId,
+    pub principal: EventId,
+    pub written_principal: EventId,
+    pub part: PartId,
+    pub measure_occurrence: usize,
+    pub written_measure_index: usize,
+    pub measure_label: String,
+    pub order: i64,
+    pub principal_start: Rational,
+    pub principal_end: Rational,
+    pub authored_timing: crate::score::GraceTiming,
+}
+#[derive(Clone, Debug, Serialize)]
+pub struct TraceWordsOccurrence {
+    pub part: PartId,
+    pub written_measure: String,
+    pub measure_occurrence: usize,
+    pub at: Rational,
+    pub texts: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize)]
 pub struct PlaybackRouteTrace {
     pub written_events: usize,
     pub written_graces: usize,
@@ -25,6 +48,8 @@ pub struct PlaybackRouteTrace {
     pub event_occurrences: usize,
     pub end_quarter: Rational,
     pub fermatas: Vec<TraceFermataOccurrence>,
+    pub graces: Vec<TraceGraceOccurrence>,
+    pub words: Vec<TraceWordsOccurrence>,
     pub passive_capabilities: Vec<String>,
     pub required_sound_review: Vec<String>,
     pub navigation_disclosures: Vec<String>,
@@ -36,6 +61,14 @@ fn error(code: &str, message: impl Into<String>) -> Vec<Diagnostic> {
 /// Trace ordinary repeat/ending visits on the complete unchanged validated score.
 /// No hold duration, note gate, gain curve, instrument patch or audible event is inferred.
 pub fn trace_document_route(doc: &Document) -> Result<PlaybackRouteTrace, Vec<Diagnostic>> {
+    trace_document_route_with_final_ending(doc, route::UnclosedFinalEndingPolicy::Reject)
+}
+/// Explicit navigation interpretation for metadata discovery only. This never
+/// changes the source or grants authorization to any sounding API.
+pub fn trace_document_route_with_final_ending(
+    doc: &Document,
+    final_ending: route::UnclosedFinalEndingPolicy,
+) -> Result<PlaybackRouteTrace, Vec<Diagnostic>> {
     if doc.document_kind != crate::DocumentKind::Score {
         return Err(error(
             "trace.document_kind",
@@ -109,8 +142,14 @@ pub fn trace_document_route(doc: &Document) -> Result<PlaybackRouteTrace, Vec<Di
     }
     let navigation =
         nav::reconcile(&parts, &bars, "document").map_err(|e| error(&e.code, e.message))?;
-    let visits = route::traverse(&navigation.movement, route::Policy::default())
-        .map_err(|e| error("trace.navigation", format!("Closed route rejected: {e:?}")))?;
+    let visits = route::traverse(
+        &navigation.movement,
+        route::Policy {
+            unclosed_final_ending: final_ending,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| error("trace.navigation", format!("Closed route rejected: {e:?}")))?;
     let measures = &parts[0].measures;
     let voices: BTreeMap<_, _> = doc
         .voices
@@ -151,6 +190,92 @@ pub fn trace_document_route(doc: &Document) -> Result<PlaybackRouteTrace, Vec<Di
         events.insert(id, (i, at.clone(), end, PartId((*part).into())));
         event_counts[i] += 1;
     }
+    let mut graces = vec![vec![]; measures.len()];
+    let mut grace_timing = BTreeMap::new();
+    for f in &doc.frames {
+        for r in &f.records {
+            if let Record::Mark(m) = r {
+                if m.kind == crate::grace_extension::KIND {
+                    grace_timing.insert(
+                        m.target.trim_start_matches('#'),
+                        crate::grace_extension::decode(m).map_err(|e| vec![e])?,
+                    );
+                }
+            }
+        }
+    }
+    let has_authored_graces = doc
+        .required_extensions
+        .iter()
+        .any(|e| e == crate::grace_extension::EXTENSION);
+    for (_, e) in doc
+        .events()
+        .filter(|(_, e)| has_authored_graces && e.is_grace())
+    {
+        let id = e
+            .id()
+            .ok_or_else(|| error("trace.grace", "Missing grace identity"))?;
+        let anchor = e
+            .attributes
+            .get("anchor")
+            .and_then(Scalar::as_str)
+            .and_then(|v| v.strip_prefix('#'))
+            .ok_or_else(|| error("trace.grace", "Missing principal identity"))?;
+        let (i, at, _, part) = events
+            .get(id)
+            .ok_or_else(|| error("trace.grace", "Missing grace event"))?;
+        let (pi, start, end, ppart) = events
+            .get(anchor)
+            .ok_or_else(|| error("trace.grace", "Unknown principal"))?;
+        if i != pi || part != ppart || at != start {
+            return Err(error(
+                "trace.grace",
+                "Grace and principal must share part, measure and onset",
+            ));
+        }
+        let timing = grace_timing.get(id).cloned().ok_or_else(|| {
+            error(
+                "trace.grace",
+                "Authored grace timing metadata required for occurrence trace",
+            )
+        })?;
+        let order = e
+            .attributes
+            .get("order")
+            .and_then(Scalar::as_i64)
+            .ok_or_else(|| error("trace.grace", "Missing order"))?;
+        graces[*i].push((
+            id.to_owned(),
+            anchor.to_owned(),
+            part.clone(),
+            order,
+            start.clone(),
+            end.clone(),
+            timing,
+        ));
+    }
+    let mut words = vec![vec![]; measures.len()];
+    if doc
+        .required_extensions
+        .iter()
+        .any(|e| e == crate::words::EXTENSION)
+    {
+        let locations: BTreeMap<_, _> = parts
+            .iter()
+            .flat_map(|p| {
+                p.measures
+                    .iter()
+                    .enumerate()
+                    .map(move |(i, m)| ((p.id.0.as_str(), m.id.as_str()), i))
+            })
+            .collect();
+        for word in crate::words::decode(doc)? {
+            let i = *locations
+                .get(&(word.part.as_str(), word.measure.as_str()))
+                .ok_or_else(|| error("trace.words", "Unknown owning measure"))?;
+            words[i].push(word);
+        }
+    }
     let mut signs = vec![vec![]; measures.len()];
     let mut authored = 0;
     for f in &doc.frames {
@@ -167,7 +292,7 @@ pub fn trace_document_route(doc: &Document) -> Result<PlaybackRouteTrace, Vec<Di
             }
         }
     }
-    let mut result=PlaybackRouteTrace {written_events:events.len(),written_graces:grace_count,authored_fermatas:authored,measure_visits:0,event_occurrences:0,end_quarter:Rational::zero(),fermatas:vec![],passive_capabilities:doc.required_extensions.iter().filter(|e|super::passive::is_passive(e)).cloned().collect(),required_sound_review:doc.required_extensions.iter().filter(|e|!super::passive::is_passive(e)).cloned().collect(),navigation_disclosures:visits.diagnostics.iter().map(|d|format!("{d:?}")).collect(),scope:"Route/anchor trace only. No sound interpretation, hold seconds, policy qualification, tie-jump realization or renderability is certified.".into()};
+    let mut result=PlaybackRouteTrace {written_events:events.len(),written_graces:grace_count,authored_fermatas:authored,measure_visits:0,event_occurrences:0,end_quarter:Rational::zero(),fermatas:vec![],graces:vec![],words:vec![],passive_capabilities:doc.required_extensions.iter().filter(|e|super::passive::is_passive(e)).cloned().collect(),required_sound_review:doc.required_extensions.iter().filter(|e|!super::passive::is_passive(e)).cloned().collect(),navigation_disclosures:visits.diagnostics.iter().map(|d|format!("{d:?}")).collect(),scope:"Route/anchor trace only. No sound interpretation, hold seconds, policy qualification, tie-jump realization or renderability is certified.".into()};
     for step in visits.steps {
         if let route::Step::ReplayMeasure {
             measure_index: i,
@@ -184,6 +309,33 @@ pub fn trace_document_route(doc: &Document) -> Result<PlaybackRouteTrace, Vec<Di
                     measure_occurrence: occurrence_index,
                     start: &result.end_quarter + &(start - &m.start),
                     end: &result.end_quarter + &(end - &m.start),
+                });
+            }
+            for (id, anchor, part, order, start, end, timing) in &graces[i] {
+                result.graces.push(TraceGraceOccurrence {
+                    event: EventId(format!("occ{occurrence_index}:{id}")),
+                    written_event: EventId(id.clone()),
+                    principal: EventId(format!("occ{occurrence_index}:{anchor}")),
+                    written_principal: EventId(anchor.clone()),
+                    part: part.clone(),
+                    measure_occurrence: occurrence_index,
+                    written_measure_index: i,
+                    measure_label: m.label.clone(),
+                    order: *order,
+                    principal_start: &result.end_quarter + &(start - &m.start),
+                    principal_end: &result.end_quarter + &(end - &m.start),
+                    authored_timing: timing.clone(),
+                });
+            }
+            for word in &words[i] {
+                result.words.push(TraceWordsOccurrence {
+                    part: PartId(word.part.clone()),
+                    written_measure: word.measure.clone(),
+                    measure_occurrence: occurrence_index,
+                    at: &result.end_quarter + &word.offset,
+                    texts: std::iter::once(word.words.text.clone())
+                        .chain(word.continuations.iter().map(|w| w.text.clone()))
+                        .collect(),
                 });
             }
             result.measure_visits += 1;

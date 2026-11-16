@@ -136,7 +136,7 @@ fn compile_with_technique(
     timing: Option<&TimingProjection>, grace: Option<GraceView<'_>>,
     technique: Option<&mut BTreeSet<String>>,
 ) -> Result<PlaybackPlan, String> {
-    compile_with_practice(score,doc,performed,timing,grace,technique,None,None)
+    compile_with_practice(score,doc,performed,timing,grace,technique,None,None,None,None)
 }
 fn compile_with_practice(
     score: &ResolvedScore, doc: &Document, performed: Option<&PerformedScore>,
@@ -144,6 +144,8 @@ fn compile_with_practice(
     mut technique: Option<&mut BTreeSet<String>>,
     tie_note_on: Option<PracticeTieNoteOnPolicy>,
     endpoint: Option<PracticeHoldEndpointPolicy>,
+    note_expression: Option<PracticeNoteExpressionPolicy>,
+    mut note_dynamics_receipts: Option<&mut Vec<PracticeNoteDynamicsReceipt>>,
 ) -> Result<PlaybackPlan, String> {
     let tempo = match grace {
         Some(GraceView::Standalone(schedule)) => PlaybackClock::Grace(schedule),
@@ -402,10 +404,16 @@ fn compile_with_practice(
         } else {
             expression.envelope(&segments, &release, velocity, release_clock)?
         };
-        if let Some((override_velocity, override_envelope)) = attack_dynamics::apply(event, &envelope, duration)? {
+        if let Some((override_velocity, override_envelope)) = match note_expression { Some(policy)=>attack_dynamics::apply_with_policy(event, &envelope, duration, Some(policy)),None=>attack_dynamics::apply(event,&envelope,duration) }? {
             if override_velocity == 0 {
                 warnings.add("note_dynamics.silent_attack", "dynamics.note_attack", RealizationEffect::Policy, &event.origin, "Explicit zero note dynamics is a silent attack; written event markers remain and no NoteOff command or later state is inferred.");
                 continue;
+            }
+            if let Some(receipts)=note_dynamics_receipts.as_deref_mut() {
+                let exact=event.attack_dynamics.as_ref().unwrap()*&"9/10".parse::<Rational>().unwrap();
+                let changing=envelope.windows(2).any(|p|p[0].gain!=p[1].gain);
+                receipts.push(PracticeNoteDynamicsReceipt {event:event.id.0.clone(),authored_percent:event.attack_dynamics.as_ref().unwrap().clone(),exact_note_on:exact.clone(),integer_velocity:override_velocity,fractional_gain:exact.to_f64()/f64::from(override_velocity),baseline_gain:envelope.first().map(|p|p.gain).unwrap_or(0.),relative_trajectory_applied:changing,original_envelope:envelope.clone(),realized_envelope:override_envelope.clone()});
+                warnings.add("practice.note_on_relative_expression","dynamics.note_expression",RealizationEffect::Policy,&Origin{object_id:event.id.0.clone(),source:event.origin.source},&format!("Exact authored NoteOn {} becomes integer velocity {} plus explicit fractional gain; changing={changing}; a changing separately authored trajectory is normalized to its nonzero attack baseline, while a static envelope uses the existing fixed NoteOn rule. No onset/time/tie change. Independent native envelope support remains required.",exact,override_velocity));
             }
             velocity = override_velocity;
             envelope = override_envelope;

@@ -21,6 +21,7 @@ pub struct PizzicatoRenderReport {
     pub render: RenderReport,
     pub technique_channels: Vec<TechniqueChannel>,
     pub approximation: String,
+    pub note_dynamics_receipts: Vec<scorestream_app::playback::PracticeNoteDynamicsReceipt>,
 }
 struct Lanes {
     routes: Vec<RouteAssignment>,
@@ -167,7 +168,7 @@ impl FluidSynthBackend {
             sink,
             prepared,
         )?;
-        Ok(report(render, lanes.evidence))
+        Ok(report(render, lanes.evidence, plan.note_dynamics_receipts().to_vec()))
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render_wav_with_pizzicato(
@@ -193,14 +194,15 @@ impl FluidSynthBackend {
                 prepared,
             )
         })?;
-        Ok(report(render, lanes.evidence))
+        Ok(report(render, lanes.evidence, plan.note_dynamics_receipts().to_vec()))
     }
 }
 fn report(
     render: RenderReport,
     technique_channels: Vec<TechniqueChannel>,
+    note_dynamics_receipts: Vec<scorestream_app::playback::PracticeNoteDynamicsReceipt>,
 ) -> PizzicatoRenderReport {
-    PizzicatoRenderReport {render,technique_channels,approximation:"Explicit shared GM Pizzicato preset, three violin source samples; not separately recorded viola/cello/bass or an acoustic model".into()}
+    PizzicatoRenderReport {render,technique_channels,note_dynamics_receipts,approximation:"Explicit shared GM Pizzicato preset, three violin source samples; not separately recorded viola/cello/bass or an acoustic model".into()}
 }
 /// Pure palette/coverage/channel/timing preflight. Bank bytes and actual native
 /// preset names are still checked immediately before any PCM is emitted.

@@ -241,4 +241,18 @@ fn nonplayable_trace_matches_qualified_repeat_occurrence_coordinates() {
     assert_eq!(trace.measure_visits,4);assert_eq!(trace.event_occurrences,16);assert_eq!(trace.fermatas.len(),4);
     let a:std::collections::BTreeMap<_,_>=trace.fermatas.iter().map(|f|(&f.event,(&f.start,&f.end))).collect();
     let b:std::collections::BTreeMap<_,_>=q.fermatas.occurrences.iter().map(|f|(&f.id,(&f.quarter_start,&f.quarter_end))).collect();assert_eq!(a,b);
+    let a:std::collections::BTreeMap<_,_>=trace.graces.iter().map(|g|(&g.event,(&g.principal,&g.principal_start,&g.principal_end,&g.authored_timing))).collect();
+    let b:std::collections::BTreeMap<_,_>=q.graces.occurrences.iter().map(|g|(&g.id,(&g.principal,&g.principal_start,&g.principal_end,&g.timing))).collect();
+    assert_eq!(a,b); assert_eq!(trace.graces.len(),trace.written_graces*2);
+
+}
+
+#[test]
+fn trace_retains_words_without_inferring_cross_movement_action() {
+    let xml=XML.replace("<note id=\"plain\">","<direction><direction-type><words>Attacca</words></direction-type></direction><note id=\"plain\">");
+    let s=source(&xml); let doc=scorestream_codec::parse(&s).unwrap();
+    let trace=scorestream_core::notation::trace_document_route(&doc).unwrap();
+    let words:Vec<_>=trace.words.iter().filter(|w|w.texts==["Attacca"]).collect();
+    assert_eq!(words.len(),1); assert_eq!(words[0].measure_occurrence,0);
+    assert_eq!(scorestream_codec::parse(&s).unwrap(),doc);
 }
