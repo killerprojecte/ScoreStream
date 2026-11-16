@@ -72,13 +72,13 @@ pub(crate) fn render(
         backend.render_pcm(plan, routes, bank, options, cancel, sink)
     })
 }
-pub(crate) fn render_with(
+pub(crate) fn render_with<R>(
     frames: u64,
     options: &RenderOptions,
     cancel: &AtomicBool,
     output: &Path,
-    render: impl FnOnce(&mut Sink<'_>) -> Result<RenderReport>,
-) -> Result<RenderReport> {
+    render: impl FnOnce(&mut Sink<'_>) -> Result<R>,
+) -> Result<R> {
     let expected_header = header(frames, options.sample_rate)?;
     if cancel.load(Ordering::Relaxed) {
         return Err(AudioError::Cancelled);

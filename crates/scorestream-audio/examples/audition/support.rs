@@ -118,6 +118,10 @@ pub struct Audition {
     source_sha256: String,
 }
 impl Audition {
+    pub fn dry_render_verified(&self, source: &str, bank: &Path, expected: &Value, output: &Path) -> Result<Value> {
+        let Plan::Technique(plan)=&self.plan else {return Err("Dry render requires opaque technique plan".into());};
+        Ok(serde_json::to_value(scorestream_audio::dry_admission::render_verified_wav(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false),expected,output)?)?)
+    }
     pub fn dry_admission_until_idle(&self, source: &str, bank: &Path) -> Result<Value> {
         let Plan::Technique(plan)=&self.plan else {return Err("Dry probe requires opaque technique plan".into());};
         Ok(serde_json::to_value(scorestream_audio::dry_admission::probe_until_idle(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
@@ -323,12 +327,18 @@ impl Audition {
         self.options.attack_only_rehearsal=Some(scorestream_audio::attack_rehearsal::prepare_attack_only_rehearsal(plan,mix,policy)?);
         Ok(self)
     }
+    /// Planned event boundary, not a claim about native sample release completion.
+    pub fn planned_endpoints(&self) -> Value {
+        let plan = match &self.plan { Plan::Ordinary(p) => p, Plan::Technique(p) => p.plan() };
+        let last = plan.notes.iter().max_by(|a,b| (a.start_seconds+a.duration_seconds).total_cmp(&(b.start_seconds+b.duration_seconds)));
+        json!({"last_note_off":last.map(|n|json!({"event":n.id,"written_event":n.written_id,"part":n.part,"seconds":n.start_seconds+n.duration_seconds,"scheduled_frame":((n.start_seconds+n.duration_seconds).min(plan.duration_seconds)*f64::from(self.options.sample_rate)+0.5).floor() as u64})),"score_seconds":plan.duration_seconds,"selected_tail_seconds":self.options.tail_seconds,"sample_rate":self.options.sample_rate,"scope":"Planned NoteOff frame uses native adapter rounding; native response is block-quantized. Fixed tail is not proof of complete patch decay."})
+    }
     pub fn practice_preflight_report(&self) -> Value {
         let Plan::Technique(p) = &self.plan else {
             return json!({"compiled":false,"error":"Not a technique plan"});
         };
         let native = self.preflight();
-        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"final_ending_receipt":p.final_ending_receipt(),"boundary_dynamics_receipt":p.boundary_dynamics_receipt(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
+        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"planned_endpoints":self.planned_endpoints(),"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"final_ending_receipt":p.final_ending_receipt(),"boundary_dynamics_receipt":p.boundary_dynamics_receipt(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
     }
     pub fn preflight(&self) -> Result<Value> {
         let (plan, techniques) = match &self.plan {
@@ -380,7 +390,7 @@ impl Audition {
             )?)?,
         };
         Ok(
-            json!({"schema":"scorestream.local-audition-render.v1","source_sha256":self.source_sha256,"output":output,"report":report}),
+            json!({"schema":"scorestream.local-audition-render.v1","source_sha256":self.source_sha256,"output":output,"planned_endpoints":self.planned_endpoints(),"report":report}),
         )
     }
 }

@@ -415,12 +415,83 @@ fn opaque_plan_native_owners_and_original_envelopes_compose_without_cross_talk()
     assert_eq!(admission.notes[c].rendered_on, 32768);
     assert_eq!(admission.notes[a].lane, admission.notes[c].lane);
     assert!(admission.sample_peak > 0.);
-    let mut short_window=options.clone();short_window.tail_seconds=0.;
-    let exhausted=crate::dry_admission::probe_until_idle(&source,&plan,&routes,Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),&short_window,DryTailPolicy::HoldLastGainAtNoteOffV1,crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&cancel).unwrap();
-    assert_eq!(exhausted.playing_lanes_at_end,0);
-    assert!(exhausted.first_idle_frame.unwrap()>exhausted.last_rendered_noteoff);
-    assert!(exhausted.completed_frames>exhausted.selected_window_frames);
-    assert_eq!(exhausted.completed_frames,exhausted.first_idle_frame.unwrap());
+    let mut short_window = options.clone();
+    short_window.tail_seconds = 0.;
+    let exhausted = crate::dry_admission::probe_until_idle(
+        &source,
+        &plan,
+        &routes,
+        Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),
+        &short_window,
+        DryTailPolicy::HoldLastGainAtNoteOffV1,
+        crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,
+        &cancel,
+    )
+    .unwrap();
+    assert_eq!(exhausted.playing_lanes_at_end, 0);
+    assert!(exhausted.first_idle_frame.unwrap() > exhausted.last_rendered_noteoff);
+    assert!(exhausted.completed_frames > exhausted.selected_window_frames);
+    assert_eq!(
+        exhausted.completed_frames,
+        exhausted.first_idle_frame.unwrap()
+    );
+    let expected: serde_json::Value =
+        serde_json::from_slice(&serde_json::to_vec(&exhausted).unwrap()).unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let output = directory.path().join("dry.wav");
+    let saved = crate::dry_admission::render_verified_wav(
+        &source,
+        &plan,
+        &routes,
+        Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),
+        &short_window,
+        DryTailPolicy::HoldLastGainAtNoteOffV1,
+        crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,
+        &cancel,
+        &expected,
+        &output,
+    )
+    .unwrap();
+    let bytes = std::fs::read(&output).unwrap();
+    assert_eq!(bytes.len() as u64, 44 + saved.completed_frames * 4);
+    assert_eq!(&bytes[..4], b"RIFF");
+    assert!(bytes[44..].iter().any(|b| *b != 0));
+    assert!(
+        crate::dry_admission::render_verified_wav(
+            &source,
+            &plan,
+            &routes,
+            Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),
+            &short_window,
+            DryTailPolicy::HoldLastGainAtNoteOffV1,
+            crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,
+            &cancel,
+            &expected,
+            &output
+        )
+        .is_err()
+    );
+    assert_eq!(std::fs::read(&output).unwrap(), bytes);
+    let failed = directory.path().join("must-not-publish.wav");
+    let mut incorrect = expected.clone();
+    incorrect["sample_peak"] = serde_json::json!(0);
+    assert!(
+        crate::dry_admission::render_verified_wav(
+            &source,
+            &plan,
+            &routes,
+            Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),
+            &short_window,
+            DryTailPolicy::HoldLastGainAtNoteOffV1,
+            crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,
+            &cancel,
+            &incorrect,
+            &failed
+        )
+        .is_err()
+    );
+    assert!(!failed.exists());
+    assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
 
     assert_eq!(serde_json::to_value(plan.plan()).unwrap(), original_plan);
 

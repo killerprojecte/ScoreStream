@@ -92,6 +92,7 @@ pub fn probe(
         pizzicato,
         cancel,
         false,
+        None,
     )
 }
 /// Explicit observation through authoritative native voice exhaustion. No
@@ -117,6 +118,7 @@ pub fn probe_until_idle(
         pizzicato,
         cancel,
         true,
+        None,
     )
 }
 #[allow(clippy::too_many_arguments)]
@@ -130,6 +132,7 @@ fn probe_selected(
     pizzicato: PizzicatoSamplePolicy,
     cancel: &AtomicBool,
     until_idle: bool,
+    mut sink: Option<&mut dyn PcmSink>,
 ) -> Result<DryAdmissionReport> {
     let mix = options
         .local_midi_mix
@@ -349,6 +352,22 @@ fn probe_selected(
                 squares += sample * sample;
             }
         }
+        if let Some(output) = sink.as_deref_mut() {
+            let mut interleaved = Vec::with_capacity(q as usize * 2);
+            for (left, right) in sum_l.iter().zip(&sum_r) {
+                for sample in [left, right] {
+                    let value = *sample as f32;
+                    if !value.is_finite() || value.abs() >= 1.0 {
+                        return Err(AudioError::Clipping {
+                            frame: cursor + interleaved.len() as u64 / 2,
+                            peak: value.abs(),
+                        });
+                    }
+                    interleaved.push(value);
+                }
+            }
+            output.write(cursor, &interleaved)?;
+        }
         cursor = cursor
             .checked_add(u64::from(q))
             .ok_or_else(|| invalid("Native tail observation frame overflow"))?;
@@ -359,6 +378,72 @@ fn probe_selected(
     report.completed_frames = cursor;
     report.sample_rms = (squares / (cursor.max(1) as f64 * 2.)).sqrt();
     Ok(report)
+}
+
+fn observation_value(value: &impl Serialize) -> Result<serde_json::Value> {
+    let bytes =
+        serde_json::to_vec(value).map_err(|_| invalid("Observation serialization failed"))?;
+    serde_json::from_slice(&bytes).map_err(|_| invalid("Observation parsing failed"))
+}
+
+/// Explicit artifact path. The JSON is an expected observation, NOT an imported
+/// authority token: original opaque plan/mixer/bank/native admissions are freshly
+/// verified while replaying. No file is published unless the complete report,
+/// including voice exhaustion and every event/preset/CC receipt, matches exactly.
+#[allow(clippy::too_many_arguments)]
+pub fn render_verified_wav(
+    source: &str,
+    plan: &TechniquePlaybackPlan,
+    routes: &[RouteAssignment],
+    bank_path: &Path,
+    options: &RenderOptions,
+    tail_policy: DryTailPolicy,
+    pizzicato: PizzicatoSamplePolicy,
+    cancel: &AtomicBool,
+    expected: &serde_json::Value,
+    output: &Path,
+) -> Result<DryAdmissionReport> {
+    let frames = expected["completed_frames"]
+        .as_u64()
+        .ok_or_else(|| invalid("Missing observed frame extent"))?;
+    let idle = expected["first_idle_frame"]
+        .as_u64()
+        .ok_or_else(|| invalid("No authoritative idle observation"))?;
+    let schedule = DryEnvelopeSchedule::prepare(plan, options.sample_rate, tail_policy)?;
+    if expected["observation_policy"] != "until_native_idle"
+        || expected["playing_lanes_at_end"] != 0
+        || frames < idle
+        || expected["source_sha256"] != plan.source_sha256()
+        || expected["plan_sha256"] != schedule.plan_sha256()
+        || expected["admitted_notes"].as_u64() != Some(plan.plan().notes.len() as u64)
+        || expected["noteoffs"].as_u64() != Some(plan.plan().notes.len() as u64)
+        || expected["original_envelopes"] != observation_value(&schedule)?
+    {
+        return Err(invalid(
+            "Readiness does not cover this exact complete dry plan",
+        ));
+    }
+    crate::wav::render_with(frames, options, cancel, output, |sink| {
+        let report = probe_selected(
+            source,
+            plan,
+            routes,
+            bank_path,
+            options,
+            tail_policy,
+            pizzicato,
+            cancel,
+            true,
+            Some(sink),
+        )?;
+        let actual = observation_value(&report)?;
+        if actual != *expected {
+            return Err(AudioError::Native(
+                "Dry replay observation differs; refusing artifact publication".into(),
+            ));
+        }
+        Ok(report)
+    })
 }
 
 #[cfg(test)]

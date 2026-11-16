@@ -91,3 +91,35 @@ The report records the original selected-window endpoint separately, last ideal
 and rendered NoteOff, and the first truly idle completed frame. No audio is saved.
 A real-bank synthetic regression deliberately selects zero extra tail, then proves
 this mode continues past that window and stops exactly at measured voice exhaustion.
+
+## Verified atomic WAV artifact
+
+The separate explicit `render_verified_wav` path accepts the successful exhausted
+observation as an **expected result**, not an imported authorization token. It
+checks the opaque plan/source/envelopes and full-note readiness, then freshly
+replays the bank, palette, controller readback, lane admissions, every gain sample
+and authoritative tail observation. The entire resulting JSON observation must
+match the expected observation before publication. JSON comparison uses the same
+serializer/parser normalization on both sides, avoiding an incidental one-ULP
+parser round-trip difference. A changed frame extent, program/controller receipt,
+source, native backend, gain result or still-playing tail fails publication.
+
+The pre-existing atomic WAV writer is reused with only its private report return
+type generalized. It still refuses an existing file/symlink, writes a temporary
+file, checks exact frame and byte counts, flushes and fsyncs, and publishes with
+no-clobber semantics. Original envelope processing and summation remain f64; the
+explicit artifact format converts the final stereo sum to f32, rejects any newly
+rounded clipping/nonfinite sample, then uses the existing 16-bit PCM encoding.
+The report's computed peak/RMS describes the f64 sum; verify encoded PCM separately.
+
+Example suffix `until_native_idle READINESS_JSON NEW_WAV` selects this artifact
+path. Ordinary probes still discard PCM and ordinary product rendering is unchanged.
+Real-bank synthetic tests verify successful nonzero PCM, complete measured tail,
+existing-file preservation, and no file or leftover temporary file after a full
+replay with deliberately mismatching expected peak. No source score is modified.
+
+The untouched I exhaustion proof measured last rendered NoteOff 17,405,952 and
+first idle frame 17,617,152, exactly 4.4 seconds later. The complete observation is
+367.024 seconds at 48 kHz, all 10,922 attacks/releases admitted, 0 unmatched live
+note-offs, 89 occupied lanes out of 128 physical groups, and 124 peak sample voices.
+This observation alone is not an assertion that an output artifact was published.
