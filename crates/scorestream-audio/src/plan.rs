@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Debug)]
 pub(crate) struct Note {
+    pub event_id: String,
     pub channel: u16,
     pub key: u8,
     pub velocity: u8,
@@ -74,6 +75,7 @@ impl Prepared {
         options: &RenderOptions,
         channels: &BTreeMap<String, u16>,
     ) -> Result<Self> {
+        if let Some(receipt)=&options.attack_only_rehearsal {receipt.verify(plan,options.local_midi_mix.as_ref())?;}
         if let Some(mix)=&options.local_midi_mix {
             mix.verify_routes(routes)?;
             if let Some(bank)=&options.bank_verification {mix.verify_bank(&bank.sha256)?;}
@@ -196,11 +198,13 @@ impl Prepared {
                     "envelope offset",
                 )?;
                 previous = point.offset_seconds;
-                if point.gain != 1.0 {
+                if !point.gain.is_finite() || point.gain<0.0 {return Err(invalid("Invalid per-note gain"));}
+                if point.gain != 1.0 && options.attack_only_rehearsal.is_none() {
                     return Err(AudioError::Unsupported("Per-note gain envelope; channel expression cannot preserve independent voices".into()));
                 }
             }
             notes.push(Note {
+                event_id: note.id.clone(),
                 channel: channels.get(&note.id).copied().unwrap_or(channel),
                 key: key as u8,
                 velocity: note.velocity,
@@ -216,15 +220,14 @@ impl Prepared {
         }
         let mut intervals: Vec<_> = notes.iter().collect();
         intervals.sort_by_key(|note| (note.start, note.end));
-        let mut releases = BTreeMap::new();
+        let mut releases: BTreeMap<(u16,u8),&Note> = BTreeMap::new();
         for note in intervals {
-            let previous = releases.entry((note.channel, note.key)).or_insert(0);
-            if note.start < *previous {
-                return Err(AudioError::Unsupported(
-                    "Overlapping same-key notes on one route".into(),
-                ));
+            if let Some(previous)=releases.get(&(note.channel,note.key)) {
+                if note.start<previous.end {
+                    return Err(AudioError::Unsupported(format!("Overlapping same-key notes on native channel {} key {}: {} frames [{},{}) and {} frames [{},{})",note.channel,note.key,previous.event_id,previous.start,previous.end,note.event_id,note.start,note.end)));
+                }
             }
-            *previous = note.end;
+            releases.insert((note.channel,note.key),note);
         }
         let mut events = Vec::with_capacity(notes.len().saturating_mul(2));
         for (index, note) in notes.iter().enumerate() {

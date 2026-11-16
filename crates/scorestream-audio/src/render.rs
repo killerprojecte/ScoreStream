@@ -87,6 +87,7 @@ impl FluidSynthBackend {
             frames: prepared.frames,
             note_count: prepared.notes.len(),
             local_midi_mix: options.local_midi_mix.clone(),
+            attack_only_rehearsal: options.attack_only_rehearsal.clone(),
             routes: routes
                 .iter()
                 .enumerate()
@@ -109,6 +110,7 @@ impl FluidSynthBackend {
             warnings: plan.warnings.clone(),
             diagnostics: plan.diagnostics.clone(),
         };
+        if options.attack_only_rehearsal.is_some(){report.warnings.push("Explicit attack-only rehearsal: retained per-note envelopes/curves/fractional multipliers are omitted, with exact affected events and counts in attack_only_rehearsal. MIDI attack velocity is used unchanged; this is not faithful dynamic realization.".into());}
         report.warnings.extend([
             "Native event response is quantized by FluidSynth's reported internal block size; not sample-accurate.".into(),
             "A fixed release tail is used. Its final-level check does not prove every patch tail is complete.".into(),

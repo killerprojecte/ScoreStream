@@ -266,6 +266,7 @@ impl Audition {
         let r = config.rendering;
         let options = RenderOptions {
             local_midi_mix: mix,
+            attack_only_rehearsal: None,
             sample_rate: r.sample_rate,
             block_frames: r.block_frames,
             gain: r.gain,
@@ -289,12 +290,19 @@ impl Audition {
         }
         Ok(result)
     }
+    /// Explicit listening approximation, never selected by compile_practice itself.
+    pub fn with_attack_only_rehearsal(mut self, policy:scorestream_audio::attack_rehearsal::RehearsalEnvelopePolicy)->Result<Self> {
+        let Plan::Technique(plan)=&self.plan else {return Err("Attack-only rehearsal requires authenticated practice technique plan".into());};
+        let mix=self.options.local_midi_mix.as_ref().ok_or("Missing same-source MIDI mixer")?;
+        self.options.attack_only_rehearsal=Some(scorestream_audio::attack_rehearsal::prepare_attack_only_rehearsal(plan,mix,policy)?);
+        Ok(self)
+    }
     pub fn practice_preflight_report(&self) -> Value {
         let Plan::Technique(p) = &self.plan else {
             return json!({"compiled":false,"error":"Not a technique plan"});
         };
         let native = self.preflight();
-        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"local_midi_mix":self.options.local_midi_mix,"native_bank_verified":false})
+        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
     }
     pub fn preflight(&self) -> Result<Value> {
         let (plan, techniques) = match &self.plan {
@@ -320,7 +328,7 @@ impl Audition {
             return Err(format!("Audition refuses omitted source sound ({}): {}. Supply a supported explicit interpretation rather than a fallback.",d.code,d.message).into());
         }
         Ok(
-            json!({"schema":"scorestream.local-audition-preflight.v1","source_sha256":self.source_sha256,"audible_notes":plan.notes.len(),"duration_seconds":plan.duration_seconds,"pizzicato_attacks":techniques,"routes":self.routes,"warnings":plan.warnings,"diagnostics":plan.diagnostics,"local_midi_mix":self.options.local_midi_mix,"native_bank_verified":false,"scope":"pure compiler/route/channel preflight only; render verifies existing bank bytes and actual preset names before PCM"}),
+            json!({"schema":"scorestream.local-audition-preflight.v1","source_sha256":self.source_sha256,"audible_notes":plan.notes.len(),"duration_seconds":plan.duration_seconds,"pizzicato_attacks":techniques,"routes":self.routes,"warnings":plan.warnings,"diagnostics":plan.diagnostics,"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false,"scope":"pure compiler/route/channel preflight only; render verifies existing bank bytes and actual preset names before PCM"}),
         )
     }
     pub fn render(&self, bank: &Path, output: &Path) -> Result<Value> {

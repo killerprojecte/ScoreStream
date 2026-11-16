@@ -7,8 +7,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
     let usage = "Usage: audition review-practice source.sfs written_notes_without_wedge_dashes_ornaments_slur_v1 | audition trace-route source.sfs | audition discover-joint source.sfs simple_staccato_accent_v1 | audition preflight source.sfs policy.json | audition render source.sfs policy.json existing.sf2 new.wav";
     let value = match args.get(1).map(String::as_str) {
-        Some("preflight-practice")
-            if args.len() == 9
+        Some(command @ ("preflight-practice" | "preflight-practice-attack-only" | "render-practice-attack-only"))
+            if ((command=="preflight-practice" && args.len()==9) || (command=="preflight-practice-attack-only" && args.len()==10 && args[9]=="midi_attack_velocity_only_v1") || (command=="render-practice-attack-only" && args.len()==12 && args[9]=="midi_attack_velocity_only_v1"))
                 && args[4] == "written_notes_without_wedge_dashes_ornaments_slur_v1"
                 && args[5] == "initial_gm_cc7_centered_v1"
                 && args[6] == "inert_without_new_note_on_v1"
@@ -17,7 +17,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         {
             let source = std::fs::read_to_string(&args[2])?;
             let config = serde_json::from_str(&std::fs::read_to_string(&args[3])?)?;
-            support::Audition::compile_practice(
+            let audition=support::Audition::compile_practice(
                 &source,
                 scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
                 scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
@@ -25,8 +25,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 config,
                 support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
                 scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1,
-            )?
-            .practice_preflight_report()
+            )?;
+            let audition=if command=="preflight-practice"{audition}else{audition.with_attack_only_rehearsal(scorestream_audio::attack_rehearsal::RehearsalEnvelopePolicy::MidiAttackVelocityOnlyV1)?};
+            if command=="render-practice-attack-only" {audition.preflight()?;audition.render(std::path::Path::new(&args[10]),std::path::Path::new(&args[11]))?}else{audition.practice_preflight_report()}
         }
 
         Some("discover-practice")

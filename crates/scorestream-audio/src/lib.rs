@@ -5,6 +5,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 pub mod assignments;
+pub mod attack_rehearsal;
 pub mod midi_mixer;
 #[cfg(target_os = "linux")]
 pub mod pizzicato;
@@ -94,6 +95,7 @@ pub struct RenderOptions {
     pub bank_verification: Option<BankVerification>,
     /// Explicit source-bound initial mixer interpretation; never enabled by default.
     pub local_midi_mix: Option<midi_mixer::LocalMidiMix>,
+    pub attack_only_rehearsal: Option<attack_rehearsal::AttackOnlyRehearsal>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -114,6 +116,7 @@ impl Default for RenderOptions {
             max_soundfont_bytes: 2 * 1024 * 1024 * 1024,
             bank_verification: None,
             local_midi_mix: None,
+            attack_only_rehearsal: None,
         }
     }
 }
@@ -153,6 +156,7 @@ pub struct RenderReport {
     pub note_count: usize,
     pub routes: Vec<RenderedRoute>,
     pub local_midi_mix: Option<midi_mixer::LocalMidiMix>,
+    pub attack_only_rehearsal: Option<attack_rehearsal::AttackOnlyRehearsal>,
     pub internal_quantum_frames: u32,
     pub block_frames: usize,
     pub gain: f64,
