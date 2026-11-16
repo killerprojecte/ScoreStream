@@ -321,3 +321,15 @@ After setting the local allocation budget to the actual compiled count (10,922,
 not the small fixture's 100), genuine native preflight refuses independent
 per-note gain envelopes. Those envelopes are retained, not collapsed into channel
 expression. No full movement WAV is produced by this milestone.
+
+### Optional authored boundary rehearsal policy
+
+`boundary_dynamics` defaults to `reject`. The explicit value
+`adjacent_opening_visit_attack_percent_v1` selects the sealed source-bound
+boundary attack compiler only with authenticated practice MIDI routing, joint
+timing and the named pizzicato policy. It cannot silently enter ordinary playback
+or combine with final-ending continuation. Preflight reports retain the complete
+boundary schedule, exact source/projection digests, attack proportions and scope
+coverage receipts. Independent grace articulation selection remains mandatory
+where required. An attack-only native rehearsal remains a separately named lossy
+envelope policy, not full dynamics fidelity.

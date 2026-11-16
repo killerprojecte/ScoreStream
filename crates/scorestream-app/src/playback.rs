@@ -247,7 +247,7 @@ fn compile_with_practice(
             &Origin { object_id: "document".into(), source: doc.source },
             "Explicit quarter allocation precedes additive global fermata seconds. Grace and principal attacks use the final after-boundary clock: a hold at group onset finishes before grace attacks and boundary controls; holds inside or at the nominal principal endpoint are unsupported. Written grace markers remain zero-length.");
     }
-    let expression = Expression::new(score, &mut warnings)?;
+    let expression = if note_expression.is_some() && matches!(grace, Some(GraceView::Combined(_))) { Expression::new_selected(score, &mut warnings, true)? } else { Expression::new(score, &mut warnings)? };
     let continuity = Continuity::new(score, &expression, &mut warnings)?;
     for (index, event) in score.events.iter().enumerate() {
         if event.attack_dynamics.is_some() {

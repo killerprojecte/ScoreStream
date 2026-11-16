@@ -284,3 +284,16 @@ fn optional_final_ending_config_is_closed_and_default_reject() {
     selected["final_ending"]="invent_missing_endpoint".into();
     assert!(serde_json::from_value::<Config>(selected).is_err());
 }
+
+#[test]
+fn boundary_policy_is_explicit_and_cannot_enter_ordinary_compiler() {
+    let default: Config = serde_json::from_value(config()).unwrap();
+    assert!(default.boundary_dynamics == support::BoundaryDynamics::Reject);
+    let mut selected = config();
+    selected["boundary_dynamics"] = json!("adjacent_opening_visit_attack_percent_v1");
+    let err = match compile(SOURCE, selected) { Ok(_) => panic!("ordinary path must not accept boundary practice"), Err(e) => e.to_string() };
+    assert!(err.contains("Boundary dynamics requires authenticated practice joint path"), "{err}");
+    let mut unknown = config();
+    unknown["boundary_dynamics"] = json!("ignore_authored_dynamics");
+    assert!(serde_json::from_value::<Config>(unknown).is_err());
+}

@@ -17,7 +17,12 @@ pub struct Config {
     pub rendering: Rendering,
     #[serde(default)]
     pub final_ending:FinalEnding,
+    #[serde(default)]
+    pub boundary_dynamics:BoundaryDynamics,
 }
+#[derive(Clone,Copy,Default,Deserialize,PartialEq,Eq)]
+#[serde(rename_all="snake_case")]
+pub enum BoundaryDynamics { #[default] Reject, AdjacentOpeningVisitAttackPercentV1 }
 #[derive(Clone,Copy,Default,Deserialize,PartialEq,Eq)]
 #[serde(rename_all="snake_case")]
 pub enum FinalEnding { #[default] Reject, ContinueToMovementEnd }
@@ -189,6 +194,7 @@ impl Audition {
         if let Some(m) = &mix {
             m.verify_source(source)?;
         }
+        if config.boundary_dynamics!=BoundaryDynamics::Reject && (mix.is_none() || !matches!(&config.timing,Timing::Joint {..}) || !matches!(&config.pizzicato,Pizzicato::InstalledTimGm6mbSharedStringsV1) || config.final_ending!=FinalEnding::Reject) {return Err("Boundary dynamics requires authenticated practice joint path without an additional final-ending policy".into());}
         if config.final_ending!=FinalEnding::Reject && (mix.is_none() || !matches!(&config.timing,Timing::Joint {..}) || !matches!(&config.pizzicato,Pizzicato::InstalledTimGm6mbSharedStringsV1)) {return Err("Explicit final ending requires authenticated practice joint path".into());}
         let sample_policy = PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation;
         let plan = match config.timing {
@@ -263,7 +269,11 @@ impl Audition {
                                     program_zero_based: r.route.program,
                                 })
                                 .collect::<Vec<_>>();
+                            if config.boundary_dynamics==BoundaryDynamics::AdjacentOpeningVisitAttackPercentV1 {
+                                Plan::Technique(plan_source_with_boundary_practice_joint_policies_and_pizzicato(source,PracticeBoundaryAttackPolicy::AdjacentOpeningVisitAttackPercentV1,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,note_expression.ok_or("Practice requires explicit note expression policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
+                            } else {
                             Plan::Technique(plan_source_with_practice_joint_policies_pizzicato_and_final_ending(source,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,note_expression.ok_or("Practice requires explicit note expression policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy,config.final_ending.core())?)
+                            }
                         } else {
                             Plan::Technique(plan_source_with_joint_policies_and_pizzicato(
                                 source,
@@ -318,7 +328,7 @@ impl Audition {
             return json!({"compiled":false,"error":"Not a technique plan"});
         };
         let native = self.preflight();
-        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"final_ending_receipt":p.final_ending_receipt(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
+        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"final_ending_receipt":p.final_ending_receipt(),"boundary_dynamics_receipt":p.boundary_dynamics_receipt(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
     }
     pub fn preflight(&self) -> Result<Value> {
         let (plan, techniques) = match &self.plan {

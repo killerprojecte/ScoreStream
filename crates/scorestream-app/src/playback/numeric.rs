@@ -13,6 +13,12 @@ pub(super) struct NumericDynamics {
 }
 impl NumericDynamics {
     pub fn new(score: &ResolvedScore) -> Result<Option<Self>, String> {
+        Self::new_selected(score, false)
+    }
+    pub(super) fn new_selected(
+        score: &ResolvedScore,
+        simple_accent: bool,
+    ) -> Result<Option<Self>, String> {
         if !score
             .directions
             .iter()
@@ -25,13 +31,22 @@ impl NumericDynamics {
                 d.kind,
                 DirectionKind::Dynamic { sound: true, .. }
                     | DirectionKind::Articulation {
-                        value: Articulation::Accent | Articulation::StrongAccent
+                        value: Articulation::StrongAccent
                     }
             )
-        }) || score
-            .relations
-            .iter()
-            .any(|r| matches!(r.kind, RelationKind::Hairpin { .. }))
+        }) || (!simple_accent
+            && score.directions.iter().any(|d| {
+                matches!(
+                    d.kind,
+                    DirectionKind::Articulation {
+                        value: Articulation::Accent
+                    }
+                )
+            }))
+            || score
+                .relations
+                .iter()
+                .any(|r| matches!(r.kind, RelationKind::Hairpin { .. }))
         {
             return Err("Explicit sound dynamics cannot yet be combined with sounding symbolic dynamics, hairpins, or attack-changing accents".into());
         }

@@ -34,7 +34,18 @@ pub(super) struct Expression {
 }
 impl Expression {
     pub fn new(score: &ResolvedScore, warnings: &mut Diagnostics) -> Result<Self, String> {
-        let numeric = super::numeric::NumericDynamics::new(score)?;
+        Self::new_selected(score, warnings, false)
+    }
+    pub(super) fn new_selected(
+        score: &ResolvedScore,
+        warnings: &mut Diagnostics,
+        simple_accent: bool,
+    ) -> Result<Self, String> {
+        let numeric = if simple_accent {
+            super::numeric::NumericDynamics::new_selected(score, true)?
+        } else {
+            super::numeric::NumericDynamics::new(score)?
+        };
         let intervals = resolve_expression(score).map_err(|d| {
             d.iter()
                 .map(ToString::to_string)
@@ -86,7 +97,14 @@ impl Expression {
         }
         let mut articulations = BTreeMap::<EventId, BTreeSet<Articulation>>::new();
         for d in &score.directions {
-            if matches!(&d.kind, DirectionKind::Dynamic { sound: false, qualifier: Some(_), .. }) {
+            if matches!(
+                &d.kind,
+                DirectionKind::Dynamic {
+                    sound: false,
+                    qualifier: Some(_),
+                    ..
+                }
+            ) {
                 warnings.add("dynamic_qualifier_not_realized", "dynamics.qualifier", RealizationEffect::NotationOnly, &d.origin,
                     "Authored qualifier text and order are retained; sound=false leaves numeric playback unchanged, without interpreting qualifier expression.");
             }
@@ -101,6 +119,23 @@ impl Expression {
             }
             if let (Scope::Event(id), DirectionKind::Articulation { value }) = (&d.scope, &d.kind) {
                 articulations.entry(id.clone()).or_default().insert(*value);
+            }
+        }
+        if simple_accent && numeric.is_some() {
+            for event in &score.events {
+                if articulations
+                    .get(&event.id)
+                    .is_some_and(|a| a.contains(&Articulation::Accent))
+                {
+                    if event.attack_dynamics.is_some() {
+                        return Err(format!(
+                            "practice.numeric_accent_note_on_conflict: {} has both authored NoteOn dynamics and accent",
+                            event.id
+                        ));
+                    }
+                    warnings.add("practice.numeric_simple_accent", "dynamics.articulation", RealizationEffect::Policy, &event.origin,
+                        "Explicit editorial SimpleStaccatoAccentV1: a fresh non-muted numeric attack receives +16 velocity steps (clamped), then returns to its unchanged authored numeric baseline within min(0.08 seconds, duration/4, next numeric step). Tie continuations create no attack.");
+                }
             }
         }
         Ok(Self {
@@ -155,7 +190,16 @@ impl Expression {
     pub fn attack_at(&self, event: &ResolvedEvent, at: &Rational) -> f64 {
         let base = self.value(event, at);
         if self.numeric.is_some() {
-            return base;
+            return if base > 0.
+                && self
+                    .articulations
+                    .get(&event.id)
+                    .is_some_and(|a| a.contains(&Articulation::Accent))
+            {
+                (base + 16.).min(127.)
+            } else {
+                base
+            };
         }
         let arts = self.articulations.get(&event.id);
         let accent = if arts.is_some_and(|v| v.contains(&Articulation::StrongAccent)) {
@@ -204,7 +248,38 @@ impl Expression {
         tempo: &PlaybackClock<'_>,
     ) -> Result<Vec<EnvelopePoint>, String> {
         if let Some(numeric) = &self.numeric {
-            return numeric.envelope(segments, start, release, initial, tempo);
+            let mut points = numeric.envelope(segments, start, release, initial, tempo)?;
+            let base = numeric.value(segments[0], start).to_f64();
+            if base > 0.
+                && self
+                    .articulations
+                    .get(&segments[0].id)
+                    .is_some_and(|a| a.contains(&Articulation::Accent))
+                && f64::from(initial) > base
+            {
+                let duration = tempo.seconds(release)? - tempo.seconds(start)?;
+                let first = points
+                    .get(1)
+                    .ok_or("Missing numeric envelope endpoint")?
+                    .offset_seconds;
+                let decay = 0.08_f64.min(duration / 4.).min(first);
+                if decay <= 0. {
+                    return Err("Numeric accent decay is not representable".into());
+                }
+                // Retain every authored paired step, including one coincident with decay.
+                let baseline = points[0].gain;
+                points[0].gain = 1.;
+                if decay < first {
+                    points.insert(
+                        1,
+                        EnvelopePoint {
+                            offset_seconds: decay,
+                            gain: baseline,
+                        },
+                    );
+                }
+            }
+            return Ok(points);
         }
         let event = segments[0];
         let active = |at: &Rational| {
@@ -299,5 +374,94 @@ impl Expression {
         }
         points.sort_by(|a, b| a.offset_seconds.total_cmp(&b.offset_seconds));
         Ok(points)
+    }
+}
+
+#[cfg(test)]
+mod numeric_accent_tests {
+    use super::*;
+    fn score(percent: &str) -> ResolvedScore {
+        let doc=scorestream_codec::parse("!score 1.1 unit=q\n!part p instrument=piano staves=1\n!voice v part=p staff=1\n@0\n| p m len=4\nv C4:4 id=a\n+ #a articulation value=accent\n.\n!end at=4\n").unwrap();
+        let mut score = lower_document(&doc).unwrap();
+        score.directions.push(Direction {
+            at: Rational::zero(),
+            end: None,
+            scope: Scope::Part(PartId("p".into())),
+            kind: DirectionKind::SoundDynamics {
+                percent: percent.parse().unwrap(),
+            },
+            placement: None,
+            origin: score.events[0].origin.clone(),
+        });
+        score
+    }
+    #[test]
+    fn explicit_numeric_accent_returns_to_exact_baseline_and_retains_steps() {
+        let mut score = score("80");
+        let mut step = score.directions.last().unwrap().clone();
+        step.at = "1/100".parse().unwrap();
+        step.kind = DirectionKind::SoundDynamics {
+            percent: "40".parse().unwrap(),
+        };
+        score.directions.push(step);
+        assert!(Expression::new(&score, &mut Diagnostics::default()).is_err());
+        let mut diagnostics = Diagnostics::default();
+        let e = Expression::new_selected(&score, &mut diagnostics, true).unwrap();
+        let note = &score.events[0];
+        assert_eq!(e.attack(note), 88.);
+        assert_eq!(e.value(note, &Rational::zero()), 72.);
+        let clock = PlaybackClock::new(&score, None).unwrap();
+        let points = e.envelope(&[note], &note.end(), 88, &clock).unwrap();
+        let original = e
+            .numeric
+            .as_ref()
+            .unwrap()
+            .envelope(&[note], &note.start, &note.end(), 88, &clock)
+            .unwrap();
+        assert_eq!(points[0].gain, 1.);
+        assert_eq!(points[1].gain, 72. / 88.);
+        assert_eq!(points[1].offset_seconds, original[1].offset_seconds);
+        assert_eq!(&points[1..], &original[1..]);
+    }
+    #[test]
+    fn numeric_accent_short_decay_and_saturation_leave_baseline_unchanged() {
+        for (percent, velocity) in [("80", 88.), ("140", 127.)] {
+            let s = score(percent);
+            let e = Expression::new_selected(&s, &mut Diagnostics::default(), true).unwrap();
+            let n = &s.events[0];
+            let clock = PlaybackClock::new(&s, None).unwrap();
+            assert_eq!(e.attack(n), velocity);
+            for end in ["4", "1/100"] {
+                let end: Rational = end.parse().unwrap();
+                let p = e.envelope(&[n], &end, velocity as u8, &clock).unwrap();
+                assert_eq!(p[0].gain, 1.);
+                let duration = clock.seconds(&end).unwrap();
+                assert_eq!(p[1].offset_seconds, 0.08_f64.min(duration / 4.));
+                assert_eq!(p[1].gain, e.value(n, &n.start) / velocity);
+                assert_eq!(p.last().unwrap().gain, p[1].gain);
+            }
+        }
+    }
+    #[test]
+    fn numeric_accent_mute_conflict_and_other_expression_stay_closed() {
+        let mut s = score("0");
+        let e = Expression::new_selected(&s, &mut Diagnostics::default(), true).unwrap();
+        assert_eq!(e.attack(&s.events[0]), 0.);
+        s.events[0].attack_dynamics = Some(Rational::from_integer(100));
+        assert!(
+            Expression::new_selected(&s, &mut Diagnostics::default(), true)
+                .err()
+                .unwrap()
+                .contains("note_on_conflict")
+        );
+        s.events[0].attack_dynamics = None;
+        for d in &mut s.directions {
+            if matches!(d.kind, DirectionKind::Articulation { .. }) {
+                d.kind = DirectionKind::Articulation {
+                    value: Articulation::StrongAccent,
+                };
+            }
+        }
+        assert!(Expression::new_selected(&s, &mut Diagnostics::default(), true).is_err());
     }
 }
