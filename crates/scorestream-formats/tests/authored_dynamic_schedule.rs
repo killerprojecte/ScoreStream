@@ -113,6 +113,12 @@ fn skipped_first_ending_does_not_pair_separate_visits_by_written_clock() {
     let xml=include_str!("fixtures/navigation-closed.musicxml")
   .replace("<barline location=\"right\"><bar-style>light-heavy</bar-style><ending number=\"1\"",r#"<direction><direction-type><dynamics><p/></dynamics></direction-type><offset>-0.25</offset><sound dynamics="44.44"/></direction><barline location="right"><bar-style>light-heavy</bar-style><ending number="1""#)
   .replace("<note id=\"c\">",r#"<direction><direction-type><dynamics><ff/></dynamics></direction-type><sound dynamics="106.67"/></direction><note id="c">"#);
+    let mut next = attack("ending-visit", "c", "m3", 3, "3", "3");
+    next.part = "P1".into();
+    assert_eq!(
+        resolve(&xml, &[next]).decisions[0].disposition,
+        scorestream_core::notation::PracticeAttackDisposition::NoProvenOpeningVisit
+    );
     let s = inspect(&xml);
     assert_eq!(s.statements.len(), 2);
     assert_eq!(
@@ -178,4 +184,198 @@ fn final_terminal_is_retained_as_exact_isolated_statement() {
         .diagnostics
         .iter()
         .any(|d| d.code == "authored_dynamics.unpaired_owner_visit"));
+}
+
+fn attack(
+    id: &str,
+    event: &str,
+    measure: &str,
+    visit: usize,
+    onset: &str,
+    chain: &str,
+) -> scorestream_core::notation::QualifiedPracticeAttack {
+    scorestream_core::notation::QualifiedPracticeAttack {
+        occurrence_id: id.into(),
+        written_event_id: event.into(),
+        part: "p".into(),
+        staff: 1,
+        written_measure: measure.into(),
+        measure_occurrence: visit,
+        onset: onset.parse().unwrap(),
+        chain_attack: chain.parse().unwrap(),
+        existing_attack_percent: None,
+    }
+}
+fn resolve(
+    xml: &str,
+    attacks: &[scorestream_core::notation::QualifiedPracticeAttack],
+) -> scorestream_core::notation::PracticeAttackResolution {
+    let m = MusicXml.read(xml).unwrap().value;
+    let doc = to_document(&m).unwrap().value;
+    let before = doc.clone();
+    let result=scorestream_core::notation::resolve_practice_boundary_attacks(&doc,attacks,scorestream_core::notation::PracticeBoundaryAttackPolicy::AdjacentOpeningVisitAttackPercentV1,PerformanceLimits::default()).unwrap();
+    assert_eq!(doc, before);
+    assert!(result.schedule.execution_withheld);
+    assert!(
+        scorestream_app::playback::plan_source(&SfsAdapter.write(&m).unwrap().value)
+            .unwrap_err()
+            .contains("authored_dynamics.performance_required")
+    );
+    result
+}
+fn split_opening(extra: &str) -> String {
+    pair(false,false,false).replace(r#"<note id="b"><pitch><step>D</step><octave>4</octave></pitch><duration>3</duration><voice>1</voice></note>"#,&format!(r#"<note id="b"><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice></note>{extra}<note id="b2"><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice></note>"#))
+}
+#[test]
+fn practice_percent_applies_only_to_new_attacks_within_the_proven_opening_visit() {
+    use scorestream_core::notation::PracticeAttackDisposition as D;
+    let attacks = [
+        attack("before", "a", "m1", 0, "0", "0"),
+        attack("opening", "b", "m2", 1, "1", "1"),
+        attack("later", "b2", "m2", 1, "4/3", "4/3"),
+        attack("after", "outside", "m2", 1, "2", "2"),
+    ];
+    let result = resolve(&split_opening(""), &attacks);
+    assert_eq!(
+        result
+            .decisions
+            .iter()
+            .map(|d| d.disposition)
+            .collect::<Vec<_>>(),
+        [
+            D::NoProvenOpeningVisit,
+            D::Selected,
+            D::Selected,
+            D::NoProvenOpeningVisit
+        ]
+    );
+    for d in &result.decisions[1..3] {
+        assert_eq!(d.percent.as_ref().unwrap().to_string(), "10667/100");
+        let [a, b] = d.terminal_then_opening.unwrap();
+        assert_eq!(
+            result.schedule.statements[a].source.percent.to_string(),
+            "1111/25"
+        );
+        assert_eq!(
+            result.schedule.statements[b].source.percent.to_string(),
+            "10667/100"
+        );
+    }
+}
+#[test]
+fn practice_resolver_does_not_retrigger_ties_or_update_existing_sounding_notes() {
+    use scorestream_core::notation::PracticeAttackDisposition as D;
+    let xml=pair(false,false,false).replace("<step>D</step>","<step>C</step>")
+ .replacen("<duration>3</duration><voice>1</voice></note>","<duration>3</duration><tie type=\"start\"/><voice>1</voice><notations><tied type=\"start\"/></notations></note>",1);
+    let close = xml
+        .rfind("<duration>3</duration><voice>1</voice></note>")
+        .unwrap();
+    let mut xml = xml;
+    xml.replace_range(close..close+"<duration>3</duration><voice>1</voice></note>".len(),"<duration>3</duration><tie type=\"stop\"/><voice>1</voice><notations><tied type=\"stop\"/></notations></note>");
+    let result = resolve(
+        &xml,
+        &[
+            attack("held", "a", "m1", 0, "0", "0"),
+            attack("tie-continuation", "b", "m2", 1, "1", "0"),
+        ],
+    );
+    assert_eq!(result.decisions[0].disposition, D::NoProvenOpeningVisit);
+    assert_eq!(
+        result.decisions[1].disposition,
+        D::ContinuationOrAlreadySounding
+    );
+    let incorrectly_new=resolve(&xml,&[attack("tie-source-protected","b","m2",1,"1","1")]);
+    assert_eq!(incorrectly_new.decisions[0].disposition,D::ContinuationOrAlreadySounding);
+    assert!(result.decisions.iter().all(|d| d.percent.is_none()));
+}
+#[test]
+fn practice_resolver_stops_at_competing_declaration_and_protects_existing_note_percent() {
+    use scorestream_core::notation::PracticeAttackDisposition as D;
+    let extra = r#"<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="87.78"/></direction>"#;
+    let result = resolve(
+        &split_opening(extra),
+        &[
+            attack("opening", "b", "m2", 1, "1", "1"),
+            attack("later", "b2", "m2", 1, "4/3", "4/3"),
+        ],
+    );
+    assert_eq!(result.decisions[0].disposition, D::Selected);
+    assert_eq!(result.decisions[1].disposition, D::CompetingStatement);
+    assert!(result.decisions[1].percent.is_none());
+    let mut a = attack("explicit", "b", "m2", 1, "1", "1");
+    a.existing_attack_percent = Some("55".parse().unwrap());
+    assert_eq!(
+        resolve(&pair(false, false, false), &[a]).decisions[0].disposition,
+        D::ExistingAttackPercentage
+    );
+}
+#[test]
+fn practice_resolver_never_carries_over_a_repeat_jump_but_uses_each_proven_exit() {
+    use scorestream_core::notation::PracticeAttackDisposition as D;
+    let result = resolve(
+        &pair(false, true, true),
+        &[
+            attack("jump-opening", "a", "m1", 1, "1", "1"),
+            attack("actual-exit", "b", "m2", 2, "2", "2"),
+        ],
+    );
+    assert_eq!(result.decisions[0].disposition, D::UnresolvedBoundary);
+    assert_eq!(result.decisions[1].disposition, D::Selected);
+    let result = resolve(
+        &pair(true, false, false),
+        &[
+            attack("first", "b", "m2", 1, "1", "1"),
+            attack("second", "b", "m2", 3, "3", "3"),
+        ],
+    );
+    assert!(result
+        .decisions
+        .iter()
+        .all(|d| d.disposition == D::Selected));
+    assert_ne!(
+        result.decisions[0].terminal_then_opening,
+        result.decisions[1].terminal_then_opening
+    );
+}
+#[test]
+fn practice_resolver_preserves_competing_legacy_numeric_control() {
+    use scorestream_core::{Record, Scalar, SourceRange, State};
+    let m = MusicXml.read(&pair(false, false, false)).unwrap().value;
+    let mut doc = to_document(&m).unwrap().value;
+    let frame = doc
+        .frames
+        .iter_mut()
+        .find(|f| f.time.to_string() == "1")
+        .unwrap();
+    frame.records.push(Record::State(State {
+        target: "p".into(),
+        attributes: std::collections::BTreeMap::from([(
+            "sound_dynamics".into(),
+            Scalar::String("55".into()),
+        )]),
+        source: SourceRange::default(),
+    }));
+    let before = doc.clone();
+    let result=scorestream_core::notation::resolve_practice_boundary_attacks(&doc,&[attack("existing-control","b","m2",1,"1","1")],scorestream_core::notation::PracticeBoundaryAttackPolicy::AdjacentOpeningVisitAttackPercentV1,PerformanceLimits::default()).unwrap();
+    assert_eq!(
+        result.decisions[0].disposition,
+        scorestream_core::notation::PracticeAttackDisposition::LegacyControlConflict
+    );
+    assert!(result.decisions[0].percent.is_none());
+    assert_eq!(doc, before);
+}
+#[test]
+fn practice_resolver_requires_exact_source_attack_identity_time_and_scope() {
+    use scorestream_core::notation::PracticeAttackDisposition as D;
+    let result = resolve(
+        &pair(false, false, false),
+        &[
+            attack("wrong-time", "b", "m2", 1, "4/3", "4/3"),
+            attack("unknown-id", "missing", "m2", 1, "1", "1"),
+        ],
+    );
+    assert!(result
+        .decisions
+        .iter()
+        .all(|d| d.disposition == D::UnverifiedAttackFacts && d.percent.is_none()));
 }

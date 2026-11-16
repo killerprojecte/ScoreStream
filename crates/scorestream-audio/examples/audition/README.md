@@ -179,3 +179,37 @@ qualification without guessed holds. No such permissive compiler or render
 profile is introduced by this review command. Native overlap, independent gain
 envelope, sample coverage, tie/clock and output checks remain unresolved until a
 real plan reaches them. Do not describe a review report as a faithful rendition.
+
+### Source-qualified practice discovery with verified MIDI preparation
+
+```
+audition discover-practice source.sfs routes.json written_notes_without_wedge_dashes_ornaments_slur_v1 initial_gm_cc7_centered_v1
+```
+
+`routes.json` is a closed object with `source_sha256` and `routes`, whose items
+are explicit `{part,instrument,bank,program}` native selections. It does not
+contain an inferred or chosen fermata duration. Preparation constructs the native
+sealed `LocalMidiMix` from the unchanged source and exact selected palette, checks
+its source digest, then requests the core's closed practice discovery. This
+allows exactly four disclosed unrepresented acoustic families, validates initial
+GM/centered source MIDI intent against the same selections, and runs the existing
+repeat, notation and explicit articulation qualification before discovering
+fermatas/graces. Original source records remain in the opaque core result.
+No source fields are stripped; unknown capabilities and malformed sibling
+notation remain errors. Strict/default compilation is unchanged.
+
+Output contains either `practice_discovery_errors` or source-qualified `fermatas`
+with exact occurrence IDs, written IDs, part, start and end quarters; it also
+contains the complete `midi_receipt`. This still creates **no playable plan** and
+chooses **no hold seconds**. Preset bytes, synthesis, sustain/tie behavior under
+chosen holds, technique-controller expansion and final render preflight must be
+verified by the later sealed sound path.
+
+For movement I SHA `ffac34c86e31df50b028ca7afe0e91f822c2b122af28b55c5e0c1ba10769f77b`,
+this preparation reaches 248 qualified fermata occurrences and zero graces.
+Grouping solely by equal release produces 16 *candidates*, not editorial policy.
+The cadenza releases remain distinct: 784 (4 members), 788 (14), 792 (1).
+The current timing interpreter requires positive added seconds per group and
+complete exactly-once membership. Zero seconds and omitted signs are rejected;
+a no-added-hold rehearsal would require a separately named policy, not an empty
+or zero-valued existing hold policy.

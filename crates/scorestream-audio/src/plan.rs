@@ -76,6 +76,7 @@ impl Prepared {
     ) -> Result<Self> {
         if let Some(mix)=&options.local_midi_mix {
             mix.verify_routes(routes)?;
+            if let Some(bank)=&options.bank_verification {mix.verify_bank(&bank.sha256)?;}
             if options.bank_verification.is_none(){return Err(invalid("Source-bound mixer requires explicit bank hash and exact preset-name verification"));}
         }
         if !(8000..=192_000).contains(&options.sample_rate)

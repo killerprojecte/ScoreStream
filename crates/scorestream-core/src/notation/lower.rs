@@ -208,6 +208,7 @@ pub(super) enum LoweringProfile {
     Written,
     ExplicitArticulations,
     ExplicitArticulationsGracesAndFermatas,
+    PracticeJointDiscovery,
     Navigation,
     ExplicitFermatas,
     ExplicitGraces,
@@ -262,10 +263,11 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
         profile,
         LoweringProfile::ExplicitArticulations
             | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+            | LoweringProfile::PracticeJointDiscovery
     ) {
         reject_authored_articulations(doc)?;
     }
-    if doc
+    if profile != LoweringProfile::PracticeJointDiscovery && doc
         .required_extensions
         .iter()
         .any(|e| e == crate::slur_extension::EXTENSION)
@@ -276,7 +278,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
             doc.source,
         ));
     }
-    if crate::instrument_extension::has_midi_intent(doc) {
+    if profile != LoweringProfile::PracticeJointDiscovery && crate::instrument_extension::has_midi_intent(doc) {
         return Err(Diagnostic::error(
             "instrument.performance_unsupported",
             "Authored instrument and MIDI intent requires explicit route realization; volume, pan, ports and programs must not be silently ignored",
@@ -288,6 +290,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
         LoweringProfile::ExplicitGraces
             | LoweringProfile::ExplicitGracesAndFermatas
             | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+            | LoweringProfile::PracticeJointDiscovery
     );
     if !graces
         && doc
@@ -307,6 +310,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
         LoweringProfile::ExplicitFermatas
             | LoweringProfile::ExplicitGracesAndFermatas
             | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+            | LoweringProfile::PracticeJointDiscovery
     );
     if !fermatas
         && doc
@@ -483,6 +487,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 Record::Mark(mark) if crate::provenance::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::part_groups::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
+                Record::Mark(mark) if profile == LoweringProfile::PracticeJointDiscovery && mark.kind == "scorestream.ornaments.child" => {}
                 Record::Mark(mark) if mark.kind == crate::wedges::KIND => {}
                 Record::Mark(mark) if mark.kind == crate::dashes::KIND => {}
                 Record::Mark(mark) if mark.kind == crate::words::KIND => {}
@@ -496,6 +501,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                         profile,
                         LoweringProfile::ExplicitArticulations
                             | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+            | LoweringProfile::PracticeJointDiscovery
                     ) && (crate::articulation_extension::is_kind(&mark.kind)
                         || crate::notation_extension::is_kind(&mark.kind)) => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
@@ -582,6 +588,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                         origin: origin(object_id, s),
                     });
                 }
+                Record::Relation(relation) if profile == LoweringProfile::PracticeJointDiscovery && relation.kind == "slur" => {},
                 Record::Relation(relation) => {
                     relation_groups
                         .entry(relation.id.clone())
@@ -670,6 +677,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
         profile,
         LoweringProfile::ExplicitArticulations
             | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+            | LoweringProfile::PracticeJointDiscovery
     ) {
         super::articulations::append_directions(doc, &mut score)?;
     }

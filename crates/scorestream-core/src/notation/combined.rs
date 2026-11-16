@@ -195,10 +195,20 @@ fn preflight_fermata_policy(
 }
 fn prepare(
     doc: &Document,
+    performance: PerformanceLimits,
+    grace: &GraceTimingLimits,
+    timing: &TimingLimits,
+    articulation_policy: Option<ExplicitArticulationPolicy>,
+) -> Result<PerformedScore, Vec<Diagnostic>> {
+    prepare_profile(doc,performance,grace,timing,articulation_policy,false)
+}
+fn prepare_profile(
+    doc: &Document,
     mut performance: PerformanceLimits,
     grace: &GraceTimingLimits,
     timing: &TimingLimits,
     articulation_policy: Option<ExplicitArticulationPolicy>,
+    practice: bool,
 ) -> Result<PerformedScore, Vec<Diagnostic>> {
     preflight_combined_source(doc, grace, timing)?;
     let errors: Vec<_> = crate::validate(doc, None)
@@ -225,7 +235,7 @@ fn prepare(
     perform::perform(
         doc,
         performance,
-        if articulation_policy.is_some() {
+        if practice { LoweringProfile::PracticeJointDiscovery } else if articulation_policy.is_some() {
             LoweringProfile::ExplicitArticulationsGracesAndFermatas
         } else {
             LoweringProfile::ExplicitGracesAndFermatas
@@ -524,3 +534,12 @@ fn perform_combined(
 
 #[cfg(test)]
 mod tests;
+
+/// Non-playable, explicit practice preparation only. The original source is
+/// validated and retained by the caller; this does not authorize native output.
+pub(super) fn discover_practice(doc: &Document, articulation_policy: ExplicitArticulationPolicy) -> Result<CombinedPerformanceDiscovery, Vec<Diagnostic>> {
+    let (grace,timing)=limits(doc,&GraceTimingLimits::default(),&TimingLimits::default())?;
+    let p=prepare_profile(doc,PerformanceLimits::default(),&grace,&timing,Some(articulation_policy),true)?;
+    super::articulations::qualify_articulations(doc,&p,articulation_policy)?;
+    Ok(CombinedPerformanceDiscovery { graces: grace::discover(doc,&p)?, fermatas: fermata::discover(doc,&p,&timing)? })
+}

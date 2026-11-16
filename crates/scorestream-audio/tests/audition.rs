@@ -126,3 +126,75 @@ fn explicit_practice_review_retains_exact_midi_intent_without_sound_authority() 
     );
     assert!(serde_json::from_str::<PracticeReviewPolicy>("\"ignore_everything\"").is_err());
 }
+
+#[test]
+fn practice_discovery_is_source_bound_and_never_authorizes_audio() {
+    use scorestream_audio::midi_mixer::*;
+    use scorestream_audio::{RouteAssignment, assignments::source_sha256};
+    use scorestream_codec::notation::*;
+    let source=SOURCE.replace("@0\n","!requires scorestream.slur@1\n@0\n")
+        .replace("name=\"violin\" source_id=\"ip\"","name=\"violin\" source_id=\"ip\" midi_ref=\"ip\" channel=1 program=41 volume=393701/5000 pan=0")
+        .replace("name=\"violin\" source_id=\"ir\"","name=\"violin\" source_id=\"ir\" midi_ref=\"ir\" channel=1 program=41 volume=393701/5000 pan=0")
+        .replace("v1_1 D4:1 id=plain staff=1", "v1_1 D4:1 id=plain staff=1\n~ slur s start=#plain")
+        .replace("v1_1 E4:1 id=held staff=1", "v1_1 E4:1 id=held staff=1\n~ slur s end=#held")
+;
+    // Keep each relation in its original anchor's existing frame.
+    let source = source.replace(".\n~ slur", "~ slur");
+    let routes: Vec<_> = ["p", "r"]
+        .into_iter()
+        .map(|p| RouteAssignment {
+            part: p.into(),
+            instrument: "violin".into(),
+            bank: 0,
+            program: 40,
+        })
+        .collect();
+    let mix = prepare_local_midi_mix(
+        &source,
+        &source_sha256(&source),
+        &routes,
+        LocalMidiPolicy::InitialGmCc7CenteredV1,
+    )
+    .unwrap();
+    assert!(support::discover(&source).is_err());
+    let report = support::discover_practice(&source, &mix).unwrap();
+    assert!(
+        report.get("practice_discovery_errors").is_none(),
+        "{report:#}"
+    );
+    assert_eq!(report["fermatas"].as_array().unwrap().len(), 2);
+    assert_eq!(report["grace_occurrences"], 1);
+    assert_eq!(report["playback_plan_created"], false);
+    assert_eq!(report["hold_seconds_selected"], false);
+    assert!(support::discover_practice(&(source.clone() + "\n"), &mix).is_err());
+    let doc = scorestream_codec::parse(&source).unwrap();
+    let mut selections: Vec<_> = routes
+        .iter()
+        .map(|r| PracticeMidiSelection {
+            part: r.part.clone(),
+            instrument: r.instrument.clone(),
+            bank: r.bank,
+            program_zero_based: r.program,
+        })
+        .collect();
+    let q = discover_document_practice_joint(
+        &doc,
+        PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        ExplicitArticulationPolicy::SimpleStaccatoAccentV1,
+        &selections,
+    )
+    .unwrap();
+    assert_eq!(q.source(), &doc);
+    let expected = support::discover(SOURCE).unwrap();
+    assert_eq!(report["fermatas"], expected["fermatas"]);
+    selections[0].program_zero_based = 41;
+    assert!(
+        discover_document_practice_joint(
+            &doc,
+            PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+            ExplicitArticulationPolicy::SimpleStaccatoAccentV1,
+            &selections
+        )
+        .is_err()
+    );
+}

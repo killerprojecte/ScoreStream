@@ -528,6 +528,7 @@ impl<'a> Synth<'a> {
             }
             if let Some(mix)=&options.local_midi_mix {
                 mix.verify_routes(routes)?;
+                mix.verify_bank(&bank.hash)?;
                 let receipt=&mix.routes()[channel];
                 for (controller,value) in [(7,receipt.volume.as_ref().map(|v|v.cc7)),(10,receipt.cc10)] {
                     if let Some(value)=value {

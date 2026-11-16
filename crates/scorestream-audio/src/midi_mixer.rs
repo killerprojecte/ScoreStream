@@ -29,6 +29,9 @@ pub struct RouteMidiReceipt {
     pub authored_metadata: InstrumentMetadata,
     pub volume: Option<VolumeReceipt>,
     pub cc10: Option<u8>,
+    /// Dedicated technique lane inherits controllers, never the authored program/address.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inherited_from_native_channel: Option<u16>,
 }
 /// Only preparation from validated source can construct this token. It is not a
 /// musical-performance certificate. A compiler wrapper must also match source SHA.
@@ -37,6 +40,8 @@ pub struct LocalMidiMix {
     source_sha256: String,
     policy: LocalMidiPolicy,
     external_addresses_realized: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    technique_bank_sha256: Option<String>,
     routes: Vec<RouteMidiReceipt>,
 }
 impl LocalMidiMix {
@@ -51,6 +56,66 @@ impl LocalMidiMix {
             return Err(invalid("Local MIDI mixer source revision mismatch"));
         }
         Ok(())
+    }
+    pub(crate) fn verify_bank(&self, bank: &str) -> Result<()> {
+        if self
+            .technique_bank_sha256
+            .as_ref()
+            .is_some_and(|expected| expected != bank)
+        {
+            return Err(invalid(
+                "Technique mixer token is bound to different bank bytes",
+            ));
+        }
+        Ok(())
+    }
+    /// Crate-private: called only after the opaque compiler technique witness and
+    /// fixed TimGM policy have validated source identity, attacks and palette.
+    pub(crate) fn with_pizzicato_lanes(
+        &self,
+        source_sha: &str,
+        base: &[RouteAssignment],
+        extra: &[RouteAssignment],
+        bank_sha: &str,
+    ) -> Result<Self> {
+        const TIMGM: &str = "c5378b62028c920cb11e4803327983fee2f2cdff5dc89c708e39da417e51c854";
+        self.verify_routes(base)?;
+        if source_sha != self.source_sha256
+            || bank_sha != TIMGM
+            || self.technique_bank_sha256.is_some()
+        {
+            return Err(invalid(
+                "Technique mixer requires the same compiler source, original base token and exact TimGM bank",
+            ));
+        }
+        let mut out = self.clone();
+        let mut seen = BTreeSet::new();
+        for route in extra {
+            if route.bank != 0
+                || route.program != 45
+                || !seen.insert((&route.part, &route.instrument))
+            {
+                return Err(invalid(
+                    "Only one explicit program45 technique lane per source route",
+                ));
+            }
+            let original = self
+                .routes
+                .iter()
+                .find(|r| r.route.part == route.part && r.route.instrument == route.instrument)
+                .ok_or_else(|| invalid("Technique lane has no exact source MIDI mixer route"))?;
+            let mut receipt = original.clone();
+            receipt.route = route.clone();
+            receipt.inherited_from_native_channel = Some(original.native_channel);
+            receipt.native_channel = u16::try_from(out.routes.len())
+                .map_err(|_| invalid("Technique channel cannot be represented"))?;
+            if receipt.native_channel >= 256 {
+                return Err(invalid("Native MIDI channel representability exceeded"));
+            }
+            out.routes.push(receipt);
+        }
+        out.technique_bank_sha256 = Some(bank_sha.into());
+        Ok(out)
     }
     pub(crate) fn verify_routes(&self, routes: &[RouteAssignment]) -> Result<()> {
         if self.routes.len() != routes.len()
@@ -179,12 +244,77 @@ pub fn prepare_local_midi_mix(
             authored_metadata: authored,
             volume,
             cc10,
+            inherited_from_native_channel: None,
         });
     }
     Ok(LocalMidiMix {
         source_sha256: hash,
         policy,
         external_addresses_realized: false,
+        technique_bank_sha256: None,
         routes: receipts,
     })
+}
+
+#[cfg(test)]
+mod technique_mirror_tests {
+    use super::*;
+    const BANK: &str = "c5378b62028c920cb11e4803327983fee2f2cdff5dc89c708e39da417e51c854";
+    #[test]
+    fn private_technique_receipt_copies_controllers_not_authored_program_or_address() {
+        let s = "!score 1.1 unit=q\n!requires scorestream.instrument@1\n!part p instrument=violin staves=1\n!voice v part=p staff=1\n@0\n| p m len=1\n+ p scorestream.instrument channel=12 device=\"\" device_ref=\"i\" midi_ref=\"i\" name=\"Violin\" pan=0 port=2 program=41 source_id=\"i\" volume=393701/5000\nv C4:1 id=a\n.\n!end at=1\n";
+        let route = RouteAssignment {
+            part: "p".into(),
+            instrument: "violin".into(),
+            bank: 0,
+            program: 40,
+        };
+        let base = vec![route.clone()];
+        let mut pluck = route.clone();
+        pluck.program = 45;
+        let mix = prepare_local_midi_mix(
+            s,
+            &source_sha256(s),
+            &base,
+            LocalMidiPolicy::InitialGmCc7CenteredV1,
+        )
+        .unwrap();
+        let expanded = mix
+            .with_pizzicato_lanes(mix.source_sha256(), &base, &[pluck.clone()], BANK)
+            .unwrap();
+        assert_eq!(expanded.routes.len(), 2);
+        let a = &expanded.routes[0];
+        let b = &expanded.routes[1];
+        assert_eq!(
+            serde_json::to_value(&a.authored_metadata).unwrap(),
+            serde_json::to_value(&b.authored_metadata).unwrap()
+        );
+        assert_eq!(
+            b.authored_metadata
+                .midi_instrument
+                .as_ref()
+                .unwrap()
+                .program,
+            Some(41)
+        );
+        assert_eq!(b.route.program, 45);
+        assert_eq!(b.native_channel, 1);
+        assert_eq!(b.inherited_from_native_channel, Some(0));
+        assert_eq!(b.volume.as_ref().unwrap().cc7, 100);
+        assert_eq!(b.cc10, Some(64));
+        expanded.verify_routes(&[route, pluck.clone()]).unwrap();
+        assert!(expanded.verify_bank(&"0".repeat(64)).is_err());
+        assert!(
+            mix.with_pizzicato_lanes("wrong", &base, &[pluck.clone()], BANK)
+                .is_err()
+        );
+        assert!(
+            mix.with_pizzicato_lanes(mix.source_sha256(), &base, &[pluck.clone()], "wrong")
+                .is_err()
+        );
+        assert!(
+            mix.with_pizzicato_lanes(mix.source_sha256(), &base, &[pluck.clone(), pluck], BANK)
+                .is_err()
+        );
+    }
 }

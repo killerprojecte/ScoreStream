@@ -93,3 +93,8 @@ settle any unresolved groups, determine applicable assignments for *new attacks*
 and leave existing note/tie envelopes unchanged. It must also expose the chosen
 policy and preserve the full source lane. Qualifying an adjacent pair here is
 necessary evidence, not permission to run generic last-wins in NumericDynamics.
+
+A small explicitly selected practice-only attack-percentage consumer is documented
+in PRACTICE_BOUNDARY_ATTACK_RESOLVER.md. It verifies exact attack identity/time,
+never updates held notes, and does not unlock normal playback or imply renderer
+integration.

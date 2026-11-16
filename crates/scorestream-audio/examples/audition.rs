@@ -7,6 +7,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().collect();
     let usage = "Usage: audition review-practice source.sfs written_notes_without_wedge_dashes_ornaments_slur_v1 | audition trace-route source.sfs | audition discover-joint source.sfs simple_staccato_accent_v1 | audition preflight source.sfs policy.json | audition render source.sfs policy.json existing.sf2 new.wav";
     let value = match args.get(1).map(String::as_str) {
+        Some("discover-practice")
+            if args.len() == 6
+                && args[4] == "written_notes_without_wedge_dashes_ornaments_slur_v1"
+                && args[5] == "initial_gm_cc7_centered_v1" =>
+        {
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Selection {
+                source_sha256: String,
+                routes: Vec<scorestream_audio::RouteAssignment>,
+            }
+            let source = std::fs::read_to_string(&args[2])?;
+            let selected: Selection = serde_json::from_str(&std::fs::read_to_string(&args[3])?)?;
+            let mix = scorestream_audio::midi_mixer::prepare_local_midi_mix(
+                &source,
+                &selected.source_sha256,
+                &selected.routes,
+                scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1,
+            )?;
+            support::discover_practice(&source, &mix)?
+        }
+
         Some("review-practice")
             if args.len() == 4
                 && args[3] == "written_notes_without_wedge_dashes_ornaments_slur_v1" =>

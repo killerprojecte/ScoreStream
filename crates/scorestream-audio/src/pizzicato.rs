@@ -45,6 +45,10 @@ fn lanes(
             "Pizzicato profile requires the audited local TimGM6mb bytes and exact base route palette",
         ));
     }
+    if let Some(mix)=&options.local_midi_mix {
+        mix.verify_routes(routes)?;
+        if mix.source_sha256()!=plan.source_sha256(){return Err(invalid("Pizzicato compiler witness and MIDI mixer source digests differ"));}
+    }
     // Validate the original route identity independently of technique. Native
     // channel overlap checking happens only after the attack-lane assignment.
     let mut result = Lanes {
@@ -124,6 +128,9 @@ fn lanes(
     if result.channels.len() != plan.pizzicato_attacks().len() {
         return Err(invalid("Technique attack identity is not an audible note"));
     }
+    if let Some(mix)=&options.local_midi_mix {
+        result.options.local_midi_mix=Some(mix.with_pizzicato_lanes(plan.source_sha256(),routes,&result.routes[routes.len()..],&expected.sha256)?);
+    }
     Ok(result)
 }
 fn prepared(
@@ -134,9 +141,7 @@ fn prepared(
 ) -> Result<Prepared> {
     // Expanded palette names belong to Synth, while Prepared validates the
     // unchanged source route set and exact timing before any bank is loaded.
-    let mut base = options.clone();
-    base.bank_verification = None;
-    Prepared::new_with_channels(plan.plan(), routes, &base, channels)
+    Prepared::new_with_channels(plan.plan(), routes, options, channels)
 }
 impl FluidSynthBackend {
     #[allow(clippy::too_many_arguments)]

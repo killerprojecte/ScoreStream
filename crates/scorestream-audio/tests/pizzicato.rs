@@ -251,3 +251,13 @@ fn catalog_alias_is_not_rewritten_or_guessed_from_a_label() {
         .is_err()
     );
 }
+
+#[test]
+fn midi_mix_from_another_source_cannot_authorize_technique_lanes(){
+    use scorestream_audio::{midi_mixer::*,assignments::source_sha256};
+    let plain=source();let with_midi=plain.replace("@0\n","!requires scorestream.instrument@1\n@0\n+ p scorestream.instrument midi_ref=\"i\" name=\"Violin\" pan=0 program=41 source_id=\"i\" volume=100\n");
+    let mix=prepare_local_midi_mix(&with_midi,&source_sha256(&with_midi),&routes(),LocalMidiPolicy::InitialGmCc7CenteredV1).unwrap();
+    assert!(playback::plan_source_with_pizzicato(&with_midi,PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation).is_err(),"strict core guard remains");
+    let mut options=options();options.local_midi_mix=Some(mix);
+    let error=validate_pizzicato_plan(&plan(&plain),&routes(),&options,PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1).unwrap_err();assert!(error.to_string().contains("source digests differ"));
+}

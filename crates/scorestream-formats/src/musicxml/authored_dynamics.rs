@@ -327,6 +327,10 @@ mod corpus {
             assert_eq!(schedule.boundaries[0].ordering,scorestream_core::notation::BoundaryOrdering::AdjacentTerminalBeforeOpening);
             assert_eq!(schedule.boundaries[0].at.to_string(),"3/2");
             assert_eq!(schedule.statements[0].performed_visual_at.to_string(),"2/3");
+            // Actual-source boundary schedule proof only, not a fabricated note transcript.
+            let practice=scorestream_core::notation::resolve_practice_boundary_attacks(&doc,&[],scorestream_core::notation::PracticeBoundaryAttackPolicy::AdjacentOpeningVisitAttackPercentV1,scorestream_core::notation::PerformanceLimits::default()).unwrap();
+            assert_eq!(practice.schedule,schedule);assert!(practice.decisions.is_empty());
+
 
             let xml = MusicXml.write(&model).unwrap().value;
             assert_eq!(MusicXml.read(&xml).unwrap().value, model);

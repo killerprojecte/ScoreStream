@@ -361,3 +361,37 @@ pub fn review_practice(source: &str, policy: PracticeReviewPolicy) -> Result<Val
         "remaining_requirements":["A separate sealed practice compiler and renderer receipt must explicitly carry the four nonrealizations.","Resolve authored instrument routing and mixer semantics without discarding them.","Choose and validate explicit source-qualified grace/fermata policies; no hold duration is selected by this review.","Validate real note/tie/clock semantics and native palette, overlap, envelope and tail preflight before rendering."]
     }))
 }
+
+/// Native-backed practice discovery: verify the sealed MIDI receipt against the
+/// exact source before permitting the narrowly scoped core discovery profile.
+pub fn discover_practice(
+    source: &str,
+    mix: &scorestream_audio::midi_mixer::LocalMidiMix,
+) -> Result<Value> {
+    mix.verify_source(source)?;
+    let doc = scorestream_codec::parse(source).map_err(|e| format!("{e:?}"))?;
+    let routes = mix
+        .routes()
+        .iter()
+        .map(|r| PracticeMidiSelection {
+            part: r.route.part.clone(),
+            instrument: r.route.instrument.clone(),
+            bank: r.route.bank,
+            program_zero_based: r.route.program,
+        })
+        .collect::<Vec<_>>();
+    let result = discover_document_practice_joint(
+        &doc,
+        PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        ExplicitArticulationPolicy::SimpleStaccatoAccentV1,
+        &routes,
+    );
+    match result {
+        Ok(q) => Ok(
+            json!({"source_sha256":source_sha256(source),"midi_receipt":mix,"nonrealizations":q.nonrealizations(),"playback_plan_created":false,"hold_seconds_selected":false,"grace_occurrences":q.discovery().graces.occurrences.len(),"fermatas":q.discovery().fermatas.occurrences.iter().map(|f|json!({"event":f.id,"written_event":f.written_id,"part":f.part,"start":f.quarter_start,"end":f.quarter_end})).collect::<Vec<_>>()}),
+        ),
+        Err(e) => Ok(
+            json!({"source_sha256":source_sha256(source),"midi_receipt":mix,"playback_plan_created":false,"hold_seconds_selected":false,"practice_discovery_errors":e.iter().map(ToString::to_string).collect::<Vec<_>>()}),
+        ),
+    }
+}
