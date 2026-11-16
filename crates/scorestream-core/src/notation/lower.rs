@@ -410,6 +410,7 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                     None
                 };
                 score.events.push(ResolvedEvent {
+                    attack_dynamics: rational(&event.attributes, "attack_dynamics"),
                     id: id.clone(),
                     voice: VoiceId(event.voice.clone()),
                     part: part.clone(),

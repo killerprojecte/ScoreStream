@@ -381,6 +381,9 @@ impl Meter {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreEvent {
+    /// Explicit per-note NoteOn percentage of forte90, not a persistent scope state.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attack_dynamics: Option<Rational>,
     pub id: EventId,
     pub voice: VoiceId,
     pub staff: u32,
@@ -615,6 +618,9 @@ impl NoteSize {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreGraceNote {
+    /// Explicit per-note NoteOn percentage of forte90, not a persistent scope state.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attack_dynamics: Option<Rational>,
     pub id: EventId,
     pub anchor: EventId,
     pub order: i64,

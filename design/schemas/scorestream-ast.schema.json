@@ -324,6 +324,37 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "attributes": {
+                "required": [
+                  "attack_dynamics"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "pitch": {
+                "not": {
+                  "enum": [
+                    "r",
+                    "_"
+                  ]
+                }
+              },
+              "attributes": {
+                "properties": {
+                  "attack_dynamics": {
+                    "$ref": "#/$defs/NonNegativeRational"
+                  }
+                }
+              }
+            },
+            "description": "Finite-decimal exact NoteOn percent of forte90; this note only. Zero is retained. Runtime validates note owner and exact finite decimal domain."
+          }
         }
       ]
     },

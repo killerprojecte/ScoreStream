@@ -81,3 +81,5 @@ pub(crate) fn type_name(value: NoteType) -> &'static str {
 }
 
 mod credits;
+
+mod note_dynamics;

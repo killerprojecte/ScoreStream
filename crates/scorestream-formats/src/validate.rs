@@ -19,6 +19,12 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
         }
     }
 
+    for (value, pitch) in score.parts.iter().flat_map(|p| &p.measures).flat_map(|m| &m.events).map(|e| (&e.attack_dynamics, &e.pitch))
+        .chain(score.graces.iter().map(|g| (&g.attack_dynamics, &g.pitch))) {
+        if value.as_ref().is_some_and(|v| v.is_negative() || !scorestream_core::geometry::decimal(v) || !pitch.is_note()) {
+            report.push(Format::ScoreModel, MappingEffect::Invalid, "note_dynamics.value", "/events", "Attack dynamics requires a note owner and exact nonnegative finite decimal percentage");
+        }
+    }
     let mut invalid = |path: &str, feature: &str, message: &str| {
         report.push(
             Format::ScoreModel,

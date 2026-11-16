@@ -36,6 +36,7 @@ fn imported_authored_anchors_join_an_explicit_snapshot_without_enabling_audio() 
         .events
         .iter()
         .map(|e| ResolvedEvent {
+            attack_dynamics: e.attack_dynamics.clone(),
             id: id(&format!("fixture:{}", e.id)),
             voice: e.voice.clone(),
             part: part.id.clone(),

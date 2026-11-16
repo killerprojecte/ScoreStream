@@ -6,6 +6,7 @@ pub use articulations::*;
 mod clock;
 mod combined;
 mod continuity;
+mod attack_dynamics;
 mod diagnostic;
 mod expression;
 mod fermata;
@@ -211,6 +212,16 @@ fn compile_with_graces(
     }
     let expression = Expression::new(score, &mut warnings)?;
     let continuity = Continuity::new(score, &expression, &mut warnings)?;
+    for (index, event) in score.events.iter().enumerate() {
+        if event.attack_dynamics.is_some() {
+            if continuity.targets.contains(&index) {
+                return Err(format!("note_dynamics.tie_continuation_unsupported: {} is not a new attack", event.id));
+            }
+            if event.grace.is_some() || grace_windows.contains_key(&event.id) || event.role == EventRole::Cue || !matches!(event.written_pitch, scorestream_codec::Pitch::Pitched { .. }) {
+                return Err(format!("note_dynamics.owner_unsupported: {} requires a qualified pitched measured attack",event.id));
+            }
+        }
+    }
     if let Some(grace) = grace {
         let events: BTreeMap<_, _> = score.events.iter().map(|e| (&e.id, e)).collect();
         for window in grace.windows() {
@@ -339,7 +350,7 @@ fn compile_with_graces(
         if duration < 0.000_001 {
             return Err("A note is shorter than the playback clock can represent".into());
         }
-        let velocity = if window.is_some() {
+        let mut velocity = if window.is_some() {
             expression.attack_at(event, attack)
         } else {
             expression.attack(event)
@@ -347,11 +358,19 @@ fn compile_with_graces(
         .round()
         .clamp(1., 127.) as u8;
         let segments: Vec<_> = chain.iter().map(|i| &score.events[*i]).collect();
-        let envelope = if window.is_some() {
+        let mut envelope = if window.is_some() {
             expression.envelope_from(&segments, attack, &release, velocity, &tempo)?
         } else {
             expression.envelope(&segments, &release, velocity, &tempo)?
         };
+        if let Some((override_velocity, override_envelope)) = attack_dynamics::apply(event, &envelope, duration)? {
+            if override_velocity == 0 {
+                warnings.add("note_dynamics.silent_attack", "dynamics.note_attack", RealizationEffect::Policy, &event.origin, "Explicit zero note dynamics is a silent attack; written event markers remain and no NoteOff command or later state is inferred.");
+                continue;
+            }
+            velocity = override_velocity;
+            envelope = override_envelope;
+        }
         routes.insert(PlaybackRoute {
             part: event.part.0.clone(),
             instrument: event.instrument.0.clone(),

@@ -106,7 +106,7 @@ fn signed_exact_tenths_and_precision_are_validated_not_skipped() {
 fn semantic_fields_unknown_descendants_and_other_paths_stay_blocking() {
     for addition in [
         "print-object=\"no\"",
-        "dynamics=\"75\"",
+        "end-dynamics=\"75\"",
         "attack=\"1\"",
         "release=\"1\"",
         "relative-y=\"1\"",

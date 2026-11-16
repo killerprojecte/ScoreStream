@@ -581,9 +581,10 @@ pub fn write_with_options(
                     graces.write_before(e, &v.id.0, div, &beams, &slurs, &geometry, &mut out);
                     writeln!(
                         out,
-                        "      <note id=\"{}\"{}>",
+                        "      <note id=\"{}\"{}{}>",
                         escape(&e.id.0),
-                        geometry.event(&e.id.0)
+                        geometry.event(&e.id.0),
+                        super::note_dynamics::attribute(&e.attack_dynamics)
                     )
                     .unwrap();
                     if is_chord {

@@ -534,7 +534,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                                 "anchor",
                                 "order",
                                 "slash",
-                                "stem",
+                                "stem", "attack_dynamics",
                             ],
                             e.id().unwrap_or(&e.voice),
                         );
@@ -552,6 +552,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         }
                         let id = e.id().expect("validated grace metadata target");
                         score.graces.push(ScoreGraceNote {
+                            attack_dynamics: text(&e.attributes, "attack_dynamics").map(|v| v.parse().expect("validated note dynamics")),
                             id: EventId(id.into()),
                             anchor: EventId(
                                 text(&e.attributes, "anchor")
@@ -582,7 +583,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             "tm_normal_type",
                             "tm_normal_dots",
                             "note_size",
-                            "stem",
+                            "stem", "attack_dynamics",
                             "measure_rest",
                         ],
                         e.id().unwrap_or(&e.voice),
@@ -628,6 +629,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         voice.staff
                     };
                     measure.events.push(ScoreEvent {
+                        attack_dynamics: text(&e.attributes, "attack_dynamics").map(|v| v.parse().expect("validated note dynamics")),
                         id: EventId(id.clone()),
                         voice: VoiceId(e.voice.clone()),
                         staff,
@@ -999,6 +1001,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 if let Some(c) = &e.chord {
                     put(&mut a, "chord", chords.get(c, &mut report));
                 }
+                if let Some(value) = &e.attack_dynamics { put(&mut a, "attack_dynamics", &value.to_string()); }
                 if let Some(stem) = e.stem {
                     put(&mut a, "stem", stem.name());
                 }
@@ -1065,6 +1068,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         if let Some(slash) = g.slash {
             a.insert("slash".into(), Scalar::Boolean(slash));
         }
+        if let Some(value) = &g.attack_dynamics { put(&mut a, "attack_dynamics", &value.to_string()); }
         if let Some(stem) = g.stem {
             put(&mut a, "stem", stem.name());
         }

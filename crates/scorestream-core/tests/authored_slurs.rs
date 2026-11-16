@@ -93,6 +93,7 @@ fn common() -> ScoreDocument {
                 events: [("a", "0"), ("b", "1")]
                     .into_iter()
                     .map(|(id, at)| ScoreEvent {
+                        attack_dynamics: None,
                         id: EventId(id.into()),
                         voice: VoiceId("v".into()),
                         staff: 1,
@@ -464,6 +465,7 @@ fn common_model_validates_grace_identity_order_and_ownership() {
     let mut score = common();
     for (id, order) in [("z_first", -2), ("a_later", -1)] {
         score.graces.push(ScoreGraceNote {
+            attack_dynamics: None,
             id: EventId(id.into()),
             anchor: EventId("a".into()),
             order,

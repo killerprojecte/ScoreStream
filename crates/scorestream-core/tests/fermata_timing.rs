@@ -180,6 +180,7 @@ impl Fixture {
                     measure_occurrence: occurrence,
                 });
                 performed.score.events.push(ResolvedEvent {
+                    attack_dynamics: None,
                     id: occurrence_id,
                     voice: VoiceId(format!("v{}", e.part)),
                     part: part(e.part),

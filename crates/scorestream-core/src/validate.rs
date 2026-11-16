@@ -217,6 +217,11 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             match record {
                 Record::Event(e) => {
                     validate_attributes("event", "", &e.attributes, e.source, &mut out);
+                    if let Some(value) = e.attributes.get("attack_dynamics") {
+                        if !value.as_str().and_then(|v| v.parse::<Rational>().ok()).is_some_and(|v| !v.is_negative() && crate::geometry::decimal(&v)) || !e.pitch.is_note() {
+                            out.push(Diagnostic::error("note_dynamics.value", "Attack dynamics requires a note owner and exact nonnegative finite decimal percentage", e.source));
+                        }
+                    }
                     let valid_pitch = match &e.pitch {
                         Pitch::Pitched { step, .. } => ('A'..='G').contains(step),
                         Pitch::Unpitched(id) => is_identifier(id),

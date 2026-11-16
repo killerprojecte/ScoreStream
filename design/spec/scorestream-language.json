@@ -300,6 +300,10 @@
           "large"
         ],
         "meaning": "Graphic size of explicit w; independent of sounding kind and measured duration."
+      },
+      "attack_dynamics": {
+        "type": "nonnegative_rational",
+        "meaning": "This written note only: exact finite-decimal NoteOn percentage of forte90. Absence is distinct from zero; never a persistent state or tie-continuation retrigger."
       }
     },
     "state": {
