@@ -663,3 +663,25 @@ fn rejects_actual_overlapping_ranges_and_corrupt_data_descriptors() {
     b[descriptor + 4] ^= 1;
     assert_error(b, "descriptor disagrees");
 }
+
+#[test]
+fn automatic_notation_retention_matches_plain_xml_for_stored_and_deflated_roots() {
+    use scorestream_formats::musicxml::{self, ArticulationProfile, MusicXmlOptions};
+    let xml = include_str!("fixtures/mixed-authored-notations.musicxml");
+    let options = MusicXmlOptions {
+        articulations: ArticulationProfile::Automatic,
+        ..Default::default()
+    };
+    let expected = musicxml::read_with_options(xml, &options).unwrap();
+    for root in [
+        Entry::new("score.musicxml", xml.as_bytes()),
+        Entry::new("score.musicxml", xml.as_bytes()).stored(),
+    ] {
+        let manifest = simple_manifest("score.musicxml");
+        let bytes = zip(&[Entry::new(CONTAINER, &manifest), root]);
+        let selected = mxl::open(Cursor::new(bytes)).unwrap();
+        let result = musicxml::read_reader_with_options(selected.into_reader(), &options).unwrap();
+        assert_eq!(result.value, expected.value);
+        assert_eq!(result.report, expected.report);
+    }
+}

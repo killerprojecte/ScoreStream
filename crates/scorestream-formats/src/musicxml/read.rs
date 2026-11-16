@@ -830,6 +830,7 @@ impl PartReader {
                     }
                 }
                 "note" => {
+                    let articulation_profile = options.articulations.for_note(n);
                     moved = true;
                     let grace = n.child("grace").is_some();
                     let duration = if grace {
@@ -933,14 +934,13 @@ impl PartReader {
                             .attr("id")
                             .map(String::from)
                             .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
-                        if !options.articulations.is_legacy() {
+                        if !articulation_profile.is_legacy() {
                             // New wrapper fields must not bypass the authored-family
                             // scope check through the separate grace reader.
                             super::authored_articulations::read(
                                 n,
                                 &EventId(id.clone()),
-                                options.articulations
-                                    == super::ArticulationProfile::AuthoredMixedV1,
+                                articulation_profile == super::ArticulationProfile::AuthoredMixedV1,
                             )?;
                         }
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
@@ -1008,16 +1008,25 @@ impl PartReader {
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                     let mut authored_event = false;
-                    if !options.articulations.is_legacy() {
+                    if !articulation_profile.is_legacy() {
                         if let Some(authored) = super::authored_articulations::read(
                             n,
                             &EventId(id.clone()),
-                            options.articulations == super::ArticulationProfile::AuthoredMixedV1,
+                            articulation_profile == super::ArticulationProfile::AuthoredMixedV1,
                         )? {
-                            if options.articulations == super::ArticulationProfile::AuthoredMixedV1
-                            {
+                            if articulation_profile == super::ArticulationProfile::AuthoredMixedV1 {
                                 notation_order
                                     .extend(super::mixed_notations::read(n, &EventId(id.clone())));
+                            }
+                            if options.articulations == super::ArticulationProfile::Automatic {
+                                report.push_source(
+                                    crate::Format::MusicXml,
+                                    crate::MappingEffect::Preserved,
+                                    "articulation.automatic_retention",
+                                    &n.path,
+                                    "This note requires authored retention to preserve its articulation groups, attributes or child order. Retention does not establish preview or playback readiness; consumer capability checks still apply.",
+                                    Some(n.source),
+                                );
                             }
                             authored_articulations.push(authored);
                             authored_event = true;
@@ -1028,7 +1037,7 @@ impl PartReader {
                     // Empty wrappers have typed meaning only on authored hosts.
                     // Mixed mode still applies the original sound/notated tie contract.
                     let endpoints = if authored_event {
-                        if options.articulations == super::ArticulationProfile::AuthoredMixedV1 {
+                        if articulation_profile == super::ArticulationProfile::AuthoredMixedV1 {
                             super::ties::read_endpoints_with_empty(n, true)?
                         } else {
                             None

@@ -30,7 +30,8 @@ pub struct MusicXmlOptions {
     #[serde(default, skip_serializing_if = "super::GeometryPolicy::is_strict")]
     pub geometry: super::GeometryPolicy,
     /// Input-only: opt-in authored v1 preserves ordered grouping and all typed choices but
-    /// supplies no runtime realization. Legacy simple-sign import stays default.
+    /// supplies no runtime realization. Automatic selects canonical simple hosts per
+    /// note and preserves richer supported hosts. Legacy simple-sign import stays default.
     #[serde(default, skip_serializing_if = "super::ArticulationProfile::is_legacy")]
     pub articulations: super::ArticulationProfile,
 }

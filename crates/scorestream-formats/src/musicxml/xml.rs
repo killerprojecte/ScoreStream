@@ -646,6 +646,13 @@ pub(super) fn schema_with_profile(
     articulations: super::ArticulationProfile,
     report: &mut MappingReport,
 ) {
+    // Resolve once at the complete note boundary, in both streaming passes.
+    // Descendants inherit the same decision used by semantic lowering.
+    let articulations = if n.name == "note" {
+        articulations.for_note(n)
+    } else {
+        articulations
+    };
     let authored = !articulations.is_legacy();
     let (attrs, children, multiple, required, text): (&[&str], &[&str], &[&str], &[&str], bool) =
         match n.name.as_str() {

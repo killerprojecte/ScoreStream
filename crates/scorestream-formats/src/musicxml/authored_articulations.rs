@@ -24,8 +24,22 @@ pub enum ArticulationProfile {
     AuthoredV1,
     /// Preserve existing family payloads and explicit mixed wrapper topology.
     AuthoredMixedV1,
+    /// Select legacy semantics only for canonical simple articulation hosts;
+    /// otherwise retain the supported authored wrapper structure per note.
+    /// This does not imply renderer or playback support for the resulting model.
+    Automatic,
 }
 impl ArticulationProfile {
+    pub(super) fn for_note(self, note: &Node) -> Self {
+        if self != Self::Automatic {
+            return self;
+        }
+        if super::automatic::is_canonical_simple(note) {
+            Self::LegacySimple
+        } else {
+            Self::AuthoredMixedV1
+        }
+    }
     pub(crate) fn is_legacy(&self) -> bool {
         *self == Self::LegacySimple
     }
