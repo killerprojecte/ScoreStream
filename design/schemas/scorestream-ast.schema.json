@@ -1616,6 +1616,70 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "dynamic"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "value": {
+                    "enum": [
+                      "pppp",
+                      "ppp",
+                      "pp",
+                      "p",
+                      "mp",
+                      "mf",
+                      "f",
+                      "ff",
+                      "fff",
+                      "ffff",
+                      "sf",
+                      "sfz",
+                      "fp"
+                    ]
+                  },
+                  "placement": {
+                    "enum": [
+                      "above",
+                      "below"
+                    ]
+                  },
+                  "sound": {
+                    "type": "boolean"
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "description": "Optional authored dynamics coordinates must be finite-decimal exact rational tenths. These do not change symbol, placement, sound assignment or playback, and are not a layout realization promise."
+          }
         }
       ]
     },

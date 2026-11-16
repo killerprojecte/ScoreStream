@@ -792,7 +792,7 @@ pub(super) fn schema_with_profile(
             ),
             "direction-type" => (&[], &["metronome", "dynamics"], &[], &[], false),
             "dynamics" => (
-                &[],
+                &["default-x", "default-y", "relative-x", "relative-y"],
                 &[
                     "pppp", "ppp", "pp", "p", "mp", "mf", "f", "ff", "fff", "ffff", "sf", "sfz",
                     "fp",

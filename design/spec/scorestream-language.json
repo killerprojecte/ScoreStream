@@ -914,6 +914,22 @@
             "type": "boolean",
             "default": true,
             "meaning": "False preserves printed dynamics without assigning performer-policy loudness."
+          },
+          "default_x": {
+            "type": "rational",
+            "meaning": "Authored exact finite-decimal tenths. Absence differs from explicit zero. No layout or sound semantics."
+          },
+          "default_y": {
+            "type": "rational",
+            "meaning": "Authored exact finite-decimal tenths. Absence differs from explicit zero. No layout or sound semantics."
+          },
+          "relative_x": {
+            "type": "rational",
+            "meaning": "Authored exact finite-decimal tenths. Absence differs from explicit zero. No layout or sound semantics."
+          },
+          "relative_y": {
+            "type": "rational",
+            "meaning": "Authored exact finite-decimal tenths. Absence differs from explicit zero. No layout or sound semantics."
           }
         }
       },

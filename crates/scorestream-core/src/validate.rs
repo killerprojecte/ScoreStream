@@ -434,6 +434,21 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 }
                 Record::Mark(m) => {
                     validate_attributes("mark", &m.kind, &m.attributes, m.source, &mut out);
+                    if m.kind == "dynamic" {
+                        for key in ["default_x", "default_y", "relative_x", "relative_y"] {
+                            if m.attributes.get(key).is_some_and(|value| {
+                                !value.as_str()
+                                    .and_then(|s| s.parse::<Rational>().ok())
+                                    .is_some_and(|v| crate::geometry::decimal(&v))
+                            }) {
+                                out.push(Diagnostic::error(
+                                    "dynamics.geometry",
+                                    "Dynamic coordinates must be exact finite decimals",
+                                    m.source,
+                                ));
+                            }
+                        }
+                    }
                     has_geometry |= crate::geometry::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);

@@ -62,7 +62,16 @@ pub(super) fn read(
             Some("below") => Some(Placement::Below),
             _ => return Err(error(node, "dynamics.placement", "Expected above or below")),
         };
+        let coordinate = |key| {
+            d.attr(key)
+                .map(|_| super::geometry::exact_decimal(&d.scalar_attribute(key)))
+                .transpose()
+        };
         marks.push(ScoreDynamic {
+            default_x: coordinate("default-x")?,
+            default_y: coordinate("default-y")?,
+            relative_x: coordinate("relative-x")?,
+            relative_y: coordinate("relative-y")?,
             at: visual,
             scope: scope.clone(),
             sign,
@@ -198,7 +207,24 @@ impl<'a> Export<'a> {
                     })
                     .unwrap_or_default();
                 let symbol = crate::dynamics::symbol_text(mark.sign);
-                write!(out,"      <direction{placement}><direction-type><dynamics><{symbol}/></dynamics></direction-type><offset sound=\"no\">{offset}</offset>").unwrap();
+                let mut geometry = String::new();
+                for (key, value) in [
+                    ("default-x", &mark.default_x),
+                    ("default-y", &mark.default_y),
+                    ("relative-x", &mark.relative_x),
+                    ("relative-y", &mark.relative_y),
+                ] {
+                    if let Some(value) = value {
+                        write!(
+                            geometry,
+                            " {key}=\"{}\"",
+                            super::geometry::decimal_text(value)
+                                .expect("validated dynamic decimal")
+                        )
+                        .unwrap();
+                    }
+                }
+                write!(out,"      <direction{placement}><direction-type><dynamics{geometry}><{symbol}/></dynamics></direction-type><offset sound=\"no\">{offset}</offset>").unwrap();
                 if let Some(staff) = mark.scope.staff {
                     write!(out, "<staff>{staff}</staff>").unwrap();
                     if staff_written.insert(staff)
@@ -222,6 +248,78 @@ impl<'a> Export<'a> {
                 )
                 .unwrap();
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod geometry_corpus {
+    use super::*;
+    use crate::{
+        ScoreAdapter,
+        musicxml::{MusicXml, xml},
+        sfs::SfsAdapter,
+    };
+    use std::{fs::File, io::BufReader, path::PathBuf};
+    #[test]
+    #[ignore = "set SCORESTREAM_MXL_FIXTURES to the pinned original XML/MXL directory"]
+    fn original_dynamics_geometry_is_exact_and_composites_stay_unsupported() {
+        let root = PathBuf::from(std::env::var("SCORESTREAM_MXL_FIXTURES").unwrap());
+        let hashes = [
+            "5de9f153c72b3831757d43584c5d5ec792510d36cc5a389a4160aa90697fc17b",
+            "c962fecc2e85c070633ad1990b7046c2c23ed5673ad95f4d02eeeac94528f09a",
+            "788d9c3cda2fc1b970f5a832683eafb7ce4dc25e7767f18041e3dd1783978b98",
+            "cce11a1437d3acd379fbf2f72483d92888b05443f7b04bb1cb5eea9c59cc9298",
+        ];
+        for (i, (total, blocked)) in [(755, 0), (757, 55), (522, 62), (1221, 157)]
+            .into_iter()
+            .enumerate()
+        {
+            let path = root.join(format!("Beethoven_Op.67_{}.musicxml", i + 1));
+            let mut counts = (0, 0);
+            let scan=xml::walk(BufReader::new(File::open(&path).unwrap()), |m,_,phase| {
+                if phase != xml::Phase::Complete || m.name != "measure" { return Ok(()) }
+                for direction in m.children_named("direction") {
+                    for t in direction.children_named("direction-type") {
+                        for d in t.children_named("dynamics") {
+                            counts.0+=1;
+                            let mut report=MappingReport::default(); xml::schema(d,&mut report);
+                            if d.children.len()!=1 || crate::dynamics::symbol(&d.children[0].name).is_none() {
+                                assert!(report.has_errors()); counts.1+=1; continue;
+                            }
+                            assert!(!report.has_errors(),"{report:?}");
+                            let mut geometry=String::new();
+                            for (key,value) in &d.attrs { write!(geometry," {key}=\"{}\"",escape(value)).unwrap(); }
+                            // Family projection onto a named minimal fixture, not a stripped original.
+                            let snippet=format!(r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list><part id="p"><measure id="m" number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes><direction><direction-type><dynamics{geometry}><{}/></dynamics></direction-type></direction><note id="n"><rest/><duration>4</duration><voice>1</voice><type>whole</type></note></measure></part></score-partwise>"#,d.children[0].name);
+                            let model=MusicXml.read(&snippet).unwrap().value;
+                            let mark=&model.dynamics[0];
+                            for (key,value) in [("default-x",&mark.default_x),("default-y",&mark.default_y),("relative-x",&mark.relative_x),("relative-y",&mark.relative_y)] {
+                                let exact=d.attr(key).map(|_| super::super::geometry::exact_decimal(&d.scalar_attribute(key)).unwrap());
+                                assert_eq!(*value,exact);
+                            }
+                            let sfs=SfsAdapter.write(&model).unwrap().value;
+                            let restored=SfsAdapter.read(&sfs).unwrap().value;
+                            assert_eq!(restored,model);
+                            assert_eq!(MusicXml.read(&MusicXml.write(&restored).unwrap().value).unwrap().value,model);
+                        }
+                    }
+                }
+                Ok(())
+            }).unwrap();
+            assert_eq!(
+                scan.fingerprint
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>(),
+                hashes[i]
+            );
+            assert_eq!(counts, (total, blocked));
+            println!(
+                "movement {}: {total} unchanged original dynamic nodes, {} exact typed/SFS/XML roundtrips, {blocked} unsupported composites",
+                i + 1,
+                total - blocked
+            );
         }
     }
 }

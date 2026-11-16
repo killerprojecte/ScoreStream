@@ -278,8 +278,8 @@ fn unsupported_words_glyphs_compounds_layout_wedges_and_sound_properties_block()
             "element.other-dynamics",
         ),
         (
-            "<dynamics default-y=\"-50\"><p/></dynamics>",
-            "attribute.default-y",
+            "<dynamics font-family=\"Leland\"><p/></dynamics>",
+            "attribute.font-family",
         ),
     ] {
         let source = full(&format!(
@@ -420,4 +420,110 @@ fn numeric_dynamics_use_performed_navigation_not_linear_playback() {
         p.notes.iter().map(|n| n.velocity).collect::<Vec<_>>(),
         [40, 40, 40, 40, 40]
     );
+}
+
+#[test]
+fn authored_dynamic_coordinates_roundtrip_without_touching_sound() {
+    let plain = full(&mark(
+        "sf",
+        "",
+        "<staff>1</staff>",
+        "<sound dynamics=\"106.67\"/>",
+    ));
+    let positioned = plain.replace("<dynamics>", "<dynamics default-x=\"-36.800\" default-y=\"+0.0\" relative-x=\".125\" relative-y=\"-40\">");
+    let model = read(&positioned);
+    let d = &model.dynamics[0];
+    assert_eq!(d.default_x, Some(r("-184/5")));
+    assert_eq!(d.default_y, Some(r("0")));
+    assert_eq!(d.relative_x, Some(r("1/8")));
+    assert_eq!(d.relative_y, Some(r("-40")));
+    assert_eq!(model.sound_dynamics, read(&plain).sound_dynamics);
+    assert!(!d.sound);
+    let sfs = SfsAdapter.write(&model).unwrap().value;
+    let reopened = SfsAdapter.read(&sfs).unwrap().value;
+    assert_eq!(model, reopened);
+    assert_eq!(sfs, SfsAdapter.write(&reopened).unwrap().value);
+    let xml = MusicXml.write(&reopened).unwrap().value;
+    assert_eq!(model, read(&xml));
+    let audible = |model: &scorestream_core::score::ScoreDocument| {
+        let mut value = serde_json::to_value(plan(model)).unwrap();
+        // Only provenance changes when authored source attributes change.
+        // Keep diagnostic code/effect/policy/message as well as every audio field.
+        for diagnostic in value["diagnostics"].as_array_mut().unwrap() {
+            diagnostic.as_object_mut().unwrap().remove("object_id");
+            diagnostic.as_object_mut().unwrap().remove("source");
+        }
+        value
+    };
+    assert_eq!(audible(&model), audible(&read(&plain)));
+    assert!(
+        scorestream_app::Workspace::from_source(&sfs)
+            .unwrap()
+            .current()
+            .valid
+    );
+    let missing = read(&plain);
+    assert!(missing.dynamics[0].default_y.is_none());
+    // Every optional field, including relative coordinates, remains independently absent.
+    for key in ["default-x", "default-y", "relative-x", "relative-y"] {
+        let source = plain.replace("<dynamics>", &format!("<dynamics {key}=\"0\">"));
+        let one = read(&source);
+        assert_eq!(
+            one,
+            SfsAdapter
+                .read(&SfsAdapter.write(&one).unwrap().value)
+                .unwrap()
+                .value
+        );
+        assert_eq!(one, read(&MusicXml.write(&one).unwrap().value));
+    }
+}
+
+#[test]
+fn dynamic_geometry_invalid_values_and_composite_symbols_remain_blocking() {
+    let plain = full(&mark("f", "", "", ""));
+    for key in ["default-x", "default-y", "relative-x", "relative-y"] {
+        for value in ["", "NaN", "Infinity", "1e3", "1/3", "1..2", "&#160;1"] {
+            assert!(
+                MusicXml
+                    .read(&plain.replace("<dynamics>", &format!("<dynamics {key}=\"{value}\">")))
+                    .is_err(),
+                "{key}={value}"
+            );
+        }
+    }
+    for value in [
+        "<f/><p/>",
+        "<other-dynamics>sf</other-dynamics><f/>",
+        "<unknown/>",
+    ] {
+        assert!(
+            MusicXml
+                .read(&plain.replace(
+                    "<dynamics><f/>",
+                    &format!("<dynamics default-x=\"1\">{value}")
+                ))
+                .is_err()
+        );
+    }
+    let mut model = read(&plain);
+    model.dynamics[0].relative_y = Some(r("1/3"));
+    assert!(SfsAdapter.write(&model).is_err());
+    assert!(MusicXml.write(&model).is_err());
+    let valid = SfsAdapter.write(&read(&plain)).unwrap().value;
+    // Reject invalid direct SFS AST geometry, not merely XML values.
+    let mut doc = scorestream_codec::parse(&valid).unwrap();
+    for frame in &mut doc.frames {
+        for record in &mut frame.records {
+            if let scorestream_core::Record::Mark(m) = record {
+                if m.kind == "dynamic" {
+                    m.attributes.insert(
+                        "relative_y".into(),
+                        scorestream_core::Scalar::String("1/3".into()),
+                    );
+                }
+            }
+        }
+    }
+    assert!(scorestream_formats::sfs::from_document(&doc).is_err());
 }

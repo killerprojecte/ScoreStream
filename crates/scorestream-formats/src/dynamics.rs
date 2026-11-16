@@ -75,7 +75,17 @@ pub(crate) fn read_mark(
     r: &mut MappingReport,
 ) {
     for key in mark.attributes.keys() {
-        if !["value", "sound", "placement"].contains(&key.as_str()) {
+        if ![
+            "value",
+            "sound",
+            "placement",
+            "default_x",
+            "default_y",
+            "relative_x",
+            "relative_y",
+        ]
+        .contains(&key.as_str())
+        {
             issue(
                 r,
                 Format::Sfs,
@@ -106,7 +116,17 @@ pub(crate) fn read_mark(
         Some("below") => Some(Placement::Below),
         _ => None,
     };
+    let coordinate = |key| {
+        mark.attributes
+            .get(key)
+            .and_then(Scalar::as_str)
+            .map(|v| v.parse().expect("validated dynamic decimal"))
+    };
     score.dynamics.push(ScoreDynamic {
+        default_x: coordinate("default_x"),
+        default_y: coordinate("default_y"),
+        relative_x: coordinate("relative_x"),
+        relative_y: coordinate("relative_y"),
         at: at.clone(),
         scope,
         sign,
@@ -150,6 +170,16 @@ pub(crate) fn write_mark(
         ("value".into(), Scalar::String(symbol_text(d.sign).into())),
         ("sound".into(), Scalar::Boolean(d.sound)),
     ]);
+    for (key, value) in [
+        ("default_x", &d.default_x),
+        ("default_y", &d.default_y),
+        ("relative_x", &d.relative_x),
+        ("relative_y", &d.relative_y),
+    ] {
+        if let Some(value) = value {
+            attributes.insert(key.into(), Scalar::String(value.to_string()));
+        }
+    }
     if let Some(place) = d.placement {
         attributes.insert(
             "placement".into(),
@@ -254,6 +284,19 @@ pub(crate) fn validate(score: &ScoreDocument, r: &mut MappingReport) {
         }
     }
     for d in &score.dynamics {
+        if [&d.default_x, &d.default_y, &d.relative_x, &d.relative_y]
+            .into_iter()
+            .flatten()
+            .any(|v| !scorestream_core::geometry::decimal(v))
+        {
+            r.push(
+                Format::ScoreModel,
+                MappingEffect::Invalid,
+                "dynamics.geometry",
+                d.at.to_string(),
+                "Dynamic coordinates must be exact finite decimals",
+            );
+        }
         if !valid(&d.scope, &d.at) {
             r.push(
                 Format::ScoreModel,
