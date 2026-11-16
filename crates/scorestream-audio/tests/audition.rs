@@ -273,3 +273,14 @@ fn source_matched_practice_midi_pizzicato_renders_with_mirrored_controllers() {
     assert!(serialized.contains("inherited_from_native_channel"));
     assert_eq!(&std::fs::read(&output).unwrap()[..4], b"RIFF");
 }
+
+#[test]
+fn optional_final_ending_config_is_closed_and_default_reject() {
+    let c:Config=serde_json::from_value(config()).unwrap();
+    assert!(matches!(c.final_ending,support::FinalEnding::Reject));
+    let mut selected=config();selected["final_ending"]="continue_to_movement_end".into();
+    // Plain/strict invocation may not borrow a practice-only navigation choice.
+    assert!(compile(SOURCE,selected.clone()).err().unwrap().to_string().contains("authenticated practice joint"));
+    selected["final_ending"]="invent_missing_endpoint".into();
+    assert!(serde_json::from_value::<Config>(selected).is_err());
+}

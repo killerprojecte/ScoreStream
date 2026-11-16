@@ -89,6 +89,22 @@ impl<'a> DrySynth<'a> {
         options: &RenderOptions,
         cancel: &AtomicBool,
     ) -> Result<Self> {
+        Self::new_pool(api, bank, source, routes, options, cancel, routes.len())
+    }
+    pub(crate) fn new_pool(
+        api: &'a Api,
+        bank: &mut Bank,
+        source: &str,
+        routes: &[RouteAssignment],
+        options: &RenderOptions,
+        cancel: &AtomicBool,
+        groups: usize,
+    ) -> Result<Self> {
+        if groups < routes.len() {
+            return Err(AudioError::InvalidPlan(
+                "Pool cannot omit verified source palette initialization channels".into(),
+            ));
+        }
         let mix = options.local_midi_mix.as_ref().ok_or_else(|| {
             AudioError::InvalidPlan("Dry groups require a source-bound mixer".into())
         })?;
@@ -103,14 +119,14 @@ impl<'a> DrySynth<'a> {
             ));
         }
         let functions = DryApi::load(api)?;
-        let synth = Synth::new_configured(api, bank, routes, options, cancel, Some(routes.len()))?;
+        let synth = Synth::new_configured(api, bank, routes, options, cancel, Some(groups))?;
         if synth.names != proof.preset_names {
             return Err(AudioError::Native("Dry group palette mismatch".into()));
         }
         // SAFETY: live synth/settings, same offline thread, valid ABI pointers.
         unsafe {
-            if (functions.groups)(synth.pointer()) != routes.len() as i32
-                || (functions.channels)(synth.pointer()) != routes.len() as i32
+            if (functions.groups)(synth.pointer()) != groups as i32
+                || (functions.channels)(synth.pointer()) != groups as i32
             {
                 return Err(AudioError::Native(
                     "Dry output group/channel readback mismatch".into(),
@@ -137,11 +153,13 @@ impl<'a> DrySynth<'a> {
             synth,
             functions,
             authorized_bindings,
-            lane_bindings: (0..routes.len()).collect(),
-            groups: routes.len(),
+            lane_bindings: (0..groups)
+                .map(|n| if n < routes.len() { n } else { usize::MAX })
+                .collect(),
+            groups,
             frame: 0,
             source_sha256: mix.source_sha256().into(),
-            owners: vec![None; routes.len()],
+            owners: vec![None; groups],
         })
     }
     fn read_binding(synth: &Synth<'_>, channel: usize, route_index: usize) -> Result<RouteBinding> {
@@ -209,6 +227,10 @@ impl<'a> DrySynth<'a> {
         // from exact bank/preset/CC readback at source-bound initialization.
         unsafe {
             check(
+                (self.synth.api.channel_type)(self.synth.pointer(), lane as i32, 0),
+                "initialize admitted melodic dry channel",
+            )?;
+            check(
                 (self.synth.api.select)(
                     self.synth.pointer(),
                     lane as i32,
@@ -233,6 +255,36 @@ impl<'a> DrySynth<'a> {
         }
         self.lane_bindings[lane] = route_index;
         Ok(actual)
+    }
+    /// Actual installed backend settings ranges, not a score-size product cap.
+    pub(crate) fn physical_group_limit(api: &Api) -> Result<usize> {
+        type Range = unsafe extern "C" fn(Ptr, *const c_char, *mut c_int, *mut c_int) -> c_int;
+        let function: Range =
+            unsafe { std::mem::transmute(api._library.symbol(c"fluid_settings_getint_range")?) };
+        let settings = NonNull::new(unsafe { (api.new_settings)() })
+            .ok_or_else(|| AudioError::Native("No group-range settings".into()))?;
+        let mut limit = i32::MAX;
+        let mut failure = None;
+        for name in [
+            c"synth.audio-groups",
+            c"synth.audio-channels",
+            c"synth.midi-channels",
+        ] {
+            let (mut min, mut max) = (0, 0);
+            let status = unsafe { function(settings.as_ptr(), name.as_ptr(), &mut min, &mut max) };
+            if status != 0 || min < 0 || max <= 0 {
+                failure = Some(AudioError::Native(
+                    "Invalid native output-group range".into(),
+                ));
+                break;
+            }
+            limit = limit.min(max);
+        }
+        unsafe { (api.delete_settings)(settings.as_ptr()) };
+        if let Some(error) = failure {
+            return Err(error);
+        }
+        Ok(limit as usize)
     }
     pub(crate) fn source_sha256(&self) -> &str {
         &self.source_sha256
@@ -289,6 +341,11 @@ impl<'a> DrySynth<'a> {
             ));
         }
         if on {
+            if self.lane_bindings[channel] == usize::MAX {
+                return Err(AudioError::InvalidPlan(
+                    "Dry lane has no authorized preset binding".into(),
+                ));
+            }
             if self.owners[channel]
                 .as_ref()
                 .is_some_and(|(_, _, released)| !released)

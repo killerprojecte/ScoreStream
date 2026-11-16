@@ -15,7 +15,13 @@ pub struct Config {
     pub timing: Timing,
     pub pizzicato: Pizzicato,
     pub rendering: Rendering,
+    #[serde(default)]
+    pub final_ending:FinalEnding,
 }
+#[derive(Clone,Copy,Default,Deserialize,PartialEq,Eq)]
+#[serde(rename_all="snake_case")]
+pub enum FinalEnding { #[default] Reject, ContinueToMovementEnd }
+impl FinalEnding {fn core(self)->scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy {match self {Self::Reject=>scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy::Reject,Self::ContinueToMovementEnd=>scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy::ContinueToMovementEnd}}}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Patch {
@@ -40,6 +46,7 @@ pub enum Articulation {
 #[serde(rename_all = "snake_case")]
 pub enum GraceSound {
     FullGraceThenGatedRemainder,
+    PracticePrincipalStaccatoAccentInAllocatedRemainderV1,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -106,6 +113,14 @@ pub struct Audition {
     source_sha256: String,
 }
 impl Audition {
+    pub fn dry_admission_until_idle(&self, source: &str, bank: &Path) -> Result<Value> {
+        let Plan::Technique(plan)=&self.plan else {return Err("Dry probe requires opaque technique plan".into());};
+        Ok(serde_json::to_value(scorestream_audio::dry_admission::probe_until_idle(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
+    }
+    pub fn dry_admission_probe(&self, source: &str, bank: &Path) -> Result<Value> {
+        let Plan::Technique(plan)=&self.plan else {return Err("Dry probe requires opaque technique plan".into());};
+        Ok(serde_json::to_value(scorestream_audio::dry_admission::probe(source,plan,&self.routes,bank,&self.options,scorestream_audio::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,scorestream_audio::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&AtomicBool::new(false))?)?)
+    }
     pub fn compile(source: &str, config: Config) -> Result<Self> {
         Self::compile_selected(source, config, None, None, None, None)
     }
@@ -174,6 +189,7 @@ impl Audition {
         if let Some(m) = &mix {
             m.verify_source(source)?;
         }
+        if config.final_ending!=FinalEnding::Reject && (mix.is_none() || !matches!(&config.timing,Timing::Joint {..}) || !matches!(&config.pizzicato,Pizzicato::InstalledTimGm6mbSharedStringsV1)) {return Err("Explicit final ending requires authenticated practice joint path".into());}
         let sample_policy = PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation;
         let plan = match config.timing {
             Timing::Ordinary => match config.pizzicato {
@@ -184,7 +200,7 @@ impl Audition {
             },
             Timing::Joint {
                 articulation: Articulation::SimpleStaccatoAccentV1,
-                grace_sound: GraceSound::FullGraceThenGatedRemainder,
+                grace_sound,
                 fermata_sound: FermataSound::SustainSelectedAnchors,
                 graces,
                 holds,
@@ -227,7 +243,7 @@ impl Audition {
                         .collect(),
                 };
                 let a = ExplicitArticulationPolicy::SimpleStaccatoAccentV1;
-                let g = GraceSoundPolicy::FullGraceThenGatedRemainder;
+                let g = match grace_sound {GraceSound::FullGraceThenGatedRemainder=>GraceSoundPolicy::FullGraceThenGatedRemainder,GraceSound::PracticePrincipalStaccatoAccentInAllocatedRemainderV1=>GraceSoundPolicy::PracticePrincipalStaccatoAccentInAllocatedRemainderV1};
                 let f = FermataSoundPolicy::SustainSelectedAnchors;
                 match config.pizzicato {
                     Pizzicato::RejectUnresolved => Plan::Ordinary(
@@ -247,7 +263,7 @@ impl Audition {
                                     program_zero_based: r.route.program,
                                 })
                                 .collect::<Vec<_>>();
-                            Plan::Technique(plan_source_with_practice_joint_policies_and_pizzicato(source,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,note_expression.ok_or("Practice requires explicit note expression policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
+                            Plan::Technique(plan_source_with_practice_joint_policies_pizzicato_and_final_ending(source,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,note_expression.ok_or("Practice requires explicit note expression policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy,config.final_ending.core())?)
                         } else {
                             Plan::Technique(plan_source_with_joint_policies_and_pizzicato(
                                 source,
@@ -302,7 +318,7 @@ impl Audition {
             return json!({"compiled":false,"error":"Not a technique plan"});
         };
         let native = self.preflight();
-        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
+        json!({"schema":"scorestream.practice-plan-preflight.v1","source_sha256":self.source_sha256,"compiled":true,"native_preflight_passed":native.is_ok(),"native_preflight_error":native.err().map(|e|e.to_string()),"audible_notes":p.plan().notes.len(),"duration_seconds":p.plan().duration_seconds,"pizzicato_attacks":p.pizzicato_attacks().len(),"warnings":p.plan().warnings,"diagnostics":p.plan().diagnostics,"note_dynamics_receipts":p.note_dynamics_receipts(),"final_ending_receipt":p.final_ending_receipt(),"local_midi_mix":self.options.local_midi_mix,"attack_only_rehearsal":self.options.attack_only_rehearsal,"native_bank_verified":false})
     }
     pub fn preflight(&self) -> Result<Value> {
         let (plan, techniques) = match &self.plan {

@@ -75,6 +75,22 @@ impl Prepared {
         options: &RenderOptions,
         channels: &BTreeMap<String, u16>,
     ) -> Result<Self> {
+        Self::new_selected(plan, routes, options, channels, false)
+    }
+    pub(crate) fn new_dry(
+        plan: &scorestream_app::playback::TechniquePlaybackPlan,
+        routes: &[RouteAssignment], options: &RenderOptions,
+        channels: &BTreeMap<String, u16>,
+    ) -> Result<Self> {
+        let mix=options.local_midi_mix.as_ref().ok_or_else(||invalid("Dry admission requires sealed source mixer"))?;
+        if mix.source_sha256()!=plan.source_sha256() || options.attack_only_rehearsal.is_some() {
+            return Err(invalid("Dry admission requires original matched plan, not attack-only projection"));
+        }
+        crate::dry_lanes::DryEnvelopeSchedule::prepare(plan,options.sample_rate,crate::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1)?;
+        Self::new_selected(plan.plan(), routes, options, channels, true)
+    }
+    fn new_selected(plan: &PlaybackPlan, routes: &[RouteAssignment], options: &RenderOptions,
+        channels: &BTreeMap<String,u16>, dry: bool) -> Result<Self> {
         if let Some(receipt)=&options.attack_only_rehearsal {receipt.verify(plan,options.local_midi_mix.as_ref())?;}
         if let Some(mix)=&options.local_midi_mix {
             mix.verify_routes(routes)?;
@@ -199,7 +215,7 @@ impl Prepared {
                 )?;
                 previous = point.offset_seconds;
                 if !point.gain.is_finite() || point.gain<0.0 {return Err(invalid("Invalid per-note gain"));}
-                if point.gain != 1.0 && options.attack_only_rehearsal.is_none() {
+                if point.gain != 1.0 && options.attack_only_rehearsal.is_none() && !dry {
                     return Err(AudioError::Unsupported("Per-note gain envelope; channel expression cannot preserve independent voices".into()));
                 }
             }
@@ -223,7 +239,7 @@ impl Prepared {
         let mut releases: BTreeMap<(u16,u8),&Note> = BTreeMap::new();
         for note in intervals {
             if let Some(previous)=releases.get(&(note.channel,note.key)) {
-                if note.start<previous.end {
+                if note.start<previous.end && !dry {
                     return Err(AudioError::Unsupported(format!("Overlapping same-key notes on native channel {} key {}: {} frames [{},{}) and {} frames [{},{})",note.channel,note.key,previous.event_id,previous.start,previous.end,note.event_id,note.start,note.end)));
                 }
             }

@@ -23,16 +23,16 @@ pub struct PizzicatoRenderReport {
     pub approximation: String,
     pub note_dynamics_receipts: Vec<scorestream_app::playback::PracticeNoteDynamicsReceipt>,
 }
-struct Lanes {
-    routes: Vec<RouteAssignment>,
-    channels: BTreeMap<String, u16>,
-    evidence: Vec<TechniqueChannel>,
-    options: RenderOptions,
+pub(crate) struct Lanes {
+    pub(crate) routes: Vec<RouteAssignment>,
+    pub(crate) channels: BTreeMap<String, u16>,
+    pub(crate) evidence: Vec<TechniqueChannel>,
+    pub(crate) options: RenderOptions,
 }
 fn invalid(s: &str) -> AudioError {
     AudioError::InvalidPlan(s.into())
 }
-fn lanes(
+pub(crate) fn lanes(
     plan: &TechniquePlaybackPlan,
     routes: &[RouteAssignment],
     options: &RenderOptions,

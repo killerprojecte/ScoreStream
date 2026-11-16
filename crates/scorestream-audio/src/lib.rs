@@ -7,6 +7,8 @@
 pub mod assignments;
 pub mod attack_rehearsal;
 pub mod dry_lanes;
+#[cfg(target_os = "linux")]
+pub mod dry_admission;
 pub mod midi_mixer;
 #[cfg(target_os = "linux")]
 pub mod pizzicato;

@@ -29,10 +29,18 @@ pub enum PracticeTieNoteOnPolicy {
 pub enum PizzicatoSoundPolicy {
     GeneralMidiSharedStringsApproximation,
 }
+/// Exact selected navigation choice plus retained missing-endpoint disclosures.
+#[derive(Clone,Debug,serde::Serialize)]
+pub struct PracticeFinalEndingReceipt {
+    pub source_sha256:String,
+    pub policy:String,
+    pub missing_endpoint_disclosures:Vec<PerformanceDiagnostic>,
+}
 /// Only the source-qualified compiler can assign attacks. Instrument identity,
 /// timing and tie consolidation remain unchanged; no route is selected here.
 #[derive(Clone, Debug)]
 pub struct TechniquePlaybackPlan {
+    final_ending_receipt:Option<PracticeFinalEndingReceipt>,
     source_sha256: String,
     practice_nonrealizations: Vec<String>,
     note_dynamics_receipts: Vec<PracticeNoteDynamicsReceipt>,
@@ -41,6 +49,7 @@ pub struct TechniquePlaybackPlan {
     pizzicato: BTreeSet<String>,
 }
 impl TechniquePlaybackPlan {
+    pub fn final_ending_receipt(&self)->Option<&PracticeFinalEndingReceipt>{self.final_ending_receipt.as_ref()}
     pub fn boundary_dynamics_receipt(&self)->Option<&BoundaryPracticeReceipt>{self.boundary_dynamics.as_ref()}
     pub fn note_dynamics_receipts(&self) -> &[PracticeNoteDynamicsReceipt] {
         &self.note_dynamics_receipts
@@ -66,6 +75,7 @@ fn finish(
 ) -> TechniquePlaybackPlan {
     plan.warnings.push("Explicit GM shared-strings pizzicato sample approximation requested; native bank/preset/key verification is still required. No browser or default-renderer substitution is authorized.".into());
     TechniquePlaybackPlan {
+        final_ending_receipt:None,
         practice_nonrealizations: Vec::new(),
         note_dynamics_receipts: Vec::new(),
         boundary_dynamics: None,
@@ -180,9 +190,28 @@ pub fn plan_source_with_practice_joint_policies_and_pizzicato(
     fermata_sound: FermataSoundPolicy,
     pizzicato: PizzicatoSoundPolicy,
 ) -> Result<TechniquePlaybackPlan, String> {
+    plan_source_with_practice_joint_policies_pizzicato_and_final_ending(source,tie_note_on,endpoint,note_expression,practice,routes,articulation,grace,grace_sound,holds,fermata_sound,pizzicato,scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy::Reject)
+}
+/// Explicit optional practice navigation; does not repair an authored endpoint.
+#[allow(clippy::too_many_arguments)]
+pub fn plan_source_with_practice_joint_policies_pizzicato_and_final_ending(
+    source: &str,
+    tie_note_on: PracticeTieNoteOnPolicy,
+    endpoint: PracticeHoldEndpointPolicy,
+    note_expression: PracticeNoteExpressionPolicy,
+    practice: scorestream_codec::notation::PracticeDiscoveryPolicy,
+    routes: &[scorestream_codec::notation::PracticeMidiSelection],
+    articulation: ExplicitArticulationPolicy,
+    grace: &ExplicitGracePolicy,
+    grace_sound: GraceSoundPolicy,
+    holds: &scorestream_codec::fermata_timing::ExplicitSynchronizedFermataPolicy,
+    fermata_sound: FermataSoundPolicy,
+    pizzicato: PizzicatoSoundPolicy,
+    final_ending:scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy,
+) -> Result<TechniquePlaybackPlan, String> {
     let _ = (fermata_sound, pizzicato);
     let doc = scorestream_codec::parse(source).map_err(format_diagnostics)?;
-    let q = scorestream_codec::notation::perform_document_practice_joint(
+    let q = scorestream_codec::notation::perform_document_practice_joint_with_final_ending(
         &doc,
         practice,
         routes,
@@ -190,6 +219,7 @@ pub fn plan_source_with_practice_joint_policies_and_pizzicato(
         grace,
         grace_sound,
         holds,
+        final_ending,
     )
     .map_err(format_diagnostics)?;
     let joint = q.joint();
@@ -208,7 +238,11 @@ pub fn plan_source_with_practice_joint_policies_and_pizzicato(
         Some(note_expression),
         Some(&mut note_dynamics_receipts),
     )?;
-    finish_practice(source,&doc,plan,attacks,note_dynamics_receipts)
+    let mut result=finish_practice(source,&doc,plan,attacks,note_dynamics_receipts)?;
+    let selected=match final_ending {scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy::Reject=>"reject",scorestream_codec::repeat_traversal::UnclosedFinalEndingPolicy::ContinueToMovementEnd=>"continue_to_movement_end"};
+    for d in &mut result.plan.diagnostics {if d.code=="practice.navigation_unclosed_final_ending_continues" {d.policy=selected.into();}}
+    result.final_ending_receipt=Some(PracticeFinalEndingReceipt {source_sha256:result.source_sha256.clone(),policy:selected.into(),missing_endpoint_disclosures:result.plan.diagnostics.iter().filter(|d|d.code=="practice.navigation_unclosed_final_ending_continues").cloned().collect()});
+    Ok(result)
 }
 fn finish_practice(source:&str,doc:&Document,plan:PlaybackPlan,attacks:BTreeSet<String>,note_dynamics_receipts:Vec<PracticeNoteDynamicsReceipt>)->Result<TechniquePlaybackPlan,String>{
     let mut result = finish(source, plan, attacks);

@@ -396,6 +396,34 @@ fn opaque_plan_native_owners_and_original_envelopes_compose_without_cross_talk()
     }
     assert_eq!(max_error, 0.);
     assert_eq!(serde_json::to_value(plan.plan()).unwrap(), original_plan);
+    let admission = crate::dry_admission::probe(
+        &source,
+        &plan,
+        &routes,
+        Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),
+        &options,
+        DryTailPolicy::HoldLastGainAtNoteOffV1,
+        crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,
+        &cancel,
+    )
+    .unwrap();
+    assert_eq!(admission.admitted_notes, 3);
+    assert_eq!(admission.noteoffs, 3);
+    assert!(admission.peak_owned_lanes >= 2);
+    assert_eq!(admission.playing_lanes_at_end, 0);
+    assert_eq!(admission.notes[a].rendered_on, 0);
+    assert_eq!(admission.notes[c].rendered_on, 32768);
+    assert_eq!(admission.notes[a].lane, admission.notes[c].lane);
+    assert!(admission.sample_peak > 0.);
+    let mut short_window=options.clone();short_window.tail_seconds=0.;
+    let exhausted=crate::dry_admission::probe_until_idle(&source,&plan,&routes,Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),&short_window,DryTailPolicy::HoldLastGainAtNoteOffV1,crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,&cancel).unwrap();
+    assert_eq!(exhausted.playing_lanes_at_end,0);
+    assert!(exhausted.first_idle_frame.unwrap()>exhausted.last_rendered_noteoff);
+    assert!(exhausted.completed_frames>exhausted.selected_window_frames);
+    assert_eq!(exhausted.completed_frames,exhausted.first_idle_frame.unwrap());
+
+    assert_eq!(serde_json::to_value(plan.plan()).unwrap(), original_plan);
+
     println!(
         "composed source={} plan={} events={}{}{} exact original envelope preserved; pointwise error={max_error}; other lane/tail unchanged",
         schedule.source_sha256(),

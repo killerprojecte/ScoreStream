@@ -453,7 +453,7 @@ impl<'a> Synth<'a> {
                 "set numeric setting",
             )?;
         }
-        let channels = routes.len().max(1).div_ceil(16) * 16;
+        let channels = routes.len().max(dry_groups.unwrap_or(1)).max(1).div_ceil(16) * 16;
         for (name, value) in [
             (c"synth.reverb.active", 0),
             (c"synth.chorus.active", 0),

@@ -118,6 +118,17 @@ fn explicit_practice_continuation_keeps_default_strict_and_source_unchanged() {
             .any(|d| d.code == "practice.navigation_unclosed_final_ending_continues")
     );
     assert_eq!(scorestream_codec::parse(&source).unwrap(), doc);
+    use scorestream_app::playback::*;
+    let build=|ending|plan_source_with_practice_joint_policies_pizzicato_and_final_ending(&source,PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,PRACTICE,&routes,ART,&grace,GraceSoundPolicy::FullGraceThenGatedRemainder,&holds,FermataSoundPolicy::SustainSelectedAnchors,PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation,ending);
+    assert!(build(Ending::Reject).is_err());
+    let plan=build(Ending::ContinueToMovementEnd).unwrap();
+    let receipt=plan.final_ending_receipt().unwrap();
+    assert_eq!(receipt.source_sha256,plan.source_sha256());
+    assert_eq!(receipt.policy,"continue_to_movement_end");
+    assert_eq!(receipt.missing_endpoint_disclosures.len(),1);
+    assert!(receipt.missing_endpoint_disclosures[0].message.contains("no authored endpoint is synthesized"));
+    assert!(plan.plan().diagnostics.iter().any(|d|d.code=="practice.navigation_unclosed_final_ending_continues" && d.policy=="continue_to_movement_end"));
+
     assert!(
         discover_document_practice_joint_with_final_ending(
             &doc,
