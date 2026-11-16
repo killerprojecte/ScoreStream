@@ -301,7 +301,6 @@ fn malformed_relationships_and_budget_return_no_plan() {
         volta(true, 1).replace("number=\"1\" type=\"stop\"", "number=\"2\" type=\"stop\""),
         ordinary().replace("<repeat direction=\"backward\" times=\"3\"/>", ""),
         ordinary().replace("times=\"3\"", "times=\"0\""),
-        ordinary().replace("times=\"3\"", "times=\"4294967295\""),
         volta(true, 1).replace(
             "<repeat direction=\"backward\"/>",
             "<repeat direction=\"backward\" times=\"2\"/>",
@@ -310,6 +309,22 @@ fn malformed_relationships_and_budget_return_no_plan() {
         let s = MusicXml.read(&src).unwrap().value;
         assert!(navigation::plan(&s, "bad", Policy::default()).is_err());
     }
+    // This is valid authored data. Exercise the caller budget without
+    // materializing billions of visits under the unbounded default.
+    let source = ordinary().replace("times=\"3\"", "times=\"4294967295\"");
+    let extreme = MusicXml.read(&source).unwrap().value;
+    let error = navigation::plan(
+        &extreme,
+        "explicit-budget",
+        Policy {
+            maximum_occurrences: 1_000,
+            ..Policy::default()
+        },
+    )
+    .unwrap_err();
+    assert!(error.diagnostics.iter().any(|d| {
+        d.feature == "navigation.traversal" && d.message.contains("OccurrenceBudget")
+    }));
     let s = MusicXml.read(&ordinary()).unwrap().value;
     assert!(
         navigation::plan(
