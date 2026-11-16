@@ -784,13 +784,15 @@ pub(super) fn schema_with_profile(
                 (&[], &[], &[], &[], true)
             }
             "direction" => (
-                &["placement"],
+                &["placement", "system"],
                 &["direction-type", "offset", "staff", "sound"],
-                &[],
+                &["direction-type"],
                 &["direction-type"],
                 false,
             ),
-            "direction-type" => (&[], &["metronome", "dynamics", "wedge"], &[], &[], false),
+            "direction-type" => (&[], &["metronome", "dynamics", "wedge", "dashes", "words"], &[], &[], false),
+            "dashes" => (&["type","number","default-y","relative-x"],&[],&[],&[],false),
+            "words" => (&["font-family","font-size","font-style","default-y","relative-x"],&[],&[],&[],true),
             "wedge" => (&["type", "number", "default-y", "spread"], &[], &[], &[], false),
             "dynamics" => (
                 &["default-x", "default-y", "relative-x", "relative-y"],
@@ -1039,6 +1041,35 @@ pub(super) fn schema_with_profile(
             "grace.duration_choice",
             "A grace note must omit duration; every ordinary note must have duration",
         );
+    }
+    if n.name == "direction" {
+        let types: Vec<_> = n.children_named("direction-type").collect();
+        if let Some(dash) = types.iter().find_map(|d| d.child("dashes")) {
+            let valid = match dash.attr("type") {
+                Some("start") => {
+                    types.len() == 2
+                        && types[0].children.len() == 1
+                        && types[0].child("words").is_some()
+                        && types[1].children.len() == 1
+                        && types[1].child("dashes").is_some()
+                }
+                Some("stop") => types.len() == 1 && types[0].children.len() == 1,
+                _ => false,
+            };
+            if !valid {
+                n.error(report, MappingEffect::Unsupported, "dashes.group",
+                    "Only ordered plain words then start dashes, or stop dashes alone, are supported; other dashes composites are not discarded");
+            }
+        } else {
+            for word in types.iter().flat_map(|d| d.children_named("words")) {
+                word.error(report, MappingEffect::Unsupported, "element.words",
+                    "Standalone words are not mapped by the authored dashes profile");
+            }
+            if types.len() > 1 || n.attr("system").is_some() {
+                n.error(report, MappingEffect::Unsupported, "direction.group",
+                    "Multiple direction types and direction system flags require a supported authored group");
+            }
+        }
     }
     let invalid_dynamic = if n.name == "dynamics" {
         let symbols = n.children.iter().filter(|c| crate::dynamics::symbol(&c.name).is_some()).count();

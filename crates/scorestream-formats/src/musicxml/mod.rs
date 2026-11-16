@@ -86,3 +86,4 @@ mod credits;
 mod note_dynamics;
 
 mod wedges;
+mod dashes;

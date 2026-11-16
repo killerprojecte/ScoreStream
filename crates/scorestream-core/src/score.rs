@@ -10,6 +10,9 @@ pub struct ScoreDocument {
     /// Authored wedge endpoints in document order; no inferred performance curve.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub wedges: Vec<crate::wedges::WedgeEndpoint>,
+    /// Authored words/dashes direction groups, not inferred gain or tempo ramps.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dashes: Vec<crate::dashes::DashesEndpoint>,
     /// Ordered authored lyric entries per event, independent of semantic commentary.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub lyrics: Vec<crate::lyrics::EventLyrics>,

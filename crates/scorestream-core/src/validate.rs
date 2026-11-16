@@ -41,6 +41,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::geometry::EXTENSION
             && requirement != crate::print_layout::EXTENSION
             && requirement != crate::wedges::EXTENSION
+            && requirement != crate::dashes::EXTENSION
             && requirement != crate::lyrics::EXTENSION
         {
             out.push(Diagnostic::error(
@@ -187,6 +188,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut mark_ids = BTreeSet::new();
     let mut has_geometry = false;
     let mut has_wedges = false;
+    let mut has_dashes = false;
     let mut has_credits = false;
     let mut has_print = false;
     let mut has_lyrics = false;
@@ -470,6 +472,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     }
                     has_geometry |= crate::geometry::is_kind(&m.kind);
                     has_wedges |= crate::wedges::is_kind(&m.kind);
+                    has_dashes |= crate::dashes::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
                     has_lyrics |= crate::lyrics::is_kind(&m.kind);
@@ -499,6 +502,16 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 out.push(Diagnostic::warning("wedge.authored_only", "Authored wedge endpoints are retained; current preview and performance do not realize wedge shape/expression. No target loudness or curve is inferred",doc.source));
                 let count=crate::wedges::unresolved_pairs(&endpoints);
                 if count>0 {out.push(Diagnostic::warning("wedge.pairing_unresolved",format!("{count} unmatched/ambiguous authored wedge endpoints; no pairing repair is inferred"),doc.source));}
+            }
+        }
+    }
+    if has_dashes || doc.required_extensions.iter().any(|e|e==crate::dashes::EXTENSION) {
+        match crate::dashes::decode(doc) {
+            Err(errors)=>out.extend(errors),
+            Ok(endpoints)=>{
+                out.push(Diagnostic::warning("dashes.authored_only", "Authored dashes endpoints are retained; current preview and performance do not realize words/dashes shape or expression. No gain or tempo curve is inferred",doc.source));
+                let count=crate::dashes::unresolved_pairs(&endpoints);
+                if count>0 {out.push(Diagnostic::warning("dashes.pairing_unresolved",format!("{count} unmatched/ambiguous authored dashes endpoints; no pairing repair is inferred"),doc.source));}
             }
         }
     }
@@ -877,7 +890,7 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
-                    if m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
+                    if m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
                         continue;
                     }
                     if m.target.starts_with('#') {

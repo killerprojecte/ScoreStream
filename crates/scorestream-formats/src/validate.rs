@@ -8,6 +8,10 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
         let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
         if !scorestream_core::wedges::valid(&score.wedges,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"wedge.fields","/wedges","Invalid wedge measure ownership, staff, position, number or decimal fields");}
     }
+    if !score.dashes.is_empty() {
+        let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
+        if !scorestream_core::dashes::valid(&score.dashes,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"dashes.fields","/dashes","Invalid dashes measure ownership, staff, position, number or decimal fields");}
+    }
     for d in score
         .metadata
         .validate(scorestream_core::SourceRange::default())

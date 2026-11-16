@@ -1805,6 +1805,65 @@
         },
         "required_extension": "scorestream.wedge@1",
         "meaning": "Ordered authored measure-owned wedge endpoint at exact onset; no sounding hairpin or inferred target loudness. Unmatched chains preserved with explicit diagnostic."
+      },
+      "scorestream.dashes": {
+        "targets": [
+          "measure"
+        ],
+        "required": [
+          "part",
+          "index",
+          "type"
+        ],
+        "fields": {
+          "part": {
+            "type": "identifier"
+          },
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "number": {
+            "type": "positive_integer"
+          },
+          "staff": {
+            "type": "positive_integer"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "relative_x": {
+            "type": "rational"
+          },
+          "system": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "font_family": {
+            "type": "string"
+          },
+          "font_style": {
+            "type": "string"
+          },
+          "font_size": {
+            "type": "rational"
+          },
+          "words_default_y": {
+            "type": "rational"
+          },
+          "words_relative_x": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.dashes@1",
+        "meaning": "Ordered authored words-then-start-dashes or stop-only direction endpoint; exact text, style, geometry and logical ownership, no inferred velocity or tempo curve."
       }
     }
   },
@@ -1981,6 +2040,10 @@
         ],
         "status": "authored ordered endpoints only; preview/expression unimplemented; no implicit sounding curve",
         "required_behavior": "Complete score, exact owning part/measure, inclusive measure-local onset, valid optional staff, crescendo/diminuendo/stop, number 1..16 when present, finite-decimal default_y/spread, closed fields and contiguous global indices in canonical part/measure grouping. Preserve within-measure document order and unmatched chains; warn rather than invent endpoint pairings, velocity targets or rendering."
+      },
+      "scorestream.dashes@1": {
+        "status": "authored direction groups only; preview/expression unimplemented",
+        "required_behavior": "Complete score, exact measure ownership and inclusive offset, contiguous indices, optional number 1..16 and staff, type start or stop. Start requires text with optional font_family/font_size/font_style and words coordinates; stop forbids words fields. Finite decimal coordinates; positive decimal font size; font style normal/italic; system only-top/also-top/none. Preserve absence, zero, exact text and ordered endpoints. Unsupported composites fail closed. Do not repair unresolved chains or infer gain/tempo ramps."
       }
     }
   },

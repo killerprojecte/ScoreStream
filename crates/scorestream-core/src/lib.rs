@@ -39,3 +39,4 @@ pub mod print_layout;
 pub mod lyrics;
 
 pub mod wedges;
+pub mod dashes;
