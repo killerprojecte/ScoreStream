@@ -602,10 +602,11 @@ pub fn write_with_options(
                     );
                     writeln!(
                         out,
-                        "      <note id=\"{}\"{}{}>",
+                        "      <note id=\"{}\"{}{}{}>",
                         escape(&e.id.0),
                         geometry.event(&e.id.0),
-                        super::note_dynamics::attribute(&e.attack_dynamics)
+                        super::note_dynamics::attribute(&e.attack_dynamics),
+                        super::appearance::visibility_attribute(e.visible)
                     )
                     .unwrap();
                     if is_chord {

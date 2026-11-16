@@ -27,8 +27,9 @@ complete-score import or audio acceptance claim.
 
 Only attribute-free `stem` leaves and the `rest` measure flag are newly mapped.
 Stem coordinates/colors, rest display-step/octave, unknown descendants,
-accidental, notehead and hidden-note attributes remain blocking unless separately
-implemented. Coordinate regeneration still requires its unchanged explicit
+accidental and notehead attributes remain blocking unless separately
+implemented. Direct note visibility now has its own
+[typed bridge](NOTE_VISIBILITY_IMPORT.md). Coordinate regeneration still requires its unchanged explicit
 three-path policy; stems and rest identity are preserved, never regenerated.
 
 Authored beams, including the bounded same-rhythm chord-head profile, now have a separate [typed bridge](BEAM_IMPORT.md);
@@ -51,8 +52,8 @@ common/XML/SFS model still preserves these valid authored cases exactly.
 Measured event roles and performance duration do not change. Tests compare actual
 playback plans with and without the new appearance fields. Imported grace and
 fermata fidelity guards are unchanged. A hidden rest is not deleted time: all
-80 source hidden rests still fail explicitly at their unsupported visibility
-attribute rather than being turned into absent events.
+80 source hidden rests now retain their own optional visibility through the
+[visibility bridge](NOTE_VISIBILITY_IMPORT.md), rather than becoming absent events.
 
 ## Pinned original evidence
 

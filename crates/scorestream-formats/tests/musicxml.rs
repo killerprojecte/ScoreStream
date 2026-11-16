@@ -82,7 +82,7 @@ fn unsupported_paths_are_reported_and_no_document_returned() {
     for input in [
         TWO.replace(
             "<note id=\"head\">",
-            "<note id=\"head\" print-object=\"no\">",
+            "<note id=\"head\" print-spacing=\"no\">",
         ),
         TWO.replace(
             "<fifths>-1</fifths>",

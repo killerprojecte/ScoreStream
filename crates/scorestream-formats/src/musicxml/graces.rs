@@ -58,6 +58,7 @@ pub(super) fn read<'a>(
     Ok(Pending {
         source: n,
         note: ScoreGraceNote {
+            visible: super::appearance::visible(n)?,
             attack_dynamics: super::note_dynamics::read(n)?,
             id,
             anchor: EventId(String::new()),
@@ -240,10 +241,11 @@ impl<'a> Export<'a> {
         for g in self.by_anchor.get(&anchor.id).into_iter().flatten() {
             write!(
                 out,
-                "      <note id=\"{}\"{}{}><grace",
+                "      <note id=\"{}\"{}{}{}><grace",
                 escape(&g.id.0),
                 geometry.event(&g.id.0),
-                super::note_dynamics::attribute(&g.attack_dynamics)
+                super::note_dynamics::attribute(&g.attack_dynamics),
+                super::appearance::visibility_attribute(g.visible)
             )
             .unwrap();
             if let Some(s) = g.slash {

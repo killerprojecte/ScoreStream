@@ -117,7 +117,7 @@ fn invalid_full_rest_contexts_and_unmapped_appearance_remain_blocking() {
         pitched("<stem>\u{85}up</stem>"),
         pitched("<stem><unknown/></stem>"),
         rest(" measure=\"yes\"", "3")
-            .replace("<note id=\"n\">", "<note id=\"n\" print-object=\"no\">"),
+            .replace("<note id=\"n\">", "<note id=\"n\" print-spacing=\"no\">"),
     ] {
         assert!(MusicXml.read(&source).is_err(), "accepted {source}");
         let options = MusicXmlOptions {

@@ -105,7 +105,7 @@ fn signed_exact_tenths_and_precision_are_validated_not_skipped() {
 #[test]
 fn semantic_fields_unknown_descendants_and_other_paths_stay_blocking() {
     for addition in [
-        "print-object=\"no\"",
+        "print-spacing=\"no\"",
         "end-dynamics=\"75\"",
         "attack=\"1\"",
         "release=\"1\"",
@@ -228,8 +228,8 @@ fn both_passes_validate_geometry_and_fingerprint_even_discarded_coordinates() {
         (fixture().replace("123.45", "999"), "xml.changed"),
         (fixture().replace("123.45", "NaN"), "number.decimal"),
         (
-            fixture().replace("id=\"a\"", "id=\"a\" print-object=\"no\""),
-            "attribute.print-object",
+            fixture().replace("id=\"a\"", "id=\"a\" print-spacing=\"no\""),
+            "attribute.print-spacing",
         ),
     ] {
         let input = Changing {

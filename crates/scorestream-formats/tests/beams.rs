@@ -285,11 +285,13 @@ fn beam_targets_follow_sfs_identity_remapping_and_export_order() {
     assert_ne!(mapped.beams[0].event.0, "source id with spaces");
 }
 #[test]
-fn unrelated_hidden_visibility_slurs_and_grace_notations_remain_blocked() {
+fn unrelated_print_spacing_slurs_and_grace_notations_remain_blocked() {
     let a = note("a", "eighth", 128, "", &beam(None, "begin"));
     let b = note("b", "eighth", 128, "", &beam(None, "end"));
+    let hidden = xml(&(a.replace("<note id=\"a\"", "<note id=\"a\" print-object=\"no\"") + &b));
+    assert_eq!(MusicXml.read(&hidden).unwrap().value.parts[0].measures[0].events[0].visible, Some(false));
     for source in [
-        xml(&(a.replace("<note id=\"a\"", "<note id=\"a\" print-object=\"no\"") + &b)),
+        xml(&(a.replace("<note id=\"a\"", "<note id=\"a\" print-spacing=\"no\"") + &b)),
         xml(&(a.replace(
             "</note>",
             "<notations><slur type=\"start\"/></notations></note>",

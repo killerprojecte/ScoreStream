@@ -59,6 +59,7 @@ fn common() -> ScoreDocument {
                 states: vec![],
                 events: (0..4)
                     .map(|i| ScoreEvent {
+                        visible: None,
                         attack_dynamics: None,
                         id: EventId(format!("n{i}")),
                         voice: VoiceId("v".into()),
@@ -623,6 +624,7 @@ fn grace_lanes_require_explicit_valid_before_principal_profile() {
         let id = format!("g{i}");
         c.beams.push(beam(&id, None, value));
         c.graces.push(ScoreGraceNote {
+            visible: None,
             attack_dynamics: None,
             id: EventId(id),
             anchor: EventId("n0".into()),
@@ -1577,6 +1579,7 @@ fn chord_heads_do_not_expand_the_beamed_grace_principal_profile() {
         let id = format!("g{index}");
         score.beams.push(beam(&id, None, value));
         score.graces.push(ScoreGraceNote {
+            visible: None,
             attack_dynamics: None,
             id: EventId(id),
             anchor: EventId("n0".into()),

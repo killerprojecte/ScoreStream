@@ -262,7 +262,9 @@ fn unknown_glyphs_flags_styles_targets_and_pitch_conflicts_fail_closed() {
         "",
     )
     .replace("<note id=\"n\">", "<note id=\"n\" print-object=\"no\">");
-    assert!(MusicXml.read(&hidden).is_err());
+    let hidden = MusicXml.read(&hidden).unwrap().value;
+    assert_eq!(hidden.parts[0].measures[0].events[0].visible, Some(false));
+    assert!(hidden.parts[0].measures[0].events[0].accidental.is_some());
 }
 #[test]
 fn chord_members_ties_labels_and_source_midi_intent_keep_their_own_identity() {

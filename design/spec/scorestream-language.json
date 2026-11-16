@@ -259,7 +259,7 @@
       },
       "visible": {
         "type": "boolean",
-        "meaning": "Intrinsic printed visibility; a hidden rest is still a rest."
+        "meaning": "Intrinsic printed visibility; a hidden rest is still a rest. MusicXML direct note print-object maps to this optional boolean: absent, explicit yes and explicit no stay distinct. It does not mute notes, alter duration, or imply print-spacing, print-dot or accidental visibility."
       },
       "measure_rest": {
         "type": "boolean",

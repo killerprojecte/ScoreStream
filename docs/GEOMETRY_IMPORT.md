@@ -56,7 +56,9 @@ This is not an allowlist of arbitrary “layout” nodes. Unknown descendants an
 attributes remain errors, including when nested inside known notes. In particular:
 
 - `print-object`, print-dot/leger/lyric, visibility, attack/release, dynamics,
-  pizzicato and repeat-conditioned timing are outside this geometry choice.
+  pizzicato and repeat-conditioned timing are outside this geometry choice. Direct
+  note print-object now has a separate [lossless visibility bridge](NOTE_VISIBILITY_IMPORT.md);
+  it is preserved, not discarded by coordinate regeneration.
 - Slurs, extended accidental styles, lyric text, words and other meaningful
   notation must receive their own typed authoring semantics. The bounded
   [beam bridge](BEAM_IMPORT.md) preserves authored levels and roles separately;

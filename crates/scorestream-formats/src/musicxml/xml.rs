@@ -856,7 +856,7 @@ pub(super) fn schema_with_profile(
                 false,
             ),
             "note" => (
-                &["id", "dynamics"],
+                &["id", "dynamics", "print-object"],
                 &[
                     "grace",
                     "chord",

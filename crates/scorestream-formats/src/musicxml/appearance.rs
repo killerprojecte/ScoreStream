@@ -2,6 +2,29 @@
 use super::{read::error, xml::Node};
 use crate::MappingReport;
 use scorestream_core::score::StemDirection;
+/// Direct note visibility only. Other print-* attributes retain their own scope.
+pub(super) fn visible(note: &Node) -> Result<Option<bool>, MappingReport> {
+    match note
+        .attr("print-object")
+        .map(|value| value.trim_matches([' ', '\t', '\r', '\n']))
+    {
+        None => Ok(None),
+        Some("yes") => Ok(Some(true)),
+        Some("no") => Ok(Some(false)),
+        _ => Err(error(
+            note,
+            "note.print_object",
+            "Note print-object must be yes or no",
+        )),
+    }
+}
+pub(super) fn visibility_attribute(visible: Option<bool>) -> &'static str {
+    match visible {
+        None => "",
+        Some(true) => " print-object=\"yes\"",
+        Some(false) => " print-object=\"no\"",
+    }
+}
 pub(super) fn stem(note: &Node) -> Result<Option<StemDirection>, MappingReport> {
     note.child("stem")
         .map(|n| {
@@ -134,12 +157,12 @@ mod tests {
                                 &mut geometry::Audit::default(),
                                 &mut report,
                             );
+                            assert_eq!(visible(n)?, Some(false));
                             assert!(
-                                report
+                                !report
                                     .diagnostics
                                     .iter()
-                                    .any(|d| d.effect == MappingEffect::Unsupported
-                                        && d.feature.contains("print-object")),
+                                    .any(|d| d.feature == "attribute.print-object"),
                                 "{report:?}"
                             );
                             assert!(read::decimal(n.child("duration").unwrap())?.is_positive());

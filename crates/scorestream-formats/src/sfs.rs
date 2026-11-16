@@ -570,7 +570,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                                 "anchor",
                                 "order",
                                 "slash",
-                                "stem", "attack_dynamics",
+                                "stem", "attack_dynamics", "visible",
                             ],
                             e.id().unwrap_or(&e.voice),
                         );
@@ -588,6 +588,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         }
                         let id = e.id().expect("validated grace metadata target");
                         score.graces.push(ScoreGraceNote {
+                            visible: e.attributes.get("visible").and_then(Scalar::as_bool),
                             attack_dynamics: text(&e.attributes, "attack_dynamics").map(|v| v.parse().expect("validated note dynamics")),
                             id: EventId(id.into()),
                             anchor: EventId(
@@ -619,7 +620,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             "tm_normal_type",
                             "tm_normal_dots",
                             "note_size",
-                            "stem", "attack_dynamics",
+                            "stem", "attack_dynamics", "visible",
                             "measure_rest",
                         ],
                         e.id().unwrap_or(&e.voice),
@@ -665,6 +666,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         voice.staff
                     };
                     measure.events.push(ScoreEvent {
+                        visible: e.attributes.get("visible").and_then(Scalar::as_bool),
                         attack_dynamics: text(&e.attributes, "attack_dynamics").map(|v| v.parse().expect("validated note dynamics")),
                         id: EventId(id.clone()),
                         voice: VoiceId(e.voice.clone()),
@@ -1053,6 +1055,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 if let Some(stem) = e.stem {
                     put(&mut a, "stem", stem.name());
                 }
+                if let Some(visible) = e.visible { a.insert("visible".into(), Scalar::Boolean(visible)); }
                 if let Some(full) = e.measure_rest {
                     a.insert("measure_rest".into(), Scalar::Boolean(full));
                 }
@@ -1113,6 +1116,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             "staff".into(),
             Scalar::Integer(i64::from(anchor.event.staff)),
         );
+        if let Some(visible) = g.visible { a.insert("visible".into(), Scalar::Boolean(visible)); }
         if let Some(slash) = g.slash {
             a.insert("slash".into(), Scalar::Boolean(slash));
         }

@@ -1162,6 +1162,7 @@ impl PartReader {
                         tie_endpoints.insert(EventId(id.clone()), endpoints);
                     }
                     let event = ScoreEvent {
+                        visible: super::appearance::visible(n)?,
                         attack_dynamics: super::note_dynamics::read(n)?,
                         id: EventId(id),
                         voice: v,

@@ -396,6 +396,10 @@ impl Meter {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreEvent {
+    /// Authored MusicXML print-object. None, explicit yes and no stay distinct.
+    /// Visual only: never changes pitch, sounding duration or note ownership.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visible: Option<bool>,
     /// Explicit per-note NoteOn percentage of forte90, not a persistent scope state.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attack_dynamics: Option<Rational>,
@@ -633,6 +637,9 @@ impl NoteSize {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreGraceNote {
+    /// Authored print-object, independent of grace timing and slash appearance.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visible: Option<bool>,
     /// Explicit per-note NoteOn percentage of forte90, not a persistent scope state.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attack_dynamics: Option<Rational>,
