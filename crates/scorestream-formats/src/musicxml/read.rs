@@ -544,6 +544,7 @@ fn read_with_audit<R: BufRead + Seek>(
     if score.parts.iter().flat_map(|p|&p.measures).flat_map(|m|&m.states).any(|s|s.meter.as_ref().is_some_and(|m|m.symbol.is_some())) { report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"time.authored_symbol","/time","Authored common/cut display symbols are retained separately from numeric meter. Preview uses numeric display; playback timing is unchanged"); }
     if !score.part_groups.is_empty(){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"part_groups.authored","/part-list","Authored part-group boundaries, bracket and common-barline choices are retained without inferred grouping. Preview does not realize them; playback is unchanged");}
     if score.defaults.is_some(){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"defaults.authored","/defaults","Authored scaling, page layout, appearance and font defaults are retained. Preview chooses its own engraving and does not apply these defaults; playback is unchanged");}
+    if score.parts.iter().flat_map(|p|&p.measures).any(|m|!m.clef_changes.is_empty()){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"clef.timed","/attributes/clef","Interior clef changes retain exact score offsets in the ordinary staff-state lane. Pitch and playback are unchanged; current preview explicitly withholds unsupported timed-clef engraving");}
     if !score.lyrics.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
     }
@@ -689,6 +690,7 @@ impl PartReader {
             length: Rational::zero(),
             implicit,
             states: vec![],
+            clef_changes: vec![],
             events: vec![],
         };
         if options.geometry == super::GeometryPolicy::PreserveNoteAndMeasureCoordinates
@@ -708,11 +710,12 @@ impl PartReader {
         let mut cursor = Rational::zero();
         let mut extent = Rational::zero();
         let mut moved = false;
+        let mut saw_backup = false;
         let mut attributes_seen = false;
         let mut print_seen = false;
         let mut previous: Option<usize> = None;
         let mut pending_graces = Vec::<super::graces::Pending>::new();
-        for n in &measure.children {
+        for (child_index,n) in measure.children.iter().enumerate() {
             if !pending_graces.is_empty() && n.name != "note" {
                 return Err(unsupported(
                     n,
@@ -739,11 +742,10 @@ impl PartReader {
                 "attributes" => {
                     previous = None;
                     if moved {
-                        return Err(unsupported(
-                            n,
-                            "attributes.mid_measure",
-                            "Only measure-start attributes are supported; document-order overrides are not guessed",
-                        ));
+                        let change=super::timed_clefs::read(measure,child_index,part.staves,&cursor,&extent,divisions.as_ref(),saw_backup)?;
+                        if m.clef_changes.last().is_some_and(|last|last.offset>=change.offset){return Err(unsupported(n,"clef.order","Interior clef changes must have distinct increasing score offsets; no override order is guessed"));}
+                        m.clef_changes.push(change);
+                        continue;
                     }
                     if attributes_seen {
                         return Err(unsupported(
@@ -933,6 +935,7 @@ impl PartReader {
                     })?;
                     let delta = &positive(child(n, "duration")?)? / div;
                     if n.name == "backup" {
+                        saw_backup = true;
                         cursor = &cursor - &delta;
                         if cursor.is_negative() {
                             return Err(error(

@@ -352,7 +352,26 @@ pub struct ScoreMeasure {
     pub implicit: bool,
     /// Changes at this measure's start. Later measures inherit preceding state.
     pub states: Vec<StaffState>,
+    /// Exact measure-local interior clef changes, independent of event pitch/timing.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub clef_changes: Vec<TimedClef>,
     pub events: Vec<ScoreEvent>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimedClef {
+    pub offset: Rational,
+    pub staff: u32,
+    pub clef: Clef,
+}
+impl TimedClef {
+    pub fn valid_clef(&self) -> bool {
+        match self.clef.sign {
+            ClefSign::G => (1..=2).contains(&self.clef.line),
+            ClefSign::F => (3..=5).contains(&self.clef.line),
+            ClefSign::C => (1..=5).contains(&self.clef.line),
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

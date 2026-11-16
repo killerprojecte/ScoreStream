@@ -90,6 +90,7 @@ fn common() -> ScoreDocument {
                 length: q("2"),
                 implicit: false,
                 states: vec![],
+                clef_changes: vec![],
                 events: [("a", "0"), ("b", "1")]
                     .into_iter()
                     .map(|(id, at)| ScoreEvent {

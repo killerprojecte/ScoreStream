@@ -27,6 +27,7 @@ mod slur_corpus;
 mod slurs;
 mod tempo;
 mod ties;
+mod timed_clefs;
 mod tuplets;
 #[cfg(test)]
 mod time_display_corpus;

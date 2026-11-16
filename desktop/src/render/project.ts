@@ -28,6 +28,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  const authoredArticulations=projectAuthoredArticulations(view);
  const marks=projectMarks(view,warnings);
  const articulations=projectArticulations(view);
+ if(view.states.some(s=>s.values.clef!==undefined&&view.measures.some(m=>s.scope.startsWith(`${m.part}.s`)&&new Q(m.time).cmp(new Q(s.time))<0&&new Q(s.time).cmp(new Q(m.time).add(new Q(m.length)))<0)))throw Error('Mid-measure clef changes are retained but not yet supported by this preview. Source offsets and playback are unchanged.');
  if(view.states.some(s=>s.time!=='0'))throw Error('Mid-score state changes are not yet supported by this preview. Your source is preserved.');
  const staffDefs=view.parts.flatMap(p=>Array.from({length:p.staves},(_,i)=>({part:p.id,staff:i+1,instrument:p.instrument})));
  const firstPart=view.parts[0]?.id;

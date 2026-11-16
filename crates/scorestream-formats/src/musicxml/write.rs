@@ -47,6 +47,7 @@ fn divisions(
     let wedge_offsets = wedges.offsets(&part.id.0,&m.id);
     for value in std::iter::once(&m.length)
         .chain(m.events.iter().flat_map(|e| [&e.offset, &e.duration]))
+        .chain(m.clef_changes.iter().map(|c|&c.offset))
         .chain(offsets.iter())
         .chain(dynamics_offsets.iter())
         .chain(wedge_offsets.iter())
@@ -228,6 +229,7 @@ pub fn write_with_options(
         }
         let mut meters: BTreeMap<u32, Meter> = BTreeMap::new();
         for (measure_index, m) in part.measures.iter().enumerate() {
+            if !m.clef_changes.is_empty()&&(part.staves!=1||part.voices.len()!=1){issue(&mut report,"clef.export_scope",&m.id,"Timed-clef XML export currently requires one staff and one voice; no ambiguous backup/staff interpretation is inferred");}
             if !xml_id(&m.id) || !xml_ids.insert(m.id.clone()) {
                 issue(
                     &mut report,
@@ -757,6 +759,7 @@ pub fn write_with_options(
                     writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&m.length - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                 }
             }
+            super::timed_clefs::write(m,div,&mut out);
             barlines.emit(&mut out, &m.id, BarlineLocation::Right);
             out.push_str("    </measure>\n");
         }

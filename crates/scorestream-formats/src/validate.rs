@@ -146,6 +146,11 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
                 );
             }
             end = &m.start + &m.length;
+            let mut previous_clef=None;
+            for c in &m.clef_changes {
+                if !c.offset.is_positive()||c.offset>=m.length||c.staff==0||c.staff>part.staves||!c.valid_clef()||previous_clef.is_some_and(|(offset,staff)|(&c.offset,c.staff)<=(offset,staff)) {invalid(&path,"clef.timed","Interior clefs need valid staff/classic sign, strict interior offsets and unique increasing (offset,staff) order");}
+                previous_clef=Some((&c.offset,c.staff));
+            }
             let mut staffs = BTreeSet::new();
             for s in &m.states {
                 if s.clef.is_none() && s.key.is_none() && s.meter.is_none() && s.transpose.is_none()

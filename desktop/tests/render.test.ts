@@ -45,7 +45,7 @@ describe('bounded typed MEI projection',()=>{
  it('refuses missing measures instead of dropping events',()=>{const v=fixture();v.events[0].time='4';expect(()=>project(v)).toThrow('outside');});
  it('refuses unequal chord rhythms',()=>{const v=fixture();v.events[0].chord='c';v.events[1]={...v.events[1],pitch:'E4',time:'0',duration:'2',chord:'c'};expect(()=>project(v)).toThrow('Unequal-duration');});
  it('refuses cross-bar duration instead of clipping',()=>{const v=fixture();v.events[1].duration='4';expect(()=>project(v)).toThrow('Cross-bar');});
- it('refuses state changes instead of displaying wrong clef',()=>{const v=fixture();v.states.push({time:'2',scope:'p.s1',values:{clef:'F4'}});expect(()=>project(v)).toThrow('Mid-score');});
+ it('refuses state changes instead of displaying wrong clef',()=>{const v=fixture();v.states.push({time:'2',scope:'p.s1',values:{clef:'F4'}});expect(()=>project(v)).toThrow('Mid-measure clef changes are retained');});
 });
 describe('latest-only renderer scheduling',()=>{
  it('rejects stale results even after a newer invalid draft and bounds queue',()=>{

@@ -57,6 +57,7 @@ fn common() -> ScoreDocument {
                 length: q("1"),
                 implicit: false,
                 states: vec![],
+                clef_changes: vec![],
                 events: (0..4)
                     .map(|i| ScoreEvent {
                         visible: None,

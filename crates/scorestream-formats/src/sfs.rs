@@ -326,6 +326,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             .and_then(Scalar::as_bool)
                             .unwrap_or(false),
                         states: vec![],
+                        clef_changes: vec![],
                         events: vec![],
                     });
                 } else {
@@ -494,7 +495,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         .parts
                         .iter_mut()
                         .find(|p| p.id.0 == part_id)
-                        .and_then(|p| p.measures.iter_mut().find(|m| m.start == frame.time));
+                        .and_then(|p| p.measures.iter_mut().find(|m| m.start <= frame.time && frame.time < &m.start+&m.length));
                     let Some(measure) = measure else {
                         unsupported(&mut report, "state_inside_measure", &s.target);
                         continue;
@@ -553,6 +554,12 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                             octaves: integer(&s.attributes, "transpose_octaves")
                                 .expect("validated transposition tuple"),
                         });
+                    }
+                    if frame.time != measure.start {
+                        if s.attributes.len()!=1||state.clef.is_none(){unsupported(&mut report,"state_inside_measure",&s.target);continue;}
+                        let change=TimedClef{offset:&frame.time-&measure.start,staff,clef:state.clef.unwrap()};
+                        if measure.clef_changes.iter().any(|c|c.offset==change.offset&&c.staff==staff){invalid(&mut report,"clef.timed_duplicate",&s.target);}else{measure.clef_changes.push(change);}
+                        continue;
                     }
                     if let Some(old) = measure.states.iter_mut().find(|v| v.staff == staff) {
                         if state.clef.is_some() {
@@ -1007,6 +1014,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                     attributes: a,
                     source: SourceRange::default(),
                 }));
+            for c in &m.clef_changes {
+                let mut a=Attributes::new();put(&mut a,"clef",format!("{}{}",match c.clef.sign{ClefSign::G=>'G',ClefSign::F=>'F',ClefSign::C=>'C'},c.clef.line));
+                frames.entry(&m.start+&c.offset).or_default().push(Record::State(State{target:format!("{pid}.s{}",c.staff),attributes:a,source:SourceRange::default()}));
+            }
             for s in &m.states {
                 if s.clef.is_none() && s.key.is_none() && s.meter.is_none() && s.transpose.is_none()
                 {
