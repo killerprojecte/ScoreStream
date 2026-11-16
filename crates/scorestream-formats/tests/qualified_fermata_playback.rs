@@ -280,10 +280,16 @@ fn cue_and_unpitched_fail_import_but_articulation_rejects_at_sound_policy_bounda
         // never remove authored data to manufacture a playable fixture.
         assert!(MusicXml.read(&xml(&[body], 1)).is_err());
     }
-    let body = ordinary.replace("<notations>", "<notations><articulations><staccato/></articulations>");
+    let body = ordinary.replace(
+        "<notations>",
+        "<notations><articulations><staccato/></articulations>",
+    );
     let s = source(&xml(&[body], 1));
     let error = play(&s, &policy(&s, &[("1", "1")])).unwrap_err();
-    assert!(error.contains("fermata.articulation_unsupported"), "{error}");
+    assert!(
+        error.contains("fermata.articulation_unsupported"),
+        "{error}"
+    );
 }
 #[test]
 fn final_hold_exact_inverse_seek_and_clamping_share_the_audio_clock() {

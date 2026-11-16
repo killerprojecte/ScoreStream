@@ -204,10 +204,80 @@ fn ordinal_constraint_mapping_tracks_canonical_meanings() {
         "sound_dynamics is",
         "scorestream.fermata requires",
         "scorestream.beam requires",
+        "scorestream.articulation@1 preserves",
     ];
     assert_eq!(constraints.len(), prefixes.len());
     for (value, prefix) in constraints.iter().zip(prefixes) {
         assert!(value.as_str().unwrap().starts_with(prefix));
+    }
+}
+
+#[test]
+fn validation_and_all_topics_include_every_canonical_constraint() {
+    let source = language();
+    for args in [json!({"topics":["validation"]}), json!({"topics":TOPICS})] {
+        assert_eq!(
+            data(args)["additional_constraints"],
+            source["additional_constraints"]
+        );
+    }
+}
+
+#[test]
+fn authored_articulation_topics_include_the_canonical_contract() {
+    let source = language();
+    let articulation = source["additional_constraints"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|value| {
+            value
+                .as_str()
+                .unwrap()
+                .starts_with("scorestream.articulation@1 preserves")
+        })
+        .expect("canonical authored articulation constraint");
+    for topic in ["marks", "extensions", "validation"] {
+        assert!(
+            data(json!({"topics":[topic]}))["additional_constraints"]
+                .as_array()
+                .unwrap()
+                .contains(articulation),
+            "{topic} must expose the authored articulation contract"
+        );
+    }
+    for topic in [
+        "syntax",
+        "pitch",
+        "time",
+        "polyphony",
+        "state",
+        "relations",
+        "editing",
+    ] {
+        assert!(
+            !data(json!({"topics":[topic]}))["additional_constraints"]
+                .as_array()
+                .is_some_and(|constraints| constraints.contains(articulation)),
+            "{topic} must remain focused"
+        );
+    }
+    let marks = data(json!({"topics":["marks"]}));
+    let extensions = data(json!({"topics":["extensions"]}));
+    let registered = &extensions["extensions"]["registered"]["scorestream.articulation@1"];
+    assert_eq!(
+        registered,
+        &source["extensions"]["registered"]["scorestream.articulation@1"]
+    );
+    for kind in registered["mark_kinds"].as_array().unwrap() {
+        let kind = kind.as_str().unwrap();
+        for field in ["marks", "mark_fields"] {
+            assert_eq!(
+                marks["vocabulary"][field][kind],
+                source["vocabulary"][field][kind]
+            );
+            assert!(!marks["vocabulary"][field][kind].is_null());
+        }
     }
 }
 

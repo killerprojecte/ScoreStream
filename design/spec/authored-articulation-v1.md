@@ -1,7 +1,8 @@
 # Authored articulation v1 scalar transport
 
 `!requires scorestream.articulation@1` opts a complete SFS score into authored-only
-articulation fidelity. It grants no rendering or performance semantics. The common
+articulation fidelity. It grants no unrestricted rendering or performance semantics;
+desktop preview uses the separate bounded adapter described below. The common
 model uses `AuthoredArticulations` with the closed `ArticulationVersion::V1` value.
 Legacy native `articulation` marks retain their existing independent contract.
 
