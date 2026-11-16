@@ -206,6 +206,7 @@ pub fn lower_document(doc: &Document) -> std::result::Result<ResolvedScore, Vec<
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum LoweringProfile {
     Written,
+    ExplicitArticulations,
     Navigation,
     ExplicitFermatas,
     ExplicitGraces,
@@ -220,14 +221,16 @@ pub(super) fn reject_authored_articulations(doc: &Document) -> Result<()> {
     {
         return Err(Diagnostic::error(
             "articulation.performance_unsupported",
-            "Authored articulation fidelity has no supported performance interpretation; signs, grouping and print attributes must not be silently discarded",
+            "Authored articulation fidelity requires a selected explicit performance interpretation; signs, grouping and print attributes must not be silently discarded",
             doc.source,
         ));
     }
     Ok(())
 }
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
-    reject_authored_articulations(doc)?;
+    if profile != LoweringProfile::ExplicitArticulations {
+        reject_authored_articulations(doc)?;
+    }
     if doc
         .required_extensions
         .iter()
@@ -439,6 +442,10 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 Record::Mark(mark) if mark.kind == crate::credits::KIND => {}
                 Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::print_layout::is_kind(&mark.kind) => {}
+                Record::Mark(mark)
+                    if profile == LoweringProfile::ExplicitArticulations
+                        && (crate::articulation_extension::is_kind(&mark.kind)
+                            || crate::notation_extension::is_kind(&mark.kind)) => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}
                 Record::Mark(mark) => {
@@ -602,6 +609,9 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
             anchors,
             origin: origin(id, first.source),
         });
+    }
+    if profile == LoweringProfile::ExplicitArticulations {
+        super::articulations::append_directions(doc, &mut score)?;
     }
     score
         .events

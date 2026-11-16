@@ -1,6 +1,8 @@
 //! Compile the shared typed notation model into an immutable output plan.
 //! SFS parsing/lowering, expression policy, continuity, and tempo conversion are
 //! distinct modules. No UI, audio devices, markup or wire attributes enter here.
+mod articulations;
+pub use articulations::*;
 mod clock;
 mod combined;
 mod continuity;

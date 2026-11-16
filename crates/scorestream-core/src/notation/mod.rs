@@ -1,6 +1,8 @@
 //! Shared semantic boundary: wire AST -> typed, resolved notation -> intervals.
 //! Import adapters may construct this model; renderers and players must not parse
 //! foreign markup or independently reinterpret covered wire attributes.
+mod articulations;
+pub use articulations::*;
 mod combined;
 mod fermata;
 mod grace;
