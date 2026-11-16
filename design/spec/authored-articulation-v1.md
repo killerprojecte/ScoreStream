@@ -67,3 +67,7 @@ event with its caller-mapped native ID; `decode` reconstructs and validates the
 complete authored family. The common-to-SFS adapter validates the score, emits
 these records, and validates the resulting native document. The SFS-to-common
 adapter runs native validation before decoding and common validation afterward.
+
+A separate `scorestream.notations@1` capability can supply a validated mixed-family
+child topology for these wrappers; this does not silently broaden articulation v1
+alone. See [Mixed notation v1](mixed-notation-v1.md).

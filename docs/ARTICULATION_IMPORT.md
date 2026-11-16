@@ -179,6 +179,13 @@ the wrapper identity, rather than colliding or renaming the wrapper. XML-generat
 voice/chord/tie/slur names likewise avoid authored source identities, with explicit
 normalization reports; the default profile is not changed.
 
+### Explicit mixed-host successor
+
+The separate opt-in `AuthoredMixedV1` now preserves ordered mixed tie/slur/fermata
+children on articulation-bearing measured pitched hosts. The original `AuthoredV1`
+boundaries below are unchanged. See [Mixed notation interchange](MIXED_NOTATION_INTERCHANGE.md)
+for the typed topology, mandatory native capability, exact gaps and blocked runtime.
+
 ### Deliberate remaining boundaries
 
 - V1 accepts only articulation-only wrappers on measured pitched events. A host

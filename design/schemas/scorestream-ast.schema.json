@@ -1138,6 +1138,195 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.notations.event"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "event_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "event_index"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "description": "Requires scorestream.articulation@1 and at least one mixed measured pitched host. Explicit ordered child references retain wrapper boundaries, empty wrappers, and group order. Each group and every ordinary tied phase, authored slur endpoint and single fermata must occur exactly once. No legacy articulation overlap, dangling or duplicate reference, gapped index, foreign field or new tie semantics. Tied stop precedes start. Mixed ties require native endpoints without sound/print overrides; graphic-only, sound-only, continue engraving, let-ring and repeat-conditioned XML ties remain unsupported. All optical and performance paths fail closed until separately qualified."
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.notations.child"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "event_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "wrapper_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "child_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "kind": {
+                    "enum": [
+                      "articulations",
+                      "tied",
+                      "slur",
+                      "fermata"
+                    ]
+                  },
+                  "group_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "phase": {
+                    "enum": [
+                      "start",
+                      "stop"
+                    ]
+                  },
+                  "relation": {
+                    "$ref": "#/$defs/Identifier"
+                  }
+                },
+                "required": [
+                  "event_index",
+                  "wrapper_index",
+                  "child_index",
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "articulations"
+                      }
+                    },
+                    "required": [
+                      "group_index"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "tied"
+                      }
+                    },
+                    "required": [
+                      "phase"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "slur"
+                      }
+                    },
+                    "required": [
+                      "phase",
+                      "relation"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "fermata"
+                      }
+                    },
+                    "required": [],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "description": "Requires scorestream.articulation@1 and at least one mixed measured pitched host. Explicit ordered child references retain wrapper boundaries, empty wrappers, and group order. Each group and every ordinary tied phase, authored slur endpoint and single fermata must occur exactly once. No legacy articulation overlap, dangling or duplicate reference, gapped index, foreign field or new tie semantics. Tied stop precedes start. Mixed ties require native endpoints without sound/print overrides; graphic-only, sound-only, continue engraving, let-ring and repeat-conditioned XML ties remain unsupported. All optical and performance paths fail closed until separately qualified."
+          }
         }
       ]
     },

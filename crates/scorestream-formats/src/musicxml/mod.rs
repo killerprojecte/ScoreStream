@@ -10,6 +10,7 @@ mod extent;
 pub use extent::{IrregularMeasure, MusicXmlOptions};
 mod articulations;
 mod authored_articulations;
+mod mixed_notations;
 pub use authored_articulations::ArticulationProfile;
 mod fermatas;
 mod geometry;

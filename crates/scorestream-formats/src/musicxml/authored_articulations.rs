@@ -22,6 +22,8 @@ pub enum ArticulationProfile {
     #[default]
     LegacySimple,
     AuthoredV1,
+    /// Preserve existing family payloads and explicit mixed wrapper topology.
+    AuthoredMixedV1,
 }
 impl ArticulationProfile {
     pub(crate) fn is_legacy(&self) -> bool {
@@ -247,6 +249,7 @@ fn item(node: &Node) -> Result<AuthoredArticulation, MappingReport> {
 pub(super) fn read(
     note: &Node,
     event: &EventId,
+    mixed: bool,
 ) -> Result<Option<ArticulationEvent>, MappingReport> {
     let wrappers: Vec<_> = note.children_named("notations").collect();
     let any = wrappers
@@ -271,10 +274,11 @@ pub(super) fn read(
             "Authored v1 requires a measured pitched event; rest, unpitched and grace hosts are not inferred",
         ));
     }
-    if note.child("tie").is_some()
-        || wrappers
-            .iter()
-            .any(|w| w.children.iter().any(|g| g.name != "articulations"))
+    if !mixed
+        && (note.child("tie").is_some()
+            || wrappers
+                .iter()
+                .any(|w| w.children.iter().any(|g| g.name != "articulations")))
     {
         return Err(unsupported(
             note,
@@ -297,7 +301,7 @@ pub(super) fn read(
             })?,
             groups: vec![],
         };
-        for group in &wrapper.children {
+        for group in wrapper.children_named("articulations") {
             no_content(group)?;
             notation.groups.push(ArticulationGroup {
                 source_id: group.attr("id").map(str::to_owned),
@@ -387,13 +391,39 @@ impl<'a> Export<'a> {
                     "Event association order follows MusicXML's existing voice/note serialization. Each event's authored wrapper, group and item order, identities and attributes remain unchanged.");
             }
         }
+        if let Some(order) = &score.notation_order {
+            let hosts: BTreeSet<_> = order.events.iter().map(|e| &e.event).collect();
+            let emitted: Vec<_> = score
+                .parts
+                .iter()
+                .flat_map(|p| {
+                    p.measures.iter().flat_map(move |m| {
+                        p.voices
+                            .iter()
+                            .flat_map(move |v| super::write::ordered_events(m, &v.id))
+                    })
+                })
+                .filter(|e| hosts.contains(&e.id))
+                .map(|e| &e.id)
+                .collect();
+            if emitted != order.events.iter().map(|e| &e.event).collect::<Vec<_>>() {
+                report.push(Format::MusicXml, MappingEffect::Normalized, "notations.event_order", "/notation_order/events",
+                    "Mixed host association order follows XML voice/note serialization; wrapper child order and semantic attachments remain exact.");
+            }
+        }
         Self { by_event }
     }
-    pub(super) fn write(&self, event: &EventId, out: &mut String) {
+    pub(super) fn write(
+        &self,
+        event: &EventId,
+        out: &mut String,
+        order: Option<&NotationEventOrder>,
+        mut write_other: impl FnMut(&NotationChild, &mut String),
+    ) {
         let Some(authored) = self.by_event.get(event) else {
             return;
         };
-        for wrapper in &authored.notations {
+        for (index, wrapper) in authored.notations.iter().enumerate() {
             out.push_str("        <notations");
             attr(out, "id", wrapper.source_id.as_deref());
             attr(
@@ -402,18 +432,31 @@ impl<'a> Export<'a> {
                 wrapper.print_object.map(|v| if v { "yes" } else { "no" }),
             );
             out.push('>');
-            for group in &wrapper.groups {
-                out.push_str("<articulations");
-                attr(out, "id", group.source_id.as_deref());
-                out.push('>');
-                for value in &group.items {
-                    write_item(value, out);
+            if let Some(order) = order {
+                for child in &order.wrappers[index] {
+                    if let NotationChild::Articulations { group_index } = child {
+                        write_group(&wrapper.groups[*group_index], out);
+                    } else {
+                        write_other(child, out);
+                    }
                 }
-                out.push_str("</articulations>");
+            } else {
+                for group in &wrapper.groups {
+                    write_group(group, out);
+                }
             }
             out.push_str("</notations>\n");
         }
     }
+}
+fn write_group(group: &ArticulationGroup, out: &mut String) {
+    out.push_str("<articulations");
+    attr(out, "id", group.source_id.as_deref());
+    out.push('>');
+    for value in &group.items {
+        write_item(value, out);
+    }
+    out.push_str("</articulations>");
 }
 fn attr(out: &mut String, key: &str, value: Option<&str>) {
     if let Some(value) = value {
@@ -560,6 +603,21 @@ pub(super) fn protect_generated_identities(
         if let Some(new) = mapping.get(id) {
             changed.insert(id.clone());
             *id = new.clone();
+        }
+    }
+    if let Some(order) = &mut score.notation_order {
+        for child in order
+            .events
+            .iter_mut()
+            .flat_map(|e| &mut e.wrappers)
+            .flatten()
+        {
+            let NotationChild::Slur { relation, .. } = child else {
+                continue;
+            };
+            if let Some(new) = mapping.get(&relation.0) {
+                relation.0 = new.clone();
+            }
         }
     }
     for id in changed {

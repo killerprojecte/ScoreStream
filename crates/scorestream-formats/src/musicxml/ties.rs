@@ -31,6 +31,12 @@ impl Endpoints {
     }
 }
 pub(super) fn read_endpoints(note: &Node) -> Result<Option<Endpoints>> {
+    read_endpoints_with_empty(note, false)
+}
+pub(super) fn read_endpoints_with_empty(
+    note: &Node,
+    allow_empty: bool,
+) -> Result<Option<Endpoints>> {
     let mut result = Endpoints {
         start: None,
         stop: None,
@@ -58,7 +64,7 @@ pub(super) fn read_endpoints(note: &Node) -> Result<Option<Endpoints>> {
     }
     let mut seen_start = false;
     for notation in note.children_named("notations") {
-        if notation.children.is_empty() {
+        if notation.children.is_empty() && !allow_empty {
             return Err(result.error(
                 "tie.empty_notations",
                 "Empty notations have no mapped meaning",

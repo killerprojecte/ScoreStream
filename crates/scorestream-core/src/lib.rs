@@ -16,6 +16,8 @@ mod model;
 pub mod navigation;
 pub mod navigation_extension;
 pub mod notation;
+pub mod notation_extension;
+pub mod notation_order;
 mod rational;
 mod registry;
 pub mod repeat_traversal;

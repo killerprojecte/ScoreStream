@@ -780,6 +780,125 @@
       "suite": "authored slur fidelity boundary",
       "test": "keeps authored slur preview withheld when supported articulations share its event"
     },
+    "mixed-notations.compatibility": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "old_profiles_remain_closed_and_pure_authored_payloads_do_not_change"
+    },
+    "mixed-notations.identities": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "wrapper_source_ids_never_capture_generated_slur_identity"
+    },
+    "mixed-notations.order": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "independent_host_association_order_is_native_exact_and_xml_reports_normalization"
+    },
+    "mixed-notations.permutations": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "every_child_permutation_preserves_order_without_flattening_or_new_tie_meaning"
+    },
+    "mixed-notations.playback": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "reserved_capability_and_records_never_silently_enable_playback"
+    },
+    "mixed-notations.polyphony": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "chord_members_staffs_and_cross_voice_slurs_keep_independent_hosts"
+    },
+    "mixed-notations.reject-json": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "unknown_json_versions_fields_and_inapplicable_child_data_reject"
+    },
+    "mixed-notations.reject-model": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "public_model_missing_duplicate_foreign_or_reordered_references_reject"
+    },
+    "mixed-notations.reject-ties": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "notation_is_not_sounding_continuity_or_a_repair_for_unsupported_ties"
+    },
+    "mixed-notations.render": {
+      "assertion": "rejection",
+      "file": "desktop/tests/mixed-notations.test.ts",
+      "runner": "vitest",
+      "suite": "ordered mixed-family preview boundary",
+      "test": "withholds actual Rust mixed import snapshot without deleting source objects"
+    },
+    "mixed-notations.roundtrip": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "mixed_wrappers_order_and_existing_family_payloads_roundtrip_exactly"
+    },
+    "mixed-notations.slur-capacity": {
+      "assertion": "rejection",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "slur_capacity_uses_authored_child_order_not_a_convenient_sorted_order"
+    },
+    "mixed-notations.slur-order": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "same_host_slur_open_before_close_never_reuses_an_active_number"
+    },
+    "mixed-notations.slur-stop-first": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "mixed_cross_voice_stop_first_encounters_do_not_reverse_endpoints"
+    },
+    "mixed-notations.snapshot": {
+      "assertion": "positive",
+      "file": "crates/scorestream-formats/tests/mixed_notations.rs",
+      "package": "scorestream-formats",
+      "runner": "cargo",
+      "target": "mixed_notations",
+      "test": "actual_mixed_import_snapshot_keeps_notation_without_enabling_preview_or_sound"
+    },
     "notes.reject": {
       "assertion": "rejection",
       "file": "crates/scorestream-formats/tests/musicxml.rs",
@@ -2779,6 +2898,89 @@
       ],
       "scope": "MusicXmlOptions.articulations=AuthoredV1 only: all 16 defined MusicXML 4.0 choices plus passive other-articulation on measured pitched events. Ordered articulation-only notations wrappers/groups/items, repeated signs, empty groups and additional empty wrappers, optional source IDs/print-object, typed exact print-style and per-choice fields. Default import remains LegacySimple; representation/interchange plus bounded ordinary-sign engraving, not desktop-import-default or performance completion.",
       "title": "Opt-in authored articulation family v1, bounded ordinary engraving"
+    },
+    {
+      "id": "mixed-authored-notations",
+      "layers": {
+        "export": {
+          "detail": "Native association order is exact; XML reports association normalization, preserves local order, allocates slur numbers in authored order and rejects capacity overflow without sorting.",
+          "evidence": [
+            "mixed-notations.roundtrip",
+            "mixed-notations.order",
+            "mixed-notations.identities",
+            "mixed-notations.slur-order",
+            "mixed-notations.slur-capacity"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/slurs.rs",
+            "crates/scorestream-formats/src/musicxml/authored_articulations.rs",
+            "crates/scorestream-formats/src/musicxml/write.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "import": {
+          "detail": "Optional typed topology resolves local XML slurs without losing source child order; native required capability and reference validation preserve exact identities.",
+          "evidence": [
+            "mixed-notations.roundtrip",
+            "mixed-notations.permutations",
+            "mixed-notations.polyphony",
+            "mixed-notations.reject-ties",
+            "mixed-notations.slur-stop-first"
+          ],
+          "implementation": [
+            "crates/scorestream-formats/src/musicxml/mixed_notations.rs",
+            "crates/scorestream-formats/src/musicxml/read.rs",
+            "crates/scorestream-formats/src/sfs.rs"
+          ],
+          "status": "partial"
+        },
+        "model": {
+          "detail": "Closed versioned topology references existing semantic payloads with exact host/wrapper/group/endpoint bijections and no raw XML.",
+          "evidence": [
+            "mixed-notations.roundtrip",
+            "mixed-notations.reject-model",
+            "mixed-notations.reject-json",
+            "mixed-notations.compatibility"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/notation_order.rs",
+            "crates/scorestream-core/src/notation_extension.rs"
+          ],
+          "status": "partial"
+        },
+        "playback": {
+          "detail": "No interpretation inferred from mixed optical topology. Ordinary and all qualified lowering profiles reject actual marks or declared capability, independently of header presence.",
+          "evidence": [
+            "mixed-notations.playback",
+            "mixed-notations.reject-ties"
+          ],
+          "implementation": [
+            "crates/scorestream-core/src/notation/lower.rs"
+          ],
+          "status": "blocked"
+        },
+        "render": {
+          "detail": "Whole mixed preview is withheld unchanged, including actual Rust-pipeline snapshot and missing-header/future-kind guards.",
+          "evidence": [
+            "mixed-notations.render",
+            "mixed-notations.snapshot"
+          ],
+          "implementation": [
+            "desktop/src/render/project.ts"
+          ],
+          "status": "blocked"
+        }
+      },
+      "limitations": "Not a universal notation container: no rest/unpitched/grace articulation hosts, ornaments/technical/editorial children, richer tie semantics or duplicate fermatas. One-sided/continue/let-ring/repeat-conditioned/engraving ties still fail. Native tie overrides including explicit true flags reject. All optical and performance routes remain withheld; no external-score acceptance claimed. Existing decimal, source-ID and 16-live-slur XML capacity limits remain.",
+      "refs": [
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:articulations[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:fermata[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:slur[1]",
+        "musicxml:schema/complexType:notations[1]/sequence[1]/choice[1]/element:tied[1]"
+      ],
+      "scope": "Explicit AuthoredMixedV1 on measured pitched articulation-bearing hosts only. Typed child topology preserves wrapper/group identities and order with existing ordinary tie, authored slur and single-fermata payloads; default and AuthoredV1 unchanged.",
+      "title": "Ordered mixed-family authored notation interchange"
     }
   ],
   "integrated_checkpoints": {

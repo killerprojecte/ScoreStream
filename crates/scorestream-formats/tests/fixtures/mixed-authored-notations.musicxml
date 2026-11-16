@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original synthetic interchange study. Not an external corpus acceptance claim. -->
+<score-partwise version="4.0">
+  <part-list><score-part id="p"><part-name>Flute</part-name><score-instrument id="inst"><instrument-name>flute</instrument-name></score-instrument></score-part></part-list>
+  <part id="p"><measure id="m" number="1">
+    <attributes><divisions>1</divisions><time><beats>3</beats><beat-type>4</beat-type></time></attributes>
+    <note id="a"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><tie type="start"/><voice>1</voice><type>quarter</type>
+      <notations id="a-wrapper" print-object="no"><slur type="start" number="1" bezier-x="1.25"/><tied type="start" number="1"/><articulations id="a-group"><staccato/><staccato/></articulations><slur type="start" number="2" placement="below"/></notations>
+      <notations id="empty" print-object="yes"/>
+    </note>
+    <note id="b"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><tie type="stop"/><tie type="start"/><voice>1</voice><type>quarter</type>
+      <notations><articulations><accent placement="below"/></articulations><fermata type="inverted" relative-y="-1.5">angled</fermata><tied type="stop" number="1"/></notations>
+      <notations><tied type="start" number="1"/><articulations/></notations>
+    </note>
+    <note id="c"><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><tie type="stop"/><voice>1</voice><type>quarter</type>
+      <notations><tied type="stop" number="1"/><slur type="stop" number="2" bezier-y="-2.75"/><articulations><tenuto/></articulations><slur type="stop" number="1"/></notations>
+    </note>
+  </measure></part>
+</score-partwise>

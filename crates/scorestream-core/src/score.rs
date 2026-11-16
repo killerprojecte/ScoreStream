@@ -43,11 +43,17 @@ pub struct ScoreDocument {
     /// simple-sign performance. No rendering or sounding policy is implied.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authored_articulations: Option<AuthoredArticulations>,
+    /// Explicit mixed-family child order within authored articulation wrappers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notation_order: Option<NotationOrder>,
     /// Authored printed beams. No timing, grouping, or missing levels are inferred.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub beams: Vec<ScoreBeam>,
 }
 pub use crate::articulation_model::*;
+pub use crate::notation_order::{
+    NotationChild, NotationEventOrder, NotationOrder, NotationOrderVersion, NotationPhase,
+};
 
 /// The complete empty-symbol articulation subset with a native SFS sound policy.
 /// More complex signs (strong-accent orientation, breath shapes, detached-legato,

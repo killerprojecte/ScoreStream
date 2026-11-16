@@ -205,6 +205,7 @@ fn ordinal_constraint_mapping_tracks_canonical_meanings() {
         "scorestream.fermata requires",
         "scorestream.beam requires",
         "scorestream.articulation@1 preserves",
+        "scorestream.notations@1 requires",
     ];
     assert_eq!(constraints.len(), prefixes.len());
     for (value, prefix) in constraints.iter().zip(prefixes) {
@@ -363,5 +364,51 @@ fn syntax_topic_teaches_typed_metadata_without_polluting_other_topics() {
             .iter()
             .any(|record| record["prefix"] == "!meta"
                 && record["syntax"].as_str().unwrap().contains("authors=["))
+    );
+}
+
+#[test]
+fn mixed_notation_topics_include_the_canonical_contract() {
+    let source = language();
+    let constraint = source["additional_constraints"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|value| {
+            value
+                .as_str()
+                .unwrap()
+                .starts_with("scorestream.notations@1 requires")
+        })
+        .unwrap();
+    for topic in ["marks", "extensions", "validation"] {
+        assert!(
+            data(json!({"topics":[topic]}))["additional_constraints"]
+                .as_array()
+                .unwrap()
+                .contains(constraint)
+        );
+    }
+    let marks = data(json!({"topics":["marks"]}));
+    let extensions = data(json!({"topics":["extensions"]}));
+    let capability = "scorestream.notations@1";
+    assert_eq!(
+        extensions["extensions"]["registered"][capability],
+        source["extensions"]["registered"][capability]
+    );
+    for kind in source["extensions"]["registered"][capability]["mark_kinds"]
+        .as_array()
+        .unwrap()
+    {
+        for field in ["marks", "mark_fields"] {
+            assert_eq!(
+                marks["vocabulary"][field][kind.as_str().unwrap()],
+                source["vocabulary"][field][kind.as_str().unwrap()]
+            );
+        }
+    }
+    assert!(
+        data(json!({}))["additional_constraints"].is_null(),
+        "default quick discovery must not grow to include every capability"
     );
 }

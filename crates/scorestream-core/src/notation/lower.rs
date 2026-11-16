@@ -213,9 +213,9 @@ pub(super) enum LoweringProfile {
 }
 /// Refuse authored articulation data even in unchecked or incomplete ASTs.
 pub(super) fn reject_authored_articulations(doc: &Document) -> Result<()> {
-    if doc.required_extensions.iter().any(|e| e.starts_with("scorestream.articulation@"))
+    if doc.required_extensions.iter().any(|e| e.starts_with("scorestream.articulation@") || e.starts_with("scorestream.notations@"))
         || doc.frames.iter().flat_map(|f| &f.records).any(|r| {
-            matches!(r, Record::Mark(mark) if crate::articulation_extension::is_kind(&mark.kind))
+            matches!(r, Record::Mark(mark) if crate::articulation_extension::is_kind(&mark.kind) || crate::notation_extension::is_kind(&mark.kind))
         })
     {
         return Err(Diagnostic::error(
@@ -665,6 +665,33 @@ mod authored_articulation_guards {
                 records: vec![Record::Mark(crate::Mark {
                     target: "#a".into(),
                     kind: format!("scorestream.articulation.{kind}"),
+                    attributes: Attributes::new(),
+                    source: SourceRange::default(),
+                })],
+                source: SourceRange::default(),
+            });
+            documents.push(doc);
+        }
+        for requirement in [
+            crate::notation_extension::EXTENSION,
+            "scorestream.notations@2",
+        ] {
+            let mut doc = Document::new(DocumentKind::Score);
+            doc.required_extensions.push(requirement.into());
+            documents.push(doc);
+        }
+        for kind in [
+            "scorestream.notations",
+            crate::notation_extension::EVENT,
+            crate::notation_extension::CHILD,
+            "scorestream.notations.future",
+        ] {
+            let mut doc = Document::new(DocumentKind::Score);
+            doc.frames.push(crate::Frame {
+                time: Rational::zero(),
+                records: vec![Record::Mark(crate::Mark {
+                    target: "#a".into(),
+                    kind: kind.into(),
                     attributes: Attributes::new(),
                     source: SourceRange::default(),
                 })],

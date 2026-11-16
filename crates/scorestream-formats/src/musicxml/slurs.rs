@@ -8,7 +8,9 @@ use crate::{Format, MappingEffect, MappingReport};
 use scorestream_core::{
     SourceRange,
     notation::{EventId, PartId, Placement, RelationId},
-    score::{ScoreDocument, ScoreSlur, SlurEndpoint, SlurOrientation},
+    score::{
+        NotationChild, NotationPhase, ScoreDocument, ScoreSlur, SlurEndpoint, SlurOrientation,
+    },
 };
 use std::{collections::BTreeMap, fmt::Write};
 
@@ -152,9 +154,17 @@ pub(super) fn read(note: &Node, part: &PartId, event: &EventId) -> Result<Vec<En
 /// One open phase per part/local number. The complementary endpoint may appear
 /// first in XML due to backups and voice ordering. Musical order is validated
 /// separately, after measured events and grace anchors have all been resolved.
+#[cfg(test)]
 pub(super) fn resolve(
     endpoints: Vec<Encounter>,
     report: &mut MappingReport,
+) -> Result<Vec<ScoreSlur>> {
+    resolve_with_sources(endpoints, report, &mut BTreeMap::new())
+}
+pub(super) fn resolve_with_sources(
+    endpoints: Vec<Encounter>,
+    report: &mut MappingReport,
+    sources: &mut BTreeMap<String, RelationId>,
 ) -> Result<Vec<ScoreSlur>> {
     let mut pending = BTreeMap::<(PartId, u8), Encounter>::new();
     let mut slurs = Vec::new();
@@ -167,16 +177,15 @@ pub(super) fn resolve(
                     "Duplicate open slur phase for the same part-local number is ambiguous; endpoints are not guessed or merged",
                 ));
             }
+            let id = RelationId(format!("mx_slur{}", slurs.len() + 1));
+            sources.insert(previous.path.clone(), id.clone());
+            sources.insert(current.path.clone(), id.clone());
             let (start, end) = if previous.phase == Phase::Start {
                 (previous.endpoint, current.endpoint)
             } else {
                 (current.endpoint, previous.endpoint)
             };
-            slurs.push(ScoreSlur {
-                id: RelationId(format!("mx_slur{}", slurs.len() + 1)),
-                start,
-                end,
-            });
+            slurs.push(ScoreSlur { id, start, end });
         } else {
             pending.insert(key, current);
         }
@@ -198,6 +207,7 @@ pub(super) fn resolve(
 #[derive(Clone, Copy)]
 struct OutputEndpoint<'a> {
     relation: usize,
+    id: &'a RelationId,
     phase: Phase,
     endpoint: &'a SlurEndpoint,
     number: u8,
@@ -231,6 +241,7 @@ impl<'a> Export<'a> {
                     .or_default()
                     .push(OutputEndpoint {
                         relation,
+                        id: &slur.id,
                         phase,
                         endpoint,
                         number: 0,
@@ -257,7 +268,17 @@ impl<'a> Export<'a> {
                             // even when a stop-first relation closes with a start.
                             // Phase is secondary, so ordinary stop/start reuse
                             // still emits its stop first. Emit this exact order.
+                            let authored_order = score
+                                .notation_order
+                                .as_ref()
+                                .and_then(|o| o.events.iter().find(|e| &e.event == id));
                             endpoints.sort_by(|a, b| {
+                                if let Some(order) = authored_order {
+                                    let rank = |endpoint: &OutputEndpoint<'_>| order.wrappers.iter().flatten().position(|child| {
+                                        matches!(child, NotationChild::Slur { relation, phase } if relation == endpoint.id && (*phase == NotationPhase::Start) == (endpoint.phase == Phase::Start))
+                                    });
+                                    return rank(a).cmp(&rank(b));
+                                }
                                 open.contains_key(&b.relation)
                                     .cmp(&open.contains_key(&a.relation))
                                     .then_with(|| a.phase.cmp(&b.phase))
@@ -303,7 +324,32 @@ impl<'a> Export<'a> {
     }
 
     pub(super) fn write(&self, event: &EventId, out: &mut String) {
-        for endpoint in self.by_event.get(event).into_iter().flatten() {
+        self.write_filtered(event, out, |_, _| true);
+    }
+    pub(super) fn write_selected(
+        &self,
+        event: &EventId,
+        relation: &RelationId,
+        phase: NotationPhase,
+        out: &mut String,
+    ) {
+        self.write_filtered(event, out, |id, p| {
+            id == relation && (phase == NotationPhase::Start) == (p == Phase::Start)
+        });
+    }
+    fn write_filtered(
+        &self,
+        event: &EventId,
+        out: &mut String,
+        include: impl Fn(&RelationId, Phase) -> bool,
+    ) {
+        for endpoint in self
+            .by_event
+            .get(event)
+            .into_iter()
+            .flatten()
+            .filter(|e| include(e.id, e.phase))
+        {
             write!(
                 out,
                 "<slur type=\"{}\" number=\"{}\"",

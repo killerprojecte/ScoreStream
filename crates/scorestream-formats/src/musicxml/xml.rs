@@ -646,7 +646,7 @@ pub(super) fn schema_with_profile(
     articulations: super::ArticulationProfile,
     report: &mut MappingReport,
 ) {
-    let authored = articulations == super::ArticulationProfile::AuthoredV1;
+    let authored = !articulations.is_legacy();
     let (attrs, children, multiple, required, text): (&[&str], &[&str], &[&str], &[&str], bool) =
         match n.name.as_str() {
             "score-partwise" => (

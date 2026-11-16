@@ -1,9 +1,9 @@
 //! Lossless, scalar-only SFS transport for the authored articulation v1 family.
 #![allow(clippy::result_large_err)]
 use crate::{
+    Diagnostic, Document, DocumentKind, Mark, Pitch, Rational, Record, Scalar, SourceRange,
     articulation_model::*,
     notation::{EventId, Placement},
-    Diagnostic, Document, DocumentKind, Mark, Pitch, Rational, Record, Scalar, SourceRange,
 };
 use std::collections::{BTreeMap, BTreeSet};
 pub const EXTENSION: &str = "scorestream.articulation@1";
@@ -444,6 +444,10 @@ pub fn decode(doc: &Document) -> Result<Option<AuthoredArticulations>, Vec<Diagn
         .collect();
     let mut hosts = BTreeMap::new();
     let mut incompatible = BTreeSet::new();
+    let mixed_enabled = doc
+        .required_extensions
+        .iter()
+        .any(|r| r == crate::notation_extension::EXTENSION);
     for frame in &doc.frames {
         for r in &frame.records {
             if let Record::State(state) = r {
@@ -478,11 +482,13 @@ pub fn decode(doc: &Document) -> Result<Option<AuthoredArticulations>, Vec<Diagn
                 }
                 Record::Mark(mark)
                     if mark.kind == "articulation"
-                        || mark.kind == crate::fermata_extension::KIND =>
+                        || (!mixed_enabled && mark.kind == crate::fermata_extension::KIND) =>
                 {
                     incompatible.insert(mark.target.as_str());
                 }
-                Record::Relation(relation) if relation.kind == "tie" || relation.kind == "slur" => {
+                Record::Relation(relation)
+                    if !mixed_enabled && (relation.kind == "tie" || relation.kind == "slur") =>
+                {
                     incompatible.insert(relation.anchor.as_str());
                 }
                 _ => {}
@@ -527,7 +533,10 @@ pub fn decode(doc: &Document) -> Result<Option<AuthoredArticulations>, Vec<Diagn
                     ));
                 }
                 if incompatible.contains(m.target.as_str()) {
-                    return Err(err(m,"Authored family cannot overlap legacy articulations or mixed notation families"));
+                    return Err(err(
+                        m,
+                        "Authored family cannot overlap legacy articulations or mixed notation families",
+                    ));
                 }
                 result.events.push(ArticulationEvent {
                     event: EventId(id.into()),

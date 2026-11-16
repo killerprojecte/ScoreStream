@@ -152,3 +152,11 @@ not retained; three aggregate policy diagnostics disclose counts and regenerated
 layout. Unknown descendants and semantic/display fields remain blocking, as do
 `defaults` and `print` subtrees. There is no CLI or desktop opt-in in this slice.
 See [the coordinate policy and original-source evidence](GEOMETRY_IMPORT.md).
+
+## Ordered mixed notation opt-in
+
+`ArticulationProfile::AuthoredMixedV1` adds typed wrapper child references for the
+existing ordinary tie, authored slur and single-fermata families on measured
+pitched articulation hosts. Native SFS requires `scorestream.notations@1`; source
+order is preserved and all mixed runtime routes remain withheld. See
+[the exact bounded contract](MIXED_NOTATION_INTERCHANGE.md). Default import is unchanged.

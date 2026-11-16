@@ -172,6 +172,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::beam_extension::EXTENSION
             && e != core::slur_extension::EXTENSION
             && e != core::articulation_extension::EXTENSION
+            && e != core::notation_extension::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
@@ -190,6 +191,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         articulations: vec![],
         authored_articulations: core::articulation_extension::decode(doc)
             .expect("validated authored articulations"),
+        notation_order: core::notation_extension::decode(doc).expect("validated notation order"),
         barlines: vec![],
     };
     let accidentals = crate::accidentals::read_marks(doc, &mut report);
@@ -308,7 +310,9 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             match record {
                 Record::Measure(_) => {}
                 Record::Mark(m) if m.kind == "accidental" => {}
-                Record::Mark(m) if core::articulation_extension::is_kind(&m.kind) => {}
+                Record::Mark(m)
+                    if core::articulation_extension::is_kind(&m.kind)
+                        || core::notation_extension::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
                 }
@@ -742,6 +746,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
     doc.metadata = score.metadata.clone();
+    if score.notation_order.is_some() {
+        doc.required_extensions
+            .push(core::notation_extension::EXTENSION.into());
+    }
     if score.authored_articulations.is_some() {
         doc.required_extensions
             .push(core::articulation_extension::EXTENSION.into());
@@ -1097,6 +1105,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             }
         }
     }
+    let mut slur_ids = BTreeMap::new();
     if !score.slurs.is_empty() {
         let positions = crate::beams::positions(score);
         let mut relations = Ids::new(
@@ -1110,6 +1119,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         );
         for slur in &score.slurs {
             let id = relations.get(&slur.id.0, &mut report);
+            slur_ids.insert(slur.id.0.clone(), id.clone());
             for (phase, endpoint) in [
                 (RelationPhase::Start, &slur.start),
                 (RelationPhase::End, &slur.end),
@@ -1135,6 +1145,26 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .or_default()
                 .extend(
                     core::articulation_extension::encode_event(event, event_index, &id)
+                        .into_iter()
+                        .map(Record::Mark),
+                );
+        }
+    }
+    if let Some(order) = &score.notation_order {
+        let positions = crate::beams::positions(score);
+        for (index, event) in order.events.iter().enumerate() {
+            let mut mapped = event.clone();
+            for child in mapped.wrappers.iter_mut().flatten() {
+                if let NotationChild::Slur { relation, .. } = child {
+                    relation.0 = slur_ids[&relation.0].clone();
+                }
+            }
+            let id = events.get(&event.event.0, &mut report);
+            frames
+                .entry(positions[&event.event].clone())
+                .or_default()
+                .extend(
+                    core::notation_extension::encode_event(&mapped, index, &id)
                         .into_iter()
                         .map(Record::Mark),
                 );

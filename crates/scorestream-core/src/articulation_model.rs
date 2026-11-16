@@ -1,8 +1,8 @@
 //! MusicXML 4.0 authored articulation family, version 1. Typed data only: no
 //! foreign markup, arbitrary maps, inferred defaults, or performance recipes.
 use crate::{
-    notation::{EventId, Placement},
     Rational,
+    notation::{EventId, Placement},
 };
 use serde::{Deserialize, Serialize};
 
@@ -21,8 +21,8 @@ pub struct AuthoredArticulations {
 #[serde(deny_unknown_fields)]
 pub struct ArticulationEvent {
     pub event: EventId,
-    /// Ordered wrappers. This checkpoint admits only articulation-only wrappers;
-    /// mixed-family wrapper topology is refused rather than flattened.
+    /// Ordered wrappers. Mixed-family children require the separate validated
+    /// notation_order topology; group content is never flattened.
     pub notations: Vec<ArticulationNotations>,
 }
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -265,13 +265,13 @@ pub fn validate_event(event: &ArticulationEvent) -> Vec<crate::Diagnostic> {
     out
 }
 /// Validate authored articulation anchors, ordered structure, legacy overlap and
-/// the bounded family-only wrapper contract. Caller also validates other domains.
+/// the bounded wrapper contract. Caller also validates other semantic domains.
 pub fn validate_score(score: &crate::score::ScoreDocument) -> Vec<crate::Diagnostic> {
     use std::collections::{BTreeMap, BTreeSet};
+    let mut out = crate::notation_order::validate_score(score);
     let Some(authored) = &score.authored_articulations else {
-        return vec![];
+        return out;
     };
-    let mut out = Vec::new();
     if authored.events.is_empty() {
         out.push(diagnostic(
             "articulation.empty_requirement",
@@ -338,14 +338,18 @@ pub fn validate_score(score: &crate::score::ScoreDocument) -> Vec<crate::Diagnos
                 "Legacy simple marks and authored articulation v1 cannot overlap on the same event",
             ));
         }
-        if score.ties.iter().any(|t| t.events.contains(event))
+        if (score.ties.iter().any(|t| t.events.contains(event))
             || score
                 .slurs
                 .iter()
                 .any(|s| &s.start.event == event || &s.end.event == event)
-            || score.fermatas.iter().any(|f| &f.event == event)
+            || score.fermatas.iter().any(|f| &f.event == event))
+            && !score
+                .notation_order
+                .as_ref()
+                .is_some_and(|o| o.events.iter().any(|e| &e.event == event))
         {
-            out.push(diagnostic("articulation.mixed_notations", "Authored v1 preserves articulation-only wrappers; tied/slur/fermata on the same event need a future ordered mixed-notation model"));
+            out.push(diagnostic("articulation.mixed_notations", "Authored articulation wrappers with tied/slur/fermata on the same event require explicit validated notation_order topology"));
         }
         for id in authored_event.notations.iter().flat_map(|w| {
             w.source_id

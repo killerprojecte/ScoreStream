@@ -52,10 +52,10 @@ assert 'vocabulary' not in responses['editing']['result']['structuredContent']['
 assert 'vocabulary' not in responses['empty']['result']['structuredContent']['data']
 for topic in ['validation', 'all_topics']:
     assert responses[topic]['result']['structuredContent']['data']['additional_constraints'] == language['additional_constraints']
-articulation = next(value for value in language['additional_constraints']
-                    if value.startswith('scorestream.articulation@1 preserves'))
-for topic in ['marks', 'extensions', 'validation']:
-    assert articulation in responses[topic]['result']['structuredContent']['data']['additional_constraints'], topic
+for prefix in ['scorestream.articulation@1 preserves', 'scorestream.notations@1 requires']:
+    constraint = next(value for value in language['additional_constraints'] if value.startswith(prefix))
+    for topic in ['marks', 'extensions', 'validation']:
+        assert constraint in responses[topic]['result']['structuredContent']['data']['additional_constraints'], (topic, prefix)
 
 # Reconstruct the previous implementation's exact result fields as a byte-size
 # baseline. This is not a token count; JSON separators are normalized identically.

@@ -67,7 +67,8 @@
 
 新增 `authored-articulations` 账本行，与上面的默认四符号 profile 分开记账。
 `MusicXmlOptions.articulations = AuthoredV1` 才启用它；不是桌面或 CLI 的默认导入模式。
-17 个 choice 的作者模型、导入、导出均为有边界的 `partial`，绘制和演奏均为 `blocked`。
+17 个 choice 的作者模型、导入、导出均为有边界的 `partial`。绘制为 `partial`：
+仅已验证的 10 个普通符号，其中 3 个要求显式 placement；整套作者能力的演奏仍为 `blocked`。
 拒绝测试不是绘制或演奏完成率，默认路径的 4/13 状态不因另一 profile 而改写。
 
 版本化模型保留事件锚点、notations wrapper 的 id/print-object、articulations 组的 id、
@@ -76,16 +77,28 @@
 仅保存被动原文和可选字形名，不存外来 XML、不猜声音、不宣称字形存在。
 SFS 用 `scorestream.articulation@1` 的显式标量记录往返；不会改写为旧 articulation 音效。
 
-这是**表示与交换检查点**。仍只接收有节拍的有音高宿主；同一事件上的 tied/slur/fermata
-与作者奏法混合 wrapper 尚未建模，因此明确拒绝。不同事件上的这些家族可以并存。
+这是**有边界的表示、交换与普通符号绘制检查点**。仍只接收有节拍的有音高宿主；
+本 `AuthoredV1` 单独使用时拒绝同一事件上的 tied/slur/fermata 混合 wrapper。
+不同事件上的这些家族可以并存；新的显式混合 profile 见下节。
 休止符/无音高/倚音锚点、editorial footnote/level、完整 Unicode ID/NMTOKEN 等仍不在范围内。
 数值沿用输入 64 字符、XML 输出有限小数 32 位的精确边界，不能表示时拒绝而非取整。
 跨事件关联列表在 XML 随既有声部/音符序列显式报告规范化；事件内部作者顺序不变。
 
-真实导入→SFS→Workspace 的合成 17-choice JSON 已加入前端拒绝验收，所有作者 v1
-预览/播放均在进入渲染或声音计划前拒绝。旧四符号的真实 Verovio/播放策略回归不变。
+真实导入→SFS→Workspace 的合成全 17-choice JSON 因包含尚未支持的可见对象，仍作为
+完整预览拒绝验收，不能用已验证的 10 个符号替代或删除其余对象。完整作者能力的播放
+仍在声音计划前拒绝；旧四符号的真实 Verovio/播放策略回归不变。
 32c 原件仍没有新增接受证据，其独立 metadata 限制未解除；合成 wrapper 探针不是原件。
 完整契约与测试入口见 [`ARTICULATION_IMPORT.md`](ARTICULATION_IMPORT.md)。
+
+## 显式同音符混合记谱交换
+
+独立 `AuthoredMixedV1` / `scorestream.notations@1` 在有节拍、有音高且带作者奏法组的
+宿主上，用封闭类型的顺序引用保留 tied/slur/fermata 与 articulation 组的 wrapper 边界和
+排列；不是把声音 tie 和图形曲线混为一谈。原有家族的字段、锚点和拒绝边界继续有效。
+新账本 `mixed-authored-notations` 的模型/导入/导出为 `partial`，**整个混合预览和演奏
+都为 `blocked`**，与 `AuthoredV1` 的 10 个普通符号绘制证据分开记账。未宣称外部完整
+原谱已经可接受。精确范围、15 个交换回归和独立原生验证见
+[`MIXED_NOTATION_INTERCHANGE.md`](MIXED_NOTATION_INTERCHANGE.md)。
 
 ## 固定参考边界与可重复计数
 

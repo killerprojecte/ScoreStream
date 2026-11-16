@@ -1,0 +1,642 @@
+{
+  "can_redo": false,
+  "can_undo": false,
+  "diagnostics": [
+    {
+      "code": "fermata.realization_unavailable",
+      "column": 1,
+      "line": 1,
+      "message": "Authored fermata signs are preserved; hold duration and performed playback are not implemented",
+      "severity": "warning"
+    }
+  ],
+  "dirty": false,
+  "document": {
+    "document_kind": "score",
+    "end": "3",
+    "format": "ScoreStream",
+    "format_version": "1.1",
+    "frames": [
+      {
+        "records": [
+          {
+            "attributes": {
+              "implicit": false,
+              "label": "1"
+            },
+            "id": "m",
+            "length": "3",
+            "record": "measure",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "meter": "3/4"
+            },
+            "record": "state",
+            "target": "p.s1"
+          },
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "a",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "C4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "name": "flute",
+              "source_id": "inst"
+            },
+            "kind": "scorestream.instrument",
+            "record": "mark",
+            "target": "p"
+          },
+          {
+            "attributes": {
+              "event_index": 0
+            },
+            "kind": "scorestream.articulation.event",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "print_object": false,
+              "source_id": "a-wrapper",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "source_id": "a-group",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 0,
+              "sign": "staccato",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "group_index": 0,
+              "item_index": 1,
+              "sign": "staccato",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "event_index": 0,
+              "print_object": true,
+              "source_id": "empty",
+              "wrapper_index": 1
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "event_index": 0
+            },
+            "kind": "scorestream.notations.event",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "child_index": 0,
+              "event_index": 0,
+              "kind": "slur",
+              "phase": "start",
+              "relation": "mx_slur2",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "child_index": 1,
+              "event_index": 0,
+              "kind": "tied",
+              "phase": "start",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "child_index": 2,
+              "event_index": 0,
+              "group_index": 0,
+              "kind": "articulations",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "attributes": {
+              "child_index": 3,
+              "event_index": 0,
+              "kind": "slur",
+              "phase": "start",
+              "relation": "mx_slur1",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#a"
+          },
+          {
+            "anchor": "#a",
+            "attributes": {},
+            "id": "mx_t1",
+            "kind": "tie",
+            "phase": "start",
+            "record": "relation"
+          },
+          {
+            "anchor": "#a",
+            "attributes": {
+              "placement": "below"
+            },
+            "id": "mx_slur1",
+            "kind": "slur",
+            "phase": "start",
+            "record": "relation"
+          },
+          {
+            "anchor": "#a",
+            "attributes": {
+              "bezier_x": "5/4"
+            },
+            "id": "mx_slur2",
+            "kind": "slur",
+            "phase": "start",
+            "record": "relation"
+          }
+        ],
+        "time": "0"
+      },
+      {
+        "records": [
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "b",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "C4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "event_index": 1
+            },
+            "kind": "scorestream.articulation.event",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "event_index": 1,
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "event_index": 1,
+              "group_index": 0,
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "event_index": 1,
+              "group_index": 0,
+              "item_index": 0,
+              "placement": "below",
+              "sign": "accent",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "event_index": 1,
+              "wrapper_index": 1
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "event_index": 1,
+              "group_index": 0,
+              "wrapper_index": 1
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "event_index": 1
+            },
+            "kind": "scorestream.notations.event",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "child_index": 0,
+              "event_index": 1,
+              "group_index": 0,
+              "kind": "articulations",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "child_index": 1,
+              "event_index": 1,
+              "kind": "fermata",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "child_index": 2,
+              "event_index": 1,
+              "kind": "tied",
+              "phase": "stop",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "child_index": 0,
+              "event_index": 1,
+              "kind": "tied",
+              "phase": "start",
+              "wrapper_index": 1
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "child_index": 1,
+              "event_index": 1,
+              "group_index": 0,
+              "kind": "articulations",
+              "wrapper_index": 1
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "attributes": {
+              "orientation": "inverted",
+              "relative_y": "-3/2",
+              "shape": "angled"
+            },
+            "kind": "scorestream.fermata",
+            "record": "mark",
+            "target": "#b"
+          },
+          {
+            "anchor": "#b",
+            "attributes": {},
+            "id": "mx_t1",
+            "kind": "tie",
+            "phase": "end",
+            "record": "relation"
+          },
+          {
+            "anchor": "#b",
+            "attributes": {},
+            "id": "mx_t2",
+            "kind": "tie",
+            "phase": "start",
+            "record": "relation"
+          }
+        ],
+        "time": "1"
+      },
+      {
+        "records": [
+          {
+            "attributes": {
+              "dots": 0,
+              "id": "c",
+              "staff": 1,
+              "w": "4"
+            },
+            "duration": "1",
+            "pitch": "C4",
+            "record": "event",
+            "voice": "v1_1"
+          },
+          {
+            "attributes": {
+              "event_index": 2
+            },
+            "kind": "scorestream.articulation.event",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "event_index": 2,
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.notations",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "event_index": 2,
+              "group_index": 0,
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.group",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "event_index": 2,
+              "group_index": 0,
+              "item_index": 0,
+              "sign": "tenuto",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.articulation.item",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "event_index": 2
+            },
+            "kind": "scorestream.notations.event",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "child_index": 0,
+              "event_index": 2,
+              "kind": "tied",
+              "phase": "stop",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "child_index": 1,
+              "event_index": 2,
+              "kind": "slur",
+              "phase": "stop",
+              "relation": "mx_slur1",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "child_index": 2,
+              "event_index": 2,
+              "group_index": 0,
+              "kind": "articulations",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "attributes": {
+              "child_index": 3,
+              "event_index": 2,
+              "kind": "slur",
+              "phase": "stop",
+              "relation": "mx_slur2",
+              "wrapper_index": 0
+            },
+            "kind": "scorestream.notations.child",
+            "record": "mark",
+            "target": "#c"
+          },
+          {
+            "anchor": "#c",
+            "attributes": {},
+            "id": "mx_t2",
+            "kind": "tie",
+            "phase": "end",
+            "record": "relation"
+          },
+          {
+            "anchor": "#c",
+            "attributes": {
+              "bezier_y": "-11/4"
+            },
+            "id": "mx_slur1",
+            "kind": "slur",
+            "phase": "end",
+            "record": "relation"
+          },
+          {
+            "anchor": "#c",
+            "attributes": {},
+            "id": "mx_slur2",
+            "kind": "slur",
+            "phase": "end",
+            "record": "relation"
+          }
+        ],
+        "time": "2"
+      }
+    ],
+    "metadata": {},
+    "parts": [
+      {
+        "display_name": "Flute",
+        "id": "p",
+        "instrument": "flute",
+        "staves": 1
+      }
+    ],
+    "required_extensions": [
+      "scorestream.notations@1",
+      "scorestream.articulation@1",
+      "scorestream.instrument@1",
+      "scorestream.fermata@1",
+      "scorestream.slur@1"
+    ],
+    "time_unit": "quarter",
+    "voices": [
+      {
+        "id": "v1_1",
+        "part": "p",
+        "staff": 1
+      }
+    ]
+  },
+  "draft_seq": 0,
+  "events": [
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "a",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "a",
+      "pitch": "C4",
+      "source_line": 12,
+      "staff": 1,
+      "time": "0",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "b",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "b",
+      "pitch": "C4",
+      "source_line": 30,
+      "staff": 1,
+      "time": "1",
+      "voice": "v1_1",
+      "written_duration": "4"
+    },
+    {
+      "attributes": {
+        "dots": 0,
+        "id": "c",
+        "staff": 1,
+        "w": "4"
+      },
+      "chord": null,
+      "dots": 0,
+      "duration": "1",
+      "id": "c",
+      "pitch": "C4",
+      "source_line": 48,
+      "staff": 1,
+      "time": "2",
+      "voice": "v1_1",
+      "written_duration": "4"
+    }
+  ],
+  "measures": [
+    {
+      "id": "m",
+      "label": "1",
+      "length": "3",
+      "part": "p",
+      "time": "0"
+    }
+  ],
+  "parts": [
+    {
+      "display_name": "Flute",
+      "id": "p",
+      "instrument": "flute",
+      "staves": 1
+    }
+  ],
+  "revision_id": "rev-1-3101de0c59374d467caf",
+  "source": "!score 1.1 unit=q\n!part p instrument=flute staves=1 display_name=\"Flute\"\n!voice v1_1 part=p staff=1\n!requires scorestream.notations@1\n!requires scorestream.articulation@1\n!requires scorestream.instrument@1\n!requires scorestream.fermata@1\n!requires scorestream.slur@1\n@0\n| p m len=3 implicit=false label=\"1\"\n= p.s1 meter=3/4\nv1_1 C4:1 id=a dots=0 staff=1 w=4\n+ p scorestream.instrument name=\"flute\" source_id=\"inst\"\n+ #a scorestream.articulation.event event_index=0\n+ #a scorestream.articulation.notations event_index=0 print_object=false source_id=\"a-wrapper\" wrapper_index=0\n+ #a scorestream.articulation.group event_index=0 group_index=0 source_id=\"a-group\" wrapper_index=0\n+ #a scorestream.articulation.item event_index=0 group_index=0 item_index=0 sign=staccato wrapper_index=0\n+ #a scorestream.articulation.item event_index=0 group_index=0 item_index=1 sign=staccato wrapper_index=0\n+ #a scorestream.articulation.notations event_index=0 print_object=true source_id=\"empty\" wrapper_index=1\n+ #a scorestream.notations.event event_index=0\n+ #a scorestream.notations.child child_index=0 event_index=0 kind=slur phase=start relation=mx_slur2 wrapper_index=0\n+ #a scorestream.notations.child child_index=1 event_index=0 kind=tied phase=start wrapper_index=0\n+ #a scorestream.notations.child child_index=2 event_index=0 group_index=0 kind=articulations wrapper_index=0\n+ #a scorestream.notations.child child_index=3 event_index=0 kind=slur phase=start relation=mx_slur1 wrapper_index=0\n~ tie mx_t1 start=#a\n~ slur mx_slur1 start=#a placement=below\n~ slur mx_slur2 start=#a bezier_x=5/4\n.\n@1\nv1_1 C4:1 id=b dots=0 staff=1 w=4\n+ #b scorestream.articulation.event event_index=1\n+ #b scorestream.articulation.notations event_index=1 wrapper_index=0\n+ #b scorestream.articulation.group event_index=1 group_index=0 wrapper_index=0\n+ #b scorestream.articulation.item event_index=1 group_index=0 item_index=0 placement=below sign=accent wrapper_index=0\n+ #b scorestream.articulation.notations event_index=1 wrapper_index=1\n+ #b scorestream.articulation.group event_index=1 group_index=0 wrapper_index=1\n+ #b scorestream.notations.event event_index=1\n+ #b scorestream.notations.child child_index=0 event_index=1 group_index=0 kind=articulations wrapper_index=0\n+ #b scorestream.notations.child child_index=1 event_index=1 kind=fermata wrapper_index=0\n+ #b scorestream.notations.child child_index=2 event_index=1 kind=tied phase=stop wrapper_index=0\n+ #b scorestream.notations.child child_index=0 event_index=1 kind=tied phase=start wrapper_index=1\n+ #b scorestream.notations.child child_index=1 event_index=1 group_index=0 kind=articulations wrapper_index=1\n+ #b scorestream.fermata orientation=inverted relative_y=-3/2 shape=angled\n~ tie mx_t1 end=#b\n~ tie mx_t2 start=#b\n.\n@2\nv1_1 C4:1 id=c dots=0 staff=1 w=4\n+ #c scorestream.articulation.event event_index=2\n+ #c scorestream.articulation.notations event_index=2 wrapper_index=0\n+ #c scorestream.articulation.group event_index=2 group_index=0 wrapper_index=0\n+ #c scorestream.articulation.item event_index=2 group_index=0 item_index=0 sign=tenuto wrapper_index=0\n+ #c scorestream.notations.event event_index=2\n+ #c scorestream.notations.child child_index=0 event_index=2 kind=tied phase=stop wrapper_index=0\n+ #c scorestream.notations.child child_index=1 event_index=2 kind=slur phase=stop relation=mx_slur1 wrapper_index=0\n+ #c scorestream.notations.child child_index=2 event_index=2 group_index=0 kind=articulations wrapper_index=0\n+ #c scorestream.notations.child child_index=3 event_index=2 kind=slur phase=stop relation=mx_slur2 wrapper_index=0\n~ tie mx_t2 end=#c\n~ slur mx_slur1 end=#c bezier_y=-11/4\n~ slur mx_slur2 end=#c\n.\n!end at=3\n",
+  "states": [
+    {
+      "scope": "p.s1",
+      "time": "0",
+      "values": {
+        "meter": "3/4"
+      }
+    }
+  ],
+  "valid": true,
+  "voices": [
+    {
+      "id": "v1_1",
+      "part": "p",
+      "staff": 1
+    }
+  ]
+}

@@ -328,6 +328,7 @@ fn read_with_audit<R: BufRead + Seek>(
     let declared: Vec<_> = declarations.children_named("score-part").collect();
     let mut parts: Vec<Option<ScorePart>> = vec![None; declared.len()];
     let mut active = None;
+    let mut notation_order = Vec::new();
     let mut tie_endpoints = BTreeMap::new();
     let mut slur_endpoints = Vec::new();
     input.seek(SeekFrom::Start(beginning)).map_err(io_error)?;
@@ -406,6 +407,7 @@ fn read_with_audit<R: BufRead + Seek>(
                     .events
                     .append(&mut reader.authored_articulations);
             }
+            notation_order.append(&mut reader.notation_order);
             score.graces.append(&mut reader.graces);
             score.beams.append(&mut reader.beams);
             parts[reader.part_index] = Some(reader.part);
@@ -466,7 +468,10 @@ fn read_with_audit<R: BufRead + Seek>(
     crate::fermatas::authored_only(&score, crate::Format::MusicXml, &mut report);
     crate::graces::authored_only(&score, crate::Format::MusicXml, &mut report);
     score.ties = super::ties::resolve(&score, tie_endpoints, &mut report)?;
-    score.slurs = super::slurs::resolve(slur_endpoints, &mut report)?;
+    let mut slur_sources = BTreeMap::new();
+    score.slurs =
+        super::slurs::resolve_with_sources(slur_endpoints, &mut report, &mut slur_sources)?;
+    score.notation_order = super::mixed_notations::resolve(notation_order, &slur_sources);
     super::authored_articulations::protect_generated_identities(
         &mut score,
         &mut object_ids,
@@ -476,7 +481,7 @@ fn read_with_audit<R: BufRead + Seek>(
     crate::slurs::authored_only(&score, crate::Format::MusicXml, &mut report);
     if score.authored_articulations.is_some() {
         report.push(crate::Format::MusicXml, crate::MappingEffect::Preserved, "articulation.authored_only", "/authored_articulations",
-            "Authored v1 preserves ordered articulation-only notation wrappers, exact optional attributes and passive custom text. Preview and playback remain withheld; no articulation effect is inferred.");
+            "Authored articulations preserve exact optional attributes and passive custom text. Mixed hosts additionally retain typed wrapper child order; no new rendering or performance policy is inferred.");
     }
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
@@ -503,6 +508,7 @@ struct PartReader {
     fermatas: Vec<ScoreFermata>,
     articulations: Vec<ScoreArticulation>,
     authored_articulations: Vec<ArticulationEvent>,
+    notation_order: Vec<super::mixed_notations::Pending>,
     graces: Vec<ScoreGraceNote>,
     beams: Vec<ScoreBeam>,
     barlines: Vec<ScoreBarline>,
@@ -545,6 +551,7 @@ impl PartReader {
             fermatas: vec![],
             articulations: vec![],
             authored_articulations: vec![],
+            notation_order: vec![],
             graces: vec![],
             beams: vec![],
             barlines: vec![],
@@ -574,6 +581,7 @@ impl PartReader {
             fermatas,
             articulations,
             authored_articulations,
+            notation_order,
             graces,
             beams,
             barlines,
@@ -925,10 +933,15 @@ impl PartReader {
                             .attr("id")
                             .map(String::from)
                             .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
-                        if options.articulations == super::ArticulationProfile::AuthoredV1 {
+                        if !options.articulations.is_legacy() {
                             // New wrapper fields must not bypass the authored-family
                             // scope check through the separate grace reader.
-                            super::authored_articulations::read(n, &EventId(id.clone()))?;
+                            super::authored_articulations::read(
+                                n,
+                                &EventId(id.clone()),
+                                options.articulations
+                                    == super::ArticulationProfile::AuthoredMixedV1,
+                            )?;
                         }
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                         slur_endpoints.extend(super::slurs::read(
@@ -995,20 +1008,31 @@ impl PartReader {
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                     let mut authored_event = false;
-                    if options.articulations == super::ArticulationProfile::AuthoredV1 {
-                        if let Some(authored) =
-                            super::authored_articulations::read(n, &EventId(id.clone()))?
-                        {
+                    if !options.articulations.is_legacy() {
+                        if let Some(authored) = super::authored_articulations::read(
+                            n,
+                            &EventId(id.clone()),
+                            options.articulations == super::ArticulationProfile::AuthoredMixedV1,
+                        )? {
+                            if options.articulations == super::ArticulationProfile::AuthoredMixedV1
+                            {
+                                notation_order
+                                    .extend(super::mixed_notations::read(n, &EventId(id.clone())));
+                            }
                             authored_articulations.push(authored);
                             authored_event = true;
                         }
                     } else {
                         articulations.extend(super::articulations::read(n, &EventId(id.clone()))?);
                     }
-                    // Authored-family validation has already refused every tie
-                    // and preserved intentional empty wrappers on this event.
+                    // Empty wrappers have typed meaning only on authored hosts.
+                    // Mixed mode still applies the original sound/notated tie contract.
                     let endpoints = if authored_event {
-                        None
+                        if options.articulations == super::ArticulationProfile::AuthoredMixedV1 {
+                            super::ties::read_endpoints_with_empty(n, true)?
+                        } else {
+                            None
+                        }
                     } else {
                         super::ties::read_endpoints(n)?
                     };

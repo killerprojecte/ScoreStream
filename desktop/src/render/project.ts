@@ -10,6 +10,8 @@ const labelEsc=(s:string)=>esc(s).replace(/[\t\n\r]/g,c=>`&#${c.charCodeAt(0)};`
 export const RENDERER='Verovio 5.6.0 · Bravura · projection 0.2';
 export function project(view:View):{mei:string;map:Record<string,string>;warnings:string[];authoredArticulations:AuthoredProjection|null}{
  if(!view.valid)throw Error('Only Rust-validated snapshots may be projected.');
+ const mixedNamespace='scorestream.notations';
+ if((Array.isArray(view.document.required_extensions)&&view.document.required_extensions.some(e=>typeof e==='string'&&e.startsWith(`${mixedNamespace}@`))) || (view.document.frames??[]).some(f=>f.records.some(r=>r.record==='mark'&&(r.kind===mixedNamespace||(typeof r.kind==='string'&&r.kind.startsWith(`${mixedNamespace}.`))))))throw Error('Ordered mixed-family notation is preserved but not yet supported by the preview. Preview withheld; source is unchanged.');
  if(!view.events.length)throw Error('No measured events to engrave yet.');
  const warnings:string[]=[];const map:Record<string,string>={};
  const authoredArticulations=projectAuthoredArticulations(view);

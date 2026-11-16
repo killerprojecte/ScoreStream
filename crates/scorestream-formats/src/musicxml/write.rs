@@ -618,10 +618,15 @@ pub fn write_with_options(
                     }
                     writeln!(out, "        <staff>{}</staff>", e.staff).unwrap();
                     beams.write(&e.id, &mut out);
-                    if tied.is_some()
-                        || fermatas.contains(&e.id)
-                        || slurs.contains(&e.id)
-                        || articulations.contains(&e.id)
+                    let order = score
+                        .notation_order
+                        .as_ref()
+                        .and_then(|o| o.events.iter().find(|n| n.event == e.id));
+                    if order.is_none()
+                        && (tied.is_some()
+                            || fermatas.contains(&e.id)
+                            || slurs.contains(&e.id)
+                            || articulations.contains(&e.id))
                     {
                         out.push_str("        <notations>");
                         if let Some(n) = tied.and_then(|t| t.stop) {
@@ -635,7 +640,32 @@ pub fn write_with_options(
                         articulations.write(&e.id, &mut out);
                         out.push_str("</notations>\n");
                     }
-                    authored_articulations.write(&e.id, &mut out);
+                    authored_articulations.write(
+                        &e.id,
+                        &mut out,
+                        order,
+                        |child, out| match child {
+                            NotationChild::Tied { phase } => {
+                                let (name, number) = match phase {
+                                    NotationPhase::Start => ("start", tied.and_then(|t| t.start)),
+                                    NotationPhase::Stop => ("stop", tied.and_then(|t| t.stop)),
+                                };
+                                write!(
+                                    out,
+                                    "<tied type=\"{name}\" number=\"{}\"/>",
+                                    number.expect("validated tie endpoint")
+                                )
+                                .unwrap();
+                            }
+                            NotationChild::Slur { relation, phase } => {
+                                slurs.write_selected(&e.id, relation, *phase, out)
+                            }
+                            NotationChild::Fermata {} => fermatas.write(&e.id, out),
+                            NotationChild::Articulations { .. } => {
+                                unreachable!("group emitted by authored adapter")
+                            }
+                        },
+                    );
                     out.push_str("      </note>\n");
                     if !is_chord {
                         cursor = &e.offset + &e.duration;
