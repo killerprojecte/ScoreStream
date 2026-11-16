@@ -217,7 +217,7 @@ or zero-valued existing hold policy.
 ### Explicit practice plan preflight
 
 ```
-audition preflight-practice source.sfs selected-policy.json written_notes_without_wedge_dashes_ornaments_slur_v1 initial_gm_cc7_centered_v1
+audition preflight-practice source.sfs selected-policy.json written_notes_without_wedge_dashes_ornaments_slur_v1 initial_gm_cc7_centered_v1 inert_without_new_note_on_v1
 ```
 
 Unlike discovery, this consumes the caller's complete positive hold policy and
@@ -243,3 +243,38 @@ check at `occ34:mx_n11200`: this tied continuation carries its own authored
 `attack_dynamics=1611/25` after attack `mx_n11199` with `5889/100`.
 No continuation velocity has been discarded or reinterpreted, and no full
 movement plan or WAV was produced by this milestone.
+
+
+The later explicit `InertWithoutNewNoteOnV1` rehearsal choice retains a note's
+original dynamics attribute but gives it no new NoteOn effect when the existing
+continuity analysis proves that occurrence is a sounding-tie continuation.
+It neither reattacks nor changes sustain gain, velocity, mute, or persistent
+state. Fresh attacks, print-only ties and strict entry points are unchanged.
+Each inert value has its own occurrence/predecessor/value/source receipt.
+MusicXML defines note dynamics as NoteOn velocity, not a sustain trajectory:
+https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/note/
+
+With this separately selected policy, unchanged movement I progresses to
+`fermata.unselected_overlap` at `occ391:mx_n1930`, an unmarked Oboe D5 from
+performed quarter 786 to 788. It ends exactly at `release-13`; it is not a
+sounding-tie continuation, and its small printed note size is not silent cue
+semantics. Current hold policy still refuses automatically sustaining or
+releasing this unselected chain. No full-movement WAV exists from this step.
+
+A separately selected `ReleaseUnmarkedAtBoundaryBeforeHoldV1` rehearsal policy
+allows only an unmarked audible chain whose exact written end equals an inserted
+hold boundary to release at the exact pre-hold wall time. Its ordinary terminal
+gate is explicitly replaced with that written endpoint. Selected chains retain
+the hold; following attacks retain after-hold time. The envelope endpoint uses
+the same pre-hold clock, not a clipped post-hold envelope or epsilon adjustment.
+Strict entry points and every genuine unselected crossing remain rejected.
+Per-chain diagnostics retain the event ID, hold ID, rational boundary and exact
+pre-/post-hold seconds. Articulated-chain/hold precedence is not relaxed.
+
+The `preflight-practice` command additionally requires the explicit final argument
+`release_unmarked_at_boundary_before_hold_v1`. With the unchanged movement-I
+source and previously selected 16 holds, all hold-overlap checks pass, but note
+`occ61:mx_n6430` then hits `note_dynamics.expression_unsupported`: a fresh authored
+NoteOn percentage intersects changing loudness. This is not a tied continuation
+and is not covered by the inert continuation policy. No complete movement plan,
+native preflight success, or whole-movement WAV is claimed.

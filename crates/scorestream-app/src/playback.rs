@@ -134,7 +134,16 @@ fn compile_with_graces(
 fn compile_with_technique(
     score: &ResolvedScore, doc: &Document, performed: Option<&PerformedScore>,
     timing: Option<&TimingProjection>, grace: Option<GraceView<'_>>,
+    technique: Option<&mut BTreeSet<String>>,
+) -> Result<PlaybackPlan, String> {
+    compile_with_practice(score,doc,performed,timing,grace,technique,None,None)
+}
+fn compile_with_practice(
+    score: &ResolvedScore, doc: &Document, performed: Option<&PerformedScore>,
+    timing: Option<&TimingProjection>, grace: Option<GraceView<'_>>,
     mut technique: Option<&mut BTreeSet<String>>,
+    tie_note_on: Option<PracticeTieNoteOnPolicy>,
+    endpoint: Option<PracticeHoldEndpointPolicy>,
 ) -> Result<PlaybackPlan, String> {
     let tempo = match grace {
         Some(GraceView::Standalone(schedule)) => PlaybackClock::Grace(schedule),
@@ -238,7 +247,9 @@ fn compile_with_technique(
     for (index, event) in score.events.iter().enumerate() {
         if event.attack_dynamics.is_some() {
             if continuity.targets.contains(&index) {
-                return Err(format!("note_dynamics.tie_continuation_unsupported: {} is not a new attack", event.id));
+                if tie_note_on.is_none() { return Err(format!("note_dynamics.tie_continuation_unsupported: {} is not a new attack", event.id)); }
+                let predecessor=continuity.ties.iter().find(|(_,target)|**target==index).map(|(source,_)|&score.events[*source]).ok_or("Missing verified sounding-tie predecessor")?;
+                warnings.add("practice.tie_continuation_note_on_inert","dynamics.note_attack",RealizationEffect::Policy,&Origin{object_id:event.id.0.clone(),source:event.origin.source},&format!("Authored NoteOn dynamics {} retained on verified sounding-tie continuation {}; predecessor {}. No new attack exists here: no velocity, gain, reattack, mute or persistent state change is applied.",event.attack_dynamics.as_ref().unwrap(),event.id,predecessor.id));
             }
             if event.grace.is_some() || grace_windows.contains_key(&event.id) || event.role == EventRole::Cue || !matches!(event.written_pitch, scorestream_codec::Pitch::Pitched { .. }) {
                 return Err(format!("note_dynamics.owner_unsupported: {} requires a qualified pitched measured attack",event.id));
@@ -286,6 +297,7 @@ fn compile_with_technique(
             );
         }
     }
+    let mut before_hold_tails = BTreeSet::new();
     let held_tails = if let Some(timing) = timing {
         let articulation_policy = match grace {
             Some(GraceView::Combined(qualified)) => qualified.articulations().map(|a| a.policy()),
@@ -296,7 +308,7 @@ fn compile_with_technique(
                 &Origin { object_id: "document".into(), source: doc.source },
                 "Explicit SimpleStaccatoAccentV1: half gate and +16 accent velocity policy, only away from selected holds and grace/principal windows; source notation retained.");
         }
-        fermata::validate_sound_policy(score, &continuity, timing, articulation_policy, &mut warnings)?
+        fermata::validate_sound_policy(score, &continuity, timing, articulation_policy, endpoint, &mut before_hold_tails, &mut warnings)?
     } else {
         BTreeSet::new()
     };
@@ -362,7 +374,7 @@ fn compile_with_technique(
         let tail = *chain.last().unwrap();
         let release = if let Some(window) = window {
             window.quarter_end.clone()
-        } else if held_tails.contains(&tail) {
+        } else if held_tails.contains(&tail) || before_hold_tails.contains(&tail) {
             score.events[tail].end()
         } else {
             continuity.release(&score.events[tail], tail)
@@ -370,7 +382,9 @@ fn compile_with_technique(
         let attack = window.map(|w| &w.quarter_start).unwrap_or(&event.start);
 
         let start = tempo.seconds(attack)?;
-        let end = tempo.seconds(&release)?;
+        let end_clock=PlaybackClock::BeforeRelease {base:&tempo,end:&release};
+        let release_clock=if before_hold_tails.contains(&tail) { &end_clock } else { &tempo };
+        let end = release_clock.seconds(&release)?;
         let duration = end - start;
         if duration < 0.000_001 {
             return Err("A note is shorter than the playback clock can represent".into());
@@ -384,9 +398,9 @@ fn compile_with_technique(
         .clamp(1., 127.) as u8;
         let segments: Vec<_> = chain.iter().map(|i| &score.events[*i]).collect();
         let mut envelope = if window.is_some() {
-            expression.envelope_from(&segments, attack, &release, velocity, &tempo)?
+            expression.envelope_from(&segments, attack, &release, velocity, release_clock)?
         } else {
-            expression.envelope(&segments, &release, velocity, &tempo)?
+            expression.envelope(&segments, &release, velocity, release_clock)?
         };
         if let Some((override_velocity, override_envelope)) = attack_dynamics::apply(event, &envelope, duration)? {
             if override_velocity == 0 {

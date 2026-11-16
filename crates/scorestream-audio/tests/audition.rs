@@ -216,6 +216,8 @@ fn practice_joint_clock_and_midi_receipt_are_explicit_without_default_bypass() {
     let (source, c) = practice_fixture();
     let q = Audition::compile_practice(
         &source,
+        scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
+        scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
         c,
         PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
         LocalMidiPolicy::InitialGmCc7CenteredV1,
@@ -249,6 +251,8 @@ fn source_matched_practice_midi_pizzicato_renders_with_mirrored_controllers() {
     let (source, c) = practice_fixture();
     let q = Audition::compile_practice(
         &source,
+        scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
+        scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
         c,
         PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
         LocalMidiPolicy::InitialGmCc7CenteredV1,

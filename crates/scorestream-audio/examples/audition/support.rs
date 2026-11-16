@@ -107,20 +107,24 @@ pub struct Audition {
 }
 impl Audition {
     pub fn compile(source: &str, config: Config) -> Result<Self> {
-        Self::compile_selected(source, config, None)
+        Self::compile_selected(source, config, None, None, None)
     }
     pub fn compile_practice(
         source: &str,
+        tie_note_on: PracticeTieNoteOnPolicy,
+        endpoint: PracticeHoldEndpointPolicy,
         config: Config,
         _practice: PracticeReviewPolicy,
         midi: scorestream_audio::midi_mixer::LocalMidiPolicy,
     ) -> Result<Self> {
-        Self::compile_selected(source, config, Some(midi))
+        Self::compile_selected(source, config, Some(midi), Some(tie_note_on), Some(endpoint))
     }
     fn compile_selected(
         source: &str,
         config: Config,
         practice: Option<scorestream_audio::midi_mixer::LocalMidiPolicy>,
+        tie_note_on: Option<PracticeTieNoteOnPolicy>,
+        endpoint: Option<PracticeHoldEndpointPolicy>,
     ) -> Result<Self> {
         if source_sha256(source) != config.source_sha256 {
             return Err("Source bytes differ from the policy receipt; rediscover and explicitly revise the configuration".into());
@@ -234,7 +238,7 @@ impl Audition {
                                     program_zero_based: r.route.program,
                                 })
                                 .collect::<Vec<_>>();
-                            Plan::Technique(plan_source_with_practice_joint_policies_and_pizzicato(source,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
+                            Plan::Technique(plan_source_with_practice_joint_policies_and_pizzicato(source,tie_note_on.ok_or("Practice requires explicit tied NoteOn policy")?,endpoint.ok_or("Practice requires explicit endpoint policy")?,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&selected,a,&grace,g,&hold,f,sample_policy)?)
                         } else {
                             Plan::Technique(plan_source_with_joint_policies_and_pizzicato(
                                 source,

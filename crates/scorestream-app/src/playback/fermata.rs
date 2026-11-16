@@ -116,6 +116,8 @@ pub(super) fn validate_sound_policy(
     continuity: &Continuity,
     timing: &TimingProjection,
     articulation_policy: Option<ExplicitArticulationPolicy>,
+    endpoint: Option<super::PracticeHoldEndpointPolicy>,
+    before_hold_tails: &mut BTreeSet<usize>,
     warnings: &mut Diagnostics,
 ) -> Result<BTreeSet<usize>, String> {
     let indices: BTreeMap<_, _> = score
@@ -232,6 +234,12 @@ pub(super) fn validate_sound_policy(
         let hi = timing.holds().partition_point(|h| h.boundary <= end);
         for (offset, roots) in roots_at_holds[lo..hi].iter().enumerate() {
             if !roots.contains(&root) {
+                let hold=&timing.holds()[lo+offset];
+                if endpoint.is_some() && end==hold.boundary {
+                    before_hold_tails.insert(tail);
+                    warnings.add("practice.unmarked_endpoint_before_hold","fermata.endpoint",RealizationEffect::Policy,&Origin {object_id:score.events[root].id.0.clone(),source:score.events[root].origin.source},&format!("Unmarked audible chain {} ends exactly at hold {} quarter {}; explicit rehearsal releases its terminal default gate at exact pre-hold seconds {} (after-hold seconds {}), with no extra sustain or reattack. Subsequent onsets retain after-hold time.",score.events[root].id,hold.id,hold.boundary,hold.seconds_start,hold.seconds_end));
+                    continue;
+                }
                 return Err(format!(
                     "fermata.unselected_overlap: Audible chain {} crosses or ends at hold {} without a selected anchor in that group",
                     score.events[root].id,

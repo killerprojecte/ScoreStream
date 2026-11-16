@@ -8,6 +8,7 @@ use scorestream_codec::{
 };
 
 pub(super) enum PlaybackClock<'a> {
+    BeforeRelease {base:&'a PlaybackClock<'a>,end:&'a Rational},
     Ordinary(TempoMap),
     Grace(&'a GraceSchedule),
     Explicit {
@@ -46,6 +47,17 @@ impl<'a> PlaybackClock<'a> {
     }
     pub fn seconds(&self, at: &Rational) -> Result<f64, String> {
         match self {
+            Self::BeforeRelease {base,end} => {
+                if at != *end { return base.seconds(at); }
+                match base {
+                    PlaybackClock::Explicit {timing,..} => {
+                        if at.is_negative() || at > timing.quarter_end() { return Err("fermata.clock_range: pre-hold release out of range".into()); }
+                        let s=timing.before(at).to_f64();
+                        if s.is_finite() && s>=0. {Ok(s)} else {Err("Unrepresentable pre-hold release".into())}
+                    },
+                    _=>Err("Pre-hold release requires explicit qualified hold clock".into())
+                }
+            },
             Self::Ordinary(tempo) => tempo.seconds(at),
             Self::Grace(schedule) => {
                 let seconds = schedule.seconds(at)?.to_f64();
@@ -72,6 +84,7 @@ impl<'a> PlaybackClock<'a> {
     }
     pub fn boundaries<'b>(&'b self, start: &Rational, end: &Rational) -> Vec<&'b Rational> {
         match self {
+            Self::BeforeRelease {base,..} => base.boundaries(start,end),
             Self::Ordinary(tempo) => tempo.boundaries(start, end).collect(),
             Self::Grace(schedule) => schedule.boundaries(start, end).collect(),
             Self::Explicit { boundaries, .. } => {
