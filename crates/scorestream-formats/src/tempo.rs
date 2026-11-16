@@ -94,6 +94,11 @@ pub(crate) fn validate(score: &ScoreDocument, report: &mut MappingReport) {
         })
         .collect();
     for m in &score.metronomes {
+        if let Some(p)=&m.presentation {
+            if !p.valid() || !score.parts.iter().find(|p|p.id==m.part).is_some_and(|part|part.measures.iter().any(|measure|measure.id==p.measure && m.at>=measure.start && m.at<&measure.start+&measure.length)) {
+                report.push(Format::ScoreModel,MappingEffect::Invalid,"metronome_display.fields",m.at.to_string(),"Presentation requires its exact owning measure and valid typed fields");
+            }
+        }
         let valid = parts.get(&m.part).is_some_and(|(staves, end)| {
             m.staff.is_none_or(|s| s > 0 && s <= *staves) && !m.at.is_negative() && m.at < *end
         });
@@ -107,9 +112,10 @@ pub(crate) fn read_mark(
     at: &Rational,
     score: &mut ScoreDocument,
     report: &mut MappingReport,
+    presentation:Option<scorestream_core::metronome_display::MetronomeDisplay>,
 ) {
     for key in mark.attributes.keys() {
-        if !["beat", "bpm"].contains(&key.as_str()) {
+        if !["beat", "bpm"].contains(&key.as_str()) && !(key=="id" && presentation.is_some()) {
             report.push(Format::Sfs, MappingEffect::Unsupported, format!("metronome.{key}"), &mark.target, "Metronome text and identity need a richer shared display model; they are not discarded");
         }
     }
@@ -134,6 +140,7 @@ pub(crate) fn read_mark(
     let beat = parse_beat(mark.attributes["beat"].as_str().unwrap()).unwrap();
     let bpm = mark.attributes["bpm"].as_str().unwrap().parse().unwrap();
     score.metronomes.push(ScoreMetronome {
+        presentation,
         at: at.clone(),
         part: PartId(part.into()),
         staff,
@@ -160,7 +167,10 @@ pub(crate) fn write_mark(
     m: &ScoreMetronome,
     part: &str,
     frames: &mut BTreeMap<Rational, Vec<Record>>,
+    id:Option<&str>,
 ) {
+    let mut attributes:BTreeMap<_,_>=[("beat".into(),Scalar::String(beat_text(m.value.beat))),("bpm".into(),Scalar::String(m.value.bpm.to_string()))].into();
+    if let Some(id)=id {attributes.insert("id".into(),Scalar::String(id.into()));}
     frames
         .entry(m.at.clone())
         .or_default()
@@ -170,11 +180,7 @@ pub(crate) fn write_mark(
                 .map(|s| format!("{part}.s{s}"))
                 .unwrap_or_else(|| part.into()),
             kind: "metronome".into(),
-            attributes: [
-                ("beat".into(), Scalar::String(beat_text(m.value.beat))),
-                ("bpm".into(), Scalar::String(m.value.bpm.to_string())),
-            ]
-            .into(),
+            attributes,
             source: SourceRange::default(),
         }));
 }

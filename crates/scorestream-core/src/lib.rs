@@ -45,3 +45,5 @@ pub mod dashes;
 pub mod tuplets;
 pub mod words;
 pub mod part_labels;
+pub mod metronome_display;
+pub mod part_groups;

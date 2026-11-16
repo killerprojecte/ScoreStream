@@ -2378,6 +2378,10 @@
                   },
                   "relative_y": {
                     "$ref": "#/$defs/Rational"
+                  },
+                  "row": {
+                    "type": "integer",
+                    "minimum": 1
                   }
                 },
                 "required": [
@@ -3388,6 +3392,258 @@
                 }
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.metronome_display"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "measure": {
+                    "type": "string"
+                  },
+                  "placement": {
+                    "enum": [
+                      "above",
+                      "below"
+                    ]
+                  },
+                  "system": {
+                    "enum": [
+                      "only-top",
+                      "also-top",
+                      "none"
+                    ]
+                  },
+                  "parentheses": {
+                    "type": "boolean"
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "leading_text": {
+                    "type": "string"
+                  },
+                  "leading_font_family": {
+                    "type": "string"
+                  },
+                  "leading_font_style": {
+                    "enum": [
+                      "normal",
+                      "italic"
+                    ]
+                  },
+                  "leading_font_weight": {
+                    "enum": [
+                      "normal",
+                      "bold"
+                    ]
+                  },
+                  "leading_font_size": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "leading_default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "leading_default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "leading_relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "leading_relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "trailing_text": {
+                    "type": "string"
+                  },
+                  "trailing_font_family": {
+                    "type": "string"
+                  },
+                  "trailing_font_style": {
+                    "enum": [
+                      "normal",
+                      "italic"
+                    ]
+                  },
+                  "trailing_font_weight": {
+                    "enum": [
+                      "normal",
+                      "bold"
+                    ]
+                  },
+                  "trailing_font_size": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "trailing_default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "trailing_default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "trailing_relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "trailing_relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "measure"
+                ],
+                "additionalProperties": false,
+                "dependentRequired": {
+                  "leading_font_family": [
+                    "leading_text"
+                  ],
+                  "leading_font_style": [
+                    "leading_text"
+                  ],
+                  "leading_font_weight": [
+                    "leading_text"
+                  ],
+                  "leading_font_size": [
+                    "leading_text"
+                  ],
+                  "leading_default_x": [
+                    "leading_text"
+                  ],
+                  "leading_default_y": [
+                    "leading_text"
+                  ],
+                  "leading_relative_x": [
+                    "leading_text"
+                  ],
+                  "leading_relative_y": [
+                    "leading_text"
+                  ],
+                  "trailing_font_family": [
+                    "trailing_text"
+                  ],
+                  "trailing_font_style": [
+                    "trailing_text"
+                  ],
+                  "trailing_font_weight": [
+                    "trailing_text"
+                  ],
+                  "trailing_font_size": [
+                    "trailing_text"
+                  ],
+                  "trailing_default_x": [
+                    "trailing_text"
+                  ],
+                  "trailing_default_y": [
+                    "trailing_text"
+                  ],
+                  "trailing_relative_x": [
+                    "trailing_text"
+                  ],
+                  "trailing_relative_y": [
+                    "trailing_text"
+                  ],
+                  "trailing_text": [
+                    "leading_text"
+                  ]
+                }
+              }
+            },
+            "description": "Requires scorestream.metronome_display@1. Exactly one metadata record attaches to a uniquely identified existing numeric metronome at the same onset and owning measure. Geometry/words are independent of sound tempo; runtime enforces ownership, word style validity and finite decimals."
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.part_group"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "score"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "phase": {
+                    "enum": [
+                      "start",
+                      "stop"
+                    ]
+                  },
+                  "before_part": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "number": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "const": "bracket"
+                  },
+                  "barline": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "index",
+                  "phase"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "phase": {
+                          "const": "stop"
+                        }
+                      }
+                    },
+                    "then": {
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "symbol"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "barline"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "description": "Requires scorestream.part_groups@1. Runtime validates declared-part ordering, exact canonical XML token and score/time0 ownership; boundaries are retained without guessed pairing."
           }
         }
       ]

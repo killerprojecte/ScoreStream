@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Validation for public typed input, including callers constructing it without a parser.
 pub fn validate_score(score: &ScoreDocument) -> MappingReport {
     let mut report = MappingReport::default();
+    if !scorestream_core::part_groups::valid(&score.part_groups,&score.parts.iter().map(|p|p.id.0.as_str()).collect::<Vec<_>>()){report.push(Format::ScoreModel,MappingEffect::Invalid,"part_groups.fields","/part-list","Invalid ordered part-group boundary/presentation fields");}
     if score.defaults.as_ref().is_some_and(|d|!d.valid()){report.push(Format::ScoreModel,MappingEffect::Invalid,"defaults.fields","/defaults","Invalid typed engraving defaults");}
     if score.provenance.as_ref().is_some_and(|p| !p.valid()) {
         report.push(Format::ScoreModel, MappingEffect::Invalid, "provenance.value", "/provenance", "Invalid typed encoding provenance");

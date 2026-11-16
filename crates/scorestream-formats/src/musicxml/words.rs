@@ -30,7 +30,12 @@ pub(super) fn read_text(w: &Node) -> Result<WordsText, MappingReport> {
     })
 }
 pub(super) fn write_text(w: &WordsText, out: &mut String) {
-    out.push_str("<direction-type><words");
+    out.push_str("<direction-type>");
+    write_row(w, out);
+    out.push_str("</direction-type>");
+}
+fn write_row(w: &WordsText, out: &mut String) {
+    out.push_str("<words");
     for (key, value) in [
         ("font-family", w.font_family.as_deref()),
         ("font-style", w.font_style.as_deref()),
@@ -56,7 +61,7 @@ pub(super) fn write_text(w: &WordsText, out: &mut String) {
             .unwrap();
         }
     }
-    write!(out, ">{}</words></direction-type>", escape(&w.text)).unwrap();
+    write!(out, ">{}</words>", escape(&w.text)).unwrap();
 }
 pub(super) fn read(
     n: &Node,
@@ -76,6 +81,14 @@ pub(super) fn read(
     let Some(w) = n.child("direction-type").and_then(|d| d.child("words")) else {
         return Ok(None);
     };
+    if n.child("direction-type")
+        .unwrap()
+        .children
+        .iter()
+        .any(|row| row.name != "words")
+    {
+        return Ok(None);
+    }
     let staff = n
         .child("staff")
         .map(|s| {
@@ -94,7 +107,33 @@ pub(super) fn read(
         _ => return Err(error(n, "words.placement", "Expected above or below")),
     };
     let (offset, _) = super::tempo::locations(n, &Rational::zero(), cursor, divisions)?;
+    let pizzicato = if let Some(sound) = n.child("sound").filter(|s| s.attr("pizzicato").is_some())
+    {
+        if sound.attrs.len() != 1 {
+            return Err(error(
+                sound,
+                "pizzicato.sound_attributes",
+                "This sound owner profile contains only explicit pizzicato; tempo/dynamics are not merged or discarded",
+            ));
+        }
+        Some(scorestream_core::words::PizzicatoSound {
+            mode: scorestream_core::words::PizzicatoMode::parse(sound.attr("pizzicato").unwrap())
+                .ok_or_else(|| error(sound, "pizzicato.value", "Expected exact yes or no"))?,
+            at: super::tempo::locations(n, &Rational::zero(), cursor, divisions)?.1,
+        })
+    } else {
+        None
+    };
     Ok(Some(WordsDirection {
+        pizzicato,
+        continuations: n
+            .child("direction-type")
+            .unwrap()
+            .children
+            .iter()
+            .skip(1)
+            .map(read_text)
+            .collect::<Result<_, _>>()?,
         part: part.into(),
         measure: measure.into(),
         offset,
@@ -123,7 +162,9 @@ impl<'a> Export<'a> {
             .get(&(part, measure))
             .into_iter()
             .flatten()
-            .map(|e| e.offset.clone())
+            .flat_map(|e| {
+                std::iter::once(e.offset.clone()).chain(e.pizzicato.iter().map(|p| p.at.clone()))
+            })
             .collect()
     }
     pub fn write(&self, part: &str, measure: &str, div: u64, out: &mut String) {
@@ -144,7 +185,12 @@ impl<'a> Export<'a> {
                 write!(out, " system=\"{}\"", escape(s)).unwrap();
             }
             out.push('>');
-            write_text(&e.words, out);
+            out.push_str("<direction-type>");
+            write_row(&e.words, out);
+            for row in &e.continuations {
+                write_row(row, out);
+            }
+            out.push_str("</direction-type>");
             write!(
                 out,
                 "<offset sound=\"no\">{}</offset>",
@@ -153,6 +199,15 @@ impl<'a> Export<'a> {
             .unwrap();
             if let Some(s) = e.staff {
                 write!(out, "<staff>{s}</staff>").unwrap();
+            }
+            if let Some(p) = &e.pizzicato {
+                write!(
+                    out,
+                    "<sound pizzicato=\"{}\"><offset>{}</offset></sound>",
+                    p.mode.name(),
+                    super::write::units(&p.at, div)
+                )
+                .unwrap();
             }
             out.push_str("</direction>\n");
         }
@@ -185,7 +240,7 @@ mod corpus {
             let mut parts = BTreeMap::<String, ScorePart>::new();
             let mut divisions = BTreeMap::<String, Rational>::new();
             let mut endpoints = vec![];
-            let mut unsupported_sound = 0;
+            let mut pizzicato_sound = 0;
             let mut mixed_words = 0;
             let scan = xml::walk(
                 BufReader::new(
@@ -232,7 +287,19 @@ mod corpus {
                             mixed_words += 1;
                             let mut report = MappingReport::default();
                             xml::schema(n, &mut report);
-                            assert!(report.has_errors());
+                            let supported_group = n.children.iter().any(|d| d.child("metronome").is_some()) || n
+                                .children
+                                .iter()
+                                .filter(|d| d.name == "direction-type")
+                                .count()
+                                == 1
+                                && n.child("direction-type")
+                                    .unwrap()
+                                    .children
+                                    .iter()
+                                    .all(|w| w.name == "words")
+                                && n.child("sound").is_none();
+                            assert_eq!(report.has_errors(), !supported_group);
                         }
 
                         match n.name.as_str() {
@@ -280,17 +347,9 @@ mod corpus {
                                     .child("sound")
                                     .is_some_and(|s| s.attr("pizzicato").is_some());
                                 if pizz {
-                                    unsupported_sound += 1;
-                                    assert!(
-                                        report
-                                            .diagnostics
-                                            .iter()
-                                            .any(|d| d.feature == "attribute.pizzicato")
-                                    );
-                                } else {
-                                    assert!(!report.has_errors(), "{report:?}");
+                                    pizzicato_sound += 1;
                                 }
-                                // This family projection intentionally excludes sound; whole-source unsupported sound still rejects.
+                                assert!(!report.has_errors(), "{report:?}");
                                 endpoints.push(
                                     read(n, &pid, &mid, &cursor, divisions.get(&pid))?.unwrap(),
                                 );
@@ -358,7 +417,11 @@ mod corpus {
                 )
             });
             model.words = endpoints;
-            assert_eq!(unsupported_sound, [8, 0, 6, 10][i]);
+            assert_eq!(pizzicato_sound, [8, 0, 6, 10][i]);
+            assert_eq!(
+                model.words.iter().filter(|w| w.pizzicato.is_some()).count(),
+                pizzicato_sound
+            );
             assert_eq!(mixed_words, [1, 2, 1, 4][i]);
             // Named family projection retains real measure extents/endpoint offsets, not original notes or import claims.
             let sfs = SfsAdapter.write(&model).unwrap().value;
@@ -373,12 +436,77 @@ mod corpus {
                     .any(|d| d.code == "words.authored_only")
             );
             println!(
-                "movement {}: {} exact standalone words; {} unsupported sound pizzicato siblings left outside this family projection; original hash {}",
+                "movement {}: {} exact standalone words; {} explicit pizzicato sound states retained; original hash {}",
                 i + 1,
                 model.words.len(),
-                unsupported_sound,
+                pizzicato_sound,
                 hash
             );
         }
+    }
+    #[test]
+    #[ignore = "set SCORESTREAM_MXL_FIXTURES to pinned originals"]
+    fn original_movement_two_p14_ordered_words_group() {
+        let root = PathBuf::from(std::env::var("SCORESTREAM_MXL_FIXTURES").unwrap());
+        let mut found = None;
+        let mut ordinal = 0;
+        let scan = xml::walk(
+            BufReader::new(File::open(root.join("Beethoven_Op.67_2.musicxml")).unwrap()),
+            |m, parent, phase| {
+                if phase != xml::Phase::Complete
+                    || m.name != "measure"
+                    || parent.and_then(|p| p.attr("id")) != Some("P14")
+                {
+                    return Ok(());
+                }
+                ordinal += 1;
+                if m.attr("number") == Some("32") {
+                    assert_eq!(ordinal, 33);
+                    let n = m.child("direction").unwrap();
+                    assert!(n.child("sound").is_none());
+                    let mut report = MappingReport::default();
+                    xml::schema(n, &mut report);
+                    assert!(!report.has_errors(), "{report:?}");
+                    found = read(n, "p", "m", &Rational::zero(), None)?;
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            scan.fingerprint
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>(),
+            "c962fecc2e85c070633ad1990b7046c2c23ed5673ad95f4d02eeeac94528f09a"
+        );
+        let w = found.unwrap();
+        assert_eq!(w.words.text, "sempre ");
+        assert_eq!(w.words.default_y.as_ref().unwrap().to_string(), "-40");
+        assert_eq!(w.words.relative_x.as_ref().unwrap().to_string(), "-98/25");
+        assert_eq!(w.words.relative_y.as_ref().unwrap().to_string(), "-854/25");
+        assert_eq!(w.continuations.len(), 1);
+        assert_eq!(
+            w.continuations[0]
+                .text
+                .chars()
+                .map(u32::from)
+                .collect::<Vec<_>>(),
+            vec![0xe522, 0xe522]
+        );
+        assert_eq!(
+            w.continuations[0].font_family.as_deref(),
+            Some("Leland Text")
+        );
+        assert_eq!(w.placement, Some(Placement::Below));
+        let source = r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list><part id="p"><measure id="m" number="1"><attributes><divisions>1</divisions></attributes><note id="e"><rest/><duration>4</duration><voice>1</voice></note></measure></part></score-partwise>"#;
+        let mut model = MusicXml.read(source).unwrap().value;
+        model.words.push(w);
+        let sfs = SfsAdapter.write(&model).unwrap().value;
+        assert_eq!(SfsAdapter.read(&sfs).unwrap().value, model);
+        let out = MusicXml.write(&model).unwrap().value;
+        assert_eq!(MusicXml.read(&out).unwrap().value, model);
+        assert_eq!(out.matches("<direction-type>").count(), 1);
+        assert_eq!(out.matches("<words").count(), 2);
     }
 }

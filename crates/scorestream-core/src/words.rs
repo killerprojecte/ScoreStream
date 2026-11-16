@@ -3,6 +3,7 @@ use crate::{Diagnostic, Document, DocumentKind, Mark, Rational, Record, Scalar, 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 pub const EXTENSION: &str = "scorestream.words@1";
+pub const PIZZICATO_EXTENSION: &str = "scorestream.pizzicato@1";
 pub const KIND: &str = "scorestream.words";
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -39,9 +40,42 @@ impl WordsText {
             .all(crate::geometry::decimal)
     }
 }
+/// Authored sound state, separate from the words text and its visual position.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PizzicatoMode {
+    #[serde(rename = "yes")]
+    Pizzicato,
+    #[serde(rename = "no")]
+    Arco,
+}
+impl PizzicatoMode {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Pizzicato => "yes",
+            Self::Arco => "no",
+        }
+    }
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "yes" => Some(Self::Pizzicato),
+            "no" => Some(Self::Arco),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PizzicatoSound {
+    pub mode: PizzicatoMode,
+    /// Exact sounding offset from the owning measure start, not the words position.
+    pub at: Rational,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WordsDirection {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pizzicato: Option<PizzicatoSound>,
     pub part: String,
     pub measure: String,
     pub offset: Rational,
@@ -49,9 +83,26 @@ pub struct WordsDirection {
     pub placement: Option<crate::notation::Placement>,
     pub system: Option<String>,
     pub words: WordsText,
+    /// Additional ordered words siblings in the same direction-type.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub continuations: Vec<WordsText>,
 }
 pub type Hosts = crate::wedges::Hosts;
 pub fn valid(values: &[WordsDirection], hosts: &Hosts) -> bool {
+    let mut states = BTreeMap::new();
+    for e in values {
+        if let Some(p) = &e.pizzicato {
+            let Some((start, _, _)) = hosts.get(&(e.part.clone(), e.measure.clone())) else {
+                return false;
+            };
+            if states
+                .insert((e.part.clone(), start + &p.at), p.mode)
+                .is_some_and(|prior| prior != p.mode)
+            {
+                return false;
+            }
+        }
+    }
     values.windows(2).all(|p| {
         p[0].part < p[1].part
             || p[0].part == p[1].part
@@ -66,11 +117,16 @@ pub fn valid(values: &[WordsDirection], hosts: &Hosts) -> bool {
                 !e.offset.is_negative()
                     && &e.offset <= len
                     && e.staff.is_none_or(|s| s > 0 && s <= *staves)
+                    && e.pizzicato
+                        .as_ref()
+                        .is_none_or(|p| !p.at.is_negative() && &p.at <= len)
             })
             && e.system
                 .as_deref()
                 .is_none_or(|s| matches!(s, "only-top" | "also-top" | "none"))
             && e.words.valid()
+            && (e.pizzicato.is_none() || e.continuations.is_empty())
+            && e.continuations.iter().all(WordsText::valid)
     })
 }
 pub fn is_kind(s: &str) -> bool {
@@ -83,6 +139,10 @@ pub fn encode(e: &WordsDirection, part: String, measure: String, index: usize) -
         ("index".into(), Scalar::Integer(index as i64)),
         ("text".into(), Scalar::String(w.text.clone())),
     ]);
+    if let Some(p) = &e.pizzicato {
+        attributes.insert("pizzicato".into(), Scalar::String(p.mode.name().into()));
+        attributes.insert("pizzicato_at".into(), Scalar::String(p.at.to_string()));
+    }
     for (key, v) in [
         ("system", e.system.as_deref()),
         ("font_family", w.font_family.as_deref()),
@@ -121,9 +181,27 @@ pub fn encode(e: &WordsDirection, part: String, measure: String, index: usize) -
         source: SourceRange::default(),
     }
 }
+/// Each row retains its own typed text/style; row zero is the existing header.
+pub fn encode_group(e: &WordsDirection, part: String, measure: String, index: usize) -> Vec<Mark> {
+    let mut marks = vec![encode(e, part.clone(), measure.clone(), index)];
+    let mut child = e.clone();
+    child.continuations.clear();
+    for (row, words) in e.continuations.iter().enumerate() {
+        child.words = words.clone();
+        let mut mark = encode(&child, part.clone(), measure.clone(), index);
+        mark.attributes
+            .insert("row".into(), Scalar::Integer((row + 1) as i64));
+        marks.push(mark);
+    }
+    marks
+}
 pub fn decode(doc: &Document) -> Result<Vec<WordsDirection>, Vec<Diagnostic>> {
     let fail = || {
-        vec![Diagnostic::error("words.wire","Authored words require declared capability, complete score, exact measure ownership/onset, contiguous indices and closed valid typed fields",doc.source)]
+        vec![Diagnostic::error(
+            "words.wire",
+            "Authored words require declared capability, complete score, exact measure ownership/onset, contiguous indices and closed valid typed fields",
+            doc.source,
+        )]
     };
     let enabled = doc.required_extensions.iter().any(|e| e == EXTENSION);
     let mut hosts = Hosts::new();
@@ -156,8 +234,11 @@ pub fn decode(doc: &Document) -> Result<Vec<WordsDirection>, Vec<Diagnostic>> {
                 || m.kind != KIND
                 || m.attributes.keys().any(|k| {
                     ![
+                        "pizzicato",
+                        "pizzicato_at",
                         "part",
                         "index",
+                        "row",
                         "text",
                         "staff",
                         "placement",
@@ -206,7 +287,34 @@ pub fn decode(doc: &Document) -> Result<Vec<WordsDirection>, Vec<Diagnostic>> {
                 .get(&(part.clone(), measure.clone()))
                 .ok_or_else(fail)?;
             let index = integer("index")?.filter(|i| *i >= 0).ok_or_else(fail)?;
+            let pizzicato = match opt_text("pizzicato")? {
+                Some(mode) => {
+                    if !doc
+                        .required_extensions
+                        .iter()
+                        .any(|e| e == PIZZICATO_EXTENSION)
+                    {
+                        return Err(fail());
+                    }
+                    Some(PizzicatoSound {
+                        mode: PizzicatoMode::parse(&mode).ok_or_else(fail)?,
+                        at: number("pizzicato_at")?.ok_or_else(fail)?,
+                    })
+                }
+                None => {
+                    if m.attributes.contains_key("pizzicato_at") {
+                        return Err(fail());
+                    }
+                    None
+                }
+            };
+            let row = integer("row")?.unwrap_or(0);
+            if row < 0 || m.attributes.contains_key("row") && row == 0 {
+                return Err(fail());
+            }
             let e = WordsDirection {
+                pizzicato,
+                continuations: Vec::new(),
                 part,
                 measure,
                 offset: &f.time - &host.0,
@@ -232,17 +340,52 @@ pub fn decode(doc: &Document) -> Result<Vec<WordsDirection>, Vec<Diagnostic>> {
                     relative_y: number("relative_y")?,
                 },
             };
-            if entries.insert(index, e).is_some() {
+            if entries.insert((index, row), e).is_some() {
                 return Err(fail());
             }
         }
     }
-    if enabled && (entries.is_empty() || doc.document_kind != DocumentKind::Score)
-        || entries.keys().enumerate().any(|(i, k)| i as i64 != *k)
+    if enabled && (entries.is_empty() || doc.document_kind != DocumentKind::Score) {
+        return Err(fail());
+    }
+    let mut result: Vec<WordsDirection> = Vec::new();
+    for ((index, row), e) in entries {
+        if row == 0 {
+            if index != result.len() as i64 {
+                return Err(fail());
+            }
+            result.push(e);
+        } else {
+            if index != (result.len() as i64 - 1) {
+                return Err(fail());
+            }
+            let Some(parent) = result.last_mut() else {
+                return Err(fail());
+            };
+            if row != parent.continuations.len() as i64 + 1 {
+                return Err(fail());
+            }
+            if parent.part != e.part
+                || parent.measure != e.measure
+                || parent.offset != e.offset
+                || parent.staff != e.staff
+                || parent.placement != e.placement
+                || parent.system != e.system
+                || e.pizzicato.is_some() || parent.pizzicato.is_some()
+            {
+                return Err(fail());
+            }
+            parent.continuations.push(e.words);
+        }
+    }
+    if doc
+        .required_extensions
+        .iter()
+        .any(|e| e == PIZZICATO_EXTENSION)
+        != result.iter().any(|e| e.pizzicato.is_some())
     {
         return Err(fail());
     }
-    let result: Vec<_> = entries.into_values().collect();
     if !valid(&result, &hosts) {
         return Err(fail());
     }

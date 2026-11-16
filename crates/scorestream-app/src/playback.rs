@@ -12,6 +12,7 @@ mod expression;
 mod fermata;
 mod grace;
 mod numeric;
+mod pizzicato;
 mod plan;
 mod tempo;
 use clock::PlaybackClock;
@@ -191,6 +192,8 @@ fn compile_with_graces(
         }
     }
     let mut warnings = Diagnostics::default();
+    for d in doc.diagnostics.iter().filter(|d|d.code.starts_with("metronome_display.")) {warnings.add(&d.code,"engraving.metronome_display",RealizationEffect::NotationOnly,&Origin{object_id:"document".into(),source:d.source},&d.message);}
+
     for d in doc.diagnostics.iter().filter(|d|d.code.starts_with("part_labels.")) {warnings.add(&d.code,"engraving.part_labels",RealizationEffect::NotationOnly,&Origin {object_id:"document".into(),source:d.source},&d.message);}
 
     for d in doc.diagnostics.iter().filter(|d| d.code.starts_with("wedge.")) {
@@ -295,6 +298,7 @@ fn compile_with_graces(
             _ => (),
         }
     }
+    let pizzicato = pizzicato::State::new(score)?;
     let mut notes = Vec::new();
     let mut routes = BTreeSet::new();
     for (index, event) in score.events.iter().enumerate() {
@@ -355,6 +359,7 @@ fn compile_with_graces(
             continuity.release(&score.events[tail], tail)
         };
         let attack = window.map(|w| &w.quarter_start).unwrap_or(&event.start);
+        pizzicato.check(event, attack)?;
         let start = tempo.seconds(attack)?;
         let end = tempo.seconds(&release)?;
         let duration = end - start;

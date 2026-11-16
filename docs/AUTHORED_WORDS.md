@@ -32,10 +32,11 @@ Explicit supported adjacent sound tempo/dynamics remain separate and retain
 their independent sounding positions, including offset sound=yes/no. Existing
 staff-scoped numeric export restrictions remain unchanged; no invisible or fake
 dynamic direction is invented to bypass them.
-Explicit sound pizzicato is still unsupported and fails whole-source import;
-preserving a nearby text label must not silently discard that sound command.
-Mixed metronome/words, multiple words elements, rich markup and unrepresented
-styles remain unsupported. Default-x is drawing geometry, not onset time.
+Explicit yes/no sound pizzicato on this owner is separately typed and authorized
+by `scorestream.pizzicato@1`; see [sound state](PIZZICATO_SOUND.md). It is not
+inferred from text and no pizzicato timbre rendition is claimed.
+Ordered words/metronome/optional-words now use the separate metronome presentation
+profile. Multiple plain words in one wrapper use the [ordered group profile](WORDS_GROUP_IMPORT.md). Rich markup, unrepresented styles, and group-level sound on a multiple-words direction remain unsupported. Default-x is drawing geometry, not onset time.
 
 ## Untouched source gate
 
@@ -45,12 +46,11 @@ cursors and extents and round-trips an explicitly named words-family projection
 through typed model, canonical SFS and XML, with rests replacing original notes.
 
 The source additionally has seven mixed words/metronome directions (one contains
-two words nodes), plus one direction-type with two words children, left outside
-this profile. Among the 286 standalone directions,
-24 contain unsupported explicit sound pizzicato siblings (8/0/6/10). The audit
-checks those still report unsupported sound, then projects only their words.
-It does not claim those complete source directions or full original scores import
-or perform. The other 262 standalone directions fit this words profile with
+two words nodes), handled by the separate metronome presentation profile, plus
+one direction-type with two words children handled by the ordered group profile. These are audited separately from the standalone words. Among the 286 standalone directions, 24 contain explicit sound
+pizzicato siblings (8/0/6/10). The audit retains these sound states and exact
+sounding positions along with the words. It does not claim full original
+scores import or perform. The other 262 standalone directions fit this profile with
 currently supported adjacent sound where present.
 
 Run:

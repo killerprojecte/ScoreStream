@@ -317,6 +317,7 @@ fn read_with_audit<R: BufRead + Seek>(
         }
     }
     let declarations = child(&root, "part-list")?;
+    score.part_groups=super::part_groups::read(declarations)?;
     let mut indices = BTreeMap::new();
     let mut starts = Vec::new();
     let mut note_count = 0usize;
@@ -526,6 +527,9 @@ fn read_with_audit<R: BufRead + Seek>(
         if unresolved>0 {report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"dashes.pairing_unresolved","/dashes",format!("{unresolved} unmatched or ambiguous endpoints retained without pairing repair"));}
     }
     if score.parts.iter().any(|p|p.labels.is_some()) {report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"part_labels.authored_only","/parts","Authored abbreviations and name-display details retained; current preview omits these extra labels and routing/playback are unchanged");}
+    if score.words.iter().any(|w| w.pizzicato.is_some()) {
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"pizzicato.not_realized","/words/sound","Exact authored yes/no state retained independently of text; active pizzicato requires a supported sound route before playback");
+    }
     if !score.words.is_empty() {
         let words_positions: std::collections::BTreeMap<_,_> = score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.as_str(),m.id.as_str()),&m.start))).collect();
         score.words.sort_by(|a,b|a.part.cmp(&b.part).then(words_positions[&(a.part.as_str(),a.measure.as_str())].cmp(words_positions[&(b.part.as_str(),b.measure.as_str())])));
@@ -538,6 +542,7 @@ fn read_with_audit<R: BufRead + Seek>(
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"ornaments.authored","/ornaments","Authored ornament groups and notation order are retained. Ornament attacks and wavy-line spans are not inferred; playback uses the unornamented note durations and preview omits ornaments");
     }
     if score.parts.iter().flat_map(|p|&p.measures).flat_map(|m|&m.states).any(|s|s.meter.as_ref().is_some_and(|m|m.symbol.is_some())) { report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"time.authored_symbol","/time","Authored common/cut display symbols are retained separately from numeric meter. Preview uses numeric display; playback timing is unchanged"); }
+    if !score.part_groups.is_empty(){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"part_groups.authored","/part-list","Authored part-group boundaries, bracket and common-barline choices are retained without inferred grouping. Preview does not realize them; playback is unchanged");}
     if score.defaults.is_some(){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"defaults.authored","/defaults","Authored scaling, page layout, appearance and font defaults are retained. Preview chooses its own engraving and does not apply these defaults; playback is unchanged");}
     if !score.lyrics.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
@@ -889,7 +894,12 @@ impl PartReader {
                     previous = None;
                     if let Some(endpoint)=super::wedges::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {wedges.push(endpoint);}
                     if let Some(endpoint)=super::dashes::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {dashes.push(endpoint);}
-                    if let Some(endpoint)=super::words::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())? {words.push(endpoint);}
+                    let word_endpoint = super::words::read(n,&part.id.0,&m.id,&cursor,divisions.as_ref())?;
+                    let sound_node = if n.name == "sound" { Some(n) } else { n.child("sound") };
+                    if sound_node.is_some_and(|s|s.attr("pizzicato").is_some()) && word_endpoint.is_none() {
+                        return Err(unsupported(n,"pizzicato.owner","Pizzicato is mapped only as explicit sound on a standalone words direction; other owners are not guessed"));
+                    }
+                    if let Some(endpoint) = word_endpoint { words.push(endpoint); }
                     super::dynamics::read(
                         n,
                         part,
@@ -902,6 +912,7 @@ impl PartReader {
                     super::tempo::read(
                         n,
                         part,
+                        &m.id,
                         start,
                         &cursor,
                         divisions.as_ref(),

@@ -94,3 +94,5 @@ mod wedges;
 mod dashes;
 mod words;
 mod part_labels;
+mod metronome_display;
+mod part_groups;

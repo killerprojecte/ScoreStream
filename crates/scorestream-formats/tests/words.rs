@@ -120,8 +120,8 @@ fn dashes_groups_remain_distinct_and_shared_text_does_not_broaden_old_wire() {
 fn complex_words_and_explicit_unsupported_sound_fail_instead_of_disappearing() {
     for bad in [
  words("x"," color=\"#FF0000\"","0"),words("x"," font-weight=\"heavy\"","0"),words("x"," font-size=\"0\"","0"),words("<b>cresc.</b>","","0"),
- words("x","","9"),words("pizz.","","0").replace("</direction>","<sound pizzicato=\"yes\"/></direction>"),
- words("tempo","","0").replace("</direction-type>","</direction-type><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>60</per-minute></metronome></direction-type>"),
+ words("x","","9"),words("pizz.","","0").replace("</direction>","<sound pizzicato=\"unknown\"/></direction>"),
+ words("tempo","","0").replace("</direction-type>","</direction-type><direction-type><dynamics><p/></dynamics></direction-type>"),
  words("a","","0").replace("</direction-type>","</direction-type><direction-type><words>b</words></direction-type>")
  ] {assert!(MusicXml.read(&score(&bad)).is_err(),"{bad}");}
 }
@@ -170,4 +170,90 @@ fn native_words_require_closed_typed_fields_and_safe_xml_text() {
     let mut bad = m;
     bad.words[0].words.text = "".into();
     assert!(MusicXml.write(&bad).is_err());
+}
+
+#[test]
+fn ordered_same_type_words_are_not_flattened_or_interpreted() {
+    let group = r#"<direction placement="below"><direction-type><words default-y="-40" relative-x="-3.92" relative-y="-34.16">sempre </words><words font-family="Leland Text"></words></direction-type></direction>"#;
+    let (m, s) = roundtrip(&score(group));
+    assert_eq!(m.words.len(), 1);
+    assert_eq!(m.words[0].words.text, "sempre ");
+    assert_eq!(
+        m.words[0].words.relative_x.as_ref().unwrap().to_string(),
+        "-98/25"
+    );
+    let rows = &m.words[0].continuations;
+    assert_eq!(rows.len(), 1);
+    assert_eq!(
+        rows[0].text.chars().map(u32::from).collect::<Vec<_>>(),
+        vec![0xe522, 0xe522]
+    );
+    assert_eq!(rows[0].font_family.as_deref(), Some("Leland Text"));
+    assert_eq!(rows[0].default_y, None);
+    let xml = MusicXml.write(&m).unwrap().value;
+    assert_eq!(xml.matches("<direction-type>").count(), 1);
+    assert_eq!(xml.matches("<words").count(), 2);
+    unchanged(&m, &s);
+    for bad in [
+        group.replace("</direction>", "<sound dynamics=\"50\"/></direction>"),
+        group.replace(
+            "</direction-type>",
+            "<dynamics><f/></dynamics></direction-type>",
+        ),
+        group.replace(
+            "</direction-type>",
+            "<symbol>dynamicForte</symbol></direction-type>",
+        ),
+        group.replace("font-family=\"Leland Text\"", "color=\"#ff0000\""),
+    ] {
+        assert!(MusicXml.read(&score(&bad)).is_err());
+    }
+}
+
+#[test]
+fn continuation_wire_requires_one_contiguous_group_with_matching_owner_and_onset() {
+    let group = "<direction><direction-type><words>a</words><words>b</words><words>c</words></direction-type></direction>";
+    let (m, _) = roundtrip(&score(group));
+    let mut reordered = scorestream_formats::sfs::to_document(&m).unwrap().value;
+    for frame in &mut reordered.frames {
+        frame.records.reverse();
+    }
+    assert_eq!(
+        scorestream_core::words::decode(&reordered).unwrap(),
+        m.words
+    );
+    for mode in 0..6 {
+        let mut doc = scorestream_formats::sfs::to_document(&m).unwrap().value;
+        let records = &mut doc.frames[0].records;
+        let pos=records.iter().position(|r|matches!(r,scorestream_core::Record::Mark(m) if m.attributes.contains_key("row"))).unwrap();
+        if mode == 0 {
+            records.remove(pos);
+        } else if mode == 1 {
+            records.push(records[pos].clone());
+        } else {
+            let scorestream_core::Record::Mark(mark) = &mut records[pos] else {
+                unreachable!()
+            };
+            match mode {
+                2 => {
+                    mark.attributes
+                        .insert("row".into(), scorestream_core::Scalar::Integer(0));
+                }
+                3 => {
+                    mark.attributes
+                        .insert("index".into(), scorestream_core::Scalar::Integer(1));
+                }
+                4 => {
+                    mark.attributes.insert(
+                        "placement".into(),
+                        scorestream_core::Scalar::String("above".into()),
+                    );
+                }
+                _ => {
+                    mark.target = "#missing".into();
+                }
+            }
+        }
+        assert!(scorestream_core::words::decode(&doc).is_err(), "{mode}");
+    }
 }

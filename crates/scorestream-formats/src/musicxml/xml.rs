@@ -703,11 +703,13 @@ pub(super) fn schema_with_profile(
             "creator" => (&["type"], &[], &[], &[], true),
             "part-list" => (
                 &[],
-                &["score-part"],
-                &["score-part"],
+                &["score-part", "part-group"],
+                &["score-part", "part-group"],
                 &["score-part"],
                 false,
             ),
+            "part-group" => (&["type","number"], &["group-symbol","group-barline"], &[], &[], false),
+            "group-symbol" | "group-barline" => (&[], &[], &[], &[], true),
             "score-part" => (
                 &["id"],
                 &[
@@ -806,7 +808,7 @@ pub(super) fn schema_with_profile(
                 &["direction-type"],
                 false,
             ),
-            "direction-type" => (&[], &["metronome", "dynamics", "wedge", "dashes", "words"], &[], &[], false),
+            "direction-type" => (&[], &["metronome", "dynamics", "wedge", "dashes", "words"], &["words"], &[], false),
             "dashes" => (&["type","number","default-y","relative-x"],&[],&[],&[],false),
             "words" => (&["font-family","font-size","font-style","font-weight","default-x","default-y","relative-x","relative-y"],&[],&[],&[],true),
             "wedge" => (&["type", "number", "default-y", "spread"], &[], &[], &[], false),
@@ -824,13 +826,13 @@ pub(super) fn schema_with_profile(
             | "sfz" | "fp" => (&[], &[], &[], &[], false),
             "other-dynamics" => (&[], &[], &[], &[], true),
             "metronome" => (
-                &[],
+                &["parentheses","default-x","default-y","relative-x","relative-y"],
                 &["beat-unit", "beat-unit-dot", "per-minute"],
                 &["beat-unit-dot"],
                 &["beat-unit", "per-minute"],
                 false,
             ),
-            "sound" => (&["tempo", "dynamics"], &["offset"], &[], &[], false),
+            "sound" => (&["tempo", "dynamics", "pizzicato"], &["offset"], &[], &[], false),
             "offset" => (&["sound"], &[], &[], &[], true),
             "barline" => (
                 &["id", "location"],
@@ -1071,17 +1073,17 @@ pub(super) fn schema_with_profile(
     if n.name=="direction" {
         let types:Vec<_>=n.children.iter().filter(|c|c.name=="direction-type").collect();
         let dash=types.iter().find_map(|d|d.child("dashes"));
-        let valid=match dash.and_then(|d|d.attr("type")) {
+        let valid=super::metronome_display::shape(n) || match dash.and_then(|d|d.attr("type")) {
             Some("start")=>types.len()==2 && types[0].children.len()==1 && types[0].child("words").is_some() && types[1].children.len()==1 && types[1].child("dashes").is_some(),
             Some("stop")=>types.len()==1 && types[0].children.len()==1,
             Some(_)=>false,
-            None=>types.len()==1 && types[0].children.len()==1 && (types[0].child("words").is_some() || n.attr("system").is_none()),
+            None=>types.len()==1 && ((types[0].children.len()==1 && (types[0].child("words").is_some() || n.attr("system").is_none())) || (!types[0].children.is_empty() && types[0].children.iter().all(|c|c.name=="words") && n.child("sound").is_none())),
         };
         if !valid {
             if dash.is_some() {n.error(report,MappingEffect::Unsupported,"dashes.group","Only ordered words then start dashes, or stop dashes alone are supported");}
             else {
                 for words in types.iter().flat_map(|d|d.children.iter()).filter(|c|c.name=="words") {
-                    words.error(report,MappingEffect::Unsupported,"element.words","Only one standalone plain words element is supported outside a dashes group; mixed direction layouts are not discarded");
+                    words.error(report,MappingEffect::Unsupported,"element.words","Only one all-words direction-type is supported outside a dashes group; unsupported mixed layouts are not discarded");
                 }
                 if types.len()>1 {n.error(report,MappingEffect::Invalid,"xml.cardinality","Repeated direction-type is outside the supported standalone profile");}
                 if n.attr("system").is_some() && !types.iter().any(|d|d.child("words").is_some()) {n.error(report,MappingEffect::Unsupported,"attribute.system","System relation is only represented for authored words/dashes directions");}
@@ -1093,7 +1095,7 @@ pub(super) fn schema_with_profile(
         let qualifiers = n.children.iter().filter(|c| c.name == "other-dynamics").count();
         symbols != 1 || qualifiers > 1 || n.children.len() != symbols + qualifiers
     } else { false };
-    if n.name == "direction-type" && n.children.len() != 1 || invalid_dynamic {
+    if n.name == "direction-type" && n.children.len() != 1 && !( !n.children.is_empty() && n.children.iter().all(|c|c.name=="words")) || invalid_dynamic {
         n.error(report, MappingEffect::Unsupported, "dynamics.composite", "Exactly one native dynamic symbol with at most one ordered plain-text qualifier is supported; combined directions and arbitrary compound dynamics are not discarded");
     }
     for key in n.attrs.keys() {

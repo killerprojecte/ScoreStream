@@ -461,7 +461,9 @@ pub fn write_with_options(
     if let Some(d)=&score.defaults{super::defaults::write(d,&mut out);}
     super::credits::write(&score.credits, &mut out);
     out.push_str("  <part-list>\n");
+    let mut groups=score.part_groups.iter().peekable();
     for (i, p) in score.parts.iter().enumerate() {
+        while groups.peek().is_some_and(|g|g.before_part.as_deref()==Some(p.id.0.as_str())){super::part_groups::write(groups.next().unwrap(),&mut out);}
         let name = p
             .name
             .as_deref()
@@ -497,6 +499,7 @@ pub fn write_with_options(
         }
         out.push_str("    </score-part>\n");
     }
+    for g in groups{super::part_groups::write(g,&mut out);}
     out.push_str("  </part-list>\n");
     let geometry = super::geometry::Export::new(score);
     let lyrics = super::lyrics::Export::new(&score.lyrics);

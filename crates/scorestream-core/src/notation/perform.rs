@@ -55,6 +55,7 @@ struct State {
     settings: lower::PersistentState,
     tempo: Option<TempoChange>,
     numeric: BTreeMap<Scope, Direction>,
+    pizzicato: BTreeMap<Scope, Direction>,
 }
 struct Occurrence {
     measure: usize,
@@ -124,6 +125,8 @@ pub(super) fn perform(
                     || e == ext::EXTENSION
                     || e == crate::instrument_extension::EXTENSION
                     || e == crate::beam_extension::EXTENSION
+                    || e == crate::words::EXTENSION
+                    || e == crate::words::PIZZICATO_EXTENSION
             })
     } else if combined {
         [
@@ -146,6 +149,8 @@ pub(super) fn perform(
                     || e == ext::EXTENSION
                     || e == crate::instrument_extension::EXTENSION
                     || e == crate::beam_extension::EXTENSION
+                    || e == crate::words::EXTENSION
+                    || e == crate::words::PIZZICATO_EXTENSION
             })
     } else if fermatas {
         doc.required_extensions
@@ -156,6 +161,8 @@ pub(super) fn perform(
                     || e == ext::EXTENSION
                     || e == crate::instrument_extension::EXTENSION
                     || e == crate::beam_extension::EXTENSION
+                    || e == crate::words::EXTENSION
+                    || e == crate::words::PIZZICATO_EXTENSION
             })
     } else if graces {
         doc.required_extensions
@@ -166,6 +173,8 @@ pub(super) fn perform(
                     || e == ext::EXTENSION
                     || e == crate::instrument_extension::EXTENSION
                     || e == crate::beam_extension::EXTENSION
+                    || e == crate::words::EXTENSION
+                    || e == crate::words::PIZZICATO_EXTENSION
             })
     } else {
         doc.required_extensions.iter().any(|e| e == ext::EXTENSION)
@@ -173,6 +182,8 @@ pub(super) fn perform(
                 e == ext::EXTENSION
                     || e == crate::instrument_extension::EXTENSION
                     || e == crate::beam_extension::EXTENSION
+                    || e == crate::words::EXTENSION
+                    || e == crate::words::PIZZICATO_EXTENSION
             })
     };
     if !supported {
@@ -220,12 +231,33 @@ pub(super) fn perform(
     for frame in &doc.frames {
         for record in &frame.records {
             match record {
-                Record::Measure(m) => parts[*part_indices.get(&m.target).ok_or_else(|| error("navigation.measure", "Measure target must be a declared part"))?].measures.push(nav::Measure {
-                    id: m.id.clone(), label: m.attributes.get("label").and_then(Scalar::as_str).unwrap_or(&m.id).into(),
-                    start: frame.time.clone(), length: m.length.clone(),
+                Record::Measure(m) => parts[*part_indices.get(&m.target).ok_or_else(|| {
+                    error(
+                        "navigation.measure",
+                        "Measure target must be a declared part",
+                    )
+                })?]
+                .measures
+                .push(nav::Measure {
+                    id: m.id.clone(),
+                    label: m
+                        .attributes
+                        .get("label")
+                        .and_then(Scalar::as_str)
+                        .unwrap_or(&m.id)
+                        .into(),
+                    start: frame.time.clone(),
+                    length: m.length.clone(),
                 }),
                 Record::Mark(m) if m.kind == ext::KIND => bars.push(ext::decode(m)?),
-                Record::State(_) | Record::Mark(_) | Record::Event(_) if frame.time == doc.end => return Err(error("navigation.final_boundary_control", "A sounding/display control or event at the final boundary has no measure ownership in this performed profile")),
+                // Owned words are metadata; their explicit sound position is projected below.
+                Record::Mark(m) if crate::words::is_kind(&m.kind) => (),
+                Record::State(_) | Record::Mark(_) | Record::Event(_) if frame.time == doc.end => {
+                    return Err(error(
+                        "navigation.final_boundary_control",
+                        "A sounding/display control or event at the final boundary has no measure ownership in this performed profile",
+                    ));
+                }
                 _ => (),
             }
         }
@@ -340,6 +372,9 @@ pub(super) fn perform(
     }
     let mut directions = vec![vec![]; measures.len()];
     for d in &written.directions {
+        if d.at == doc.end && matches!(d.kind, DirectionKind::Pizzicato { .. }) {
+            continue;
+        }
         if d.end.is_some() {
             return Err(error(
                 "navigation.direction_interval",
@@ -378,6 +413,17 @@ pub(super) fn perform(
         settings: lower::PersistentState::new(doc),
         tempo: None,
         numeric: BTreeMap::new(),
+        pizzicato: written
+            .directions
+            .iter()
+            .filter(|d| matches!(d.kind, DirectionKind::Pizzicato { .. }))
+            .map(|d| {
+                let mut initial = d.clone();
+                initial.at = Rational::zero();
+                initial.kind = DirectionKind::Pizzicato { mode: None };
+                (initial.scope.clone(), initial)
+            })
+            .collect(),
     };
     let mut checkpoints = BTreeMap::new();
     let mut result = PerformedScore {
@@ -468,7 +514,13 @@ pub(super) fn perform(
                     ));
                 }
                 controls = controls
-                    .checked_add(state.numeric.len() + directions[*i].len() + tempos[*i].len() + 1)
+                    .checked_add(
+                        state.numeric.len()
+                            + state.pizzicato.len()
+                            + directions[*i].len()
+                            + tempos[*i].len()
+                            + 1,
+                    )
                     .ok_or_else(|| {
                         error(
                             "navigation.control_budget",
@@ -506,6 +558,9 @@ pub(super) fn perform(
                     if d.at == m.start && matches!(d.kind, DirectionKind::SoundDynamics { .. }) {
                         state.numeric.insert(d.scope.clone(), (*d).clone());
                     }
+                    if d.at == m.start && matches!(d.kind, DirectionKind::Pizzicato { .. }) {
+                        state.pizzicato.insert(d.scope.clone(), (*d).clone());
+                    }
                 }
                 let mut tempo = state.tempo.clone().unwrap_or_else(|| TempoChange {
                     at: Rational::zero(),
@@ -523,7 +578,7 @@ pub(super) fn perform(
                 });
                 tempo.at = at.clone();
                 result.score.tempos.push(tempo);
-                for d in state.numeric.values() {
+                for d in state.numeric.values().chain(state.pizzicato.values()) {
                     let mut d = d.clone();
                     d.at = at.clone();
                     d.end = Some(end.clone());
@@ -570,6 +625,13 @@ pub(super) fn perform(
                     }
                 }
                 for d in &directions[*i] {
+                    let technique = matches!(d.kind, DirectionKind::Pizzicato { .. });
+                    if technique {
+                        state.pizzicato.insert(d.scope.clone(), (*d).clone());
+                        if d.at == m.start {
+                            continue;
+                        }
+                    }
                     let numeric = matches!(d.kind, DirectionKind::SoundDynamics { .. });
                     if numeric {
                         state.numeric.insert(d.scope.clone(), (*d).clone());
@@ -579,7 +641,7 @@ pub(super) fn perform(
                     }
                     let mut d = (*d).clone();
                     d.at = shift(&d.at)?;
-                    if numeric {
+                    if numeric || technique {
                         d.end = Some(end.clone());
                     }
                     if let Scope::Event(id) = &mut d.scope {

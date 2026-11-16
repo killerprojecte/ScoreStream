@@ -599,6 +599,14 @@
         "element",
         "attribute",
         "value"
+      ],
+      "scorestream.part_group": [
+        "index",
+        "phase",
+        "before_part",
+        "number",
+        "symbol",
+        "barline"
       ]
     },
     "relations": {
@@ -1977,6 +1985,12 @@
           "text"
         ],
         "fields": {
+          "pizzicato": {
+            "type": "string"
+          },
+          "pizzicato_at": {
+            "type": "rational"
+          },
           "part": {
             "type": "identifier"
           },
@@ -2018,10 +2032,13 @@
           },
           "relative_y": {
             "type": "rational"
+          },
+          "row": {
+            "type": "positive_integer"
           }
         },
         "required_extension": "scorestream.words@1",
-        "meaning": "Ordered standalone authored plain score instruction with exact decoded text, style, geometry and logical ownership. Not analytical annotation; no inferred gain, tempo, timbre or navigation behavior."
+        "meaning": "Ordered standalone authored plain score instruction with exact decoded text, style, geometry and logical ownership. Not analytical annotation; no inferred gain, tempo, timbre or navigation behavior. Optional positive row attaches an ordered words sibling to the direction index; absent row is the first sibling. Siblings share owner, onset and direction attributes; each has independent text/style/geometry. No sound is inferred."
       },
       "scorestream.ornaments.child": {
         "targets": [
@@ -2272,6 +2289,134 @@
         },
         "required_extension": "scorestream.provenance@1",
         "meaning": "Ordered authored producer metadata at score start. Descriptive claims only: never change adapter capabilities, sound, timing, or network access. Header preserves absent/empty containers; entry indices are unique and contiguous with exact typed per-kind fields."
+      },
+      "scorestream.metronome_display": {
+        "targets": [
+          "mark"
+        ],
+        "required": [
+          "measure"
+        ],
+        "fields": {
+          "measure": {
+            "type": "identifier"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "system": {
+            "type": "string"
+          },
+          "parentheses": {
+            "type": "boolean"
+          },
+          "default_x": {
+            "type": "rational"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "relative_x": {
+            "type": "rational"
+          },
+          "relative_y": {
+            "type": "rational"
+          },
+          "leading_text": {
+            "type": "string"
+          },
+          "leading_font_family": {
+            "type": "string"
+          },
+          "leading_font_style": {
+            "type": "string"
+          },
+          "leading_font_weight": {
+            "type": "string"
+          },
+          "leading_font_size": {
+            "type": "rational"
+          },
+          "leading_default_x": {
+            "type": "rational"
+          },
+          "leading_default_y": {
+            "type": "rational"
+          },
+          "leading_relative_x": {
+            "type": "rational"
+          },
+          "leading_relative_y": {
+            "type": "rational"
+          },
+          "trailing_text": {
+            "type": "string"
+          },
+          "trailing_font_family": {
+            "type": "string"
+          },
+          "trailing_font_style": {
+            "type": "string"
+          },
+          "trailing_font_weight": {
+            "type": "string"
+          },
+          "trailing_font_size": {
+            "type": "rational"
+          },
+          "trailing_default_x": {
+            "type": "rational"
+          },
+          "trailing_default_y": {
+            "type": "rational"
+          },
+          "trailing_relative_x": {
+            "type": "rational"
+          },
+          "trailing_relative_y": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.metronome_display@1",
+        "meaning": "Presentation attached to an identified existing numeric metronome at its exact onset and owning measure; optional ordered leading words/metronome/trailing words, parentheses and geometry. Does not assign playback tempo."
+      },
+      "scorestream.part_group": {
+        "targets": [
+          "score"
+        ],
+        "required": [
+          "index",
+          "phase"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "phase": {
+            "type": "enum",
+            "values": [
+              "start",
+              "stop"
+            ]
+          },
+          "before_part": {
+            "type": "identifier"
+          },
+          "number": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "enum",
+            "values": [
+              "bracket"
+            ]
+          },
+          "barline": {
+            "type": "boolean"
+          }
+        },
+        "required_extension": "scorestream.part_groups@1",
+        "meaning": "Ordered authored part-list boundary before declared part or after final part when absent. No inferred spans, nesting, glyphs, joined barlines or audio effects."
       }
     }
   },
@@ -2480,6 +2625,14 @@
           "scorestream.provenance.entry"
         ],
         "required_behavior": "One score-start header. Entries require present encoding, unique contiguous indices, software XML text or timezone-free valid calendar date or an empty supports declaration with yes/no type and NMTOKEN element. Attribute/value presence is retained; value requires attribute. Explicit empty miscellaneous is separate from absence. Unknown substantive metadata rejects."
+      },
+      "scorestream.metronome_display@1": {
+        "status": "authored presentation; numeric metronome remains the existing independent mark",
+        "required_behavior": "Complete score; unique reference to an identified numeric metronome at same onset; exact owning part measure, part/staff scope from host; closed finite-decimal geometry, explicit yes/no absence, valid system/placement and shared plain words fields. Trailing words require leading words; word style fields require their text. No duplicated numeric value and no gain/tempo inference from text or printed BPM."
+      },
+      "scorestream.part_groups@1": {
+        "status": "authored boundary preservation only",
+        "required_behavior": "Complete score at0, score target, contiguous indices in nondecreasing part declaration boundary order. Start must precede an existing part; stop must follow at least one. Optional canonical XML token number retains absence/default1; no group matching/repair inferred. Start optional bracket and yes/no barline; stop no presentation. Unknown fields/presentation atomic rejection. Playback and preview unaffected except explicit omission warning."
       }
     }
   },

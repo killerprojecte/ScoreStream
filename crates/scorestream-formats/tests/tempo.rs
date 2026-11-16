@@ -291,23 +291,23 @@ fn unsupported_tempo_semantics_fail_closed() {
     error(
         &full(
             &mark("quarter", "", "100", "", "")
-                .replace("<metronome>", "<metronome parentheses=\"yes\">"),
+                .replace("<metronome>", "<metronome font-weight=\"bold\">"),
         ),
-        "attribute.parentheses",
+        "attribute.font-weight",
     );
     error(
         &full(
             &mark("quarter", "", "100", "", "")
-                .replace("<direction>", "<direction placement=\"above\">"),
+                .replace("<direction>", "<direction placement=\"sideways\">"),
         ),
-        "attribute.placement",
+        "metronome_display.placement",
     );
     error(
         &full(
             &mark("quarter", "", "100", "", "")
-                .replace("<direction>", "<direction system=\"only-top\">"),
+                .replace("<direction>", "<direction directive=\"yes\">"),
         ),
-        "attribute.system",
+        "attribute.directive",
     );
     error(
         &full(&mark(

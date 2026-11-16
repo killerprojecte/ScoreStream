@@ -476,11 +476,13 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 Record::Mark(mark) if mark.kind == crate::credits::KIND => {}
                 Record::Mark(mark) if crate::defaults::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::provenance::is_kind(&mark.kind) => {}
+                Record::Mark(mark) if crate::part_groups::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if mark.kind == crate::wedges::KIND => {}
                 Record::Mark(mark) if mark.kind == crate::dashes::KIND => {}
                 Record::Mark(mark) if mark.kind == crate::words::KIND => {}
                 Record::Mark(mark) if mark.kind == crate::part_labels::KIND => {}
+                Record::Mark(mark) if mark.kind == crate::metronome_display::KIND => {}
                 Record::Mark(mark) if crate::print_layout::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::lyrics::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::tuplets::is_kind(&mark.kind) => {}
@@ -669,6 +671,19 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
     score
         .events
         .sort_by(|a, b| a.start.cmp(&b.start).then(a.id.cmp(&b.id)));
+    if doc.required_extensions.iter().any(|e| e == crate::words::PIZZICATO_EXTENSION) {
+        let values = crate::words::decode(doc).map_err(|e| e.into_iter().next().unwrap())?;
+        let hosts: BTreeMap<_, _> = doc.frames.iter().flat_map(|f| f.records.iter().filter_map(move |r| {
+            if let Record::Measure(m) = r { Some(((m.target.as_str(), m.id.as_str()), &f.time)) } else { None }
+        })).collect();
+        for (index, e) in values.iter().enumerate() {
+            if let Some(p) = &e.pizzicato {
+                score.directions.push(Direction { at: hosts[&(e.part.as_str(), e.measure.as_str())] + &p.at,
+                    end: None, scope: Scope::Part(PartId(e.part.clone())), kind: DirectionKind::Pizzicato { mode: Some(p.mode) },
+                    placement: None, origin: origin(format!("pizzicato.{index}"), doc.source) });
+            }
+        }
+    }
     score.directions.sort_by(|a, b| {
         a.at.cmp(&b.at)
             .then(a.scope.cmp(&b.scope))

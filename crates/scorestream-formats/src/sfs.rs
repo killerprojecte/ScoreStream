@@ -182,12 +182,16 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::dashes::EXTENSION
             && e != core::words::EXTENSION
             && e != core::part_labels::EXTENSION
+            && e != core::words::PIZZICATO_EXTENSION
+            && e != core::metronome_display::EXTENSION
+            && e != core::part_groups::EXTENSION
             && e != core::lyrics::EXTENSION
             && e != core::tuplets::EXTENSION
             && e != core::tuplets::ORNAMENT_EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
+    let mut metronome_displays=if doc.required_extensions.iter().any(|e|e==core::metronome_display::EXTENSION) {core::metronome_display::decode(doc).expect("validated metronome presentation")} else {Default::default()};
     let mut part_labels=if doc.required_extensions.iter().any(|e|e==core::part_labels::EXTENSION) {core::part_labels::decode(doc).expect("validated part labels")} else {Default::default()};
     let mut score = ScoreDocument {
         provenance: core::provenance::decode(doc).expect("validated provenance"),
@@ -212,6 +216,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
         } else {
             vec![]
         },
+        part_groups: core::part_groups::decode(doc).expect("validated part groups"),
         defaults: core::defaults::decode(doc).expect("validated defaults"),
         credits: if doc
             .required_extensions
@@ -386,6 +391,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         || core::dashes::is_kind(&m.kind)
                         || core::words::is_kind(&m.kind)
                         || core::part_labels::is_kind(&m.kind)
+                        || core::metronome_display::is_kind(&m.kind)
+                        || core::part_groups::is_kind(&m.kind)
                         || core::lyrics::is_kind(&m.kind)
                         || core::tuplets::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
@@ -410,7 +417,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                     crate::dynamics::read_mark(m, &frame.time, &mut score, &mut report);
                 }
                 Record::Mark(m) if m.kind == "metronome" => {
-                    crate::tempo::read_mark(m, &frame.time, &mut score, &mut report);
+                    crate::tempo::read_mark(m, &frame.time, &mut score, &mut report,m.attributes.get("id").and_then(Scalar::as_str).and_then(|id|metronome_displays.remove(id)));
                 }
                 Record::Mark(m) => unsupported(&mut report, &format!("mark:{}", m.kind), &m.target),
                 Record::Relation(rel) => {
@@ -829,11 +836,14 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
     if score.provenance.is_some() {doc.required_extensions.push(core::provenance::EXTENSION.into());}
+    if score.metronomes.iter().any(|m|m.presentation.is_some()) {doc.required_extensions.push(core::metronome_display::EXTENSION.into());}
     if score.parts.iter().any(|p|p.labels.is_some()) {doc.required_extensions.push(core::part_labels::EXTENSION.into());}
     if !score.wedges.is_empty() {doc.required_extensions.push(core::wedges::EXTENSION.into());}
     if !score.dashes.is_empty() {doc.required_extensions.push(core::dashes::EXTENSION.into());}
     if !score.words.is_empty() {doc.required_extensions.push(core::words::EXTENSION.into());}
+    if !score.part_groups.is_empty(){doc.required_extensions.push(core::part_groups::EXTENSION.into());}
     if score.defaults.is_some(){doc.required_extensions.push(core::defaults::EXTENSION.into());}
+    if score.words.iter().any(|e|e.pizzicato.is_some()) {doc.required_extensions.push(core::words::PIZZICATO_EXTENSION.into());}
     if !score.credits.is_empty() {
         doc.required_extensions
             .push(core::credits::EXTENSION.into());
@@ -935,6 +945,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         &authored_source_ids,
     );
     let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
+    for (i,g) in score.part_groups.iter().enumerate(){let mut mapped=g.clone();mapped.before_part=g.before_part.as_ref().map(|p|parts.get(p,&mut report));frames.entry(Rational::zero()).or_default().push(Record::Mark(core::part_groups::encode(&mapped,i)));}
     if let Some(d)=&score.defaults{frames.entry(Rational::zero()).or_default().extend(core::defaults::encode(d).into_iter().map(Record::Mark));}
     if let Some(value)=&score.provenance {
         frames.entry(Rational::zero()).or_default().extend(core::provenance::encode(value).into_iter().map(Record::Mark));
@@ -1345,7 +1356,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     }}
     for (index,e) in score.words.iter().enumerate() {
         let at = &geometry_measures[&(e.part.as_str(),e.measure.as_str())].clone() + &e.offset;
-        frames.entry(at).or_default().push(Record::Mark(core::words::encode(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index)));
+        frames.entry(at).or_default().extend(core::words::encode_group(e,parts.get(&e.part,&mut report),measures.get(&e.measure,&mut report),index).into_iter().map(Record::Mark));
     }
     for p in &score.print_layout {
         let at = geometry_measures[&(p.part.as_str(), p.measure.as_str())].clone();
@@ -1432,9 +1443,25 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
             .push(Record::Mark(core::beam_extension::encode(event, b)));
     }
     crate::tempo::write_tempos(score, &mut frames);
+    let mut metronome_ids=BTreeSet::new();
+    if score.metronomes.iter().any(|m|m.presentation.is_some()) {
+        metronome_ids.extend(parts.used.iter().chain(voices.used.iter()).chain(events.used.iter()).chain(measures.used.iter()).chain(chords.used.iter()).cloned());
+        for r in frames.values().flatten() {match r {
+            Record::Event(e)=>{if let Some(id)=e.attributes.get("id").and_then(Scalar::as_str){metronome_ids.insert(id.into());}},
+            Record::Mark(m)=>{if let Some(id)=m.attributes.get("id").and_then(Scalar::as_str){metronome_ids.insert(id.into());}},
+            Record::Relation(r)=>{metronome_ids.insert(r.id.clone());},
+            _=>{}
+        }}
+    }
+    let mut next_metronome_id=0;
     for mark in &score.metronomes {
         let part = parts.get(&mark.part.0, &mut report);
-        crate::tempo::write_mark(mark, &part, &mut frames);
+        let id=mark.presentation.as_ref().map(|_|loop {next_metronome_id+=1;let id=format!("metronome_display_{next_metronome_id}");if metronome_ids.insert(id.clone()){break id}});
+        crate::tempo::write_mark(mark, &part, &mut frames,id.as_deref());
+        if let (Some(value),Some(id))=(&mark.presentation,id) {
+            let measure=measures.get(&value.measure,&mut report);
+            frames.entry(mark.at.clone()).or_default().push(Record::Mark(core::metronome_display::encode(value,&id,measure)));
+        }
     }
     doc.frames = frames
         .into_iter()

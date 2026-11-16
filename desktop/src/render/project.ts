@@ -15,6 +15,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  if(!view.events.length)throw Error('No measured events to engrave yet.');
  const warnings:string[]=[];
  if(view.events.some(e=>e.attributes?.notehead!==undefined&&e.attributes.notehead!=='normal'))warnings.push('Authored notehead shapes are retained but this preview displays standard noteheads. Sounding pitches and timing are unchanged.');
+ if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes("scorestream.part_groups@1"))warnings.push("Authored part-group brackets and common-barline choices are retained but not drawn by this preview. Playback and instrument routing are unchanged.");
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes("scorestream.defaults@1"))warnings.push("Authored score-wide scaling, page, appearance and font defaults are retained but not applied by this preview. Playback is unchanged.");
  if(view.events.some(e=>e.attributes?.visible===false))warnings.push('Authored hidden notes and rests are retained but are shown in this preview. Print-object visibility is not reproduced; sounding pitches and timing are unchanged.');
  if(view.states.some(s=>s.values.meter_symbol!==undefined))warnings.push("Authored common/cut time symbols are retained but not drawn by this preview; numeric meter is shown instead. Playback timing is unchanged.");

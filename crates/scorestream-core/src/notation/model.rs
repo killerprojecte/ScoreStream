@@ -141,6 +141,8 @@ pub struct TempoChange {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DirectionKind {
+    /// Authored part-wide sound state; None restores unspecified state after a repeat jump.
+    Pizzicato { mode: Option<crate::words::PizzicatoMode> },
     /// Exact MusicXML percentage of default forte (MIDI velocity 90).
     SoundDynamics {
         percent: Rational,

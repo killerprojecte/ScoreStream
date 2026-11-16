@@ -78,6 +78,7 @@ pub(super) fn locations(
 pub(super) fn read(
     node: &Node,
     part: &ScorePart,
+    measure: &str,
     start: &Rational,
     cursor: &Rational,
     divisions: Option<&Rational>,
@@ -86,17 +87,9 @@ pub(super) fn read(
     report: &mut MappingReport,
 ) -> Result<()> {
     let (visual_at, sounding_at) = locations(node, start, cursor, divisions)?;
-    if let Some(m) = node
-        .child("direction-type")
-        .and_then(|d| d.child("metronome"))
-    {
-        if node.attr("placement").is_some() {
-            return Err(unsupported(
-                node,
-                "attribute.placement",
-                "Metronome placement is not yet represented",
-            ));
-        }
+    if let Some(m) = node.children.iter().filter(|d|d.name=="direction-type").find_map(|d|d.child("metronome")) {
+        let presentation=super::metronome_display::read(node,measure)?;
+        if presentation.is_some() {m.error(report,MappingEffect::Preserved,"metronome_display.authored_only","Ordered metronome presentation retained; additional text/parentheses/geometry are not realized by preview, and numeric sound remains independent");}
         let unit = match child(m, "beat-unit")?.text.trim() {
             "whole" => BeatUnit::Whole,
             "half" => BeatUnit::Half,
@@ -133,6 +126,7 @@ pub(super) fn read(
             })
             .transpose()?;
         metronomes.push(ScoreMetronome {
+            presentation,
             at: visual_at,
             part: part.id.clone(),
             staff,
@@ -157,7 +151,7 @@ pub(super) fn read(
                 at: sounding_at,
                 quarter_bpm: positive(sound, tempo)?,
             });
-        } else if sound.attr("dynamics").is_none() {
+        } else if sound.attr("dynamics").is_none() && sound.attr("pizzicato").is_none() {
             return Err(unsupported(
                 sound,
                 "sound.empty",
@@ -283,8 +277,10 @@ pub(super) fn write_measure(
             BeatUnit::Eighth => "eighth",
             BeatUnit::Sixteenth => "16th",
         };
-        write!(out, "      <direction><direction-type><metronome><beat-unit>{unit}</beat-unit>{}<per-minute>{}</per-minute></metronome></direction-type><offset sound=\"no\">{}</offset>",
-            if mark.value.beat.dotted { "<beat-unit-dot/>" } else { "" }, super::write::decimal(&mark.value.bpm).unwrap(), units(&mark.at)).unwrap();
+        if let Some(p)=&mark.presentation {super::metronome_display::start(p,out);} else {out.push_str("      <direction><direction-type><metronome>");}
+        write!(out,"<beat-unit>{unit}</beat-unit>{}<per-minute>{}</per-minute></metronome></direction-type>",if mark.value.beat.dotted {"<beat-unit-dot/>"}else{""},super::write::decimal(&mark.value.bpm).unwrap()).unwrap();
+        if let Some(w)=mark.presentation.as_ref().and_then(|p|p.trailing_words.as_ref()) {super::words::write_text(w,out);}
+        write!(out,"<offset sound=\"no\">{}</offset>",units(&mark.at)).unwrap();
         if let Some(staff) = mark.staff {
             write!(out, "<staff>{staff}</staff>").unwrap();
         }

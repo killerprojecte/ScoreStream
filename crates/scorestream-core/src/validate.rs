@@ -46,6 +46,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::dashes::EXTENSION
             && requirement != crate::words::EXTENSION
             && requirement != crate::part_labels::EXTENSION
+            && requirement != crate::words::PIZZICATO_EXTENSION
+            && requirement != crate::metronome_display::EXTENSION
+            && requirement != crate::part_groups::EXTENSION
             && requirement != crate::lyrics::EXTENSION
             && requirement != crate::tuplets::EXTENSION
             && requirement != crate::tuplets::ORNAMENT_EXTENSION
@@ -197,9 +200,11 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut has_dashes = false;
     let mut has_words = false;
     let mut has_part_labels = false;
+    let mut has_metronome_display=false;
     let mut has_credits = false;
     let mut has_defaults = false;
     let mut has_provenance = false;
+    let mut has_part_groups = false;
     let mut has_print = false;
     let mut has_lyrics = false;
     let mut has_tuplets = false;
@@ -497,7 +502,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     has_dashes |= crate::dashes::is_kind(&m.kind);
                     has_words |= crate::words::is_kind(&m.kind);
                     has_part_labels |= crate::part_labels::is_kind(&m.kind);
+                    has_part_groups |= crate::part_groups::is_kind(&m.kind);
                     has_defaults |= crate::defaults::is_kind(&m.kind);
+                    has_metronome_display |= crate::metronome_display::is_kind(&m.kind);
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_provenance |= crate::provenance::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
@@ -542,10 +549,11 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             }
         }
     }
-    if has_words || doc.required_extensions.iter().any(|e|e==crate::words::EXTENSION) {
+    if has_words || doc.required_extensions.iter().any(|e|e==crate::words::EXTENSION || e==crate::words::PIZZICATO_EXTENSION) {
         match crate::words::decode(doc) {
             Err(errors)=>out.extend(errors),
             Ok(_)=>{
+                if doc.required_extensions.iter().any(|e|e==crate::words::PIZZICATO_EXTENSION) { out.push(Diagnostic::warning("pizzicato.not_realized", "Authored yes/no sound state retained independently of words. No supported pizzicato route is selected; active pizzicato at a sounding attack must be resolved before playback",doc.source)); }
                 out.push(Diagnostic::warning("words.authored_only", "Authored score words are retained; current preview omits them and performance does not interpret their instructions. No gain, tempo, timbre or navigation behavior is inferred",doc.source));
             }
         }
@@ -559,6 +567,12 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     if has_provenance || doc.required_extensions.iter().any(|e| e == crate::provenance::EXTENSION) {
         if let Err(errors) = crate::provenance::decode(doc) { out.extend(errors); }
     }
+    if has_metronome_display || doc.required_extensions.iter().any(|e|e==crate::metronome_display::EXTENSION) {
+        match crate::metronome_display::decode(doc) {
+            Err(errors)=>out.extend(errors),
+            Ok(_)=>out.push(Diagnostic::warning("metronome_display.authored_only","Metronome group text, parentheses and geometry are preserved but not realized by current preview. Existing numeric printed mark and explicit sounding tempo remain independent",doc.source)),
+        }
+    }
     crate::navigation_extension::validate(doc, &mut out);
     crate::fermata_extension::validate(doc, &mut out);
     crate::grace_extension::validate(doc, &mut out);
@@ -567,6 +581,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     crate::slur_extension::validate(doc, &mut out);
     crate::articulation_extension::validate(doc, &mut out);
     crate::notation_extension::validate(doc, &mut out);
+    if has_part_groups || doc.required_extensions.iter().any(|e|e==crate::part_groups::EXTENSION) {if let Err(errors)=crate::part_groups::decode(doc){out.extend(errors);}}
     if has_defaults || doc.required_extensions.iter().any(|e|e==crate::defaults::EXTENSION) {if let Err(errors)=crate::defaults::decode(doc){out.extend(errors);}}
     if has_credits || doc.required_extensions.iter().any(|e| e == crate::credits::EXTENSION) {
         if let Err(errors) = crate::credits::decode(doc) {
@@ -943,7 +958,7 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
-                    if m.kind == crate::words::KIND || m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
+                    if m.kind == crate::metronome_display::KIND || m.kind == crate::words::KIND || m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
                         continue;
                     }
                     if m.target.starts_with('#') {
