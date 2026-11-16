@@ -1,5 +1,6 @@
 //! Opt-in attack techniques. This opaque wrapper is not a browser/default plan.
 use super::*;
+use sha2::{Digest, Sha256};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PizzicatoSoundPolicy {
     GeneralMidiSharedStringsApproximation,
@@ -8,10 +9,13 @@ pub enum PizzicatoSoundPolicy {
 /// timing and tie consolidation remain unchanged; no route is selected here.
 #[derive(Clone, Debug)]
 pub struct TechniquePlaybackPlan {
+    source_sha256: String,
     plan: PlaybackPlan,
     pizzicato: BTreeSet<String>,
 }
 impl TechniquePlaybackPlan {
+    /// Exact source bytes consumed by the source-qualified compiler.
+    pub fn source_sha256(&self) -> &str { &self.source_sha256 }
     pub fn plan(&self) -> &PlaybackPlan {
         &self.plan
     }
@@ -19,9 +23,9 @@ impl TechniquePlaybackPlan {
         &self.pizzicato
     }
 }
-fn finish(mut plan: PlaybackPlan, pizzicato: BTreeSet<String>) -> TechniquePlaybackPlan {
+fn finish(source: &str, mut plan: PlaybackPlan, pizzicato: BTreeSet<String>) -> TechniquePlaybackPlan {
     plan.warnings.push("Explicit GM shared-strings pizzicato sample approximation requested; native bank/preset/key verification is still required. No browser or default-renderer substitution is authorized.".into());
-    TechniquePlaybackPlan { plan, pizzicato }
+    TechniquePlaybackPlan { source_sha256: format!("{:x}", Sha256::digest(source.as_bytes())), plan, pizzicato }
 }
 pub fn plan_source_with_pizzicato(
     source: &str,
@@ -41,7 +45,7 @@ pub fn plan_source_with_pizzicato(
         let score = lower_document(&doc).map_err(format_diagnostics)?;
         compile_with_technique(&score, &doc, None, None, None, Some(&mut attacks))?
     };
-    Ok(finish(plan, attacks))
+    Ok(finish(source, plan, attacks))
 }
 /// All existing articulation, grace and synchronized hold choices remain explicit.
 #[allow(clippy::too_many_arguments)]
@@ -84,5 +88,19 @@ pub fn plan_source_with_joint_policies_and_pizzicato(
         Some(GraceView::Combined(&q)),
         Some(&mut attacks),
     )?;
-    Ok(finish(plan, attacks))
+    Ok(finish(source, plan, attacks))
+}
+
+#[cfg(test)]
+mod source_binding_tests {
+    use super::*;
+    #[test]
+    fn technique_witness_binds_exact_source_bytes() {
+        let s="!score 1.1 unit=q\n!part p instrument=violin staves=1\n!voice v part=p staff=1\n@0\n| p m len=1\nv C4:1 id=a\n.\n!end at=1\n";
+        let a=plan_source_with_pizzicato(s,PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation).unwrap();
+        let b=plan_source_with_pizzicato(&format!("{s}\n"),PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation).unwrap();
+        assert_eq!(a.source_sha256(),format!("{:x}",Sha256::digest(s.as_bytes())));
+        assert_ne!(a.source_sha256(),b.source_sha256());
+        assert_eq!(a.plan().notes.len(),b.plan().notes.len());
+    }
 }

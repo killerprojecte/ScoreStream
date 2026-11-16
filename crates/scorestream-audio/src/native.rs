@@ -204,6 +204,8 @@ pub(crate) struct Api {
     select: unsafe extern "C" fn(Ptr, c_int, c_int, c_int, c_int) -> c_int,
     get_program: unsafe extern "C" fn(Ptr, c_int, *mut c_int, *mut c_int, *mut c_int) -> c_int,
     channel_type: Message2,
+    cc: Message3,
+    get_cc: unsafe extern "C" fn(Ptr,c_int,c_int,*mut c_int)->c_int,
     noteon: Message3,
     noteoff: Message2,
     write_float: unsafe extern "C" fn(Ptr, c_int, Ptr, c_int, c_int, Ptr, c_int, c_int) -> c_int,
@@ -282,6 +284,8 @@ impl Api {
                 unsafe extern "C" fn(Ptr, c_int, *mut c_int, *mut c_int, *mut c_int) -> c_int
             ),
             channel_type: load!("fluid_synth_set_channel_type", Message2),
+            cc: load!("fluid_synth_cc", Message3),
+            get_cc: load!("fluid_synth_get_cc", unsafe extern "C" fn(Ptr,c_int,c_int,*mut c_int)->c_int),
             noteon: load!("fluid_synth_noteon", Message3),
             noteoff: load!("fluid_synth_noteoff", Message2),
             write_float: load!(
@@ -521,6 +525,19 @@ impl<'a> Synth<'a> {
                 return Err(AudioError::Native(
                     "Native engine substituted a different patch".into(),
                 ));
+            }
+            if let Some(mix)=&options.local_midi_mix {
+                mix.verify_routes(routes)?;
+                let receipt=&mix.routes()[channel];
+                for (controller,value) in [(7,receipt.volume.as_ref().map(|v|v.cc7)),(10,receipt.cc10)] {
+                    if let Some(value)=value {
+                        // SAFETY: valid live synth, validated local channel and 7-bit CC value.
+                        check(unsafe {(api.cc)(synth,channel as i32,controller,i32::from(value))},"set source MIDI controller")?;
+                        let mut actual=0;
+                        check(unsafe {(api.get_cc)(synth,channel as i32,controller,&mut actual)},"read source MIDI controller")?;
+                        if actual!=i32::from(value){return Err(AudioError::Native("Native controller readback mismatch".into()));}
+                    }
+                }
             }
             result.names.push(name.clone());
         }

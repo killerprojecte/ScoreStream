@@ -5,6 +5,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 pub mod assignments;
+pub mod midi_mixer;
 #[cfg(target_os = "linux")]
 pub mod pizzicato;
 #[cfg(target_os = "linux")]
@@ -91,6 +92,8 @@ pub struct RenderOptions {
     /// names are checked after loading the verified bank, before any PCM.
     /// Source-qualified sample assignments always populate this assertion.
     pub bank_verification: Option<BankVerification>,
+    /// Explicit source-bound initial mixer interpretation; never enabled by default.
+    pub local_midi_mix: Option<midi_mixer::LocalMidiMix>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -110,6 +113,7 @@ impl Default for RenderOptions {
             max_notes: 1_000_000,
             max_soundfont_bytes: 2 * 1024 * 1024 * 1024,
             bank_verification: None,
+            local_midi_mix: None,
         }
     }
 }
@@ -148,6 +152,7 @@ pub struct RenderReport {
     pub frames: u64,
     pub note_count: usize,
     pub routes: Vec<RenderedRoute>,
+    pub local_midi_mix: Option<midi_mixer::LocalMidiMix>,
     pub internal_quantum_frames: u32,
     pub block_frames: usize,
     pub gain: f64,

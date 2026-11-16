@@ -86,6 +86,7 @@ impl FluidSynthBackend {
             score_frames: prepared.score_frames,
             frames: prepared.frames,
             note_count: prepared.notes.len(),
+            local_midi_mix: options.local_midi_mix.clone(),
             routes: routes
                 .iter()
                 .enumerate()

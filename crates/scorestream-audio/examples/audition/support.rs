@@ -197,6 +197,7 @@ impl Audition {
             .collect();
         let r = config.rendering;
         let options = RenderOptions {
+            local_midi_mix: None,
             sample_rate: r.sample_rate,
             block_frames: r.block_frames,
             gain: r.gain,
