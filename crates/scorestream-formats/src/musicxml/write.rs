@@ -385,6 +385,14 @@ pub fn write_with_options(
         }
         out.push_str("</work>\n");
     }
+    if let Some(number) = &score.metadata.movement_number {
+        writeln!(
+            out,
+            "  <movement-number>{}</movement-number>",
+            escape(number)
+        )
+        .unwrap();
+    }
     if let Some(movement) = &score.metadata.movement {
         writeln!(
             out,
@@ -398,6 +406,7 @@ pub fn write_with_options(
         || score.metadata.arranger.is_some()
         || !score.metadata.authors.is_empty()
         || score.metadata.rights.is_some()
+        || score.metadata.source_description.is_some()
     {
         out.push_str("  <identification>\n");
         for (role, value) in [
@@ -424,6 +433,9 @@ pub fn write_with_options(
         }
         if let Some(rights) = &score.metadata.rights {
             writeln!(out, "    <rights>{}</rights>", escape(rights)).unwrap();
+        }
+        if let Some(source) = &score.metadata.source_description {
+            writeln!(out, "    <source>{}</source>", escape(source)).unwrap();
         }
         out.push_str("  </identification>\n");
     }

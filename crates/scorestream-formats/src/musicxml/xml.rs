@@ -660,6 +660,7 @@ pub(super) fn schema_with_profile(
                 &["version"],
                 &[
                     "work",
+                    "movement-number",
                     "movement-title",
                     "identification",
                     "part-list",
@@ -670,7 +671,13 @@ pub(super) fn schema_with_profile(
                 false,
             ),
             "work" => (&[], &["work-title", "work-number"], &[], &[], false),
-            "identification" => (&[], &["creator", "rights"], &["creator"], &[], false),
+            "identification" => (
+                &[],
+                &["creator", "rights", "source"],
+                &["creator"],
+                &[],
+                false,
+            ),
             "creator" => (&["type"], &[], &[], &[], true),
             "part-list" => (
                 &[],
@@ -922,7 +929,9 @@ pub(super) fn schema_with_profile(
             "accidental" => (&["cautionary", "parentheses"], &[], &[], &[], true),
             "work-title"
             | "work-number"
+            | "movement-number"
             | "movement-title"
+            | "source"
             | "rights"
             | "part-name"
             | "instrument-name"

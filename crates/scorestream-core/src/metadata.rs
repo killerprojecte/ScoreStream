@@ -68,12 +68,26 @@ pub struct DocumentMetadata {
         deserialize_with = "optional_text"
     )]
     pub movement: Option<String>,
+    /// Authored movement identifier, independent of its title.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_text"
+    )]
+    pub movement_number: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "optional_text"
     )]
     pub rights: Option<String>,
+    /// Authored score-source description, not a path or authority to fetch a resource.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "optional_text"
+    )]
+    pub source_description: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -97,7 +111,7 @@ impl DocumentMetadata {
         self.authors.is_empty() && self.text_fields().iter().all(|(_, value)| value.is_none())
     }
     /// Named text fields in stable canonical order. Authors are serialized separately.
-    pub fn text_fields(&self) -> [(&'static str, Option<&str>); 12] {
+    pub fn text_fields(&self) -> [(&'static str, Option<&str>); 14] {
         [
             ("arranger", self.arranger.as_deref()),
             ("composer", self.composer.as_deref()),
@@ -107,7 +121,9 @@ impl DocumentMetadata {
             ("language", self.language.as_deref()),
             ("lyricist", self.lyricist.as_deref()),
             ("movement", self.movement.as_deref()),
+            ("movement_number", self.movement_number.as_deref()),
             ("rights", self.rights.as_deref()),
+            ("source_description", self.source_description.as_deref()),
             ("subtitle", self.subtitle.as_deref()),
             ("title", self.title.as_deref()),
             ("work_number", self.work_number.as_deref()),

@@ -308,7 +308,7 @@ Authoring a new complete score may omit event IDs. Import assigns them and retur
 
 `instrument` is a symbolic instrument identity or catalog key. It is not an implicit MIDI program, transposition, tuning, staff type, or percussion map. Those properties must be explicitly represented in supported domain fields/extensions. No convention silently turns `clarinet` into a B-flat transposition.
 
-Core metadata fields are string-valued `title`, `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `rights`, and `language`. More than one attribution or a richer source catalog requires a registered metadata extension. Analytical prose is not score metadata.
+Core metadata fields are string-valued `title`, `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `movement_number`, `rights`, `source_description`, and `language`. More than one attribution or a richer source catalog requires a registered metadata extension. Analytical prose is not score metadata.
 
 ### 4. Frames and stream completion
 

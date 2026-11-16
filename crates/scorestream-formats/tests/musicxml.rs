@@ -186,10 +186,15 @@ fn shared_metadata_is_escaped_or_rejected_without_loss() {
     score.metadata.lyricist = Some("Words".into());
     score.metadata.arranger = Some("Arrange".into());
     score.metadata.work_number = Some("Op. 1".into());
-    score.metadata.movement = Some("I".into());
+    score.metadata.movement = Some("Allegro".into());
+    score.metadata.movement_number = Some("IV-bis".into());
+    score.metadata.source_description = Some("Edition <first> & plates".into());
     score.metadata.rights = Some("© 2026".into());
     let xml = MusicXml.write(&score).unwrap().value;
     assert!(!xml.contains("<Script>"));
+    assert!(xml.contains("<movement-number>IV-bis</movement-number>"));
+    assert!(xml.contains("<movement-title>Allegro</movement-title>"));
+    assert!(xml.contains("<source>Edition &lt;first&gt; &amp; plates</source>"));
     assert_eq!(MusicXml.read(&xml).unwrap().value.metadata, score.metadata);
     score.metadata.header = Some("Private".into());
     assert!(

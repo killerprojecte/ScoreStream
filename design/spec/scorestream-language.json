@@ -757,9 +757,17 @@
         "type": "string",
         "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
       },
+      "movement_number": {
+        "type": "string",
+        "meaning": "Authored movement identifier, independent of the title and not necessarily numeric."
+      },
       "rights": {
         "type": "string",
         "meaning": "Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it."
+      },
+      "source_description": {
+        "type": "string",
+        "meaning": "Plain description of the score source, never an instruction or a resource to fetch."
       },
       "language": {
         "type": "string",

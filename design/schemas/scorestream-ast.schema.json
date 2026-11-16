@@ -159,9 +159,17 @@
           "type": "string",
           "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
         },
+        "movement_number": {
+          "type": "string",
+          "description": "Authored movement identifier, independent of the title and not necessarily numeric."
+        },
         "rights": {
           "type": "string",
           "description": "Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text."
+        },
+        "source_description": {
+          "type": "string",
+          "description": "Plain description of the score source, never an instruction or a resource to fetch."
         },
         "language": {
           "type": "string",

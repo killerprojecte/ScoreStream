@@ -74,6 +74,8 @@ pub(crate) fn read(
                 "arranger" => metadata.arranger = Some(value),
                 "work_number" => metadata.work_number = Some(value),
                 "movement" => metadata.movement = Some(value),
+                "movement_number" => metadata.movement_number = Some(value),
+                "source_description" => metadata.source_description = Some(value),
                 "rights" => metadata.rights = Some(value),
                 "language" => metadata.language = Some(value),
                 _ => {

@@ -36,8 +36,14 @@ defs={
  'Attributes':{'type':'object','propertyNames':{'pattern':r'^[A-Za-z][A-Za-z0-9_.-]*$'},'additionalProperties':ref('Scalar'),'description':'Flat values. The language registry checks names, types, scopes and extension requirements. Unknown unqualified fields fail semantic validation.'},
 }
 metadata_text=s(description='Plain score text, never markup or a filename fallback. Optional; an empty string is explicit empty text.')
-metadata_fields=['title','description','header','footer','subtitle','composer','lyricist','arranger','work_number','movement','rights','language']
+metadata_fields=['title','description','header','footer','subtitle','composer','lyricist','arranger','work_number','movement','movement_number','rights','source_description','language']
 defs['DocumentMetadata']=obj({**{name:metadata_text for name in metadata_fields},'authors':arr(s(minLength=1, allOf=[{'pattern':r'\S'},{'pattern':r'^[^\u0000-\u001F\u007F-\u009F\u2028\u2029]*$'}]), description='Ordered plain author names. Empty or absent means no generic author list; legacy role fields remain separate.')}, [])
+metadata_meanings={
+ 'movement_number':'Authored movement identifier, independent of the title and not necessarily numeric.',
+ 'source_description':'Plain description of the score source, never an instruction or a resource to fetch.',
+}
+for key,meaning in metadata_meanings.items():
+    defs['DocumentMetadata']['properties'][key]=s(description=meaning)
 defs['Part']={'type': 'object', 'properties': {'id': {'$ref': '#/$defs/Identifier'}, 'instrument': {'type': 'string', 'minLength': 1}, 'staves': {'type': 'integer', 'minimum': 1}, 'display_name': {'type': 'string', 'description': 'Optional plain authored part label, independent of instrument identity. Absence uses the instrument as a renderer fallback; an empty string is an explicitly empty label. Text must contain only XML 1.0 characters.'}}, 'required': ['id', 'instrument', 'staves'], 'additionalProperties': False}
 defs['Voice']=obj({'id':ref('Identifier'),'part':ref('Identifier'),'staff':{'type':'integer','minimum':1}})
 defs['Event']=obj({'record':{'const':'event'},'voice':ref('Identifier'),
@@ -136,6 +142,8 @@ attrs={
 # Keeping names in one registry lets the future Rust implementation generate
 # language help and semantic validation from the same versioned source.
 attrs['metadata']={name:{'type':'string','meaning':'Optional plain score text; no markup interpretation. Empty strings are retained. Control characters other than tab/LF/CR are preserved with a portability warning; exporters must diagnose unsupported text, not silently discard it.'} for name in metadata_fields}
+for key,meaning in metadata_meanings.items():
+    attrs['metadata'][key]['meaning']=meaning
 attrs['metadata']['title']['meaning']='Explicit score title. Never inferred from a filename, application name, header or description.'
 attrs['metadata']['description']['meaning']='Catalog/editor description; not automatically printed as notation or a page title.'
 attrs['metadata']['header']['meaning']='Optional running page-header text, independent of the title; no markup or template expansion.'

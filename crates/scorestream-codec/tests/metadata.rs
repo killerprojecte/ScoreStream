@@ -76,6 +76,21 @@ fn missing_and_empty_fields_do_not_create_a_title_or_author() {
 }
 
 #[test]
+fn movement_number_and_source_are_independent_plain_text() {
+    let document = parse(&score(
+        r#"!meta movement="Andante" movement_number="II-bis" source_description="""#,
+    ))
+    .unwrap();
+    assert_eq!(document.metadata.movement.as_deref(), Some("Andante"));
+    assert_eq!(document.metadata.movement_number.as_deref(), Some("II-bis"));
+    assert_eq!(document.metadata.source_description.as_deref(), Some(""));
+    assert!(document.metadata.source.contains_key("source_description"));
+    let rendered = canonical(&document);
+    assert_eq!(canonical(&parse(&rendered).unwrap()), rendered);
+    fails(r#"!meta movement_number=2"#, "string_invalid");
+}
+
+#[test]
 fn repeated_fields_fail_even_when_identical_or_empty() {
     for source in [
         "!meta title=\"A\" title=\"A\"",
@@ -183,7 +198,10 @@ fn descriptor_metadata_fields_match_typed_model_and_full_example() {
     ))
     .unwrap();
     let fields = descriptor["vocabulary"]["metadata"].as_object().unwrap();
-    assert_eq!(fields.len(), 13);
+    assert_eq!(
+        fields.len(),
+        DocumentMetadata::default().text_fields().len() + 1
+    );
     for (name, contract) in fields {
         let sample = if name == "authors" {
             r#"["A", "B"]"#

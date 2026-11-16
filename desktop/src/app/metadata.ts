@@ -5,7 +5,7 @@ export function readMetadata(value: unknown): DocumentMetadata {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   const source = value as Record<string, unknown>;
   const result: DocumentMetadata = {};
-  for (const key of ['title', 'description', 'header', 'footer', 'subtitle', 'composer', 'lyricist', 'arranger', 'work_number', 'movement', 'rights', 'language'] as const) {
+  for (const key of ['title', 'description', 'header', 'footer', 'subtitle', 'composer', 'lyricist', 'arranger', 'work_number', 'movement', 'movement_number', 'rights', 'source_description', 'language'] as const) {
     if (typeof source[key] === 'string' && source[key].trim()) result[key] = source[key].trim();
   }
   if (Array.isArray(source.authors)) {

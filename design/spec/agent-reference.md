@@ -48,7 +48,7 @@ Quote text using JSON rules: `text="dolce e cantabile"`. Whole-line comments beg
 
 ## Score metadata
 
-Before frames, use `!meta title="Spring" description="A short study" authors=["Lin", "Alex"] header="Rehearsal" footer="Draft"`. Every field is optional. Authors are an ordered list of nonblank single-line names; the other fields are JSON-quoted plain text. The title is not a filename. Header/footer are separate running page text, without markup or template substitution. Description is editor/catalog context, not automatically printed. Legacy `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `rights` and `language` remain supported and are not inferred from authors. Repeated fields and metadata inside fragments fail. `topics=["syntax"]` includes the exact field types and a full metadata example.
+Before frames, use `!meta title="Spring" description="A short study" authors=["Lin", "Alex"] header="Rehearsal" footer="Draft"`. Every field is optional. Authors are an ordered list of nonblank single-line names; the other fields are JSON-quoted plain text. The title is not a filename. Header/footer are separate running page text, without markup or template substitution. Description is editor/catalog context, not automatically printed. Fields `subtitle`, `composer`, `lyricist`, `arranger`, `work_number`, `movement`, `movement_number`, `rights`, `source_description` and `language` are independent and not inferred from authors. Movement number is text, distinct from the movement title; source description is plain provenance, not a resource to fetch. Repeated fields and metadata inside fragments fail. `topics=["syntax"]` includes the exact field types and a full metadata example.
 
 ## Rules to keep in context
 

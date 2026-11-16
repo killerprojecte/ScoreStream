@@ -1394,6 +1394,8 @@ mod tests {
             arranger: Some("arranger".into()),
             work_number: Some("Op. 12".into()),
             movement: Some("II".into()),
+            movement_number: Some("2a".into()),
+            source_description: Some("Édition originale".into()),
             rights: Some("rights".into()),
             language: Some("zh".into()),
             authors: vec!["张三".into(), "A, B".into(), "张三".into()],

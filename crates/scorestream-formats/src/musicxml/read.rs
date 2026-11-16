@@ -211,8 +211,14 @@ fn read_with_audit<R: BufRead + Seek>(
                             "Expected exactly one matching part",
                         ));
                     }
-                } else if ["work", "movement-title", "identification", "part-list"]
-                    .contains(&node.name.as_str())
+                } else if [
+                    "work",
+                    "movement-number",
+                    "movement-title",
+                    "identification",
+                    "part-list",
+                ]
+                .contains(&node.name.as_str())
                 {
                     if !headers.iter().any(|n: &Node| n.name == node.name) {
                         headers.push(node.clone());
@@ -267,9 +273,11 @@ fn read_with_audit<R: BufRead + Seek>(
         score.metadata.title = work.child("work-title").map(|n| n.text.clone());
         score.metadata.work_number = work.child("work-number").map(|n| n.text.clone());
     }
+    score.metadata.movement_number = root.child("movement-number").map(|n| n.text.clone());
     score.metadata.movement = root.child("movement-title").map(|n| n.text.clone());
     if let Some(identification) = root.child("identification") {
         score.metadata.rights = identification.child("rights").map(|n| n.text.clone());
+        score.metadata.source_description = identification.child("source").map(|n| n.text.clone());
         for creator in identification.children_named("creator") {
             let target = match creator.attr("type") {
                 Some("author") => {

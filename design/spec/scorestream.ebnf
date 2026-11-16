@@ -21,7 +21,7 @@ metadata_decl = "!meta", ws, metadata_field, { ws, metadata_field }, nl ;
 metadata_field = metadata_text_name, "=", quoted_string | "authors=", author_list ;
 metadata_text_name = "title" | "description" | "header" | "footer" | "subtitle"
                    | "composer" | "lyricist" | "arranger" | "work_number"
-                   | "movement" | "rights" | "language" ;
+                   | "movement" | "movement_number" | "rights" | "source_description" | "language" ;
 author_list = "[", [ ws ], [ quoted_string, { [ ws ], ",", [ ws ], quoted_string } ], [ ws ], "]" ;
 requirement_decl = "!requires", ws, namespace, "@", version, nl ;
 
