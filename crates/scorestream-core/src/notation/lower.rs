@@ -207,6 +207,7 @@ pub fn lower_document(doc: &Document) -> std::result::Result<ResolvedScore, Vec<
 pub(super) enum LoweringProfile {
     Written,
     ExplicitArticulations,
+    ExplicitArticulationsGracesAndFermatas,
     Navigation,
     ExplicitFermatas,
     ExplicitGraces,
@@ -228,7 +229,11 @@ pub(super) fn reject_authored_articulations(doc: &Document) -> Result<()> {
     Ok(())
 }
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
-    if profile != LoweringProfile::ExplicitArticulations {
+    if !matches!(
+        profile,
+        LoweringProfile::ExplicitArticulations
+            | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+    ) {
         reject_authored_articulations(doc)?;
     }
     if doc
@@ -251,7 +256,9 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
     }
     let graces = matches!(
         profile,
-        LoweringProfile::ExplicitGraces | LoweringProfile::ExplicitGracesAndFermatas
+        LoweringProfile::ExplicitGraces
+            | LoweringProfile::ExplicitGracesAndFermatas
+            | LoweringProfile::ExplicitArticulationsGracesAndFermatas
     );
     if !graces
         && doc
@@ -268,7 +275,9 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
     let navigation = profile != LoweringProfile::Written;
     let fermatas = matches!(
         profile,
-        LoweringProfile::ExplicitFermatas | LoweringProfile::ExplicitGracesAndFermatas
+        LoweringProfile::ExplicitFermatas
+            | LoweringProfile::ExplicitGracesAndFermatas
+            | LoweringProfile::ExplicitArticulationsGracesAndFermatas
     );
     if !fermatas
         && doc
@@ -443,9 +452,12 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if crate::print_layout::is_kind(&mark.kind) => {}
                 Record::Mark(mark)
-                    if profile == LoweringProfile::ExplicitArticulations
-                        && (crate::articulation_extension::is_kind(&mark.kind)
-                            || crate::notation_extension::is_kind(&mark.kind)) => {}
+                    if matches!(
+                        profile,
+                        LoweringProfile::ExplicitArticulations
+                            | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+                    ) && (crate::articulation_extension::is_kind(&mark.kind)
+                        || crate::notation_extension::is_kind(&mark.kind)) => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}
                 Record::Mark(mark) => {
@@ -610,7 +622,11 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
             origin: origin(id, first.source),
         });
     }
-    if profile == LoweringProfile::ExplicitArticulations {
+    if matches!(
+        profile,
+        LoweringProfile::ExplicitArticulations
+            | LoweringProfile::ExplicitArticulationsGracesAndFermatas
+    ) {
         super::articulations::append_directions(doc, &mut score)?;
     }
     score

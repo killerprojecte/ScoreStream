@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Independent synthetic performance contract, not an edited Beethoven original. -->
+<score-partwise version="4.0">
+<part-list>
+ <score-part id="p"><part-name>Piano</part-name><score-instrument id="ip"><instrument-name>piano</instrument-name></score-instrument></score-part>
+ <score-part id="r"><part-name>Rest anchors</part-name><score-instrument id="ir"><instrument-name>piano</instrument-name></score-instrument></score-part>
+</part-list>
+<part id="p">
+ <measure id="p1" number="1">
+  <attributes><divisions>8</divisions><time><beats>2</beats><beat-type>4</beat-type></time></attributes>
+  <note id="art"><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><notations><articulations><staccato default-x="1.25" default-y="-2.5"/></articulations></notations></note>
+  <note id="plain"><pitch><step>D</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice></note>
+ </measure>
+ <measure id="p2" number="2">
+  <note id="held"><pitch><step>E</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><notations><fermata type="upright"/></notations></note>
+  <note id="g"><grace slash="yes"/><pitch><step>F</step><octave>4</octave></pitch><voice>1</voice><type>16th</type></note>
+  <note id="principal"><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice></note>
+ </measure>
+</part>
+<part id="r">
+ <measure id="r1" number="1">
+  <attributes><divisions>8</divisions><time><beats>2</beats><beat-type>4</beat-type></time></attributes>
+  <note id="silence"><rest/><duration>16</duration><voice>1</voice></note>
+ </measure>
+ <measure id="r2" number="2">
+  <note id="short-rest"><rest/><duration>4</duration><voice>1</voice><notations><fermata type="upright" relative-y="5"/></notations></note>
+  <note id="rest-tail"><rest/><duration>12</duration><voice>1</voice></note>
+ </measure>
+</part>
+</score-partwise>

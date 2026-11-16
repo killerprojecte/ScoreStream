@@ -17,6 +17,7 @@ pub struct CombinedPerformanceDiscovery {
 /// Grace seconds here are FINAL hold-aware times, never the base grace clock.
 #[derive(Clone, Debug)]
 pub struct QualifiedCombinedPerformance {
+    articulations: Option<ArticulationInterpretation>,
     performed: PerformedScore,
     timing: TimingProjection,
     grace_discovery: GraceDiscovery,
@@ -26,6 +27,9 @@ pub struct QualifiedCombinedPerformance {
     default_tempo_intervals: Vec<GraceDefaultTempoInterval>,
 }
 impl QualifiedCombinedPerformance {
+    pub fn articulations(&self) -> Option<&ArticulationInterpretation> {
+        self.articulations.as_ref()
+    }
     pub fn performed(&self) -> &PerformedScore {
         &self.performed
     }
@@ -194,6 +198,7 @@ fn prepare(
     mut performance: PerformanceLimits,
     grace: &GraceTimingLimits,
     timing: &TimingLimits,
+    articulation_policy: Option<ExplicitArticulationPolicy>,
 ) -> Result<PerformedScore, Vec<Diagnostic>> {
     preflight_combined_source(doc, grace, timing)?;
     let errors: Vec<_> = crate::validate(doc, None)
@@ -220,7 +225,11 @@ fn prepare(
     perform::perform(
         doc,
         performance,
-        LoweringProfile::ExplicitGracesAndFermatas,
+        if articulation_policy.is_some() {
+            LoweringProfile::ExplicitArticulationsGracesAndFermatas
+        } else {
+            LoweringProfile::ExplicitGracesAndFermatas
+        },
         Some(grace.maximum_rational_bits),
         Some((grace.maximum_members, grace.maximum_groups)),
     )
@@ -236,6 +245,7 @@ pub fn discover_document_graces_and_fermatas(
         PerformanceLimits::default(),
         &grace_limits,
         &timing_limits,
+        None,
     )?;
     Ok(CombinedPerformanceDiscovery {
         graces: grace::discover(doc, &performed)?,
@@ -264,6 +274,7 @@ pub fn perform_document_with_explicit_graces_and_fermatas(
         performance_limits,
         grace_limits,
         timing_limits,
+        None,
     )
 }
 
@@ -300,6 +311,63 @@ pub fn perform_document_with_explicit_graces_and_synchronized_fermatas(
         performance_limits,
         grace_limits,
         timing_limits,
+        None,
+    )
+}
+
+/// Metadata discovery with an explicitly selected articulation interpretation.
+pub fn discover_document_joint_performance(
+    doc: &Document,
+    articulation_policy: ExplicitArticulationPolicy,
+) -> Result<CombinedPerformanceDiscovery, Vec<Diagnostic>> {
+    let (grace, timing) = limits(doc, &GraceTimingLimits::default(), &TimingLimits::default())?;
+    let performed = prepare(
+        doc,
+        PerformanceLimits::default(),
+        &grace,
+        &timing,
+        Some(articulation_policy),
+    )?;
+    super::articulations::qualify_articulations(doc, &performed, articulation_policy)?;
+    Ok(CombinedPerformanceDiscovery {
+        graces: grace::discover(doc, &performed)?,
+        fermatas: fermata::discover(doc, &performed, &timing)?,
+    })
+}
+/// All three musical interpretations are explicit. One unchanged source, route and clock.
+#[allow(clippy::too_many_arguments)]
+pub fn perform_document_with_explicit_joint_policies(
+    doc: &Document,
+    articulation_policy: ExplicitArticulationPolicy,
+    grace_policy: &ExplicitGracePolicy,
+    grace_sound_policy: GraceSoundPolicy,
+    fermata_policy: &fermata_timing::ExplicitSynchronizedFermataPolicy,
+    performance_limits: PerformanceLimits,
+    grace_limits: GraceTimingLimits,
+    timing_limits: TimingLimits,
+) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
+    let holds = ExplicitFermataPolicy {
+        groups: fermata_policy
+            .groups
+            .iter()
+            .map(|g| g.hold.clone())
+            .collect(),
+    };
+    let boundaries: Vec<_> = fermata_policy
+        .groups
+        .iter()
+        .map(|g| g.boundary.clone())
+        .collect();
+    perform_combined(
+        doc,
+        grace_policy,
+        grace_sound_policy,
+        &holds,
+        Some(&boundaries),
+        performance_limits,
+        grace_limits,
+        timing_limits,
+        Some(articulation_policy),
     )
 }
 
@@ -313,6 +381,7 @@ fn perform_combined(
     performance_limits: PerformanceLimits,
     grace_limits: GraceTimingLimits,
     timing_limits: TimingLimits,
+    articulation_policy: Option<ExplicitArticulationPolicy>,
 ) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
     let (grace_limits, timing_limits) = limits(doc, &grace_limits, &timing_limits)?;
     if synchronization.is_some_and(|boundaries| {
@@ -328,7 +397,16 @@ fn perform_combined(
     }
     grace::preflight_policy(doc, grace_policy, &grace_limits)?;
     preflight_fermata_policy(doc, fermata_policy, &timing_limits)?;
-    let performed = prepare(doc, performance_limits, &grace_limits, &timing_limits)?;
+    let performed = prepare(
+        doc,
+        performance_limits,
+        &grace_limits,
+        &timing_limits,
+        articulation_policy,
+    )?;
+    let articulations = articulation_policy
+        .map(|policy| super::articulations::qualify_articulations(doc, &performed, policy))
+        .transpose()?;
     let schedule = grace::allocate(
         doc,
         &performed,
@@ -433,6 +511,7 @@ fn perform_combined(
     }
     fermata::retain_default_tempo_provenance(&performed, &mut timing);
     Ok(QualifiedCombinedPerformance {
+        articulations,
         performed,
         timing,
         grace_discovery: schedule.discovery().clone(),

@@ -4,8 +4,8 @@
 #![allow(clippy::result_large_err)]
 use super::{lower, *};
 use crate::{
-    navigation as nav, navigation_extension as ext, repeat_traversal as route, Diagnostic,
-    Document, Rational, Record, Scalar, Severity, SourceRange,
+    Diagnostic, Document, Rational, Record, Scalar, Severity, SourceRange, navigation as nav,
+    navigation_extension as ext, repeat_traversal as route,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -85,11 +85,19 @@ pub(super) fn perform(
     maximum_timing_bits: Option<u64>,
     grace_budgets: Option<(usize, usize)>,
 ) -> Result<PerformedScore> {
-    let articulations = profile == lower::LoweringProfile::ExplicitArticulations;
+    let articulations = matches!(
+        profile,
+        lower::LoweringProfile::ExplicitArticulations
+            | lower::LoweringProfile::ExplicitArticulationsGracesAndFermatas
+    );
     if !articulations {
         lower::reject_authored_articulations(doc)?;
     }
-    let combined = profile == lower::LoweringProfile::ExplicitGracesAndFermatas;
+    let combined = matches!(
+        profile,
+        lower::LoweringProfile::ExplicitGracesAndFermatas
+            | lower::LoweringProfile::ExplicitArticulationsGracesAndFermatas
+    );
     let fermatas = combined || profile == lower::LoweringProfile::ExplicitFermatas;
     let graces = combined || profile == lower::LoweringProfile::ExplicitGraces;
     if !fermatas
@@ -98,11 +106,14 @@ pub(super) fn perform(
             .iter()
             .any(|e| e == crate::fermata_extension::EXTENSION)
     {
-        let mut d = error("fermata.performance_unsupported", "Authored fermatas require an explicit hold-duration policy; performed repeats cannot drop their holds");
+        let mut d = error(
+            "fermata.performance_unsupported",
+            "Authored fermatas require an explicit hold-duration policy; performed repeats cannot drop their holds",
+        );
         d.source = doc.source;
         return Err(d);
     }
-    let supported = if articulations {
+    let supported = if articulations && !combined {
         doc.required_extensions
             .iter()
             .any(|e| e == crate::articulation_extension::EXTENSION)
@@ -120,8 +131,16 @@ pub(super) fn perform(
         ]
         .iter()
         .all(|required| doc.required_extensions.iter().any(|e| e == required))
+            && (!articulations
+                || doc
+                    .required_extensions
+                    .iter()
+                    .any(|e| e == crate::articulation_extension::EXTENSION))
             && doc.required_extensions.iter().all(|e| {
-                e == crate::fermata_extension::EXTENSION
+                (articulations
+                    && (e == crate::articulation_extension::EXTENSION
+                        || e == crate::notation_extension::EXTENSION))
+                    || e == crate::fermata_extension::EXTENSION
                     || e == crate::grace_extension::EXTENSION
                     || e == ext::EXTENSION
                     || e == crate::instrument_extension::EXTENSION
@@ -157,15 +176,30 @@ pub(super) fn perform(
     };
     if !supported {
         return Err(if articulations {
-            error("articulation.performance_capability", "Explicit articulation route supports ordinary/repeated measured music; grace, fermata and other required interpretation policies must be combined explicitly")
+            error(
+                "articulation.performance_capability",
+                "Explicit articulation route supports ordinary/repeated measured music; grace, fermata and other required interpretation policies must be combined explicitly",
+            )
         } else if combined {
-            error("combined.performance_capability", "Combined projection requires grace@1 and fermata@1, optionally navigation@1; other required semantics cannot be ignored")
+            error(
+                "combined.performance_capability",
+                "Combined projection requires grace@1 and fermata@1, optionally navigation@1; other required semantics cannot be ignored",
+            )
         } else if fermatas {
-            error("fermata.performance_capability", "Qualified fermata projection requires fermata@1 and optionally navigation@1; other required semantics cannot be ignored")
+            error(
+                "fermata.performance_capability",
+                "Qualified fermata projection requires fermata@1 and optionally navigation@1; other required semantics cannot be ignored",
+            )
         } else if graces {
-            error("grace.performance_capability", "Qualified grace projection requires grace@1 and optionally navigation@1; other required semantics cannot be ignored")
+            error(
+                "grace.performance_capability",
+                "Qualified grace projection requires grace@1 and optionally navigation@1; other required semantics cannot be ignored",
+            )
         } else {
-            error("navigation.performance_capability", "Performed navigation requires exactly the supported navigation capability; other required semantics cannot be ignored")
+            error(
+                "navigation.performance_capability",
+                "Performed navigation requires exactly the supported navigation capability; other required semantics cannot be ignored",
+            )
         });
     }
     let mut parts: Vec<_> = doc

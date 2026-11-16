@@ -40,15 +40,15 @@ roundtrip through the shared model/SFS, and validate numeric controls, accents,
 mixed-family ties and repeated visits. This is not complete original-score import,
 a cleaned Beethoven excerpt or an audio recording.
 
-This first route deliberately does **not** compose with the separately qualified
-grace/fermata APIs. A source requiring fermatas still requires a selected hold
+The standalone route does **not** silently compose with grace/fermata APIs.
+The separate [explicit joint-policy constructor](COMBINED_PLAYBACK.md#explicit-articulation-grace-and-synchronized-hold-composition) now composes all three selected interpretations for disjoint articulations. A source requiring fermatas still requires a selected hold
 policy, and grace timing still needs a selected grace allocation. Authored slurs,
 unmapped signs, unsupported MIDI intent and other independent semantic requirements
 remain explicit blockers. Ordinary `plan_source` and all previous common-release,
 synchronized and combined APIs still reject authored articulation semantics when
-no articulation policy was selected. Future composition must carry this policy,
-full source audit and tie/hold interaction through their shared qualified route;
-removing a capability guard is not that composition.
+no articulation policy was selected. The explicit joint constructor carries this policy, full source audit and
+tie/hold interaction through the shared qualified route; removing a capability
+guard alone is not that composition.
 
 ```sh
 cargo test --locked -p scorestream-formats --test qualified_articulation_playback

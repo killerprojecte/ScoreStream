@@ -115,6 +115,7 @@ pub(super) fn validate_sound_policy(
     score: &ResolvedScore,
     continuity: &Continuity,
     timing: &TimingProjection,
+    articulation_policy: Option<ExplicitArticulationPolicy>,
     warnings: &mut Diagnostics,
 ) -> Result<BTreeSet<usize>, String> {
     let indices: BTreeMap<_, _> = score
@@ -177,14 +178,36 @@ pub(super) fn validate_sound_policy(
             ));
         }
     }
-    // Even shortening marks or accents away from a selected anchor may affect a
-    // chain. This first profile rejects all audible articulations, including
-    // tenuto, rather than silently declaring one interpretation to win.
+    let tail_by_root: BTreeMap<_, _> = audible.iter().copied().collect();
+    // The original hold profile rejects audible articulations. The separately
+    // selected joint policy may realize only simple signs on chains disjoint
+    // from every hold; it never chooses precedence on a held/tied chain.
     for d in &score.directions {
         match (&d.kind, &d.scope) {
-            (DirectionKind::Articulation { .. }, Scope::Event(id))
+            (DirectionKind::Articulation { value }, Scope::Event(id))
                 if root_by_event.contains_key(id) =>
             {
+                if articulation_policy == Some(ExplicitArticulationPolicy::SimpleStaccatoAccentV1)
+                    && matches!(value, Articulation::Staccato | Articulation::Accent)
+                {
+                    let index = indices[id];
+                    if (*value == Articulation::Staccato && continuity.ties.contains_key(&index))
+                        || (*value == Articulation::Accent && continuity.targets.contains(&index))
+                    {
+                        return Err("articulation.tie_interpretation: Joint policy cannot discard an interior staccato or invent a tied-continuation attack".into());
+                    }
+                    let root = root_by_event[id];
+                    let tail = tail_by_root.get(&root).expect("audible chain indexed");
+                    let start = &score.events[root].start;
+                    let end = score.events[*tail].end();
+                    let next = timing.holds().partition_point(|h| &h.boundary <= start);
+                    if timing.holds().get(next).is_some_and(|h| h.boundary <= end) {
+                        return Err(format!(
+                            "articulation.hold_interpretation: Articulated chain {id} intersects a selected hold; gate/attack precedence requires another policy"
+                        ));
+                    }
+                    continue;
+                }
                 return Err(format!(
                     "fermata.articulation_unsupported: Audible articulation on {id} needs a separate hold sound policy"
                 ));

@@ -93,7 +93,7 @@ fn fixture() -> (
         &TimingLimits::default(),
     )
     .unwrap();
-    let performed = prepare(&doc, PerformanceLimits::default(), &g, &t).unwrap();
+    let performed = prepare(&doc, PerformanceLimits::default(), &g, &t, None).unwrap();
     let discovered = grace::discover(&doc, &performed).unwrap();
     let member = &discovered.occurrences[0];
     let policy = ExplicitGracePolicy {

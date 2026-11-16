@@ -169,3 +169,35 @@ This is a synthetic executable fixture, not a cleaned Beethoven excerpt or a
 complete original-score import. Authored articulation playback is still a separate
 open interpretation requirement; this new entry point does not bypass its existing
 checks. It adds no UI policy editor or automatic score-wide performance choice.
+
+## Explicit articulation, grace and synchronized-hold composition
+
+`discover_source_joint_performance(source, articulation_policy)` supplies policy
+entry metadata without exposing a playable score. The new
+`plan_source_with_explicit_joint_policies` accepts all three explicit choices:
+`SimpleStaccatoAccentV1`, exact grace allocations plus grace sound policy, and
+synchronized fermata groups/seconds plus fermata sound policy. The core constructor
+has the corresponding name and accepts caller-selected resource budgets.
+
+This uses one projection and one exact hold-aware clock, not a warped second plan.
+Its read-only articulation audit retains the unchanged complete source, all authored
+articulation records and selected policy. Existing strict/common-release and
+synchronized grace/fermata APIs are unchanged: they do not silently select an
+articulation interpretation.
+
+The selected simple articulation policy applies to note/tie chains away from holds.
+Any articulated sounding chain whose notated interval crosses or ends at a selected
+hold is rejected, even if an ordinary staccato gate would have ended earlier; this
+avoids inventing precedence between articulation and sustained hold. Grace/principal
+articulations still need a separate window interpretation. A final tie-segment
+staccato away from holds remains a single attack with the selected shortened tail;
+interior staccato and continuation accent remain unsupported interpretations.
+Direct numeric dynamics still combine with staccato but not attack-changing accents.
+
+`joint-articulation-playback.musicxml` is an executable synthetic two-measure
+contract: articulation in measure 1, a short rest fermata and later synchronized hold
+in measure 2, then an authored grace/principal pair. With boundary 3 and one added
+second, the rest marker ends at second 5/4, the one hold is `[3/2, 5/2)`, and the grace
+starts at 5/2. A disjoint tied staccato also works. This is not full original-score
+import and does not provide a UI editor, default interpretation, support for other
+articulation families or unsupported native source semantics.

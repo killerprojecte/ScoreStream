@@ -13,6 +13,9 @@ pub struct ExplicitCombinedPlayback {
     fermata_sound_policy: FermataSoundPolicy,
 }
 impl ExplicitCombinedPlayback {
+    pub fn articulations(&self) -> Option<&ArticulationInterpretation> {
+        self.performance.articulations()
+    }
     pub fn plan(&self) -> &PlaybackPlan {
         &self.plan
     }
@@ -93,6 +96,46 @@ pub fn plan_source_with_explicit_graces_and_synchronized_fermatas(
     let doc = parse(source)?;
     let performance = perform_document_with_explicit_graces_and_synchronized_fermatas(
         &doc,
+        grace_policy,
+        grace_sound_policy,
+        fermata_policy,
+        PerformanceLimits::default(),
+        GraceTimingLimits::default(),
+        TimingLimits::default(),
+    )
+    .map_err(format_diagnostics)?;
+    match fermata_sound_policy {
+        FermataSoundPolicy::SustainSelectedAnchors => (),
+    }
+    let plan = compile_combined(&doc, &performance)?;
+    Ok(ExplicitCombinedPlayback {
+        plan,
+        performance,
+        fermata_sound_policy,
+    })
+}
+
+/// Discovery selects articulation semantics but still exposes no playable score.
+pub fn discover_source_joint_performance(
+    source: &str,
+    articulation_policy: ExplicitArticulationPolicy,
+) -> Result<CombinedPerformanceDiscovery, String> {
+    discover_document_joint_performance(&parse(source)?, articulation_policy)
+        .map_err(format_diagnostics)
+}
+/// All three interpretations and both grace/hold sound choices are required.
+pub fn plan_source_with_explicit_joint_policies(
+    source: &str,
+    articulation_policy: ExplicitArticulationPolicy,
+    grace_policy: &ExplicitGracePolicy,
+    grace_sound_policy: GraceSoundPolicy,
+    fermata_policy: &scorestream_codec::fermata_timing::ExplicitSynchronizedFermataPolicy,
+    fermata_sound_policy: FermataSoundPolicy,
+) -> Result<ExplicitCombinedPlayback, String> {
+    let doc = parse(source)?;
+    let performance = perform_document_with_explicit_joint_policies(
+        &doc,
+        articulation_policy,
         grace_policy,
         grace_sound_policy,
         fermata_policy,

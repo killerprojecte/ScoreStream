@@ -47,13 +47,6 @@ pub fn perform_document_with_explicit_articulations(
     if !errors.is_empty() {
         return Err(errors);
     }
-    let authored = articulation_extension::decode(doc)?.ok_or_else(|| {
-        vec![fail(
-            doc,
-            "articulation.policy_source",
-            "This explicit profile requires retained authored articulation data",
-        )]
-    })?;
     let performed = perform::perform(
         doc,
         limits,
@@ -62,6 +55,45 @@ pub fn perform_document_with_explicit_articulations(
         None,
     )
     .map_err(|e| vec![e])?;
+    let audit = qualify_articulations(doc, &performed, policy)?;
+    Ok(QualifiedArticulationPerformance {
+        source: audit.source,
+        performed,
+        authored: audit.authored,
+        policy: audit.policy,
+    })
+}
+
+/// Read-only original source and retained notation under one selected interpretation.
+#[derive(Clone, Debug)]
+pub struct ArticulationInterpretation {
+    source: Document,
+    authored: AuthoredArticulations,
+    policy: ExplicitArticulationPolicy,
+}
+impl ArticulationInterpretation {
+    pub fn source(&self) -> &Document {
+        &self.source
+    }
+    pub fn authored(&self) -> &AuthoredArticulations {
+        &self.authored
+    }
+    pub fn policy(&self) -> ExplicitArticulationPolicy {
+        self.policy
+    }
+}
+pub(super) fn qualify_articulations(
+    doc: &Document,
+    performed: &PerformedScore,
+    policy: ExplicitArticulationPolicy,
+) -> Result<ArticulationInterpretation, Vec<Diagnostic>> {
+    let authored = articulation_extension::decode(doc)?.ok_or_else(|| {
+        vec![fail(
+            doc,
+            "articulation.policy_source",
+            "This explicit profile requires retained authored articulation data",
+        )]
+    })?;
     // A sign at a tied continuation cannot invent a new attack, and an interior
     // staccato cannot be silently discarded by the chain's terminal gate.
     let mut tied_sources = BTreeSet::new();
@@ -99,9 +131,8 @@ pub fn perform_document_with_explicit_articulations(
             }
         }
     }
-    Ok(QualifiedArticulationPerformance {
+    Ok(ArticulationInterpretation {
         source: doc.clone(),
-        performed,
         authored,
         policy,
     })

@@ -253,7 +253,16 @@ fn compile_with_graces(
         }
     }
     let held_tails = if let Some(timing) = timing {
-        fermata::validate_sound_policy(score, &continuity, timing, &mut warnings)?
+        let articulation_policy = match grace {
+            Some(GraceView::Combined(qualified)) => qualified.articulations().map(|a| a.policy()),
+            _ => None,
+        };
+        if articulation_policy.is_some() {
+            warnings.add("articulation.explicit_joint_policy", "articulation.authored", RealizationEffect::Policy,
+                &Origin { object_id: "document".into(), source: doc.source },
+                "Explicit SimpleStaccatoAccentV1: half gate and +16 accent velocity policy, only away from selected holds and grace/principal windows; source notation retained.");
+        }
+        fermata::validate_sound_policy(score, &continuity, timing, articulation_policy, &mut warnings)?
     } else {
         BTreeSet::new()
     };
