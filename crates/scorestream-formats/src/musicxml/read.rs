@@ -425,6 +425,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.beams.append(&mut reader.beams);
             score.geometry.append(&mut reader.geometry);
             score.print_layout.append(&mut reader.print_layout);
+            score.lyrics.append(&mut reader.lyrics);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -501,6 +502,9 @@ fn read_with_audit<R: BufRead + Seek>(
     if !score.print_layout.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"print.authored_layout","/print_layout",format!("Retained {} measure-owned print layouts; preview independently reflows and playback is unchanged",score.print_layout.len()));
     }
+    if !score.lyrics.is_empty() {
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
+    }
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
     report.finish(score)
@@ -531,6 +535,7 @@ struct PartReader {
     beams: Vec<ScoreBeam>,
     geometry: Vec<scorestream_core::geometry::Geometry>,
     print_layout: Vec<scorestream_core::print_layout::PrintLayout>,
+    lyrics: Vec<scorestream_core::lyrics::EventLyrics>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -576,6 +581,7 @@ impl PartReader {
             beams: vec![],
             geometry: vec![],
             print_layout: vec![],
+            lyrics: vec![],
             barlines: vec![],
         })
     }
@@ -608,6 +614,7 @@ impl PartReader {
             beams,
             geometry,
             print_layout,
+            lyrics,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -990,6 +997,7 @@ impl PartReader {
                             )?;
                         }
                         geometry.extend(super::geometry::event(n, &id, options.geometry)?);
+                        lyrics.extend(super::lyrics::read(n, &id)?);
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                         slur_endpoints.extend(super::slurs::read(
                             n,
@@ -1053,6 +1061,7 @@ impl PartReader {
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
                     beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                     geometry.extend(super::geometry::event(n, &id, options.geometry)?);
+                    lyrics.extend(super::lyrics::read(n, &id)?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                     let mut authored_event = false;

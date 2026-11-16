@@ -176,11 +176,25 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::credits::EXTENSION
             && e != core::geometry::EXTENSION
             && e != core::print_layout::EXTENSION
+            && e != core::lyrics::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
-        credits: if doc.required_extensions.iter().any(|e| e == core::credits::EXTENSION) {
+        lyrics: if doc
+            .required_extensions
+            .iter()
+            .any(|e| e == core::lyrics::EXTENSION)
+        {
+            core::lyrics::decode(doc).expect("validated lyrics")
+        } else {
+            vec![]
+        },
+        credits: if doc
+            .required_extensions
+            .iter()
+            .any(|e| e == core::credits::EXTENSION)
+        {
             core::credits::decode(doc).expect("validated credits")
         } else {
             Vec::new()
@@ -341,7 +355,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         || core::notation_extension::is_kind(&m.kind)
                         || m.kind == core::credits::KIND
                         || core::geometry::is_kind(&m.kind)
-                        || core::print_layout::is_kind(&m.kind) => {}
+                        || core::print_layout::is_kind(&m.kind)
+                        || core::lyrics::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
                 }
@@ -777,7 +792,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
     if !score.credits.is_empty() {
-        doc.required_extensions.push(core::credits::EXTENSION.into());
+        doc.required_extensions
+            .push(core::credits::EXTENSION.into());
+    }
+    if !score.lyrics.is_empty() {
+        doc.required_extensions.push(core::lyrics::EXTENSION.into());
     }
     if !score.print_layout.is_empty() {
         doc.required_extensions
@@ -1228,6 +1247,16 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .map(move |m| ((p.id.0.as_str(), m.id.as_str()), &m.start))
         })
         .collect();
+    for group in &score.lyrics {
+        let at = geometry_positions[&EventId(group.event.clone())].clone();
+        let id = events.get(&group.event, &mut report);
+        for (index, l) in group.lyrics.iter().enumerate() {
+            frames
+                .entry(at.clone())
+                .or_default()
+                .push(Record::Mark(core::lyrics::encode(l, &id, index)));
+        }
+    }
     for p in &score.print_layout {
         let at = geometry_measures[&(p.part.as_str(), p.measure.as_str())].clone();
         frames

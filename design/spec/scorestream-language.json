@@ -523,6 +523,17 @@
         "top_system_distance",
         "staff",
         "staff_distance"
+      ],
+      "scorestream.lyric": [
+        "index",
+        "syllabic",
+        "text",
+        "number",
+        "color",
+        "default_x",
+        "default_y",
+        "relative_x",
+        "relative_y"
       ]
     },
     "relations": {
@@ -1683,6 +1694,53 @@
         },
         "required_extension": "scorestream.print@1",
         "meaning": "Closed measure-start authored page/system/staff layout. Exact finite decimal tenths; absent flags and labels stay absent. Preview reflows independently, performance unchanged."
+      },
+      "scorestream.lyric": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "index",
+          "syllabic",
+          "text"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "syllabic": {
+            "type": "enum",
+            "values": [
+              "single",
+              "begin",
+              "middle",
+              "end"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "default_x": {
+            "type": "rational"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "relative_x": {
+            "type": "rational"
+          },
+          "relative_y": {
+            "type": "rational"
+          }
+        },
+        "required_extension": "scorestream.lyrics@1",
+        "meaning": "Authored note lyric, not semantic commentary. Preserve per-event ordered verse/tag and literal text, exact coordinate absence/zero and color. Current preview explicitly omits lyrics; playback unchanged."
       }
     }
   },
@@ -1847,6 +1905,10 @@
       "scorestream.print@1": {
         "status": "lossless interchange; preview independently reflows with explicit warning",
         "required_behavior": "One print per owning part/measure at exact onset, complete score only. layout=none excludes dimensions, system requires left_margin/right_margin/top_system_distance, staff requires staff/staff_distance. Reject mixed variants, foreign fields, nondecimal rational values, duplicate or dangling hosts. No page rendering or playback timing inferred."
+      },
+      "scorestream.lyrics@1": {
+        "status": "lossless authored lyric interchange; preview omits with warning",
+        "required_behavior": "Complete score, exact existing event onset, unique contiguous zero-based per-event indices, closed scalar fields. One syllabic plus text, optional verse string/color and exact finite-decimal coordinates. Reject unsupported elision, extend, markup, duplicate/gapped indices, wrong hosts and unknown versions. Do not reinterpret text as analytical annotation or sounding instruction."
       }
     }
   },

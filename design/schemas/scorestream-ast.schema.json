@@ -1729,6 +1729,67 @@
             },
             "description": "Optional authored dynamics coordinates must be finite-decimal exact rational tenths. These do not change symbol, placement, sound assignment or playback, and are not a layout realization promise."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.lyric"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "syllabic": {
+                    "enum": [
+                      "single",
+                      "begin",
+                      "middle",
+                      "end"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "number": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  }
+                },
+                "required": [
+                  "index",
+                  "syllabic",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
         }
       ]
     },

@@ -16,6 +16,7 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  const warnings:string[]=[];
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.geometry@1'))warnings.push('Original note and measure coordinates are retained in the score. This preview reflows notation independently and does not reproduce those authored positions.');
  if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.print@1'))warnings.push('Authored page, system and staff layout is retained in the score. This preview reflows independently and does not reproduce those print settings.');
+ if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.lyrics@1'))warnings.push('Authored note lyrics, verse order and styling are retained in the score but are not drawn in this preview. Playback is unchanged.');
  const map:Record<string,string>={};
  const authoredArticulations=projectAuthoredArticulations(view);
  const marks=projectMarks(view,warnings);

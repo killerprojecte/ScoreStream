@@ -287,6 +287,22 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             );
         }
     }
+    let mut lyric_hosts = BTreeSet::new();
+    for group in &score.lyrics {
+        if !event_hosts.contains(group.event.as_str())
+            || !lyric_hosts.insert(group.event.as_str())
+            || group.lyrics.is_empty()
+            || group.lyrics.iter().any(|l| !l.valid())
+        {
+            report.push(
+                Format::ScoreModel,
+                MappingEffect::Invalid,
+                "lyrics.invalid",
+                &group.event,
+                "Lyrics require unique existing event groups and valid exact text/style fields",
+            );
+        }
+    }
     let mut geometry_hosts = BTreeSet::new();
     for g in &score.geometry {
         use scorestream_core::geometry::Geometry;

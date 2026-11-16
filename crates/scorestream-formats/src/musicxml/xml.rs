@@ -870,11 +870,27 @@ pub(super) fn schema_with_profile(
                     "stem",
                     "beam",
                     "staff",
+                    "lyric",
                 ],
-                &["dot", "tie", "notations", "beam"],
+                &["dot", "tie", "notations", "beam", "lyric"],
                 &[],
                 false,
             ),
+            "lyric" => (
+                &[
+                    "number",
+                    "color",
+                    "default-x",
+                    "default-y",
+                    "relative-x",
+                    "relative-y",
+                ],
+                &["syllabic", "text"],
+                &[],
+                &["syllabic", "text"],
+                false,
+            ),
+            "syllabic" | "text" => (&[], &[], &[], &[], true),
             "grace" => (
                 &[
                     "slash",

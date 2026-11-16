@@ -480,6 +480,7 @@ pub fn write_with_options(
     }
     out.push_str("  </part-list>\n");
     let geometry = super::geometry::Export::new(score);
+    let lyrics = super::lyrics::Export::new(&score.lyrics);
     let print_layout: BTreeMap<_, _> = score
         .print_layout
         .iter()
@@ -578,7 +579,9 @@ pub fn write_with_options(
                     if !is_chord && cursor < e.offset {
                         writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&e.offset - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                     }
-                    graces.write_before(e, &v.id.0, div, &beams, &slurs, &geometry, &mut out);
+                    graces.write_before(
+                        e, &v.id.0, div, &beams, &slurs, &geometry, &lyrics, &mut out,
+                    );
                     writeln!(
                         out,
                         "      <note id=\"{}\"{}{}>",
@@ -698,6 +701,7 @@ pub fn write_with_options(
                             }
                         },
                     );
+                    out.push_str(lyrics.event(&e.id.0));
                     out.push_str("      </note>\n");
                     if !is_chord {
                         cursor = &e.offset + &e.duration;

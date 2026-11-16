@@ -234,6 +234,7 @@ impl<'a> Export<'a> {
         beams: &super::beams::Export<'_>,
         slurs: &super::slurs::Export<'_>,
         geometry: &super::geometry::Export,
+        lyrics: &super::lyrics::Export,
         out: &mut String,
     ) {
         for g in self.by_anchor.get(&anchor.id).into_iter().flatten() {
@@ -313,6 +314,7 @@ impl<'a> Export<'a> {
                 slurs.write(&g.id, out);
                 out.push_str("</notations>");
             }
+            out.push_str(lyrics.event(&g.id.0));
             out.push_str("</note>\n");
         }
     }

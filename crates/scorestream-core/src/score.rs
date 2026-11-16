@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreDocument {
+    /// Ordered authored lyric entries per event, independent of semantic commentary.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub lyrics: Vec<crate::lyrics::EventLyrics>,
     /// Ordered authored page credits, not rendered page objects.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub credits: Vec<crate::credits::Credit>,

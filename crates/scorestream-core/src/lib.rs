@@ -35,3 +35,5 @@ pub mod geometry;
 
 pub mod credits;
 pub mod print_layout;
+
+pub mod lyrics;
