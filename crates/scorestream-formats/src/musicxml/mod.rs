@@ -26,6 +26,7 @@ mod slur_corpus;
 mod slurs;
 mod tempo;
 mod ties;
+mod tuplets;
 mod write;
 mod xml;
 use crate::{Conversion, MappingReport, ScoreAdapter};

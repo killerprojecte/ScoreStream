@@ -19,6 +19,10 @@ pub(super) fn is_canonical_simple(note: &Node) -> bool {
     // More than one slur needs relation-aware ordering proof; retain it instead.
     let mut previous_rank = None;
     for child in &wrapper.children {
+        // The tuplet bridge independently retains exact endpoint insertion order.
+        if child.name == "tuplet" {
+            continue;
+        }
         let rank = match child.name.as_str() {
             "tied" if child.attr("type") == Some("stop") => 0,
             "tied" if child.attr("type") == Some("start") => 1,

@@ -43,6 +43,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::wedges::EXTENSION
             && requirement != crate::dashes::EXTENSION
             && requirement != crate::lyrics::EXTENSION
+            && requirement != crate::tuplets::EXTENSION
         {
             out.push(Diagnostic::error(
                 "extension_unsupported",
@@ -192,6 +193,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut has_credits = false;
     let mut has_print = false;
     let mut has_lyrics = false;
+    let mut has_tuplets = false;
     let mut dynamic_qualifier_source = None;
     let mut measures = Vec::new();
     let mut previous: Option<&Rational> = None;
@@ -476,6 +478,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                     has_credits |= crate::credits::is_kind(&m.kind);
                     has_print |= crate::print_layout::is_kind(&m.kind);
                     has_lyrics |= crate::lyrics::is_kind(&m.kind);
+                    has_tuplets |= crate::tuplets::is_kind(&m.kind);
                     if let Some(id) = m.attributes.get("id").and_then(Scalar::as_str) {
                         if !mark_ids.insert(id) {
                             out.push(Diagnostic::error(
@@ -551,6 +554,14 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             .any(|e| e == crate::lyrics::EXTENSION)
     {
         crate::lyrics::validate(doc, &mut out);
+    }
+    if has_tuplets
+        || doc
+            .required_extensions
+            .iter()
+            .any(|e| e == crate::tuplets::EXTENSION)
+    {
+        crate::tuplets::validate(doc, &mut out);
     }
     validate_measures(&measures, &parts, &mut out);
     validate_measure_rests(doc, &measures, &voices, &mut out);

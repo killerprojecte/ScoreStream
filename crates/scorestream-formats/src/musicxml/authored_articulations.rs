@@ -427,6 +427,9 @@ impl<'a> Export<'a> {
         }
         Self { by_event }
     }
+    pub(super) fn write_group_at(&self, event: &EventId, index: usize, out: &mut String) {
+        write_group(&self.by_event[event].notations[0].groups[index], out);
+    }
     pub(super) fn write(
         &self,
         event: &EventId,

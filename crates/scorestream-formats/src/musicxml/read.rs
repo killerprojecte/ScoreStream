@@ -342,6 +342,7 @@ fn read_with_audit<R: BufRead + Seek>(
     let mut parts: Vec<Option<ScorePart>> = vec![None; declared.len()];
     let mut active = None;
     let mut notation_order = Vec::new();
+    let mut tuplets = Vec::new();
     let mut tie_endpoints = BTreeMap::new();
     let mut slur_endpoints = Vec::new();
     input.seek(SeekFrom::Start(beginning)).map_err(io_error)?;
@@ -428,6 +429,7 @@ fn read_with_audit<R: BufRead + Seek>(
             score.lyrics.append(&mut reader.lyrics);
             score.wedges.append(&mut reader.wedges);
             score.dashes.append(&mut reader.dashes);
+            tuplets.append(&mut reader.tuplets);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -490,6 +492,7 @@ fn read_with_audit<R: BufRead + Seek>(
     score.slurs =
         super::slurs::resolve_with_sources(slur_endpoints, &mut report, &mut slur_sources)?;
     score.notation_order = super::mixed_notations::resolve(notation_order, &slur_sources);
+    score.tuplets = super::tuplets::resolve(tuplets, &slur_sources);
     super::authored_articulations::protect_generated_identities(
         &mut score,
         &mut object_ids,
@@ -521,6 +524,9 @@ fn read_with_audit<R: BufRead + Seek>(
     if !score.lyrics.is_empty() {
         report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"lyrics.authored","/lyrics","Authored note lyric text, verse order and style are retained; current preview omits lyrics and playback is unchanged");
     }
+    if !score.tuplets.is_empty() {
+        report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"tuplet.authored_endpoints","/tuplets","Authored start/stop and bracket absence retained in exact wrapper order. No spans, nesting, closed pairing or timing are inferred; existing time-modification and event duration remain authoritative.");
+    }
     options.complete(&score, &mut report);
     report.append(validate_score(&score));
     report.finish(score)
@@ -547,6 +553,7 @@ struct PartReader {
     articulations: Vec<ScoreArticulation>,
     authored_articulations: Vec<ArticulationEvent>,
     notation_order: Vec<super::mixed_notations::Pending>,
+    tuplets: Vec<super::tuplets::Pending>,
     graces: Vec<ScoreGraceNote>,
     beams: Vec<ScoreBeam>,
     geometry: Vec<scorestream_core::geometry::Geometry>,
@@ -595,6 +602,7 @@ impl PartReader {
             articulations: vec![],
             authored_articulations: vec![],
             notation_order: vec![],
+            tuplets: vec![],
             graces: vec![],
             beams: vec![],
             geometry: vec![],
@@ -630,6 +638,7 @@ impl PartReader {
             articulations,
             authored_articulations,
             notation_order,
+            tuplets,
             graces,
             beams,
             geometry,
@@ -1022,6 +1031,11 @@ impl PartReader {
                         }
                         geometry.extend(super::geometry::event(n, &id, options.geometry)?);
                         lyrics.extend(super::lyrics::read(n, &id)?);
+                        tuplets.extend(super::tuplets::read(
+                            n,
+                            &EventId(id.clone()),
+                            !articulation_profile.is_legacy(),
+                        )?);
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                         slur_endpoints.extend(super::slurs::read(
                             n,
@@ -1086,6 +1100,11 @@ impl PartReader {
                     beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                     geometry.extend(super::geometry::event(n, &id, options.geometry)?);
                     lyrics.extend(super::lyrics::read(n, &id)?);
+                    tuplets.extend(super::tuplets::read(
+                        n,
+                        &EventId(id.clone()),
+                        !articulation_profile.is_legacy(),
+                    )?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                     let mut authored_event = false;

@@ -490,6 +490,7 @@ pub fn write_with_options(
     out.push_str("  </part-list>\n");
     let geometry = super::geometry::Export::new(score);
     let lyrics = super::lyrics::Export::new(&score.lyrics);
+    let tuplets:BTreeMap<_,_>=score.tuplets.iter().map(|g|(&g.event,g)).collect();
     let print_layout: BTreeMap<_, _> = score
         .print_layout
         .iter()
@@ -669,6 +670,19 @@ pub fn write_with_options(
                         .notation_order
                         .as_ref()
                         .and_then(|o| o.events.iter().find(|n| n.event == e.id));
+                    if let Some(group)=tuplets.get(&e.id) {
+                        super::tuplets::write(group,&mut out,|child,out| match child {
+                            NotationChild::Tied{phase}=>{
+                                let(name,number)=match phase {NotationPhase::Start=>("start",tied.and_then(|t|t.start)),NotationPhase::Stop=>("stop",tied.and_then(|t|t.stop))};
+                                write!(out,"<tied type=\"{name}\" number=\"{}\"/>",number.expect("validated tie endpoint")).unwrap();
+                            }
+                            NotationChild::Slur{relation,phase}=>slurs.write_selected(&e.id,relation,*phase,out),
+                            NotationChild::Fermata{}=>fermatas.write(&e.id,out),
+                            NotationChild::Articulations{group_index}=>{
+                                if score.authored_articulations.as_ref().is_some_and(|a|a.events.iter().any(|a|a.event==e.id)) {authored_articulations.write_group_at(&e.id,*group_index,out);}else{articulations.write(&e.id,out);}
+                            }
+                        });
+                    } else {
                     if order.is_none()
                         && (tied.is_some()
                             || fermatas.contains(&e.id)
@@ -713,6 +727,7 @@ pub fn write_with_options(
                             }
                         },
                     );
+                    }
                     out.push_str(lyrics.event(&e.id.0));
                     out.push_str("      </note>\n");
                     if !is_chord {

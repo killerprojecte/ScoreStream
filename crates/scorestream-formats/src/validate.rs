@@ -295,6 +295,15 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
             );
         }
     }
+    for d in scorestream_core::tuplets::validate_score(score) {
+        report.push(
+            Format::ScoreModel,
+            MappingEffect::Invalid,
+            d.code,
+            "/tuplets",
+            d.message,
+        );
+    }
     let mut lyric_hosts = BTreeSet::new();
     for group in &score.lyrics {
         if !event_hosts.contains(group.event.as_str())

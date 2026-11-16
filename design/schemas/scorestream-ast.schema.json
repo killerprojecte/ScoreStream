@@ -2032,6 +2032,220 @@
             },
             "description": "Requires scorestream.dashes@1; exact measure/part/local offset and contiguous ordered indices. Start is plain words followed by dashes; stop has no words. Preserve finite-decimal geometry, positive font size and unresolved chains without invented performance."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.tuplets.child"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "kind": {
+                    "enum": [
+                      "tuplet",
+                      "articulations",
+                      "tied",
+                      "slur",
+                      "fermata"
+                    ]
+                  },
+                  "phase": {
+                    "enum": [
+                      "start",
+                      "stop"
+                    ]
+                  },
+                  "bracket": {
+                    "type": "boolean"
+                  },
+                  "group_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "relation": {
+                    "$ref": "#/$defs/Identifier"
+                  }
+                },
+                "required": [
+                  "index",
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "tuplet"
+                      }
+                    },
+                    "required": [
+                      "phase"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "phase": {
+                              "const": "stop"
+                            }
+                          }
+                        },
+                        "then": {
+                          "not": {
+                            "required": [
+                              "bracket"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "articulations"
+                      }
+                    },
+                    "required": [
+                      "group_index"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "tied"
+                      }
+                    },
+                    "required": [
+                      "phase"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "slur"
+                      }
+                    },
+                    "required": [
+                      "phase",
+                      "relation"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "const": "fermata"
+                      }
+                    },
+                    "required": [],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "phase"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "bracket"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "group_index"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "relation"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
         }
       ]
     },

@@ -13,6 +13,9 @@ pub struct ScoreDocument {
     /// Authored words/dashes direction groups, not inferred gain or tempo ramps.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dashes: Vec<crate::dashes::DashesEndpoint>,
+    /// Authored tuplet endpoints and exact single-wrapper sibling order, not spans.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tuplets: Vec<crate::tuplets::TupletNotation>,
     /// Ordered authored lyric entries per event, independent of semantic commentary.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub lyrics: Vec<crate::lyrics::EventLyrics>,

@@ -179,12 +179,22 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::wedges::EXTENSION
             && e != core::dashes::EXTENSION
             && e != core::lyrics::EXTENSION
+            && e != core::tuplets::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
         wedges: if doc.required_extensions.iter().any(|e|e==core::wedges::EXTENSION) {core::wedges::decode(doc).expect("validated wedge endpoints")} else {vec![]},
         dashes: if doc.required_extensions.iter().any(|e|e==core::dashes::EXTENSION) {core::dashes::decode(doc).expect("validated dashes endpoints")} else {vec![]},
+        tuplets: if doc
+            .required_extensions
+            .iter()
+            .any(|e| e == core::tuplets::EXTENSION)
+        {
+            core::tuplets::decode(doc).expect("validated tuplets")
+        } else {
+            vec![]
+        },
         lyrics: if doc
             .required_extensions
             .iter()
@@ -362,7 +372,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                         || core::print_layout::is_kind(&m.kind)
                         || core::wedges::is_kind(&m.kind)
                         || core::dashes::is_kind(&m.kind)
-                        || core::lyrics::is_kind(&m.kind) => {}
+                        || core::lyrics::is_kind(&m.kind)
+                        || core::tuplets::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
                 }
@@ -802,6 +813,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     if !score.credits.is_empty() {
         doc.required_extensions
             .push(core::credits::EXTENSION.into());
+    }
+    if !score.tuplets.is_empty() {
+        doc.required_extensions
+            .push(core::tuplets::EXTENSION.into());
     }
     if !score.lyrics.is_empty() {
         doc.required_extensions.push(core::lyrics::EXTENSION.into());
@@ -1255,6 +1270,24 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                 .map(move |m| ((p.id.0.as_str(), m.id.as_str()), &m.start))
         })
         .collect();
+    for group in &score.tuplets {
+        let at = geometry_positions[&group.event].clone();
+        let id = events.get(&group.event.0, &mut report);
+        let mut mapped = group.clone();
+        for child in &mut mapped.children {
+            if let core::tuplets::TupletChild::Existing {
+                notation: NotationChild::Slur { relation, .. },
+            } = child
+            {
+                relation.0 = slur_ids[&relation.0].clone();
+            }
+        }
+        frames.entry(at).or_default().extend(
+            core::tuplets::encode(&mapped, &id)
+                .into_iter()
+                .map(Record::Mark),
+        );
+    }
     for group in &score.lyrics {
         let at = geometry_positions[&EventId(group.event.clone())].clone();
         let id = events.get(&group.event, &mut report);

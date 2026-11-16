@@ -539,6 +539,14 @@
         "index",
         "default_x",
         "default_y"
+      ],
+      "scorestream.tuplets.child": [
+        "index",
+        "kind",
+        "phase",
+        "bracket",
+        "group_index",
+        "relation"
       ]
     },
     "relations": {
@@ -1864,6 +1872,48 @@
         },
         "required_extension": "scorestream.dashes@1",
         "meaning": "Ordered authored words-then-start-dashes or stop-only direction endpoint; exact text, style, geometry and logical ownership, no inferred velocity or tempo curve."
+      },
+      "scorestream.tuplets.child": {
+        "targets": [
+          "event"
+        ],
+        "required": [
+          "index",
+          "kind"
+        ],
+        "fields": {
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "kind": {
+            "type": "enum",
+            "values": [
+              "tuplet",
+              "articulations",
+              "tied",
+              "slur",
+              "fermata"
+            ]
+          },
+          "phase": {
+            "type": "enum",
+            "values": [
+              "start",
+              "stop"
+            ]
+          },
+          "bracket": {
+            "type": "boolean"
+          },
+          "group_index": {
+            "type": "nonnegative_integer"
+          },
+          "relation": {
+            "type": "identifier"
+          }
+        },
+        "required_extension": "scorestream.tuplets@1",
+        "meaning": "Ordered single-wrapper tuplet endpoints and typed sibling references. No pairing, nesting, span, or clock inference."
       }
     }
   },
@@ -2044,6 +2094,10 @@
       "scorestream.dashes@1": {
         "status": "authored direction groups only; preview/expression unimplemented",
         "required_behavior": "Complete score, exact measure ownership and inclusive offset, contiguous indices, optional number 1..16 and staff, type start or stop. Start requires text with optional font_family/font_size/font_style and words coordinates; stop forbids words fields. Finite decimal coordinates; positive decimal font size; font style normal/italic; system only-top/also-top/none. Preserve absence, zero, exact text and ordered endpoints. Unsupported composites fail closed. Do not repair unresolved chains or infer gain/tempo ramps."
+      },
+      "scorestream.tuplets@1": {
+        "status": "lossless closed authored endpoint bridge; preview omits authored endpoints",
+        "required_behavior": "Complete score, unique contiguous per-host child indices at measured event onset. One unadorned notations wrapper per host; retain start/stop and optional start bracket exactly. All sibling refs must bijectively match existing canonical-simple or authored articulation groups, ordinary tied endpoints, authored slurs and fermatas. Endpoint-only/open sequences are retained without inferred pairing. Unsupported shapes and ornament siblings still reject. Written time-modification and performed duration remain independent."
       }
     }
   },
