@@ -1334,3 +1334,137 @@ fn combined_clock_cannot_silently_ignore_initial_midi_intent() {
         "instrument.performance_unsupported",
     );
 }
+
+fn synchronized_holds(
+    source: &str,
+    boundary: &str,
+) -> scorestream_core::fermata_timing::ExplicitSynchronizedFermataPolicy {
+    use scorestream_core::fermata_timing::{
+        ExplicitSynchronizedFermataPolicy, ExplicitSynchronizedHoldGroup,
+    };
+    ExplicitSynchronizedFermataPolicy {
+        groups: vec![ExplicitSynchronizedHoldGroup {
+            hold: ExplicitHoldGroup {
+                id: "explicit-sync".into(),
+                members: discover_source_graces_and_fermatas(source)
+                    .unwrap()
+                    .fermatas
+                    .occurrences
+                    .iter()
+                    .map(|o| o.id.clone())
+                    .collect(),
+                added_seconds: r("3/2"),
+            },
+            boundary: r(boundary),
+        }],
+    }
+}
+fn play_synchronized(source: &str, boundary: &str) -> Result<ExplicitCombinedPlayback, String> {
+    scorestream_app::playback::plan_source_with_explicit_graces_and_synchronized_fermatas(
+        source,
+        &explicit(source, &[("g", "1/4")]),
+        GraceSoundPolicy::FullGraceThenGatedRemainder,
+        &synchronized_holds(source, boundary),
+        FermataSoundPolicy::SustainSelectedAnchors,
+    )
+}
+#[test]
+fn synchronized_short_rest_and_later_grace_use_one_qualified_clock() {
+    use scorestream_core::fermata_timing::HoldSynchronization;
+    let s = source(include_str!(
+        "fixtures/synchronized-joint-playback.musicxml"
+    ));
+    let before = scorestream_codec::parse(&s).unwrap();
+    let p = play_synchronized(&s, "1").unwrap();
+    assert_eq!(scorestream_codec::parse(&s).unwrap(), before);
+    assert_eq!(p.timing().holds().len(), 1);
+    let hold = &p.timing().holds()[0];
+    assert_eq!(
+        hold.synchronization,
+        HoldSynchronization::ExplicitLatestReleaseWithEarlierRests
+    );
+    assert_eq!(
+        (&hold.boundary, &hold.seconds_start, &hold.seconds_end),
+        (&r("1"), &r("1/2"), &r("2"))
+    );
+    assert_eq!(p.grace_windows().len(), 2);
+    assert_eq!(p.grace_windows()[0].seconds_start, r("2"));
+    assert_eq!(p.grace_windows()[0].seconds_end, r("17/8"));
+    assert_eq!(p.grace_windows()[1].seconds_start, r("17/8"));
+    assert_eq!(p.grace_windows()[1].seconds_end, r("247/100"));
+    assert_eq!(p.plan().notes.len(), 3);
+    close(p.plan().notes[0].duration_seconds, 2.0);
+    close(p.plan().notes[1].start_seconds, 2.0);
+    close(p.plan().notes[1].duration_seconds, 0.125);
+    close(p.plan().notes[2].start_seconds, 2.125);
+    close(p.plan().duration_seconds, 2.5);
+    let short = p
+        .plan()
+        .event_positions
+        .iter()
+        .find(|m| m.id == "short-rest")
+        .unwrap();
+    close(short.end_seconds, 0.25);
+    assert_eq!(
+        p.timing()
+            .fermatas
+            .iter()
+            .find(|f| f.written_id.0 == "short-rest")
+            .unwrap()
+            .written_quarter_end,
+        r("1/2")
+    );
+    assert!(matches!(p.seek(&r("3/2")), SeekPosition::Hold { boundary, .. } if boundary == r("1")));
+    let ordinary = ExplicitFermataPolicy {
+        groups: synchronized_holds(&s, "1")
+            .groups
+            .into_iter()
+            .map(|g| g.hold)
+            .collect(),
+    };
+    assert!(
+        play(&s, &explicit(&s, &[("g", "1/4")]), &ordinary)
+            .unwrap_err()
+            .contains("unequal_boundaries")
+    );
+    assert!(
+        play_synchronized(&s, "1/2")
+            .unwrap_err()
+            .contains("synchronization_boundary")
+    );
+}
+#[test]
+fn synchronized_combined_keeps_common_release_and_overlap_contracts() {
+    let s = single("", "");
+    let old = play(
+        &s,
+        &explicit(&s, &[("g", "1/4")]),
+        &holds(&s, &[("1", "3/2")]),
+    )
+    .unwrap();
+    let new = play_synchronized(&s, "1").unwrap();
+    assert_eq!(old.plan().notes, new.plan().notes);
+    assert_eq!(old.plan().event_positions, new.plan().event_positions);
+    assert_eq!(old.grace_windows(), new.grace_windows());
+    let overlapping = source(&xml(
+        &[
+            format!("{}{}", grace("g", ""), note("principal", 16, "C", "")),
+            format!(
+                "{}{}",
+                note("short", 4, "rest", "<notations><fermata/></notations>"),
+                note("tail1", 12, "rest", "")
+            ),
+            format!(
+                "{}{}",
+                note("long", 8, "rest", "<notations><fermata/></notations>"),
+                note("tail2", 8, "rest", "")
+            ),
+        ],
+        2,
+    ));
+    assert!(
+        play_synchronized(&overlapping, "1")
+            .unwrap_err()
+            .contains("combined.grace_hold_overlap")
+    );
+}

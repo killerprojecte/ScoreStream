@@ -140,3 +140,32 @@ gaps, UI policy entry and actual full-score sampled audio remain separate work.
 See [grace interpretation](GRACE_PLAYBACK.md) and
 [fermata interpretation](FERMATA_TIMING_PROTOTYPE.md) for their source semantics
 and existing backend restrictions.
+
+## Explicit synchronization of earlier rest fermatas
+
+`plan_source_with_explicit_graces_and_synchronized_fermatas` and the corresponding
+core `perform_document_with_explicit_graces_and_synchronized_fermatas` constructor
+accept `ExplicitSynchronizedFermataPolicy` alongside the existing explicit grace
+allocation and both sound policies. The earlier common-release API is unchanged.
+
+Both APIs use the same source projection, exact grace allocation, source-qualified
+fermata clock and final hold-aware windows. The synchronized variant only supplies
+the caller's explicit latest-release boundaries to that clock. Earlier anchors
+must still be rests; their original markers are not extended or moved. Holds
+inside a grace principal's nominal interval, or fermatas on an affected grace or
+principal, still require a different musical interpretation and reject. No
+fallback or automatic grouping/duration is introduced. Caller-selected arithmetic
+and timeline budgets remain effective; no fixed score-size or duration cap is added.
+
+The committed `synchronized-joint-playback.musicxml` fixture has a rest fermata
+ending at quarter 1/2, a selected note ending at quarter 1 and a grace/principal
+pair beginning at quarter 1. Explicitly choosing boundary 1, 3/2 added seconds and
+1/4 quarter for the grace produces one hold `[1/2, 2)` and one grace window
+`[2, 17/8)` at the default tempo. The rest marker still ends at second 1/4 and the
+principal starts sounding at second 17/8. The unchanged source passes the
+MusicXML → common model → SFS roundtrip before scheduling.
+
+This is a synthetic executable fixture, not a cleaned Beethoven excerpt or a
+complete original-score import. Authored articulation playback is still a separate
+open interpretation requirement; this new entry point does not bypass its existing
+checks. It adds no UI policy editor or automatic score-wide performance choice.

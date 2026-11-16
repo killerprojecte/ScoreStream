@@ -389,6 +389,26 @@ pub(crate) fn interpret_qualified_graces(
 ) -> Result<TimingProjection> {
     interpret_inner(source, performed, policy, limits, Some(schedule), None)
 }
+/// Only the combined source-qualified constructor supplies both the exact grace
+/// schedule and the boundaries from its explicitly synchronized fermata policy.
+pub(crate) fn interpret_qualified_graces_synchronized(
+    source: &Document,
+    performed: &PerformedScore,
+    policy: &ExplicitFermataPolicy,
+    limits: TimingLimits,
+    schedule: &crate::notation::GraceSchedule,
+    boundaries: &[Rational],
+) -> Result<TimingProjection> {
+    interpret_inner(
+        source,
+        performed,
+        policy,
+        limits,
+        Some(schedule),
+        Some(boundaries),
+    )
+}
+
 fn interpret_inner(
     source: &Document,
     performed: &PerformedScore,

@@ -255,7 +255,77 @@ pub fn perform_document_with_explicit_graces_and_fermatas(
     grace_limits: GraceTimingLimits,
     timing_limits: TimingLimits,
 ) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
+    perform_combined(
+        doc,
+        grace_policy,
+        grace_sound_policy,
+        fermata_policy,
+        None,
+        performance_limits,
+        grace_limits,
+        timing_limits,
+    )
+}
+
+/// The same source-qualified combined schedule, with caller-selected latest
+/// releases for earlier rest anchors. No policy or grace schedule is inferred.
+#[allow(clippy::too_many_arguments)]
+pub fn perform_document_with_explicit_graces_and_synchronized_fermatas(
+    doc: &Document,
+    grace_policy: &ExplicitGracePolicy,
+    grace_sound_policy: GraceSoundPolicy,
+    fermata_policy: &fermata_timing::ExplicitSynchronizedFermataPolicy,
+    performance_limits: PerformanceLimits,
+    grace_limits: GraceTimingLimits,
+    timing_limits: TimingLimits,
+) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
+    let policy = ExplicitFermataPolicy {
+        groups: fermata_policy
+            .groups
+            .iter()
+            .map(|g| g.hold.clone())
+            .collect(),
+    };
+    let boundaries: Vec<_> = fermata_policy
+        .groups
+        .iter()
+        .map(|g| g.boundary.clone())
+        .collect();
+    perform_combined(
+        doc,
+        grace_policy,
+        grace_sound_policy,
+        &policy,
+        Some(&boundaries),
+        performance_limits,
+        grace_limits,
+        timing_limits,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn perform_combined(
+    doc: &Document,
+    grace_policy: &ExplicitGracePolicy,
+    grace_sound_policy: GraceSoundPolicy,
+    fermata_policy: &ExplicitFermataPolicy,
+    synchronization: Option<&[Rational]>,
+    performance_limits: PerformanceLimits,
+    grace_limits: GraceTimingLimits,
+    timing_limits: TimingLimits,
+) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
     let (grace_limits, timing_limits) = limits(doc, &grace_limits, &timing_limits)?;
+    if synchronization.is_some_and(|boundaries| {
+        boundaries
+            .iter()
+            .any(|b| !bounded(b, timing_limits.maximum_rational_bits))
+    }) {
+        return Err(fail(
+            doc,
+            "combined.rational_budget",
+            "Explicit synchronized boundaries exceed the configured exact arithmetic budget",
+        ));
+    }
     grace::preflight_policy(doc, grace_policy, &grace_limits)?;
     preflight_fermata_policy(doc, fermata_policy, &timing_limits)?;
     let performed = prepare(doc, performance_limits, &grace_limits, &timing_limits)?;
@@ -266,13 +336,23 @@ pub fn perform_document_with_explicit_graces_and_fermatas(
         grace_sound_policy,
         &grace_limits,
     )?;
-    let mut timing = fermata_timing::interpret_qualified_graces(
-        doc,
-        &performed,
-        fermata_policy,
-        timing_limits,
-        &schedule,
-    )
+    let mut timing = match synchronization {
+        Some(boundaries) => fermata_timing::interpret_qualified_graces_synchronized(
+            doc,
+            &performed,
+            fermata_policy,
+            timing_limits,
+            &schedule,
+            boundaries,
+        ),
+        None => fermata_timing::interpret_qualified_graces(
+            doc,
+            &performed,
+            fermata_policy,
+            timing_limits,
+            &schedule,
+        ),
+    }
     .map_err(|e| fail(doc, e.code, e.message))?;
     let affected: BTreeSet<_> = schedule.windows().iter().map(|w| &w.id).collect();
     for sign in &timing.fermatas {

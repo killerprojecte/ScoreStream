@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic source-qualified contract, not a rewritten Beethoven excerpt. -->
+<score-partwise version="4.0">
+  <part-list>
+    <score-part id="p"><part-name>Piano</part-name><score-instrument id="ip"><instrument-name>piano</instrument-name></score-instrument></score-part>
+    <score-part id="r"><part-name>Rest anchors</part-name><score-instrument id="ir"><instrument-name>piano</instrument-name></score-instrument></score-part>
+  </part-list>
+  <part id="p"><measure id="mp" number="1">
+    <attributes><divisions>8</divisions><time><beats>2</beats><beat-type>4</beat-type></time></attributes>
+    <note id="held"><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><notations><fermata type="upright"/></notations></note>
+    <note id="g"><grace slash="yes"/><pitch><step>D</step><octave>5</octave></pitch><voice>1</voice><type>16th</type></note>
+    <note id="principal"><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice></note>
+  </measure></part>
+  <part id="r"><measure id="mr" number="1">
+    <attributes><divisions>8</divisions><time><beats>2</beats><beat-type>4</beat-type></time></attributes>
+    <note id="short-rest"><rest/><duration>4</duration><voice>1</voice><notations><fermata type="upright" relative-y="5"/></notations></note>
+    <note id="remaining-rest"><rest/><duration>12</duration><voice>1</voice></note>
+  </measure></part>
+</score-partwise>

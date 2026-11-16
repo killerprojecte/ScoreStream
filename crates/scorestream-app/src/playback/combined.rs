@@ -80,5 +80,37 @@ pub fn plan_source_with_explicit_graces_and_fermatas(
     })
 }
 
+/// Explicit source-qualified grace allocation plus synchronized rest-anchor
+/// fermatas. The immutable plan uses one final hold-aware clock; no fallback to
+/// ordinary or independently warped playback is permitted.
+pub fn plan_source_with_explicit_graces_and_synchronized_fermatas(
+    source: &str,
+    grace_policy: &ExplicitGracePolicy,
+    grace_sound_policy: GraceSoundPolicy,
+    fermata_policy: &scorestream_codec::fermata_timing::ExplicitSynchronizedFermataPolicy,
+    fermata_sound_policy: FermataSoundPolicy,
+) -> Result<ExplicitCombinedPlayback, String> {
+    let doc = parse(source)?;
+    let performance = perform_document_with_explicit_graces_and_synchronized_fermatas(
+        &doc,
+        grace_policy,
+        grace_sound_policy,
+        fermata_policy,
+        PerformanceLimits::default(),
+        GraceTimingLimits::default(),
+        TimingLimits::default(),
+    )
+    .map_err(format_diagnostics)?;
+    match fermata_sound_policy {
+        FermataSoundPolicy::SustainSelectedAnchors => (),
+    }
+    let plan = compile_combined(&doc, &performance)?;
+    Ok(ExplicitCombinedPlayback {
+        plan,
+        performance,
+        fermata_sound_policy,
+    })
+}
+
 #[cfg(test)]
 mod tests;
