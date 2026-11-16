@@ -76,6 +76,10 @@ pub fn resolve_practice_boundary_attacks(
     policy: PracticeBoundaryAttackPolicy,
     limits: PerformanceLimits,
 ) -> Result<PracticeAttackResolution, Vec<Diagnostic>> {
+    let schedule=inspect_authored_dynamic_schedule(doc,AuthoredDynamicSchedulePolicy::AdjacentWrittenOwnersV1,limits)?;
+    resolve_on_schedule(doc,attacks,policy,schedule)
+}
+pub(super) fn resolve_on_schedule(doc:&Document,attacks:&[QualifiedPracticeAttack],policy:PracticeBoundaryAttackPolicy,schedule:AuthoredDynamicSchedule)->Result<PracticeAttackResolution,Vec<Diagnostic>> {
     let mut ids = BTreeSet::new();
     for a in attacks {
         if a.occurrence_id.is_empty()
@@ -91,11 +95,6 @@ pub fn resolve_practice_boundary_attacks(
             return Err(failure("Attack facts require unique occurrence IDs, positive staff, exact nonnegative onset/chain times and nonnegative existing percentage"));
         }
     }
-    let schedule = inspect_authored_dynamic_schedule(
-        doc,
-        AuthoredDynamicSchedulePolicy::AdjacentWrittenOwnersV1,
-        limits,
-    )?;
     let hosts = crate::authored_dynamics::hosts(doc);
     let mut decisions = Vec::new();
     for a in attacks {

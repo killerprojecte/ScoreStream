@@ -200,7 +200,7 @@ fn prepare(
     timing: &TimingLimits,
     articulation_policy: Option<ExplicitArticulationPolicy>,
 ) -> Result<PerformedScore, Vec<Diagnostic>> {
-    prepare_profile(doc,performance,grace,timing,articulation_policy,false)
+    prepare_profile(doc,performance,grace,timing,articulation_policy,false,crate::repeat_traversal::UnclosedFinalEndingPolicy::Reject)
 }
 fn prepare_profile(
     doc: &Document,
@@ -209,6 +209,7 @@ fn prepare_profile(
     timing: &TimingLimits,
     articulation_policy: Option<ExplicitArticulationPolicy>,
     practice: bool,
+    final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy,
 ) -> Result<PerformedScore, Vec<Diagnostic>> {
     preflight_combined_source(doc, grace, timing)?;
     let errors: Vec<_> = crate::validate(doc, None)
@@ -232,7 +233,7 @@ fn prepare_profile(
         .maximum_occurrences
         .min(timing.maximum_measures / doc.parts.len().max(1))
         .min(grace.maximum_controls);
-    perform::perform(
+    perform::perform_with_final_ending(
         doc,
         performance,
         if practice { LoweringProfile::ExplicitPracticeJoint } else if articulation_policy.is_some() {
@@ -242,6 +243,7 @@ fn prepare_profile(
         },
         Some(grace.maximum_rational_bits),
         Some((grace.maximum_members, grace.maximum_groups)),
+        final_ending,
     )
     .map_err(|e| vec![e])
 }
@@ -393,7 +395,7 @@ fn perform_combined(
     timing_limits: TimingLimits,
     articulation_policy: Option<ExplicitArticulationPolicy>,
 ) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
-    perform_combined_profile(doc,grace_policy,grace_sound_policy,fermata_policy,synchronization,performance_limits,grace_limits,timing_limits,articulation_policy,false)
+    perform_combined_profile(doc,grace_policy,grace_sound_policy,fermata_policy,synchronization,performance_limits,grace_limits,timing_limits,articulation_policy,false,crate::repeat_traversal::UnclosedFinalEndingPolicy::Reject)
 }
 #[allow(clippy::too_many_arguments)]
 fn perform_combined_profile(
@@ -407,6 +409,7 @@ fn perform_combined_profile(
     timing_limits: TimingLimits,
     articulation_policy: Option<ExplicitArticulationPolicy>,
     practice: bool,
+    final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy,
 ) -> Result<QualifiedCombinedPerformance, Vec<Diagnostic>> {
     let (grace_limits, timing_limits) = limits(doc, &grace_limits, &timing_limits)?;
     if synchronization.is_some_and(|boundaries| {
@@ -429,11 +432,13 @@ fn perform_combined_profile(
         &timing_limits,
         articulation_policy,
         practice,
+        final_ending,
     )?;
     let articulations = articulation_policy
         .map(|policy| super::articulations::qualify_articulations(doc, &performed, policy))
         .transpose()?;
-    let schedule = grace::allocate(
+    let allocator=if practice { grace::allocate_practice } else { grace::allocate };
+    let schedule = allocator(
         doc,
         &performed,
         grace_policy,
@@ -553,16 +558,16 @@ mod tests;
 
 /// Non-playable, explicit practice preparation only. The original source is
 /// validated and retained by the caller; this does not authorize native output.
-pub(super) fn discover_practice(doc: &Document, articulation_policy: ExplicitArticulationPolicy) -> Result<CombinedPerformanceDiscovery, Vec<Diagnostic>> {
+pub(super) fn discover_practice(doc: &Document, articulation_policy: ExplicitArticulationPolicy, final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy) -> Result<(CombinedPerformanceDiscovery,Vec<super::PracticeTerminalDashesOccurrence>), Vec<Diagnostic>> {
     let (grace,timing)=limits(doc,&GraceTimingLimits::default(),&TimingLimits::default())?;
-    let p=prepare_profile(doc,PerformanceLimits::default(),&grace,&timing,Some(articulation_policy),true)?;
+    let p=prepare_profile(doc,PerformanceLimits::default(),&grace,&timing,Some(articulation_policy),true,final_ending)?;
     super::articulations::qualify_articulations(doc,&p,articulation_policy)?;
-    Ok(CombinedPerformanceDiscovery { graces: grace::discover(doc,&p)?, fermatas: fermata::discover(doc,&p,&timing)? })
+    Ok((CombinedPerformanceDiscovery { graces: grace::discover(doc,&p)?, fermatas: fermata::discover(doc,&p,&timing)? },super::practice_terminal::receipts(doc,&p)?))
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn perform_practice(doc:&Document, articulation:ExplicitArticulationPolicy, grace:&ExplicitGracePolicy, grace_sound:GraceSoundPolicy, holds:&fermata_timing::ExplicitSynchronizedFermataPolicy) -> Result<QualifiedCombinedPerformance,Vec<Diagnostic>> {
+pub(super) fn perform_practice(doc:&Document, articulation:ExplicitArticulationPolicy, grace:&ExplicitGracePolicy, grace_sound:GraceSoundPolicy, holds:&fermata_timing::ExplicitSynchronizedFermataPolicy, final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy) -> Result<QualifiedCombinedPerformance,Vec<Diagnostic>> {
     let policy=ExplicitFermataPolicy {groups:holds.groups.iter().map(|g|g.hold.clone()).collect()};
     let boundaries:Vec<_>=holds.groups.iter().map(|g|g.boundary.clone()).collect();
-    perform_combined_profile(doc,grace,grace_sound,&policy,Some(&boundaries),PerformanceLimits::default(),GraceTimingLimits::default(),TimingLimits::default(),Some(articulation),true)
+    perform_combined_profile(doc,grace,grace_sound,&policy,Some(&boundaries),PerformanceLimits::default(),GraceTimingLimits::default(),TimingLimits::default(),Some(articulation),true,final_ending)
 }

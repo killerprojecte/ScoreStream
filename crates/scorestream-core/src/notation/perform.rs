@@ -86,6 +86,16 @@ pub(super) fn perform(
     maximum_timing_bits: Option<u64>,
     grace_budgets: Option<(usize, usize)>,
 ) -> Result<PerformedScore> {
+    perform_with_final_ending(doc, limits, profile, maximum_timing_bits, grace_budgets, route::UnclosedFinalEndingPolicy::Reject)
+}
+pub(super) fn perform_with_final_ending(
+    doc: &Document, limits: PerformanceLimits, profile: lower::LoweringProfile,
+    maximum_timing_bits: Option<u64>, grace_budgets: Option<(usize, usize)>,
+    final_ending: route::UnclosedFinalEndingPolicy,
+) -> Result<PerformedScore> {
+    if final_ending != route::UnclosedFinalEndingPolicy::Reject && profile != lower::LoweringProfile::ExplicitPracticeJoint {
+        return Err(error("practice.navigation_scope", "Explicit final-ending continuation is practice-only"));
+    }
     lower::reject_authored_dynamics(doc)?;
     lower::reject_dynamic_qualifiers(doc)?;
     let articulations = matches!(
@@ -119,6 +129,7 @@ pub(super) fn perform(
         return Err(d);
     }
     super::passive::validate(doc)?;
+    if profile == lower::LoweringProfile::ExplicitPracticeJoint { super::practice_notation::validate(doc, maximum_timing_bits)?; }
     let pending: Vec<_> = doc.required_extensions.iter().filter(|e|super::passive::pending(e)).collect();
     if profile != lower::LoweringProfile::ExplicitPracticeJoint && !pending.is_empty() { return Err(error("performance.unresolved_families",format!("Required families may carry audible intent and have no selected closed realization in this route: {pending:?}; route trace discovery is not sound authorization"))); }
     let supported = if articulations && !combined {
@@ -134,7 +145,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && (super::passive::pending(e) || super::practice_notation::is_passive(e)))
             })
     } else if combined {
         doc.required_extensions.iter().any(|e|e == crate::fermata_extension::EXTENSION)
@@ -158,7 +169,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && (super::passive::pending(e) || super::practice_notation::is_passive(e)))
             })
     } else if fermatas {
         doc.required_extensions
@@ -172,7 +183,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && (super::passive::pending(e) || super::practice_notation::is_passive(e)))
             })
     } else if graces {
         doc.required_extensions
@@ -186,7 +197,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && (super::passive::pending(e) || super::practice_notation::is_passive(e)))
             })
     } else {
         doc.required_extensions.iter().any(|e| e == ext::EXTENSION)
@@ -197,7 +208,7 @@ pub(super) fn perform(
                     || e == crate::words::EXTENSION
                     || e == crate::words::PIZZICATO_EXTENSION
                     || super::passive::is_passive(e)
-                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && super::passive::pending(e))
+                    || (profile == lower::LoweringProfile::ExplicitPracticeJoint && (super::passive::pending(e) || super::practice_notation::is_passive(e)))
             })
     };
     if !supported {
@@ -241,6 +252,7 @@ pub(super) fn perform(
         .enumerate()
         .map(|(i, p)| (p.id.0.clone(), i))
         .collect();
+    let terminal_dashes = if profile == lower::LoweringProfile::ExplicitPracticeJoint { super::practice_terminal::endpoints(doc)? } else { vec![] };
     let mut bars = vec![];
     for frame in &doc.frames {
         for record in &frame.records {
@@ -267,6 +279,8 @@ pub(super) fn perform(
                 // Owned words are metadata; their explicit sound position is projected below.
                 Record::Mark(m) if crate::words::is_kind(&m.kind) => (),
                 Record::Mark(m) if m.kind == crate::credits::KIND || crate::defaults::is_kind(&m.kind) || crate::provenance::is_kind(&m.kind) || crate::geometry::is_kind(&m.kind) || crate::print_layout::is_kind(&m.kind) || crate::lyrics::is_kind(&m.kind) || m.kind == crate::part_labels::KIND || m.kind == crate::metronome_display::KIND => (),
+                Record::Mark(m) if profile == lower::LoweringProfile::ExplicitPracticeJoint && frame.time == doc.end && m.kind == crate::dashes::KIND
+                    && terminal_dashes.iter().any(|(_,e)|m.target==format!("#{}",e.measure) && m.attributes.get("part").and_then(Scalar::as_str)==Some(e.part.as_str()) && m.attributes.get("type").and_then(Scalar::as_str)==Some("stop")) => (),
                 Record::State(_) | Record::Mark(_) | Record::Event(_) if frame.time == doc.end => {
                     return Err(error(
                         "navigation.final_boundary_control",
@@ -300,6 +314,7 @@ pub(super) fn perform(
     let traversal = route::traverse(
         &navigation.movement,
         route::Policy {
+            unclosed_final_ending: final_ending,
             maximum_occurrences: limits.maximum_occurrences,
             ..Default::default()
         },
@@ -702,7 +717,7 @@ pub(super) fn perform(
         let (code,message) = match d {
             route::Diagnostic::ConventionalTwoPasses { repeat_id } => ("navigation.conventional_two_passes", format!("{repeat_id}: absent authored count uses the conventional two passes; source remains unchanged")),
             route::Diagnostic::ImplicitStartAtMovementStart { repeat_id } => ("navigation.implicit_start", format!("{repeat_id}: absent forward sign uses movement entry; source remains unchanged")),
-            route::Diagnostic::UnclosedFinalEndingContinues { .. } => unreachable!("Default policy rejects this"),
+            route::Diagnostic::UnclosedFinalEndingContinues { repeat_id, start } => ("practice.navigation_unclosed_final_ending_continues", format!("Explicit practice request: {repeat_id} final ending from {start:?} continues to movement end; no authored endpoint is synthesized")),
         };
         result
             .diagnostics

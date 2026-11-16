@@ -79,6 +79,9 @@ pub fn inspect_authored_dynamic_schedule(
     policy: AuthoredDynamicSchedulePolicy,
     limits: PerformanceLimits,
 ) -> Result<AuthoredDynamicSchedule, Vec<Diagnostic>> {
+    inspect_on_visits(doc,policy,limits,None)
+}
+pub(super) fn inspect_on_visits(doc:&Document,policy:AuthoredDynamicSchedulePolicy,limits:PerformanceLimits,verified_visits:Option<Vec<MeasureOccurrence>>)->Result<AuthoredDynamicSchedule,Vec<Diagnostic>> {
     let errors: Vec<_> = crate::validate(doc, None)
         .into_iter()
         .filter(|d| d.severity == Severity::Error)
@@ -117,7 +120,7 @@ pub fn inspect_authored_dynamic_schedule(
         .required_extensions
         .iter()
         .any(|e| e == crate::navigation_extension::EXTENSION);
-    let itinerary: Vec<MeasureOccurrence> = if repeated {
+    let itinerary: Vec<MeasureOccurrence> = if let Some(visits)=verified_visits { visits } else if repeated {
         // Discovery copy only: remove this one quarantined lane so the existing
         // route machinery can report visits. No projected score escapes this API.
         // Every other capability and traversal restriction remains enforced.

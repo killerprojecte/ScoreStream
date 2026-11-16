@@ -17,6 +17,9 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
+#[allow(dead_code)] // Internal opt-in primitive; no public renderer uses it yet.
+pub(crate) mod dry;
+
 type Ptr = *mut c_void;
 type New = unsafe extern "C" fn() -> Ptr;
 type Delete = unsafe extern "C" fn(Ptr);
@@ -421,6 +424,16 @@ impl<'a> Synth<'a> {
         options: &RenderOptions,
         cancel: &AtomicBool,
     ) -> Result<Self> {
+        Self::new_configured(api, bank, routes, options, cancel, None)
+    }
+    fn new_configured(
+        api: &'a Api,
+        bank: &mut Bank,
+        routes: &[RouteAssignment],
+        options: &RenderOptions,
+        cancel: &AtomicBool,
+        dry_groups: Option<usize>,
+    ) -> Result<Self> {
         // SAFETY: API is loaded and thread-bound; pointer is owned by this guard.
         let settings = NonNull::new(unsafe { (api.new_settings)() })
             .ok_or_else(|| AudioError::Native("new settings returned null".into()))?;
@@ -455,6 +468,14 @@ impl<'a> Synth<'a> {
                 unsafe { (api.set_int)(settings.as_ptr(), name.as_ptr(), value) },
                 "set integer setting",
             )?;
+        }
+        if let Some(groups) = dry_groups {
+            let groups = i32::try_from(groups)
+                .map_err(|_| AudioError::InvalidPlan("Too many dry groups".into()))?;
+            for name in [c"synth.audio-groups", c"synth.audio-channels"] {
+                check(unsafe { (api.set_int)(settings.as_ptr(), name.as_ptr(), groups) },
+                    "set disjoint dry groups")?;
+            }
         }
         result.synth = Some(
             NonNull::new(unsafe { (api.new_synth)(settings.as_ptr()) })

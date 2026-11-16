@@ -1,7 +1,7 @@
 //! Source-retaining, explicitly disclosed practice discovery and joint timing.
 //! Native sound still requires a matching sealed local MIDI and sample receipt.
 use super::*;
-use crate::{Diagnostic, Document, Rational, Record, Severity, instrument_extension};
+use crate::{instrument_extension, Diagnostic, Document, Rational, Record, Severity};
 use std::collections::BTreeSet;
 #[derive(Clone, Copy, Debug)]
 pub enum PracticeDiscoveryPolicy {
@@ -17,9 +17,15 @@ pub struct PracticeMidiSelection {
 #[derive(Clone, Debug)]
 pub struct PracticeJointDiscovery {
     source: Document,
+    terminal_dashes: Vec<super::PracticeTerminalDashesOccurrence>,
+    final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy,
     discovery: CombinedPerformanceDiscovery,
 }
 impl PracticeJointDiscovery {
+    pub fn final_ending_policy(&self) -> crate::repeat_traversal::UnclosedFinalEndingPolicy {
+        self.final_ending
+    }
+    pub fn terminal_dashes(&self) -> &[super::PracticeTerminalDashesOccurrence] { &self.terminal_dashes }
     pub fn source(&self) -> &Document {
         &self.source
     }
@@ -45,11 +51,29 @@ pub fn discover_document_practice_joint(
     articulation: ExplicitArticulationPolicy,
     routes: &[PracticeMidiSelection],
 ) -> Result<PracticeJointDiscovery, Vec<Diagnostic>> {
+    discover_document_practice_joint_with_final_ending(
+        doc,
+        _policy,
+        articulation,
+        routes,
+        crate::repeat_traversal::UnclosedFinalEndingPolicy::Reject,
+    )
+}
+/// Explicit practice-only navigation request; retained with the unchanged source receipt.
+pub fn discover_document_practice_joint_with_final_ending(
+    doc: &Document,
+    _policy: PracticeDiscoveryPolicy,
+    articulation: ExplicitArticulationPolicy,
+    routes: &[PracticeMidiSelection],
+    final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy,
+) -> Result<PracticeJointDiscovery, Vec<Diagnostic>> {
     validate_selections(doc, routes)?;
-    let discovery = super::combined::discover_practice(doc, articulation)?;
+    let (discovery, terminal_dashes) = super::combined::discover_practice(doc, articulation, final_ending)?;
     Ok(PracticeJointDiscovery {
         source: doc.clone(),
+        final_ending,
         discovery,
+        terminal_dashes,
     })
 }
 
@@ -131,9 +155,15 @@ fn validate_selections(
 #[derive(Clone, Debug)]
 pub struct QualifiedPracticePerformance {
     source: Document,
+    terminal_dashes: Vec<super::PracticeTerminalDashesOccurrence>,
+    final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy,
     joint: QualifiedCombinedPerformance,
 }
 impl QualifiedPracticePerformance {
+    pub fn final_ending_policy(&self) -> crate::repeat_traversal::UnclosedFinalEndingPolicy {
+        self.final_ending
+    }
+    pub fn terminal_dashes(&self) -> &[super::PracticeTerminalDashesOccurrence] { &self.terminal_dashes }
     pub fn source(&self) -> &Document {
         &self.source
     }
@@ -151,10 +181,42 @@ pub fn perform_document_practice_joint(
     grace_sound: GraceSoundPolicy,
     holds: &crate::fermata_timing::ExplicitSynchronizedFermataPolicy,
 ) -> Result<QualifiedPracticePerformance, Vec<Diagnostic>> {
+    perform_document_practice_joint_with_final_ending(
+        doc,
+        _policy,
+        routes,
+        articulation,
+        grace,
+        grace_sound,
+        holds,
+        crate::repeat_traversal::UnclosedFinalEndingPolicy::Reject,
+    )
+}
+#[allow(clippy::too_many_arguments)]
+pub fn perform_document_practice_joint_with_final_ending(
+    doc: &Document,
+    _policy: PracticeDiscoveryPolicy,
+    routes: &[PracticeMidiSelection],
+    articulation: ExplicitArticulationPolicy,
+    grace: &ExplicitGracePolicy,
+    grace_sound: GraceSoundPolicy,
+    holds: &crate::fermata_timing::ExplicitSynchronizedFermataPolicy,
+    final_ending: crate::repeat_traversal::UnclosedFinalEndingPolicy,
+) -> Result<QualifiedPracticePerformance, Vec<Diagnostic>> {
     validate_selections(doc, routes)?;
-    let joint = super::combined::perform_practice(doc, articulation, grace, grace_sound, holds)?;
+    let joint = super::combined::perform_practice(
+        doc,
+        articulation,
+        grace,
+        grace_sound,
+        holds,
+        final_ending,
+    )?;
+    let terminal_dashes = super::practice_terminal::receipts(doc,joint.performed())?;
     Ok(QualifiedPracticePerformance {
+        terminal_dashes,
         source: doc.clone(),
+        final_ending,
         joint,
     })
 }

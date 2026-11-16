@@ -39,6 +39,10 @@ pub enum GraceSoundPolicy {
     /// Full grace windows, then a principal gate of 23/25 of the REMAINING time.
     /// This order/gate is playback policy, not a rule supplied by MusicXML.
     FullGraceThenGatedRemainder,
+    /// Practice-only explicit composition: unchanged full grace slots; a
+    /// staccato principal gates half its remaining interval, accent affects its
+    /// own fresh attack. Unmarked principal keeps 23/25. No grace-note marks.
+    PracticePrincipalStaccatoAccentInAllocatedRemainderV1,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GraceTimingLimits {
@@ -455,6 +459,7 @@ fn sound_structure(
     doc: &Document,
     score: &ResolvedScore,
     affected: &BTreeSet<EventId>,
+    practice_principals: bool,
 ) -> Result<(), Vec<Diagnostic>> {
     let events: BTreeMap<_, _> = score.events.iter().map(|e| (&e.id, e)).collect();
     for relation in &score.relations {
@@ -486,7 +491,9 @@ fn sound_structure(
     for direction in &score.directions {
         if matches!(direction.kind, DirectionKind::Articulation { .. }) {
             if let Scope::Event(id) = &direction.scope {
-                if affected.contains(id) {
+                if affected.contains(id) && !(practice_principals
+                    && events[id].duration != crate::Duration::Grace
+                    && matches!(direction.kind, DirectionKind::Articulation { value: Articulation::Staccato | Articulation::Accent })) {
                     return Err(fail(
                         doc,
                         "grace.articulation_unsupported",
@@ -569,6 +576,22 @@ pub(super) fn allocate(
     sound_policy: GraceSoundPolicy,
     limits: &GraceTimingLimits,
 ) -> Result<GraceSchedule, Vec<Diagnostic>> {
+    allocate_profile(doc,performed,policy,sound_policy,limits,false)
+}
+pub(super) fn allocate_practice(
+    doc:&Document, performed:&PerformedScore, policy:&ExplicitGracePolicy,
+    sound_policy:GraceSoundPolicy, limits:&GraceTimingLimits,
+)->Result<GraceSchedule,Vec<Diagnostic>> {
+    allocate_profile(doc,performed,policy,sound_policy,limits,true)
+}
+fn allocate_profile(
+    doc:&Document, performed:&PerformedScore, policy:&ExplicitGracePolicy,
+    sound_policy:GraceSoundPolicy, limits:&GraceTimingLimits, practice:bool,
+)->Result<GraceSchedule,Vec<Diagnostic>> {
+    let principal_articulations=matches!(sound_policy,GraceSoundPolicy::PracticePrincipalStaccatoAccentInAllocatedRemainderV1);
+    if principal_articulations && !practice {
+        return Err(fail(doc,"grace.practice_policy_scope","Principal articulation composition requires the explicit practice joint profile"));
+    }
     let discovery = discover(doc, performed)?;
     let clock = ExactTempoMap::new(&performed.score, Some(limits.maximum_rational_bits))
         .map_err(|e| fail(doc, "grace.rational_budget", e))?;
@@ -604,7 +627,7 @@ pub(super) fn allocate(
         .iter()
         .flat_map(|o| [o.id.clone(), o.principal.clone()])
         .collect();
-    sound_structure(doc, &performed.score, &affected)?;
+    sound_structure(doc, &performed.score, &affected, principal_articulations)?;
     let mut consumed = BTreeSet::new();
     let mut windows = Vec::new();
     let mut groups = Vec::new();
@@ -730,7 +753,11 @@ pub(super) fn allocate(
         }
         let remainder = &duration - &total;
         check(doc, &remainder, limits)?;
-        let gated = &remainder * &"23/25".parse().unwrap();
+        let staccato = principal_articulations && performed.score.directions.iter().any(|d|
+            matches!(&d.scope,Scope::Event(id) if id==&group.principal)
+                && matches!(d.kind,DirectionKind::Articulation {value:Articulation::Staccato}));
+        let gate:Rational=if staccato { "1/2" } else { "23/25" }.parse().unwrap();
+        let gated = &remainder * &gate;
         check(doc, &gated, limits)?;
         let release = &cursor + &gated;
         windows.push(window(

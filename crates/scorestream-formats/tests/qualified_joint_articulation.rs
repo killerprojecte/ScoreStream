@@ -256,3 +256,38 @@ fn trace_retains_words_without_inferring_cross_movement_action() {
     assert_eq!(words.len(),1); assert_eq!(words[0].measure_occurrence,0);
     assert_eq!(scorestream_codec::parse(&s).unwrap(),doc);
 }
+
+#[test]
+fn explicit_practice_principal_gate_preserves_grace_slot_and_accent_attack() {
+    use playback::{PizzicatoSoundPolicy,PracticeTieNoteOnPolicy,PracticeHoldEndpointPolicy,PracticeNoteExpressionPolicy};
+    use scorestream_core::notation::{PracticeDiscoveryPolicy,PracticeMidiSelection};
+    let policy=GraceSoundPolicy::PracticePrincipalStaccatoAccentInAllocatedRemainderV1;
+    let mark="<articulations><staccato/></articulations>";
+    let principal="<step>G</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice></note>";
+    let marked=XML.replace(principal,&format!("<step>G</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><notations>{mark}</notations></note>"));
+    let plain_source=source(&marked);let (g,f)=policies(&plain_source);
+    assert!(play(&plain_source).unwrap_err().contains("grace.articulation_unsupported"));
+    assert!(playback::plan_source_with_explicit_joint_policies(&plain_source,POLICY,&g,policy,&f,FermataSoundPolicy::SustainSelectedAnchors).unwrap_err().contains("grace.practice_policy_scope"));
+    let with_midi=|xml:&str|xml.replace("</score-instrument></score-part>","</score-instrument><midi-instrument id=\"ip\"><midi-program>1</midi-program><pan>0</pan></midi-instrument></score-part>");
+    // IDs must match each part's actual instrument rather than a fabricated shared ID.
+    let midi=with_midi(&marked).replace("<score-instrument id=\"ir\"><instrument-name>piano</instrument-name></score-instrument><midi-instrument id=\"ip\">","<score-instrument id=\"ir\"><instrument-name>piano</instrument-name></score-instrument><midi-instrument id=\"ir\">");
+    let s=source(&midi);
+    let doc=scorestream_codec::parse(&s).unwrap();
+    let routes:Vec<_>=doc.parts.iter().map(|p|PracticeMidiSelection{part:p.id.clone(),instrument:p.instrument.clone(),bank:0,program_zero_based:0}).collect();
+    let run=|s:&str,chosen|playback::plan_source_with_practice_joint_policies_and_pizzicato(s,PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,&routes,POLICY,&g,chosen,&f,FermataSoundPolicy::SustainSelectedAnchors,PizzicatoSoundPolicy::GeneralMidiSharedStringsApproximation);
+    assert!(run(&s,GraceSoundPolicy::FullGraceThenGatedRemainder).unwrap_err().contains("grace.articulation_unsupported"));
+    let p=run(&s,policy).unwrap();let principal=p.plan().notes.iter().find(|n|n.midi_note==67.).unwrap();let grace=p.plan().notes.iter().find(|n|n.midi_note==65.).unwrap();
+    assert_eq!(grace.duration_seconds,0.125);assert_eq!(principal.start_seconds,grace.start_seconds+0.125);
+    assert_eq!(principal.duration_seconds,0.1875); // half of 3/4 quarter, not half of 23/25-gated time
+    let accented=source(&midi.replace("<articulations><staccato/></articulations>","<articulations><accent/></articulations>"));
+    let a=run(&accented,policy).unwrap();let ap=a.plan().notes.iter().find(|n|n.midi_note==67.).unwrap();
+    assert_eq!(ap.start_seconds,principal.start_seconds);assert_eq!(ap.velocity,principal.velocity+16);
+    assert!((ap.duration_seconds-0.345).abs()<1e-12);
+    assert!(p.plan().diagnostics.iter().any(|d|d.code=="practice.grace_principal_articulation"));
+    let held=source(&midi.replace("<fermata type=\"upright\"/>",&format!("<fermata type=\"upright\"/>{mark}")));
+    assert!(run(&held,policy).unwrap_err().contains("articulation.hold_interpretation"));
+    let grace_mark=midi.replace("<type>16th</type></note>",&format!("<type>16th</type><notations>{mark}</notations></note>"));
+    let rejected=musicxml::read_with_options(&grace_mark,&MusicXmlOptions {articulations:ArticulationProfile::AuthoredMixedV1,..Default::default()}).unwrap_err();
+    assert!(format!("{rejected:?}").contains("requires a measured pitched event"));
+
+}

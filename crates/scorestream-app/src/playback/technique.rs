@@ -36,10 +36,12 @@ pub struct TechniquePlaybackPlan {
     source_sha256: String,
     practice_nonrealizations: Vec<String>,
     note_dynamics_receipts: Vec<PracticeNoteDynamicsReceipt>,
+    boundary_dynamics: Option<BoundaryPracticeReceipt>,
     plan: PlaybackPlan,
     pizzicato: BTreeSet<String>,
 }
 impl TechniquePlaybackPlan {
+    pub fn boundary_dynamics_receipt(&self)->Option<&BoundaryPracticeReceipt>{self.boundary_dynamics.as_ref()}
     pub fn note_dynamics_receipts(&self) -> &[PracticeNoteDynamicsReceipt] {
         &self.note_dynamics_receipts
     }
@@ -66,6 +68,7 @@ fn finish(
     TechniquePlaybackPlan {
         practice_nonrealizations: Vec::new(),
         note_dynamics_receipts: Vec::new(),
+        boundary_dynamics: None,
         source_sha256: format!("{:x}", Sha256::digest(source.as_bytes())),
         plan,
         pizzicato,
@@ -205,6 +208,9 @@ pub fn plan_source_with_practice_joint_policies_and_pizzicato(
         Some(note_expression),
         Some(&mut note_dynamics_receipts),
     )?;
+    finish_practice(source,&doc,plan,attacks,note_dynamics_receipts)
+}
+fn finish_practice(source:&str,doc:&Document,plan:PlaybackPlan,attacks:BTreeSet<String>,note_dynamics_receipts:Vec<PracticeNoteDynamicsReceipt>)->Result<TechniquePlaybackPlan,String>{
     let mut result = finish(source, plan, attacks);
     result.note_dynamics_receipts = note_dynamics_receipts;
     for d in &mut result.plan.diagnostics {
@@ -516,3 +522,6 @@ mod relative_note_expression_tests {
         assert!(e.contains("relative_baseline"), "{e}");
     }
 }
+
+mod boundary;
+pub use boundary::*;

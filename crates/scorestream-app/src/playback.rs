@@ -103,6 +103,9 @@ enum GraceView<'a> {
     Combined(&'a QualifiedCombinedPerformance),
 }
 impl<'a> GraceView<'a> {
+    fn sound_policy(self) -> GraceSoundPolicy {
+        match self { Self::Standalone(s)=>s.sound_policy(), Self::Combined(q)=>q.grace_sound_policy() }
+    }
     fn windows(self) -> &'a [GraceSoundWindow] {
         match self {
             Self::Standalone(s) => s.windows(),
@@ -270,8 +273,13 @@ fn compile_with_practice(
                     event.id
                 ));
             }
+            if matches!(grace.sound_policy(), GraceSoundPolicy::PracticePrincipalStaccatoAccentInAllocatedRemainderV1) {
+                warnings.add("practice.grace_principal_articulation", "articulation.authored", RealizationEffect::Policy, &event.origin,
+                    "Explicit practice composition preserves full allocated grace slots and their order; principal staccato gates half its remaining interval, unmarked principal gates 23/25, accent affects only its fresh onset. No grace marks, ties or hold crossings are inferred.");
+            } else {
             warnings.add("grace.explicit_sound_window", "rhythm.grace", RealizationEffect::Policy, &event.origin,
                 "Explicit following-principal allocation: graces sound in source order for their full allocation; principal sounds for 23/25 of the remaining nominal duration. Written markers and source events remain unchanged. Pitch, staff and instrument stay resolved at the written anchor; numeric dynamics use actual attacks and absolute control times.");
+            }
         }
         for interval in grace.default_tempo_intervals() {
             warnings.add("grace.default_quarter_tempo", "tempo.default", RealizationEffect::Policy,
@@ -308,7 +316,7 @@ fn compile_with_practice(
         if articulation_policy.is_some() {
             warnings.add("articulation.explicit_joint_policy", "articulation.authored", RealizationEffect::Policy,
                 &Origin { object_id: "document".into(), source: doc.source },
-                "Explicit SimpleStaccatoAccentV1: half gate and +16 accent velocity policy, only away from selected holds and grace/principal windows; source notation retained.");
+                "Explicit SimpleStaccatoAccentV1: half gate and +16 accent velocity policy, only away from selected holds; grace/principal composition requires its separately selected practice sound policy; source notation retained.");
         }
         fermata::validate_sound_policy(score, &continuity, timing, articulation_policy, endpoint, &mut before_hold_tails, &mut warnings)?
     } else {
