@@ -76,6 +76,39 @@ pub fn plan_source_with_explicit_fermatas(
     })
 }
 
+/// Source-qualified explicit latest-release synchronization. Earlier rest markers
+/// retain their own written/performed end; the one global hold occurs at the
+/// caller's selected boundary. No automatic grouping or seconds are supplied.
+pub fn plan_source_with_synchronized_fermatas(
+    source: &str,
+    policy: &scorestream_codec::fermata_timing::ExplicitSynchronizedFermataPolicy,
+    sound_policy: FermataSoundPolicy,
+) -> Result<ExplicitFermataPlayback, String> {
+    let doc = parse(source)?;
+    let qualified = perform_document_with_synchronized_fermatas(
+        &doc,
+        policy,
+        PerformanceLimits::default(),
+        TimingLimits::default(),
+    )
+    .map_err(format_diagnostics)?;
+    match sound_policy {
+        FermataSoundPolicy::SustainSelectedAnchors => (),
+    }
+    let performed = qualified.performed();
+    let plan = compile_performed(
+        &performed.score,
+        &doc,
+        Some(performed),
+        Some(qualified.timing()),
+    )?;
+    Ok(ExplicitFermataPlayback {
+        plan,
+        timing: qualified.into_timing(),
+        sound_policy,
+    })
+}
+
 /// Validate every hold against actual audible chains before compiling any plan.
 /// Returns only selected terminal segments whose gate is deliberately overridden.
 pub(super) fn validate_sound_policy(
@@ -185,6 +218,11 @@ pub(super) fn validate_sound_policy(
         }
     }
     for hold in timing.holds() {
+        if hold.synchronization == scorestream_codec::fermata_timing::HoldSynchronization::ExplicitLatestReleaseWithEarlierRests {
+            warnings.add("fermata.explicit_synchronization", "fermata.synchronization", RealizationEffect::Policy,
+                &Origin { object_id: hold.id.clone(), source: score.events[indices[&hold.members[0]]].origin.source },
+                &format!("Explicit editorial synchronization at performed quarter {}: earlier rest anchors keep their original marker intervals; one global hold at the selected latest release.", hold.boundary));
+        }
         warnings.add("fermata.explicit_policy_hold", "fermata.hold", RealizationEffect::Policy,
             &Origin { object_id: hold.id.clone(), source: score.events[indices[&hold.members[0]]].origin.source },
             &format!("Added {} seconds from explicit interpretation policy, not from authored sign; strict sustain-selected-anchor sound policy.", hold.added_seconds));

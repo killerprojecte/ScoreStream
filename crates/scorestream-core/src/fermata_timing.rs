@@ -33,6 +33,26 @@ pub struct ExplicitHoldGroup {
     pub added_seconds: Rational,
 }
 
+/// Explicit editorial synchronization, separate from the legacy common-release policy.
+/// Each boundary is a performed-route quarter coordinate, never a written measure offset.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExplicitSynchronizedFermataPolicy {
+    pub groups: Vec<ExplicitSynchronizedHoldGroup>,
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExplicitSynchronizedHoldGroup {
+    pub hold: ExplicitHoldGroup,
+    /// Selected latest member release. Earlier member releases must belong to rests.
+    pub boundary: Rational,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HoldSynchronization {
+    CommonRelease,
+    /// Earlier rest signs are explicitly assigned to the selected latest release;
+    /// their source anchors and marker intervals are not rewritten.
+    ExplicitLatestReleaseWithEarlierRests,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TimingLimits {
     pub maximum_events: usize,
@@ -161,6 +181,7 @@ pub struct MeasureTiming {
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HoldInterval {
+    pub synchronization: HoldSynchronization,
     pub id: String,
     pub members: Vec<EventId>,
     /// The minimum member start; used only for rejecting ambiguous overlap.
@@ -341,8 +362,22 @@ pub fn interpret(
     policy: &ExplicitFermataPolicy,
     limits: TimingLimits,
 ) -> Result<TimingProjection> {
-    interpret_inner(source, performed, policy, limits, None)
+    interpret_inner(source, performed, policy, limits, None, None)
 }
+/// Only source-qualified callers select this profile; no detached playable score is exposed.
+pub(crate) fn interpret_synchronized(
+    source: &Document,
+    performed: &PerformedScore,
+    policy: &ExplicitSynchronizedFermataPolicy,
+    limits: TimingLimits,
+) -> Result<TimingProjection> {
+    let holds = ExplicitFermataPolicy {
+        groups: policy.groups.iter().map(|g| g.hold.clone()).collect(),
+    };
+    let boundaries: Vec<_> = policy.groups.iter().map(|g| g.boundary.clone()).collect();
+    interpret_inner(source, performed, &holds, limits, None, Some(&boundaries))
+}
+
 /// Internal only: the schedule is privately allocated from this unchanged source
 /// and the same qualified route. Raw callers never gain an ignore-grace flag.
 pub(crate) fn interpret_qualified_graces(
@@ -352,7 +387,7 @@ pub(crate) fn interpret_qualified_graces(
     limits: TimingLimits,
     schedule: &crate::notation::GraceSchedule,
 ) -> Result<TimingProjection> {
-    interpret_inner(source, performed, policy, limits, Some(schedule))
+    interpret_inner(source, performed, policy, limits, Some(schedule), None)
 }
 fn interpret_inner(
     source: &Document,
@@ -360,6 +395,7 @@ fn interpret_inner(
     policy: &ExplicitFermataPolicy,
     limits: TimingLimits,
     schedule: Option<&crate::notation::GraceSchedule>,
+    synchronization: Option<&[Rational]>,
 ) -> Result<TimingProjection> {
     if limits
         .maximum_timeline_seconds
@@ -842,7 +878,7 @@ fn interpret_inner(
         .collect();
     let mut group_ids = BTreeSet::new();
     let mut covered = BTreeSet::new();
-    for group in &policy.groups {
+    for (group_index, group) in policy.groups.iter().enumerate() {
         if group.id.trim().is_empty() || !group_ids.insert(group.id.clone()) {
             return Err(error(
                 "fermata.group_identity",
@@ -862,7 +898,14 @@ fn interpret_inner(
                 format!("Hold group {} requires explicit positive seconds", group.id),
             ));
         }
+        let selected_boundary = synchronization.map(|boundaries| &boundaries[group_index]);
+        if let Some(boundary) = selected_boundary {
+            rational(boundary, &limits)?;
+        }
         let mut boundary = None;
+        let mut latest_end = Rational::zero();
+        let mut earliest_end = end.clone();
+        let mut latest_start = Rational::zero();
         let mut support_start = end.clone();
         for id in &group.members {
             let f = &projection.fermatas[*by_id.get(id).ok_or_else(|| {
@@ -880,7 +923,8 @@ fn interpret_inner(
                     format!("Occurrence {id} belongs to more than one membership entry"),
                 ));
             }
-            if boundary.as_ref().is_some_and(|b| b != &f.quarter_end) {
+            if selected_boundary.is_none() && boundary.as_ref().is_some_and(|b| b != &f.quarter_end)
+            {
                 return Err(error(
                     "fermata.unequal_boundaries",
                     format!(
@@ -889,10 +933,38 @@ fn interpret_inner(
                     ),
                 ));
             }
+            if let Some(selected) = selected_boundary {
+                if &f.quarter_end < selected {
+                    let event = event_map.get(&f.id).expect("validated occurrence");
+                    if event.written_pitch != Pitch::Rest {
+                        return Err(error(
+                            "fermata.synchronization_sound",
+                            "An earlier sounding anchor needs an explicit sustain/release policy; this profile synchronizes earlier rests only",
+                        ));
+                    }
+                }
+                latest_end = latest_end.max(f.quarter_end.clone());
+                earliest_end = earliest_end.min(f.quarter_end.clone());
+                latest_start = latest_start.max(f.quarter_start.clone());
+            }
             boundary = Some(f.quarter_end.clone());
             support_start = support_start.min(f.quarter_start.clone());
         }
+        if let Some(selected) = selected_boundary {
+            if selected != &latest_end || latest_start >= earliest_end {
+                return Err(error(
+                    "fermata.synchronization_boundary",
+                    "Explicit synchronized boundary must be the latest member release of overlapping anchor intervals",
+                ));
+            }
+            boundary = Some(selected.clone());
+        }
         projection.holds.push(HoldInterval {
+            synchronization: if selected_boundary.is_some() {
+                HoldSynchronization::ExplicitLatestReleaseWithEarlierRests
+            } else {
+                HoldSynchronization::CommonRelease
+            },
             id: group.id.clone(),
             members: group.members.clone(),
             support_start,

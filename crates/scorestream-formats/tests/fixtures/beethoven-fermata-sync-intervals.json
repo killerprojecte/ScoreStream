@@ -1,0 +1,726 @@
+{
+  "kind": "read_only_original_interval_evidence_not_a_full_score_import",
+  "movements": [
+    {
+      "movement": 2,
+      "measure": "123",
+      "sha256": "c962fecc2e85c070633ad1990b7046c2c23ed5673ad95f4d02eeeac94528f09a",
+      "anchors": [
+        {
+          "part": "P1",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "34.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P2",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P3",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P5",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "4.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P7",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "24.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P8",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P9",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1/2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P10",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1/2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P11",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1/2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P12",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1/2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P13",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1/2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P14",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "34.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P15",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "34.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P16",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "29.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P17",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "24.28",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P18",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "1",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "24.28",
+            "relative-y": "5"
+          }
+        }
+      ]
+    },
+    {
+      "movement": 3,
+      "measure": "257",
+      "sha256": "788d9c3cda2fc1b970f5a832683eafb7ce4dc25e7767f18041e3dd1783978b98",
+      "anchors": [
+        {
+          "part": "P1",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P2",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P3",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P4",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P5",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P6",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P7",
+          "voice": "1",
+          "staff": "1",
+          "start": "1",
+          "end": "2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P8",
+          "voice": "1",
+          "staff": "1",
+          "start": "1",
+          "end": "2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P9",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P10",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P11",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P12",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P13",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P14",
+          "voice": "1",
+          "staff": "1",
+          "start": "1",
+          "end": "2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P15",
+          "voice": "1",
+          "staff": "1",
+          "start": "1",
+          "end": "2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P16",
+          "voice": "1",
+          "staff": "1",
+          "start": "1",
+          "end": "2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P17",
+          "voice": "1",
+          "staff": "1",
+          "start": "1",
+          "end": "2",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P18",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "3",
+          "rest": true,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        }
+      ]
+    },
+    {
+      "movement": 4,
+      "measure": "446",
+      "sha256": "cce11a1437d3acd379fbf2f72483d92888b05443f7b04bb1cb5eea9c59cc9298",
+      "anchors": [
+        {
+          "part": "P1",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "24.44",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P2",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "24.44",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P3",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P4",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P6",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P8",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P10",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P11",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P12",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P13",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P15",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P16",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P17",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P18",
+          "voice": "1",
+          "staff": "1",
+          "start": "2",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "default-y": "26.82",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P19",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P20",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P21",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P22",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        },
+        {
+          "part": "P23",
+          "voice": "1",
+          "staff": "1",
+          "start": "0",
+          "end": "4",
+          "rest": false,
+          "shape": null,
+          "attributes": {
+            "type": "upright",
+            "relative-y": "5"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,13 +1,12 @@
 //! Source-qualified fermata projection. No public ignore-fermata switch and no
 //! playable projection is returned until all visited signs have explicit holds.
-use super::{lower::LoweringProfile, perform, PerformanceLimits, PerformedScore};
+use super::{PerformanceLimits, PerformedScore, lower::LoweringProfile, perform};
 use crate::{
-    fermata_extension,
+    Diagnostic, Document, Rational, Record, Severity, fermata_extension,
     fermata_timing::{
         self, AuthoredFermataAudit, ExplicitFermataPolicy, FermataOccurrence, TimingDiagnostic,
         TimingLimits, TimingProjection,
     },
-    Diagnostic, Document, Rational, Record, Severity,
 };
 use std::collections::BTreeMap;
 
@@ -268,4 +267,19 @@ pub(super) fn retain_default_tempo_provenance(
             }
         }
     }
+}
+
+/// Explicitly synchronize overlapping note/rest anchors at a caller-selected latest
+/// release. Earlier releases must be rests; no source timing or sign is rewritten.
+pub fn perform_document_with_synchronized_fermatas(
+    doc: &Document,
+    policy: &fermata_timing::ExplicitSynchronizedFermataPolicy,
+    performance_limits: PerformanceLimits,
+    timing_limits: TimingLimits,
+) -> Result<QualifiedFermataPerformance, Vec<Diagnostic>> {
+    let performed = prepare(doc, performance_limits, &timing_limits)?;
+    let mut timing = fermata_timing::interpret_synchronized(doc, &performed, policy, timing_limits)
+        .map_err(|e| fail(doc, e.code, e.message))?;
+    retain_default_tempo_provenance(&performed, &mut timing);
+    Ok(QualifiedFermataPerformance { performed, timing })
 }

@@ -416,3 +416,266 @@ fn selection_at_one_hold_does_not_exempt_chain_at_another_hold() {
     let error = play(&s, &policy(&s, &[("1", "1"), ("2", "1")])).unwrap_err();
     assert!(error.contains("fermata.unselected_overlap"), "{error}");
 }
+
+// Pinned-original interval evidence drives these synthetic playable fixtures.
+// Pitches/instruments/IDs below are synthetic: this does not import or repair originals.
+fn audited_anchors(movement: u64) -> Vec<(usize, usize, bool)> {
+    let evidence: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/beethoven-fermata-sync-intervals.json"
+    ))
+    .unwrap();
+    let audit = evidence["movements"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["movement"] == movement)
+        .unwrap();
+    audit["anchors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| {
+            let ticks = |key: &str| {
+                let exact = &r(a[key].as_str().unwrap()) * &r("2");
+                exact.to_string().parse::<usize>().unwrap()
+            };
+            (ticks("start"), ticks("end"), a["rest"].as_bool().unwrap())
+        })
+        .collect()
+}
+
+fn synchronized(
+    source: &str,
+    boundary: &str,
+    seconds: &str,
+) -> scorestream_core::fermata_timing::ExplicitSynchronizedFermataPolicy {
+    use scorestream_core::fermata_timing::{
+        ExplicitSynchronizedFermataPolicy, ExplicitSynchronizedHoldGroup,
+    };
+    ExplicitSynchronizedFermataPolicy {
+        groups: vec![ExplicitSynchronizedHoldGroup {
+            hold: ExplicitHoldGroup {
+                id: "editorial-latest-release".into(),
+                members: discover_source_fermatas(source)
+                    .unwrap()
+                    .occurrences
+                    .iter()
+                    .map(|o| o.id.clone())
+                    .collect(),
+                added_seconds: r(seconds),
+            },
+            boundary: r(boundary),
+        }],
+    }
+}
+fn play_synchronized(
+    source: &str,
+    boundary: &str,
+    seconds: &str,
+) -> Result<ExplicitFermataPlayback, String> {
+    scorestream_app::playback::plan_source_with_synchronized_fermatas(
+        source,
+        &synchronized(source, boundary, seconds),
+        FermataSoundPolicy::SustainSelectedAnchors,
+    )
+}
+#[test]
+fn explicit_ii123_sync_keeps_earlier_rest_markers_and_one_global_hold() {
+    use scorestream_core::fermata_timing::HoldSynchronization;
+    let anchors = audited_anchors(2);
+    let s = intervals(&anchors, 1);
+    let before = scorestream_codec::parse(&s).unwrap();
+    let p = play_synchronized(&s, "1", "3/2").unwrap();
+    assert_eq!(scorestream_codec::parse(&s).unwrap(), before);
+    assert_eq!(p.timing.fermatas.len(), 16);
+    assert_eq!(p.timing.holds().len(), 1);
+    let hold = &p.timing.holds()[0];
+    assert_eq!(
+        hold.synchronization,
+        HoldSynchronization::ExplicitLatestReleaseWithEarlierRests
+    );
+    assert_eq!(
+        (&hold.boundary, &hold.seconds_start, &hold.seconds_end),
+        (&r("1"), &r("1/2"), &r("2"))
+    );
+    assert_eq!(p.plan.notes.len(), 11);
+    for note in &p.plan.notes {
+        close(note.duration_seconds, 2.0);
+    }
+    let earlier: Vec<_> = p
+        .timing
+        .fermatas
+        .iter()
+        .filter(|f| f.quarter_end == r("1/2"))
+        .collect();
+    assert_eq!(earlier.len(), 5);
+    for f in earlier {
+        let marker = p
+            .plan
+            .event_positions
+            .iter()
+            .find(|e| e.occurrence_id.as_deref() == Some(f.id.0.as_str()))
+            .unwrap();
+        close(marker.end_seconds, 0.25);
+        assert_eq!(f.written_quarter_end, r("1/2"));
+    }
+    assert!(matches!(p.seek(&r("1")), SeekPosition::Hold { boundary, .. } if boundary == r("1")));
+    assert!(
+        play_synchronized(&s, "1/2", "1")
+            .unwrap_err()
+            .contains("synchronization_boundary")
+    );
+    assert!(
+        play_synchronized(&s, "2", "1")
+            .unwrap_err()
+            .contains("synchronization_sound")
+    );
+}
+#[test]
+fn explicit_iii257_nested_rests_have_no_invented_sound_or_rewritten_markers() {
+    let anchors = audited_anchors(3);
+    let s = intervals(&anchors, 3);
+    let p = play_synchronized(&s, "3", "2").unwrap();
+    assert!(p.plan.notes.is_empty());
+    assert_eq!(p.timing.fermatas.len(), 18);
+    assert_eq!(p.timing.holds().len(), 1);
+    close(p.plan.duration_seconds, 3.5);
+    let nested = p
+        .timing
+        .fermatas
+        .iter()
+        .find(|f| f.quarter_start == r("1"))
+        .unwrap();
+    assert_eq!(nested.quarter_end, r("2"));
+    let marker = p
+        .plan
+        .event_positions
+        .iter()
+        .find(|e| e.occurrence_id.as_deref() == Some(nested.id.0.as_str()))
+        .unwrap();
+    close(marker.start_seconds, 0.5);
+    close(marker.end_seconds, 1.0);
+}
+#[test]
+fn synchronized_common_release_matches_legacy_iv446_clock_and_audio() {
+    use scorestream_core::fermata_timing::HoldSynchronization;
+    let anchors = audited_anchors(4);
+    let s = intervals(&anchors, 4);
+    let old = play(&s, &policy(&s, &[("4", "1")])).unwrap();
+    let new = play_synchronized(&s, "4", "1").unwrap();
+    assert_eq!(
+        old.timing.holds()[0].synchronization,
+        HoldSynchronization::CommonRelease
+    );
+    assert_eq!(old.plan.notes, new.plan.notes);
+    assert_eq!(old.plan.event_positions, new.plan.event_positions);
+    assert_eq!(old.timing.duration_seconds(), new.timing.duration_seconds());
+}
+#[test]
+fn synchronization_does_not_authorize_earlier_sounding_release_or_disjoint_anchors() {
+    let s = intervals(&[(0, 2, false), (0, 1, false)], 1);
+    assert!(
+        play_synchronized(&s, "1", "1")
+            .unwrap_err()
+            .contains("synchronization_sound")
+    );
+    let s = intervals(&[(0, 2, true), (2, 4, true)], 2);
+    assert!(
+        play_synchronized(&s, "2", "1")
+            .unwrap_err()
+            .contains("synchronization_boundary")
+    );
+    let s = intervals(&[(0, 2, false), (0, 1, true)], 1);
+    assert!(
+        play_synchronized(&s, "1", "0")
+            .unwrap_err()
+            .contains("hold_duration")
+    );
+    let mut policy = synchronized(&s, "1", "1");
+    policy.groups[0].hold.members.pop();
+    assert!(
+        scorestream_app::playback::plan_source_with_synchronized_fermatas(
+            &s,
+            &policy,
+            FermataSoundPolicy::SustainSelectedAnchors
+        )
+        .unwrap_err()
+        .contains("incomplete_policy")
+    );
+}
+#[test]
+fn following_attack_moves_once_and_earlier_rest_never_holds_the_clock() {
+    let s = source(&xml(
+        &[
+            format!(
+                "{}{}",
+                note("a", 2, false, true),
+                note("next", 2, false, false)
+            ),
+            format!(
+                "{}{}{}",
+                note("short", 1, true, true),
+                note("gap", 1, true, false),
+                note("after", 2, true, false)
+            ),
+        ],
+        2,
+    ));
+    let p = play_synchronized(&s, "1", "2").unwrap();
+    assert_eq!(p.plan.notes.len(), 2);
+    close(p.plan.notes[0].duration_seconds, 2.5);
+    close(p.plan.notes[1].start_seconds, 2.5);
+    close(p.plan.duration_seconds, 3.0);
+    assert_eq!(p.timing.after(&r("1/2")), r("1/4"));
+}
+
+#[test]
+fn synchronized_policy_addresses_repeated_visits_not_written_ids() {
+    use scorestream_core::fermata_timing::{
+        ExplicitSynchronizedFermataPolicy, ExplicitSynchronizedHoldGroup,
+    };
+    let xml = include_str!("fixtures/navigation-performed.musicxml").replace(
+        "<type>quarter</type></note>",
+        "<type>quarter</type><notations><fermata/></notations></note>",
+    );
+    let s = source(&xml);
+    let discovery = discover_source_fermatas(&s).unwrap();
+    let policy = ExplicitSynchronizedFermataPolicy {
+        groups: discovery
+            .occurrences
+            .iter()
+            .enumerate()
+            .map(|(i, f)| ExplicitSynchronizedHoldGroup {
+                hold: ExplicitHoldGroup {
+                    id: format!("visit-{i}"),
+                    members: vec![f.id.clone()],
+                    added_seconds: if i == 3 { r("2") } else { r("1") },
+                },
+                boundary: f.quarter_end.clone(),
+            })
+            .collect(),
+    };
+    let p = scorestream_app::playback::plan_source_with_synchronized_fermatas(
+        &s,
+        &policy,
+        FermataSoundPolicy::SustainSelectedAnchors,
+    )
+    .unwrap();
+    assert_eq!(p.timing.authored.len(), 5);
+    assert_eq!(p.timing.holds().len(), 6);
+    assert_ne!(p.plan.notes[1].id, p.plan.notes[3].id);
+    close(p.plan.notes[1].duration_seconds, 2.0);
+    close(p.plan.notes[3].duration_seconds, 3.0);
+    close(p.plan.duration_seconds, 12.5);
+    let mut wrong = policy.clone();
+    wrong.groups[3].boundary = wrong.groups[1].boundary.clone();
+    assert!(
+        scorestream_app::playback::plan_source_with_synchronized_fermatas(
+            &s,
+            &wrong,
+            FermataSoundPolicy::SustainSelectedAnchors
+        )
+        .unwrap_err()
+        .contains("synchronization_boundary")
+    );
+}

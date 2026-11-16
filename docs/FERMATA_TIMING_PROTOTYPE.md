@@ -20,9 +20,9 @@ The known original patterns motivate these distinct tests:
 
 - I m21: one 0–2-quarter note plus sixteen 1–2-quarter rest anchors can form one common-release group.
 - IV m446: eighteen 0–4-quarter notes plus the 2–4-quarter timpani anchor can form one group.
-- II m123: 0–1-quarter notes and 0–½-quarter rests cannot form one common-release group. Splitting them into overlapping groups also rejects. A different synchronization policy is needed.
+- II m123: eleven 0–1-quarter notes and five 0–½-quarter rests cannot form one common-release group. Splitting them into overlapping groups also rejects. The separate explicit latest-release profile below now supports this pattern.
 - I m268: the separate 0–2, 5–6 and 9–10-quarter anchors can form three explicitly specified groups.
-- III m257: nested 0–3 and 1–2-quarter rests likewise need a later policy.
+- III m257: twelve 0–3 and six 1–2-quarter rests use the separate explicit latest-release profile below.
 
 The opening's eighteen copies are preserved as eighteen authored occurrences, not eighteen added pauses. Nothing here assigns a hold length to the original recordings or scores.
 
@@ -39,7 +39,7 @@ A tempo change at the boundary affects subsequent musical time. It cannot shorte
 
 Exact inverse seeking returns either a musical quarter position or a hold identity, fixed boundary and elapsed added seconds. Seeking inside a hold never invents an intermediate beat. At the exact hold end, musical time resumes. Finite seeks before zero and after total duration clamp to the endpoints. All calculations remain rational; this prototype does not claim a device's floating-point seek accuracy.
 
-If the supplied tempo map has no initial tempo, the existing quarter=120 convention is reported with its exact affected interval. Every hold produces a diagnostic stating that its added seconds come from explicit interpretation policy, not the authored sign. Resource limits bound source records, occurrences, controls, policy membership and timing-rational bit size. The total timeline has a configurable limit and an absolute six-hour maximum.
+If the supplied tempo map has no initial tempo, the existing quarter=120 convention is reported with its exact affected interval. Every hold produces a diagnostic stating that its added seconds come from explicit interpretation policy, not the authored sign. Caller-selected limits may bound source records, occurrences, controls, policy membership and duration. Their default count budgets use the platform count range, and the default duration budget is `None`: there is no fixed six-hour ceiling. The 4096-bit exact-rational arithmetic budget remains, as do finite/representable audio-clock checks.
 
 ## Pure-clock boundary
 
@@ -99,3 +99,63 @@ allocated grace groups whose nominal principal intervals do not contain a global
 fermata hold boundary. It uses the same route and retains both source capabilities.
 The public prototype and standalone fermata API described above continue to
 reject grace input; their contracts are not relaxed.
+
+
+## Explicit latest-release synchronization with earlier rest anchors
+
+The additional `plan_source_with_synchronized_fermatas` API accepts an
+`ExplicitSynchronizedFermataPolicy` and the same explicitly chosen
+`FermataSoundPolicy::SustainSelectedAnchors`. Its core constructor is
+`perform_document_with_synchronized_fermatas`. It never accepts a caller-supplied
+performed snapshot. The unchanged source is validated/projected first; every
+visited sign still must be consumed exactly once.
+
+Each `ExplicitSynchronizedHoldGroup` contains an `ExplicitHoldGroup` (identity,
+performed occurrence members and positive added seconds), plus an explicit
+`boundary` in performed-route quarter coordinates. This editorial choice means:
+
+- Select the latest release among overlapping member intervals. The API verifies
+  that the supplied boundary equals that release; it does not choose one.
+- Members ending earlier must be rests. This profile assigns their signs to the
+  selected global pause without extending their original event/marker intervals.
+- Sounding members end at the selected boundary and use the existing explicit
+  gate/hold policy. Earlier sounding releases need a different sustain/release
+  interpretation and are not silently lengthened.
+- Add the specified seconds **once** at that boundary. An earlier rest endpoint
+  inserts no separate pause. Later attacks, controls and measure markers use the
+  same global exact clock, including the hold once.
+
+For the II m123 pattern, the caller may explicitly choose quarter 1 and 3/2 added
+seconds. Eleven selected notes then release at second 2 under the default 120
+quarter-note clock; five rest markers still end at second 1/4. The half-open hold
+is `[1/2, 2)`. For III m257, choosing quarter 3 and 2 added seconds yields one
+hold `[3/2, 7/2)`; the six nested rest markers remain at seconds `[1/2, 1]`, and
+no notes are invented. These values demonstrate caller choices, **not** prescribed
+Beethoven performance durations.
+
+`HoldInterval.synchronization` distinguishes `CommonRelease` from
+`ExplicitLatestReleaseWithEarlierRests`. The new app path also emits an editorial
+synchronization diagnostic; original signs, placement, written IDs, occurrence IDs
+and written/performed anchor coordinates remain in the audit. Repeated visits
+must receive their own performed coordinates and may receive different durations.
+The existing common-release API and its diagnostic/golden-plan output are
+unchanged; it still rejects unequal member ends. IV m446 produces the same note
+and marker plan under either explicit profile.
+
+This is a focused source-qualified playback slice, not a UI editor, a new default,
+a complete original-score import, a grace-combined synchronization API or a
+recording. Existing unsupported sound/route/combined-grace cases remain explicit.
+The module's synthetic MusicXML fixtures are driven by exact original interval
+facts, not cleaned copies of the original files. Pitches and instruments in those
+playable fixtures remain synthetic.
+
+The read-only evidence script checks SHA-256 of the three unchanged original XML
+files and derives all 53 anchors using exact divisions/forward/backup/chord
+coordinates, retaining original part/voice/staff and fermata attributes. It does
+not feed rewritten originals into the importer:
+
+```sh
+python scripts/audit_beethoven_fermata_sync.py /path/to/pinned/originals \
+  --check crates/scorestream-formats/tests/fixtures/beethoven-fermata-sync-intervals.json
+cargo test --locked -p scorestream-formats --test qualified_fermata_playback
+```
