@@ -5,6 +5,7 @@ import { clampZoom } from '../layout';
 import { project, RENDERER } from '../render/project';
 import { LatestOnly } from '../render/scheduler';
 import { describeError } from '../errors';
+import type { ImportDiagnostic } from '../bridge';
 import type { ConfirmUnsaved } from './confirmation';
 import type { SourceEditor } from '../editor/source';
 import type { View, ScoreEvent, RenderResult, PreviewKey } from '../types';
@@ -15,12 +16,14 @@ export interface WorkbenchState {
  source:string; fileName:string; fileSource:string|null; initialSource:string;
  sequence:number; renderedSequence:number; phase:Phase; busy:boolean; zoom:number;
  pages:string[]; renderedMap:Record<string,string>; elapsed:number; warnings:string[];
+ importReport:ImportDiagnostic[]; importedUnsaved:boolean;
  message:string; messageValues:Record<string,string|number>;
 }
-const initial=():WorkbenchState=>({current:null,view:null,published:null,selected:null,source:'',fileName:'First light.sfs',fileSource:null,initialSource:'',sequence:0,renderedSequence:0,phase:'loading',busy:false,zoom:1,pages:[],renderedMap:{},elapsed:0,warnings:[],message:'',messageValues:{}});
+const initial=():WorkbenchState=>({current:null,view:null,published:null,selected:null,source:'',fileName:'First light.sfs',fileSource:null,initialSource:'',sequence:0,renderedSequence:0,phase:'loading',busy:false,zoom:1,pages:[],renderedMap:{},elapsed:0,warnings:[],importReport:[],importedUnsaved:false,message:'',messageValues:{}});
 /** Rust remains the only score authority. This controller owns async sequencing;
  * React owns every shell node. Monaco and the SVG renderer receive narrow refs. */
 export class Workbench {
+ private draftOrigin:Pick<WorkbenchState,'fileName'|'fileSource'|'initialSource'|'importReport'|'importedUnsaved'>|null=null;
  private state=initial(); private listeners=new Set<()=>void>();
  private timer:ReturnType<typeof setTimeout>|undefined;private width=600;
  private snapshots=new Map<number,View>();private session=crypto.randomUUID();
@@ -36,7 +39,7 @@ export class Workbench {
  get current(){return this.state.current;} get view(){return this.state.view;} get published(){return this.state.published;} get selected(){return this.state.selected;}
  get sequence(){return this.state.sequence;} get renderedSequence(){return this.state.renderedSequence;} get phase(){return this.state.phase;} get busy(){return this.state.busy;} get zoom(){return this.state.zoom;}
  get dirty(){return !!this.current&&this.state.source!==this.current.source;}
- get unsaved(){return this.state.source!==(this.state.fileSource??this.state.initialSource);}
+ get unsaved(){return this.state.importedUnsaved||this.state.source!==(this.state.fileSource??this.state.initialSource);}
  get canExportWav(){return this.isNative&&!this.busy&&!this.wavExport.busy&&!!this.state.source.trim();}
  exportWav(){if(this.canExportWav)return this.wavExport.start(this.state.source);return Promise.resolve();}
  get canSave(){return !this.busy&&!!this.view?.valid&&this.view.source===this.state.source;}
@@ -57,8 +60,8 @@ export class Workbench {
  private publish(result:RenderResult){if(result.requestId!==this.sequence)return;if(result.error){this.previewError(result.error);return;}const view=this.snapshots.get(result.requestId);if(!view||view.source!==this.state.source)return;this.set({published:view,renderedMap:result.map,renderedSequence:result.requestId,phase:'ready',pages:result.pages,elapsed:result.elapsed});}
  private previewError(message:string){this.set({phase:'unsupported',message});}
  private accept(view:View,selectedId?:string){this.playback.setSource(view.source);if(this.isNative)void this.playback.prepareSource();this.editor&&(this.editor.value=view.source);this.editor?.diagnostics(view.diagnostics);this.set({current:view,view,source:view.source,selected:view.events.find(e=>e.id===selectedId)??null});const sequence=this.invalidate();void this.render(view,sequence);}
- async apply(){if(this.busy||!this.dirty||!this.canSave)return;await this.transaction(async()=>{this.accept(await this.api.apply(this.state.source,this.current!.revision_id));this.message('Draft applied. A new committed revision is ready.');});}
- async discard(){if(!this.current||this.busy)return;await this.transaction(async()=>{await this.api.preview(this.current!.source);this.accept(this.current!);this.message('Draft discarded. Showing the committed score.');});}
+ async apply(){if(this.busy||!this.dirty||!this.canSave)return;await this.transaction(async()=>{this.accept(await this.api.apply(this.state.source,this.current!.revision_id));this.draftOrigin=null;this.message('Draft applied. A new committed revision is ready.');});}
+ async discard(){if(!this.current||this.busy)return;await this.transaction(async()=>{await this.api.preview(this.current!.source);this.accept(this.current!);if(this.draftOrigin){this.set(this.draftOrigin);this.draftOrigin=null;}this.message('Draft discarded. Showing the committed score.');});}
  async history(direction:'undo'|'redo'){if(this.dirty||this.busy)return;await this.transaction(async()=>{this.accept(await this.api[direction](),this.selected?.id);this.message(direction==='undo'?'Edit undone.':'Edit restored.');});}
  private async transaction(action:()=>Promise<void>,rethrow=false){this.set({busy:true});if(this.editor)this.editor.readOnly=true;try{await action();}catch(e){this.message(describeError(e));if(rethrow)throw e;}finally{this.set({busy:false});if(this.editor)this.editor.readOnly=false;}}
  async mutate(kind:'pitch'|'duration',value:string){if(!this.selected||this.dirty||this.busy||this.phase!=='ready')return;const id=this.selected.id;if(value===this.selected[kind])return;await this.transaction(async()=>{const view=kind==='pitch'?await this.api.setPitch(id,value,this.current!.revision_id):await this.api.setDuration(id,value,this.current!.revision_id);this.accept(view,id);this.message('Note updated.');},true);}
@@ -72,7 +75,18 @@ export class Workbench {
    await this.transaction(async()=>{
     const file=await this.api.openFile();
     if(!file||lifecycle!==this.lifecycle)return;
-    this.set({fileName:file.path.split(/[\\/]/).pop()!,fileSource:file.source});
+    if(file.imported_view){
+     if(!file.import_token)throw new Error("The import is no longer available. Open the file again.");
+     const imported=await this.api.activateImport(file.import_token,this.current!.revision_id);
+     if(lifecycle!==this.lifecycle)return;
+     this.session=crypto.randomUUID();this.draftOrigin=null;
+    this.set({fileName:file.path.split(/[\\/]/).pop()!.replace(/\.(musicxml|xml|mxl)$/i,'.sfs'),fileSource:null,initialSource:file.source,importedUnsaved:true,importReport:file.import_report?.diagnostics??[],published:null,pages:[],renderedMap:{},renderedSequence:0,warnings:[],selected:null});
+     this.accept(imported);
+     this.message('Imported as an unsaved SFS document. The original file is unchanged.');
+     return;
+    }
+    this.draftOrigin??={fileName:this.state.fileName,fileSource:this.state.fileSource,initialSource:this.state.initialSource,importReport:this.state.importReport,importedUnsaved:this.state.importedUnsaved};
+    this.set({fileName:file.path.split(/[\\/]/).pop()!,fileSource:file.source,importedUnsaved:false,importReport:[]});
     if(this.editor)this.editor.value=file.source;
     this.changed(file.source);
     this.message('File opened as a draft. Review and apply it to the current session.');
@@ -80,7 +94,7 @@ export class Workbench {
   }catch(e){if(lifecycle===this.lifecycle)this.message(describeError(e));}
   finally{this.openPending=false;}
  }
- async save(){if(!this.canSave){this.message('Wait for Rust validation before saving.');return;}await this.transaction(async()=>{const source=this.state.source,path=await this.api.saveFile(source);if(path){const fileName=path.split(/[\\/]/).pop()!;this.set({fileName,fileSource:source});this.message('Saved {name}. Session history is not persisted.',{name:fileName});}});}
+ async save(){if(!this.canSave){this.message('Wait for Rust validation before saving.');return;}await this.transaction(async()=>{const source=this.state.source,path=await this.api.saveFile(source);if(path){const fileName=path.split(/[\\/]/).pop()!;this.set({fileName,fileSource:source,importedUnsaved:false});this.message('Saved {name}. Session history is not persisted.',{name:fileName});}});}
  select(id:string,locate=false){if(this.phase!=='ready'||!this.published)return;const selected=this.published.events.find(e=>e.id===id)??null;this.set({selected});if(locate&&selected?.source_line)this.editor?.selectLine(selected.source_line);}
  selectSource(line:number){if(this.phase!=='ready'||!this.published)return;this.select(this.published.events.find(e=>e.source_line===line)?.id??'');}
  reveal(){if(this.selected?.source_line)this.editor?.selectLine(this.selected.source_line);this.editor?.focus();}

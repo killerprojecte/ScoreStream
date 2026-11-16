@@ -2275,6 +2275,7 @@ checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -3124,6 +3125,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
+name = "rawzip"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac9999039f74cd73c03158cddfe4362991703c74efe5ce5c8073026f80a5e48c"
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3398,13 +3405,31 @@ dependencies = [
  "gtk",
  "objc2-foundation",
  "rfd",
+ "same-file",
  "scorestream-app",
+ "scorestream-formats",
  "scorestream-mcp",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-runtime",
+ "tempfile",
+]
+
+[[package]]
+name = "scorestream-formats"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "num-bigint",
+ "num-traits",
+ "quick-xml 0.38.4",
+ "rawzip",
+ "scorestream-codec",
+ "scorestream-core",
+ "serde",
+ "sha2",
  "tempfile",
 ]
 
@@ -4186,12 +4211,12 @@ dependencies = [
 
 [[package]]
 name = "tempfile"
-version = "3.23.0"
+version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d31c77bdf42a745371d260a26ca7163f1e0924b64afa0b688e61b5a9fa02f16"
+checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

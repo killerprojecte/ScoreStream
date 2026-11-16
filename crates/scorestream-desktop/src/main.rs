@@ -4,8 +4,13 @@ use std::io::Write;
 use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 mod mcp_service;
-mod window_chrome;
+mod source_files;
+use source_files::OpenedFile;
+type PendingImport = Mutex<source_files::Pending>;
+static IMPORT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+type ImportOrigin = Mutex<Option<std::path::PathBuf>>;
 mod wav_export;
+mod window_chrome;
 use wav_export::WavExports;
 #[cfg(feature = "smoke-test")]
 mod smoke_profile;
@@ -109,35 +114,57 @@ fn set_event_duration(
         &expected_revision_id,
     )
 }
-#[derive(serde::Serialize)]
-struct OpenedFile {
-    path: String,
-    source: String,
-}
 #[tauri::command]
-async fn open_source_file() -> Result<Option<OpenedFile>, String> {
+async fn open_source_file(pending: State<'_, PendingImport>) -> Result<Option<OpenedFile>, String> {
     let Some(file) = rfd::AsyncFileDialog::new()
-        .add_filter("ScoreStream source", &["sfs"])
+        .add_filter("Scores", &["sfs", "musicxml", "xml", "mxl"])
         .pick_file()
         .await
     else {
         return Ok(None);
     };
     let path = file.path().to_path_buf();
-    let meta = std::fs::metadata(&path).map_err(|e| e.to_string())?;
-    if meta.len() > 4 * 1024 * 1024 {
-        return Err("This editor slice accepts SFS files up to 4 MiB.".into());
+    let mut prepared = tauri::async_runtime::spawn_blocking(move || source_files::read(&path))
+        .await
+        .map_err(|e| format!("Import task failed: {e}"))??;
+    if let (Some(replacement), Some(origin)) = (prepared.workspace, prepared.origin) {
+        let token = IMPORT_ID
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .to_string();
+        prepared.opened.import_token = Some(token.clone());
+        *pending.lock().map_err(|e| e.to_string())? = Some((token, replacement, origin));
     }
-    let source = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    Ok(Some(OpenedFile {
-        path: path.display().to_string(),
-        source,
-    }))
+    Ok(Some(prepared.opened))
 }
 #[tauri::command]
-async fn save_source_file(source: String) -> Result<Option<String>, String> {
+fn activate_import(
+    token: String,
+    expected_revision_id: String,
+    authority: State<'_, Authority>,
+    origin: State<'_, ImportOrigin>,
+    pending: State<'_, PendingImport>,
+) -> Result<ViewResponse, String> {
+    let mut workspace = authority.lock().map_err(|e| e.to_string())?;
+    let mut imported = origin.lock().map_err(|e| e.to_string())?;
+    let mut prepared = pending.lock().map_err(|e| e.to_string())?;
+    source_files::activate(
+        &mut prepared,
+        &mut workspace,
+        &mut imported,
+        &token,
+        &expected_revision_id,
+    )
+}
+#[tauri::command]
+async fn save_source_file(
+    source: String,
+    origin: State<'_, ImportOrigin>,
+) -> Result<Option<String>, String> {
     // Validate with the same application authority before writing. No renderer data is saved.
-    Workspace::from_source(&source)?;
+    let validated = source.clone();
+    tauri::async_runtime::spawn_blocking(move || Workspace::from_source(&validated).map(|_| ()))
+        .await
+        .map_err(|e| format!("Save validation failed: {e}"))??;
     let Some(file) = rfd::AsyncFileDialog::new()
         .set_file_name("score.sfs")
         .add_filter("ScoreStream source", &["sfs"])
@@ -147,19 +174,25 @@ async fn save_source_file(source: String) -> Result<Option<String>, String> {
         return Ok(None);
     };
     let path = file.path().to_path_buf();
-    let parent = path.parent().ok_or("Invalid save destination")?;
-    let mut temporary = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
-    temporary
-        .write_all(source.as_bytes())
-        .map_err(|e| e.to_string())?;
-    temporary.as_file().sync_all().map_err(|e| e.to_string())?;
-    temporary.persist(&path).map_err(|e| {
-        format!(
-            "Atomic save failed; the previous file has been preserved: {}",
-            e.error
-        )
-    })?;
-    Ok(Some(path.display().to_string()))
+    let imported = origin.lock().map_err(|e| e.to_string())?.clone();
+    tauri::async_runtime::spawn_blocking(move || -> Result<Option<String>, String> {
+        source_files::validate_destination(&path, imported.as_deref())?;
+        let parent = path.parent().ok_or("Invalid save destination")?;
+        let mut temporary = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
+        temporary
+            .write_all(source.as_bytes())
+            .map_err(|e| e.to_string())?;
+        temporary.as_file().sync_all().map_err(|e| e.to_string())?;
+        temporary.persist(&path).map_err(|e| {
+            format!(
+                "Atomic save failed; the previous file has been preserved: {}",
+                e.error
+            )
+        })?;
+        Ok(Some(path.display().to_string()))
+    })
+    .await
+    .map_err(|e| format!("Save task failed: {e}"))?
 }
 #[cfg(feature = "smoke-test")]
 #[tauri::command]
@@ -174,8 +207,15 @@ fn main() {
     let builder = tauri::Builder::default()
         .manage(Arc::new(Mutex::new(authority)))
         .manage(WavExports::default())
+        .manage(Mutex::new(None::<std::path::PathBuf>))
+        .manage(Mutex::new(None::<(String, Workspace, std::path::PathBuf)>))
         .on_page_load(|webview, payload| {
             if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+                if let Some(pending) = webview.try_state::<PendingImport>() {
+                    if let Ok(mut value) = pending.lock() {
+                        *value = None;
+                    }
+                }
                 if let Some(state) = webview.try_state::<WavExports>() {
                     wav_export::discard_window(state.inner(), webview.label());
                 }
@@ -226,9 +266,13 @@ fn main() {
             }
             #[cfg(feature = "smoke-test")]
             if std::env::var_os("SCORESTREAM_SMOKE_REPORT").is_some() {
-                window = window.initialization_script(if std::env::var_os("SCORESTREAM_V0_CONTROL_QA").is_some() {
-                    "window.__SCORESTREAM_V0_CONTROL_QA__ = true;"
-                } else { "window.__SCORESTREAM_SMOKE__ = true;" });
+                window = window.initialization_script(
+                    if std::env::var_os("SCORESTREAM_V0_CONTROL_QA").is_some() {
+                        "window.__SCORESTREAM_V0_CONTROL_QA__ = true;"
+                    } else {
+                        "window.__SCORESTREAM_SMOKE__ = true;"
+                    },
+                );
             }
             window.build()?;
             Ok(())
@@ -245,6 +289,7 @@ fn main() {
         set_event_pitch,
         set_event_duration,
         open_source_file,
+        activate_import,
         save_source_file,
         wav_export::wav_export_begin,
         wav_export::wav_export_write,
@@ -268,6 +313,7 @@ fn main() {
         set_event_pitch,
         set_event_duration,
         open_source_file,
+        activate_import,
         save_source_file,
         wav_export::wav_export_begin,
         wav_export::wav_export_write,

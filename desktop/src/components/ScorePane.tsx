@@ -80,6 +80,7 @@ export function ScorePane({controller, state, showTitle}: {controller: Workbench
     </header>
     <PlaybackControls transport={controller.playback} enabled={native&&!!state.source}/>
     {stale && state.published && <Alert id="stale-banner" role="status"><AlertDescription>{t(state.phase === 'invalid' ? 'Source needs attention. Showing the last valid preview.' : state.phase === 'unsupported' ? 'This score exceeds the current preview scope. Last good notation retained.' : 'Updating the preview. The score below shows the previous snapshot.')}</AlertDescription></Alert>}
+    {!!state.importReport?.length && <Alert id="import-report"><AlertDescription><details><summary>{t('Import report: retained data and limitations')}</summary><p>{t('Saving preserves the imported data. Preview and playback may support fewer symbols.')}</p><ul>{state.importReport.map((d,index)=><li key={index}>{d.feature}: {d.path}{d.source ? ` (${d.source.line}:${d.source.column})` : ''} — {d.message}</li>)}</ul></details></AlertDescription></Alert>}
     {!!state.warnings.length && <Alert id="projection-warning"><AlertDescription>{state.warnings.join(' ')}</AlertDescription></Alert>}
     <div id="canvas-scroll" className="canvas-scroll" ref={canvas}>
       <div id="paper" className={'score-pages ' + (stale && state.published ? 'stale' : '')} style={{width: 'calc(' + state.zoom * 100 + '% - ' + 40 * (state.zoom - 1) + 'px)'}} onClick={event => {if (!(event.target as Element).closest('[role="button"]')) controller.select('');}}>

@@ -1,5 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {Workbench} from '../src/app/workbench';
+import type {OpenedFile} from '../src/bridge';
+import {describeError} from '../src/errors';
 import type {RenderRequest, RenderResult, View} from '../src/types';
 
 // This suite checks the React external-store controller only. Native geometry
@@ -30,13 +32,14 @@ class Renderer {
 const controllers: Workbench[] = [];
 function setup() {
   const api = {
+    activateImport:vi.fn(async (_token:string,_revision:string)=>view({source:'converted'})),
     openDemo: vi.fn(async () => view()), current: vi.fn(async () => view()),
     preview: vi.fn(async (source: string) => view({source, dirty: source !== 'original score'})),
     apply: vi.fn(async (source: string, _revision: string) => view({source, revision_id: 'r2', can_undo: true})),
     undo: vi.fn(async () => view()), redo: vi.fn(async () => view({revision_id: 'r2'})),
     setPitch: vi.fn(async (_id: string, pitch: string, _revision: string) => view({revision_id: 'r2', events: [{...view().events[0], pitch}]})),
     setDuration: vi.fn(async (_id: string, duration: string, _revision: string) => view({revision_id: 'r2', events: [{...view().events[0], duration}]})),
-    openFile: vi.fn(async (): Promise<{path: string; source: string} | null> => null),
+    openFile: vi.fn(async (): Promise<OpenedFile | null> => null),
     saveFile: vi.fn(async (_source: string): Promise<string | null> => null),
   };
   const app = new Workbench(api, true), renderer = new Renderer();
@@ -161,5 +164,61 @@ describe('asynchronous unsaved file confirmation', () => {
     const file = deferred<{path: string; source: string} | null>(); api.openFile.mockReturnValueOnce(file.promise);
     const pending = app.open(); app.dispose(); file.resolve({path: '/tmp/stale.sfs', source: 'stale'}); await pending;
     expect(app.getSnapshot().source).toBe('original score');
+  });
+});
+
+describe('converted document origin', () => {
+  it('starts a new unsaved session, clears the previous preview, and retains reports across edits', async () => {
+    const {app, api, renderer, ready}=setup();await ready();
+    const imported=view({source:'converted',revision_id:'r1'});
+    const diagnostics=[{feature:'articulation.authored_only',effect:'preserved',path:'/note[1]',message:'Retained; performance unavailable'}];
+    api.openFile.mockResolvedValueOnce({path:'/scores/input.musicxml',source:'converted',import_token:'token',imported_view:imported,import_report:{diagnostics}});
+    await app.open();
+    expect(app.current?.source).toBe('converted');expect(app.dirty).toBe(false);expect(app.unsaved).toBe(true);
+    expect(app.published).toBeNull();expect(app.getSnapshot().pages).toEqual([]);
+    expect(app.getSnapshot().fileName).toBe('input.sfs');expect(app.getSnapshot().importReport).toEqual(diagnostics);
+    await vi.waitFor(()=>expect(renderer.requests).toHaveLength(2));renderer.finish();
+    app.changed('edited');await app.preview();await app.apply();
+    expect(app.unsaved).toBe(true);expect(app.getSnapshot().importReport).toEqual(diagnostics);
+    api.undo.mockResolvedValueOnce(imported);await app.history('undo');expect(app.unsaved).toBe(true);
+    const confirm=vi.fn(async()=>false);app.bindConfirmation(confirm);await app.open();expect(confirm).toHaveBeenCalled();
+    await app.save();expect(app.unsaved).toBe(true);
+    api.saveFile.mockResolvedValueOnce('/scores/output.sfs');await app.save();expect(app.unsaved).toBe(false);
+  });
+  it('does not activate a converted picker result after disposal',async()=>{
+    const {app,api,ready}=setup();await ready();const pending=deferred<OpenedFile|null>();
+    api.openFile.mockImplementationOnce(()=>pending.promise);const opening=app.open();app.dispose();
+    pending.resolve({path:'/input.xml',source:'converted',import_token:'token',imported_view:view({source:'converted'})});
+    await opening;expect(api.activateImport).not.toHaveBeenCalled();expect(app.current?.source).toBe('original score');
+  });
+  it('leaves the active session unchanged when import activation conflicts',async()=>{
+    const {app,api,ready}=setup();await ready();
+    api.openFile.mockResolvedValueOnce({path:'/input.xml',source:'converted',import_token:'token',imported_view:view({source:'converted'})});
+    api.activateImport.mockRejectedValueOnce(new Error('The score changed while importing.'));
+    await app.open();expect(app.current?.source).toBe('original score');expect(app.unsaved).toBe(false);
+  });
+  it('equal source text still requires saving the imported document',async()=>{
+    const {app,api,ready}=setup();await ready();
+    api.activateImport.mockResolvedValueOnce(view());
+    api.openFile.mockResolvedValueOnce({path:'/equal.xml',source:'original score',import_token:'token',imported_view:view()});
+    await app.open();expect(app.dirty).toBe(false);expect(app.unsaved).toBe(true);
+  });
+  it('cancelled and rejected file selection does not replace the document',async()=>{
+    const {app,api,ready}=setup();await ready();const before=app.current;
+    await app.open();expect(app.current).toBe(before);
+    api.openFile.mockRejectedValueOnce(JSON.stringify({diagnostics:[{feature:'note.bad',path:'/note',source:{line:3,column:2},message:'Unsupported'}]}));
+    await app.open();expect(app.current).toBe(before);expect(app.unsaved).toBe(false);
+    expect(app.getSnapshot().message).toContain('note.bad · /note (3:2): Unsupported');
+  });
+  it('discarding a subsequent SFS draft restores imported provenance',async()=>{
+    const {app,api,ready}=setup();await ready();app.bindConfirmation(async()=>true);
+    api.openFile.mockResolvedValueOnce({path:'/input.xml',source:'converted',import_token:'token',imported_view:view({source:'converted'})});
+    await app.open();
+    api.openFile.mockResolvedValueOnce({path:'/other.sfs',source:'other score'});
+    await app.open();expect(app.getSnapshot().fileName).toBe('other.sfs');
+    await app.discard();expect(app.getSnapshot().fileName).toBe('input.sfs');expect(app.unsaved).toBe(true);
+  });
+  it('formats structured conversion diagnostics rather than exposing JSON',()=>{
+    expect(describeError(JSON.stringify({diagnostics:[{feature:'note',path:'/part/note',message:'Unsupported'}]}))).toContain('note · /part/note: Unsupported');
   });
 });

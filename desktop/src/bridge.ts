@@ -2,6 +2,8 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import {createWavExportBridge} from './app/wav-export-bridge';
 import type { View } from './types';
 import type { McpSettings, McpStatus } from './mcp/model';
+export interface ImportDiagnostic {feature:string;path:string;message:string;effect:string;source?:{line:number;column:number}|null}
+export interface OpenedFile {import_token?:string|null;path:string;source:string;imported_view?:View|null;import_report?:{diagnostics:ImportDiagnostic[]}}
 export const native = isTauri();
 export const backend = {
   openDemo:()=>invoke<View>('open_demo'),
@@ -11,7 +13,8 @@ export const backend = {
   undo:()=>invoke<View>('undo'), redo:()=>invoke<View>('redo'),
   setPitch:(eventId:string,pitch:string,expectedRevisionId:string)=>invoke<View>('set_event_pitch',{eventId,pitch,expectedRevisionId}),
   setDuration:(eventId:string,duration:string,expectedRevisionId:string)=>invoke<View>('set_event_duration',{eventId,duration,expectedRevisionId}),
-  openFile:()=>invoke<{path:string;source:string}|null>('open_source_file'),
+  activateImport:(token:string,expectedRevisionId:string)=>invoke<View>('activate_import',{token,expectedRevisionId}),
+  openFile:()=>invoke<OpenedFile|null>('open_source_file'),
   saveFile:(source:string)=>invoke<string|null>('save_source_file',{source}),
 };
 export const mcpBackend = {
