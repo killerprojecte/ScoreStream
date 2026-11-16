@@ -2417,6 +2417,80 @@
         },
         "required_extension": "scorestream.part_groups@1",
         "meaning": "Ordered authored part-list boundary before declared part or after final part when absent. No inferred spans, nesting, glyphs, joined barlines or audio effects."
+      },
+      "scorestream.authored_dynamics": {
+        "targets": [
+          "measure"
+        ],
+        "required": [
+          "part",
+          "measure",
+          "index",
+          "order",
+          "cursor",
+          "visual_at",
+          "sounding_at",
+          "percent",
+          "sign"
+        ],
+        "fields": {
+          "cursor": {
+            "type": "rational"
+          },
+          "visual_at": {
+            "type": "rational"
+          },
+          "sounding_at": {
+            "type": "rational"
+          },
+          "percent": {
+            "type": "rational"
+          },
+          "offset": {
+            "type": "rational"
+          },
+          "sound_offset": {
+            "type": "rational"
+          },
+          "default_x": {
+            "type": "rational"
+          },
+          "default_y": {
+            "type": "rational"
+          },
+          "relative_x": {
+            "type": "rational"
+          },
+          "relative_y": {
+            "type": "rational"
+          },
+          "part": {
+            "type": "identifier"
+          },
+          "measure": {
+            "type": "identifier"
+          },
+          "index": {
+            "type": "nonnegative_integer"
+          },
+          "order": {
+            "type": "nonnegative_integer"
+          },
+          "staff": {
+            "type": "positive_integer"
+          },
+          "offset_sound": {
+            "type": "boolean"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "sign": {
+            "type": "string"
+          }
+        },
+        "required_extension": "scorestream.authored_dynamics@1",
+        "meaning": "Authored boundary-associated dynamic direction with exact owner, source cursor, separate print/sound time and linked numeric value. Not executable unique state; explicit performance required."
       }
     }
   },
@@ -2633,6 +2707,10 @@
       "scorestream.part_groups@1": {
         "status": "authored boundary preservation only",
         "required_behavior": "Complete score at0, score target, contiguous indices in nondecreasing part declaration boundary order. Start must precede an existing part; stop must follow at least one. Optional canonical XML token number retains absence/default1; no group matching/repair inferred. Start optional bracket and yes/no barline; stop no presentation. Unknown fields/presentation atomic rejection. Playback and preview unaffected except explicit omission warning."
+      },
+      "scorestream.authored_dynamics@1": {
+        "status": "lossless authored boundary direction statements; playback requires explicit realization",
+        "required_behavior": "Complete score. Canonical part/measure/encounter order with contiguous global index and per-measure order; exact owner/target/frame and separate cursor/visual/sound equations. Every owner connects to a retained endpoint assignment. Preserve optional offset layers and linked sign/percent as authored statements, never legacy duplicate states. Preview and all playback profiles require explicit realization; no generic last-wins or coalescing."
       }
     }
   },

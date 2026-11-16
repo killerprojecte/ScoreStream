@@ -251,7 +251,12 @@ pub(super) fn reject_dynamic_qualifiers(doc: &Document) -> Result<()> {
     }
     Ok(())
 }
+pub(super) fn reject_authored_dynamics(doc:&Document)->Result<()> {
+    if doc.required_extensions.iter().any(|e|e==crate::authored_dynamics::EXTENSION) || doc.frames.iter().flat_map(|f|&f.records).any(|r|matches!(r,Record::Mark(m) if m.kind.starts_with(crate::authored_dynamics::KIND))) { return Err(Diagnostic::error("authored_dynamics.performance_required","Authored terminal/opening dynamic statements retain distinct owners and exact sound positions. An explicit boundary realization with written-to-performed repeat mapping is required; playback is withheld, not coalesced",doc.source)); }
+    Ok(())
+}
 pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<ResolvedScore> {
+    reject_authored_dynamics(doc)?;
     reject_dynamic_qualifiers(doc)?;
     if !matches!(
         profile,

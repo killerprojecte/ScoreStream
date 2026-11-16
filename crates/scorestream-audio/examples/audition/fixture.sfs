@@ -1,0 +1,46 @@
+!score 1.1 unit=q
+!part p instrument=violin staves=1 display_name="Violin demonstration"
+!part r instrument=violin staves=1 display_name="Rest anchors"
+!voice v1_1 part=p staff=1
+!voice v2_1 part=r staff=1
+!requires scorestream.words@1
+!requires scorestream.pizzicato@1
+!requires scorestream.articulation@1
+!requires scorestream.instrument@1
+!requires scorestream.fermata@1
+!requires scorestream.grace@1
+@0
+| p p1 len=2 implicit=false label="1"
+| r r1 len=2 implicit=false label="1"
+= p.s1 meter=2/4
+= r.s1 meter=2/4
+v1_1 C4:1 id=art staff=1
+v2_1 r:2 id=silence staff=1
++ p scorestream.instrument name="violin" source_id="ip"
++ r scorestream.instrument name="violin" source_id="ir"
++ #art scorestream.articulation.event event_index=0
++ #art scorestream.articulation.notations event_index=0 wrapper_index=0
++ #art scorestream.articulation.group event_index=0 group_index=0 wrapper_index=0
++ #art scorestream.articulation.item default_x="5/4" default_y="-5/2" event_index=0 group_index=0 item_index=0 sign=staccato wrapper_index=0
+.
+@1
+v1_1 D4:1 id=plain staff=1
+.
+@2
+| p p2 len=2 implicit=false label="2"
+| r r2 len=2 implicit=false label="2"
+v1_1 E4:1 id=held staff=1
+v2_1 r:1/2 id=short-rest staff=1
++ #held scorestream.fermata orientation=upright
++ #short-rest scorestream.fermata orientation=upright relative_y=5
+.
+@5/2
+v2_1 r:3/2 id=rest-tail staff=1
+.
+@3
+v1_1 G4:1 id=principal staff=1
+v1_1 F4:? id=g anchor=#principal dots=0 kind=grace order=-1 slash=true staff=1 w=16
++ #g scorestream.grace
++ #p2 scorestream.words index=0 part=p pizzicato="yes" pizzicato_at=1 text="pizz."
+.
+!end at=4

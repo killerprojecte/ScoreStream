@@ -37,6 +37,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::slur_extension::EXTENSION
             && requirement != crate::articulation_extension::EXTENSION
             && requirement != crate::notation_extension::EXTENSION
+            && requirement != crate::authored_dynamics::EXTENSION
             && requirement != crate::provenance::EXTENSION
             && requirement != crate::credits::EXTENSION
             && requirement != crate::defaults::EXTENSION
@@ -564,6 +565,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             Ok(_)=>out.push(Diagnostic::warning("part_labels.authored_only","Authored part abbreviations and name-display details are retained; current preview does not realize these extra labels. Legacy part names and instrument routing are unchanged",doc.source)),
         }
     }
+    if let Err(errors)=crate::authored_dynamics::decode(doc) {out.extend(errors);}
     if has_provenance || doc.required_extensions.iter().any(|e| e == crate::provenance::EXTENSION) {
         if let Err(errors) = crate::provenance::decode(doc) { out.extend(errors); }
     }
@@ -958,7 +960,7 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
-                    if m.kind == crate::metronome_display::KIND || m.kind == crate::words::KIND || m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
+                    if m.kind == crate::authored_dynamics::KIND || m.kind == crate::metronome_display::KIND || m.kind == crate::words::KIND || m.kind == crate::dashes::KIND || m.kind == crate::wedges::KIND || m.kind == crate::geometry::MEASURE || m.kind == crate::print_layout::KIND {
                         continue;
                     }
                     if m.target.starts_with('#') {

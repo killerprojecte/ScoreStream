@@ -97,3 +97,5 @@ mod words;
 mod part_labels;
 mod metronome_display;
 mod part_groups;
+
+mod authored_dynamics;

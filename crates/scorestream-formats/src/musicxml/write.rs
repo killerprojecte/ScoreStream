@@ -38,7 +38,9 @@ fn divisions(
     words: &super::words::Export<'_>,
     dashes: &super::dashes::Export<'_>,
     wedges: &super::wedges::Export<'_>,
+    authored: &[scorestream_core::authored_dynamics::AuthoredDynamic],
 ) -> Option<u64> {
+    let authored_offsets=super::authored_dynamics::offsets(authored,&part.id.0,&m.id);
     let mut n = 1;
     let offsets = tempo_index.positions(part, m);
     let dynamics_offsets = dynamics_index.offsets(part, m);
@@ -53,6 +55,7 @@ fn divisions(
         .chain(wedge_offsets.iter())
         .chain(dashes_offsets.iter())
         .chain(words_offsets.iter())
+        .chain(authored_offsets.iter())
         .chain(graces.make_times(m))
     {
         let d = value.denominator().to_u64()?;
@@ -238,7 +241,7 @@ pub fn write_with_options(
                     "Invalid or duplicate XML ID",
                 );
             }
-            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces, &words_index, &dashes_index, &wedge_index) {
+            if let Some(div) = divisions(m, &tempo_index, &dynamics_index, part, &graces, &words_index, &dashes_index, &wedge_index, &score.authored_dynamics) {
                 graces.validate_make_times(m, div, &mut report);
             } else {
                 issue(
@@ -514,7 +517,7 @@ pub fn write_with_options(
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
-            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces, &words_index, &dashes_index, &wedge_index).unwrap();
+            let div = divisions(m, &tempo_index, &dynamics_index, p, &graces, &words_index, &dashes_index, &wedge_index, &score.authored_dynamics).unwrap();
             writeln!(
                 out,
                 "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\"{}>",
@@ -587,6 +590,7 @@ pub fn write_with_options(
             out.push_str("      </attributes>\n");
             super::tempo::write_measure(&tempo_index, p, m, div, &mut out);
             dynamics_index.write_measure(p, m, div, &mut out);
+            super::authored_dynamics::write(&score.authored_dynamics,&p.id.0,&m.id,div,&mut out);
             words_index.write(&p.id.0,&m.id,div,&mut out);
             dashes_index.write(&p.id.0,&m.id,div,&mut out);
             wedge_index.write(&p.id.0,&m.id,div,&mut out);

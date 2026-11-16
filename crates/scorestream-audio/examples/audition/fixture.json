@@ -1,0 +1,54 @@
+{
+  "source_sha256": "7304d49dfb91ee3c6be5b0157258a62f85ed05df09fc83804050bee658913d31",
+  "bank_sha256": "c5378b62028c920cb11e4803327983fee2f2cdff5dc89c708e39da417e51c854",
+  "palette": [
+    {
+      "part": "p",
+      "instrument": "violin",
+      "bank": 0,
+      "program": 40,
+      "preset_name": "Violin"
+    }
+  ],
+  "timing": {
+    "kind": "joint",
+    "articulation": "simple_staccato_accent_v1",
+    "grace_sound": "full_grace_then_gated_remainder",
+    "fermata_sound": "sustain_selected_anchors",
+    "graces": [
+      {
+        "principal": "occ1:principal",
+        "allocation": {
+          "kind": "explicit_following_quarters",
+          "members": [
+            {
+              "event": "occ1:g",
+              "quarters": "1/4"
+            }
+          ]
+        }
+      }
+    ],
+    "holds": [
+      {
+        "id": "fixture-hold",
+        "members": [
+          "occ1:held",
+          "occ1:short-rest"
+        ],
+        "added_seconds": "1",
+        "boundary": "3"
+      }
+    ]
+  },
+  "pizzicato": "installed_tim_gm6mb_shared_strings_v1",
+  "rendering": {
+    "sample_rate": 48000,
+    "block_frames": 64,
+    "gain": 0.04,
+    "tail_seconds": 2.0,
+    "polyphony": 256,
+    "max_notes": 100,
+    "max_soundfont_bytes": 5969788
+  }
+}

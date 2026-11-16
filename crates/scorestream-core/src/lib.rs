@@ -47,3 +47,5 @@ pub mod words;
 pub mod part_labels;
 pub mod metronome_display;
 pub mod part_groups;
+
+pub mod authored_dynamics;

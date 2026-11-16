@@ -3645,6 +3645,118 @@
             },
             "description": "Requires scorestream.part_groups@1. Runtime validates declared-part ordering, exact canonical XML token and score/time0 ownership; boundaries are retained without guessed pairing."
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scorestream.authored_dynamics"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "$ref": "#/$defs/Reference"
+              },
+              "attributes": {
+                "type": "object",
+                "properties": {
+                  "cursor": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "visual_at": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "sounding_at": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "percent": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "offset": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "sound_offset": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "default_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_x": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "relative_y": {
+                    "$ref": "#/$defs/Rational"
+                  },
+                  "part": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "measure": {
+                    "$ref": "#/$defs/Identifier"
+                  },
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "order": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "staff": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "offset_sound": {
+                    "type": "boolean"
+                  },
+                  "placement": {
+                    "enum": [
+                      "above",
+                      "below"
+                    ]
+                  },
+                  "sign": {
+                    "enum": [
+                      "pppp",
+                      "ppp",
+                      "pp",
+                      "p",
+                      "mp",
+                      "mf",
+                      "f",
+                      "ff",
+                      "fff",
+                      "ffff",
+                      "sf",
+                      "sfz",
+                      "fp"
+                    ]
+                  }
+                },
+                "required": [
+                  "part",
+                  "measure",
+                  "index",
+                  "order",
+                  "cursor",
+                  "visual_at",
+                  "sounding_at",
+                  "percent",
+                  "sign"
+                ],
+                "additionalProperties": false,
+                "dependentRequired": {
+                  "offset_sound": [
+                    "offset"
+                  ]
+                }
+              }
+            }
+          }
         }
       ]
     },

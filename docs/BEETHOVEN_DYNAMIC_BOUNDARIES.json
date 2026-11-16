@@ -1,0 +1,1374 @@
+{
+  "kind": "read_only_exact_source_inventory_not_import_or_precedence_policy",
+  "movements": [
+    {
+      "movement": 1,
+      "sha256": "5de9f153c72b3831757d43584c5d5ec792510d36cc5a389a4160aa90697fc17b",
+      "counts": {
+        "visual:inside": 176,
+        "sounding:inside": 176,
+        "visual:start": 579,
+        "sounding:start": 579
+      },
+      "part_ends": {
+        "P1": "1012",
+        "P2": "1012",
+        "P3": "1012",
+        "P4": "1012",
+        "P5": "1012",
+        "P6": "1012",
+        "P7": "1012",
+        "P8": "1012",
+        "P9": "1012",
+        "P10": "1012",
+        "P11": "1012",
+        "P12": "1012",
+        "P13": "1012",
+        "P14": "1012",
+        "P15": "1012",
+        "P16": "1012",
+        "P17": "1012",
+        "P18": "1012"
+      },
+      "encoded_overfull_inventory": [
+        {
+          "part": "P1",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P2",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P3",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P4",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P5",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P6",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P7",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P8",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P9",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P10",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P11",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P12",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P13",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P14",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P15",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P16",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P17",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        },
+        {
+          "part": "P18",
+          "ordinal": 268,
+          "label": "268",
+          "nominal": "2",
+          "encoded_extent": "10"
+        }
+      ],
+      "boundary_rows": [],
+      "equal_sound_positions": [
+        {
+          "part": "P9",
+          "staff": null,
+          "at": "84",
+          "rows": [
+            {
+              "part": "P9",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            },
+            {
+              "part": "P9",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            }
+          ]
+        },
+        {
+          "part": "P10",
+          "staff": null,
+          "at": "84",
+          "rows": [
+            {
+              "part": "P10",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            },
+            {
+              "part": "P10",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            }
+          ]
+        },
+        {
+          "part": "P11",
+          "staff": null,
+          "at": "84",
+          "rows": [
+            {
+              "part": "P11",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            },
+            {
+              "part": "P11",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            }
+          ]
+        },
+        {
+          "part": "P12",
+          "staff": null,
+          "at": "84",
+          "rows": [
+            {
+              "part": "P12",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-52.16",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            },
+            {
+              "part": "P12",
+              "ordinal": 43,
+              "label": "43",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "sf"
+              ],
+              "geometry": {
+                "default-x": "-0.7",
+                "default-y": "-52.16",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "84",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "84",
+              "sounding_class": "start",
+              "sounding_absolute": "84"
+            }
+          ]
+        },
+        {
+          "part": "P17",
+          "staff": null,
+          "at": "202",
+          "rows": [
+            {
+              "part": "P17",
+              "ordinal": 102,
+              "label": "102",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "ff"
+              ],
+              "geometry": {
+                "default-x": "-3.62",
+                "default-y": "-46.88",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "202",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "202",
+              "sounding_class": "start",
+              "sounding_absolute": "202"
+            },
+            {
+              "part": "P17",
+              "ordinal": 102,
+              "label": "102",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "ff"
+              ],
+              "geometry": {
+                "default-x": "-3.62",
+                "default-y": "-46.88",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "202",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "202",
+              "sounding_class": "start",
+              "sounding_absolute": "202"
+            }
+          ]
+        },
+        {
+          "part": "P18",
+          "staff": null,
+          "at": "36",
+          "rows": [
+            {
+              "part": "P18",
+              "ordinal": 19,
+              "label": "19",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "87.78",
+              "symbol": [
+                "f"
+              ],
+              "geometry": {
+                "default-x": "-4.18",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "36",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "36",
+              "sounding_class": "start",
+              "sounding_absolute": "36"
+            },
+            {
+              "part": "P18",
+              "ordinal": 19,
+              "label": "19",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "87.78",
+              "symbol": [
+                "f"
+              ],
+              "geometry": {
+                "default-x": "-4.18",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "36",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "36",
+              "sounding_class": "start",
+              "sounding_absolute": "36"
+            }
+          ]
+        },
+        {
+          "part": "P18",
+          "staff": null,
+          "at": "202",
+          "rows": [
+            {
+              "part": "P18",
+              "ordinal": 102,
+              "label": "102",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "ff"
+              ],
+              "geometry": {
+                "default-x": "-3.62",
+                "default-y": "-46.88",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "202",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "202",
+              "sounding_class": "start",
+              "sounding_absolute": "202"
+            },
+            {
+              "part": "P18",
+              "ordinal": 102,
+              "label": "102",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "4",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "ff"
+              ],
+              "geometry": {
+                "default-x": "-3.62",
+                "default-y": "-46.88",
+                "relative-y": "-25"
+              },
+              "length": "2",
+              "measure_start": "202",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "202",
+              "sounding_class": "start",
+              "sounding_absolute": "202"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "movement": 2,
+      "sha256": "c962fecc2e85c070633ad1990b7046c2c23ed5673ad95f4d02eeeac94528f09a",
+      "counts": {
+        "visual:inside": 294,
+        "sounding:inside": 292,
+        "visual:start": 463,
+        "sounding:start": 463,
+        "sounding:end": 2
+      },
+      "part_ends": {
+        "P1": "371",
+        "P2": "371",
+        "P3": "371",
+        "P4": "371",
+        "P5": "371",
+        "P6": "371",
+        "P7": "371",
+        "P8": "371",
+        "P9": "371",
+        "P10": "371",
+        "P11": "371",
+        "P12": "371",
+        "P13": "371",
+        "P14": "371",
+        "P15": "371",
+        "P16": "371",
+        "P17": "371",
+        "P18": "371"
+      },
+      "encoded_overfull_inventory": [],
+      "boundary_rows": [
+        {
+          "part": "P6",
+          "ordinal": 218,
+          "label": "217",
+          "child_order": 6,
+          "staff": null,
+          "cursor": "3/2",
+          "divisions": "24",
+          "direction_offset": "-20",
+          "offset_sound": null,
+          "nested_sound_offset": null,
+          "visual": "2/3",
+          "sounding": "3/2",
+          "percent": "44.44",
+          "symbol": [
+            "p"
+          ],
+          "geometry": {
+            "default-x": "-3.4",
+            "default-y": "-40",
+            "relative-y": "-25"
+          },
+          "length": "3/2",
+          "measure_start": "649/2",
+          "part_final": false,
+          "visual_class": "inside",
+          "visual_absolute": "1951/6",
+          "sounding_class": "end",
+          "sounding_absolute": "326"
+        },
+        {
+          "part": "P8",
+          "ordinal": 218,
+          "label": "217",
+          "child_order": 6,
+          "staff": null,
+          "cursor": "3/2",
+          "divisions": "24",
+          "direction_offset": "-20",
+          "offset_sound": null,
+          "nested_sound_offset": null,
+          "visual": "2/3",
+          "sounding": "3/2",
+          "percent": "44.44",
+          "symbol": [
+            "p"
+          ],
+          "geometry": {
+            "default-x": "-3.4",
+            "default-y": "-40",
+            "relative-y": "-25"
+          },
+          "length": "3/2",
+          "measure_start": "649/2",
+          "part_final": false,
+          "visual_class": "inside",
+          "visual_absolute": "1951/6",
+          "sounding_class": "end",
+          "sounding_absolute": "326"
+        }
+      ],
+      "equal_sound_positions": [
+        {
+          "part": "P6",
+          "staff": null,
+          "at": "326",
+          "rows": [
+            {
+              "part": "P6",
+              "ordinal": 218,
+              "label": "217",
+              "child_order": 6,
+              "staff": null,
+              "cursor": "3/2",
+              "divisions": "24",
+              "direction_offset": "-20",
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "2/3",
+              "sounding": "3/2",
+              "percent": "44.44",
+              "symbol": [
+                "p"
+              ],
+              "geometry": {
+                "default-x": "-3.4",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "3/2",
+              "measure_start": "649/2",
+              "part_final": false,
+              "visual_class": "inside",
+              "visual_absolute": "1951/6",
+              "sounding_class": "end",
+              "sounding_absolute": "326"
+            },
+            {
+              "part": "P6",
+              "ordinal": 219,
+              "label": "218",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "24",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "ff"
+              ],
+              "geometry": {
+                "default-x": "-3.62",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "3/2",
+              "measure_start": "326",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "326",
+              "sounding_class": "start",
+              "sounding_absolute": "326"
+            }
+          ]
+        },
+        {
+          "part": "P8",
+          "staff": null,
+          "at": "326",
+          "rows": [
+            {
+              "part": "P8",
+              "ordinal": 218,
+              "label": "217",
+              "child_order": 6,
+              "staff": null,
+              "cursor": "3/2",
+              "divisions": "24",
+              "direction_offset": "-20",
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "2/3",
+              "sounding": "3/2",
+              "percent": "44.44",
+              "symbol": [
+                "p"
+              ],
+              "geometry": {
+                "default-x": "-3.4",
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "3/2",
+              "measure_start": "649/2",
+              "part_final": false,
+              "visual_class": "inside",
+              "visual_absolute": "1951/6",
+              "sounding_class": "end",
+              "sounding_absolute": "326"
+            },
+            {
+              "part": "P8",
+              "ordinal": 219,
+              "label": "218",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "24",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "106.67",
+              "symbol": [
+                "ff"
+              ],
+              "geometry": {
+                "default-x": "-3.62",
+                "default-y": "-46.88",
+                "relative-y": "-25"
+              },
+              "length": "3/2",
+              "measure_start": "326",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "326",
+              "sounding_class": "start",
+              "sounding_absolute": "326"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "movement": 3,
+      "sha256": "788d9c3cda2fc1b970f5a832683eafb7ce4dc25e7767f18041e3dd1783978b98",
+      "counts": {
+        "visual:start": 418,
+        "sounding:start": 418,
+        "visual:inside": 104,
+        "sounding:inside": 104
+      },
+      "part_ends": {
+        "P1": "1128",
+        "P2": "1128",
+        "P3": "1128",
+        "P4": "1128",
+        "P5": "1128",
+        "P6": "1128",
+        "P7": "1128",
+        "P8": "1128",
+        "P9": "1128",
+        "P10": "1128",
+        "P11": "1128",
+        "P12": "1128",
+        "P13": "1128",
+        "P14": "1128",
+        "P15": "1128",
+        "P16": "1128",
+        "P17": "1128",
+        "P18": "1128"
+      },
+      "encoded_overfull_inventory": [],
+      "boundary_rows": [],
+      "equal_sound_positions": [
+        {
+          "part": "P16",
+          "staff": null,
+          "at": "288",
+          "rows": [
+            {
+              "part": "P16",
+              "ordinal": 97,
+              "label": "97",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "2",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "31.11",
+              "symbol": [
+                "other-dynamics",
+                "pp"
+              ],
+              "geometry": {
+                "default-y": "-40",
+                "relative-x": "56.18",
+                "relative-y": "-26.86"
+              },
+              "length": "3",
+              "measure_start": "288",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "288",
+              "sounding_class": "start",
+              "sounding_absolute": "288"
+            },
+            {
+              "part": "P16",
+              "ordinal": 97,
+              "label": "97",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "2",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "31.11",
+              "symbol": [
+                "other-dynamics",
+                "pp"
+              ],
+              "geometry": {
+                "default-y": "-40",
+                "relative-x": "56.18",
+                "relative-y": "-26.86"
+              },
+              "length": "3",
+              "measure_start": "288",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "288",
+              "sounding_class": "start",
+              "sounding_absolute": "288"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "movement": 4,
+      "sha256": "cce11a1437d3acd379fbf2f72483d92888b05443f7b04bb1cb5eea9c59cc9298",
+      "counts": {
+        "visual:start": 766,
+        "sounding:start": 766,
+        "visual:inside": 455,
+        "sounding:inside": 455
+      },
+      "part_ends": {
+        "P1": "1730",
+        "P2": "1730",
+        "P3": "1730",
+        "P4": "1730",
+        "P5": "1730",
+        "P6": "1730",
+        "P7": "1730",
+        "P8": "1730",
+        "P9": "1730",
+        "P10": "1730",
+        "P11": "1730",
+        "P12": "1730",
+        "P13": "1730",
+        "P14": "1730",
+        "P15": "1730",
+        "P16": "1730",
+        "P17": "1730",
+        "P18": "1730",
+        "P19": "1730",
+        "P20": "1730",
+        "P21": "1730",
+        "P22": "1730",
+        "P23": "1730"
+      },
+      "encoded_overfull_inventory": [],
+      "boundary_rows": [],
+      "equal_sound_positions": [
+        {
+          "part": "P19",
+          "staff": null,
+          "at": "1570",
+          "rows": [
+            {
+              "part": "P19",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-59.8",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            },
+            {
+              "part": "P19",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-59.8",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            },
+            {
+              "part": "P19",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 2,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-59.8",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            }
+          ]
+        },
+        {
+          "part": "P20",
+          "staff": null,
+          "at": "1570",
+          "rows": [
+            {
+              "part": "P20",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-59.8",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            },
+            {
+              "part": "P20",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-59.8",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            },
+            {
+              "part": "P20",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 2,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-59.8",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            }
+          ]
+        },
+        {
+          "part": "P21",
+          "staff": null,
+          "at": "1095",
+          "rows": [
+            {
+              "part": "P21",
+              "ordinal": 288,
+              "label": "288",
+              "child_order": 2,
+              "staff": null,
+              "cursor": "1",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "1",
+              "sounding": "1",
+              "percent": "87.78",
+              "symbol": [
+                "other-dynamics",
+                "f"
+              ],
+              "geometry": {
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1094",
+              "part_final": false,
+              "visual_class": "inside",
+              "visual_absolute": "1095",
+              "sounding_class": "inside",
+              "sounding_absolute": "1095"
+            },
+            {
+              "part": "P21",
+              "ordinal": 288,
+              "label": "288",
+              "child_order": 3,
+              "staff": null,
+              "cursor": "1",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "1",
+              "sounding": "1",
+              "percent": "87.78",
+              "symbol": [
+                "other-dynamics",
+                "f"
+              ],
+              "geometry": {
+                "default-y": "-40",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1094",
+              "part_final": false,
+              "visual_class": "inside",
+              "visual_absolute": "1095",
+              "sounding_class": "inside",
+              "sounding_absolute": "1095"
+            }
+          ]
+        },
+        {
+          "part": "P21",
+          "staff": null,
+          "at": "1570",
+          "rows": [
+            {
+              "part": "P21",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 0,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-49.47",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            },
+            {
+              "part": "P21",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 1,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-49.47",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            },
+            {
+              "part": "P21",
+              "ordinal": 407,
+              "label": "407",
+              "child_order": 2,
+              "staff": null,
+              "cursor": "0",
+              "divisions": "12",
+              "direction_offset": null,
+              "offset_sound": null,
+              "nested_sound_offset": null,
+              "visual": "0",
+              "sounding": "0",
+              "percent": "124.44",
+              "symbol": [
+                "other-dynamics",
+                "ff"
+              ],
+              "geometry": {
+                "default-y": "-49.47",
+                "relative-x": "25",
+                "relative-y": "-25"
+              },
+              "length": "4",
+              "measure_start": "1570",
+              "part_final": false,
+              "visual_class": "start",
+              "visual_absolute": "1570",
+              "sounding_class": "start",
+              "sounding_absolute": "1570"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

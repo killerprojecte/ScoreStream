@@ -173,6 +173,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::slur_extension::EXTENSION
             && e != core::articulation_extension::EXTENSION
             && e != core::notation_extension::EXTENSION
+            && e != core::authored_dynamics::EXTENSION
             && e != core::provenance::EXTENSION
             && e != core::credits::EXTENSION
             && e != core::defaults::EXTENSION
@@ -194,6 +195,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
     let mut metronome_displays=if doc.required_extensions.iter().any(|e|e==core::metronome_display::EXTENSION) {core::metronome_display::decode(doc).expect("validated metronome presentation")} else {Default::default()};
     let mut part_labels=if doc.required_extensions.iter().any(|e|e==core::part_labels::EXTENSION) {core::part_labels::decode(doc).expect("validated part labels")} else {Default::default()};
     let mut score = ScoreDocument {
+        authored_dynamics: core::authored_dynamics::decode(doc).expect("validated authored dynamics"),
         provenance: core::provenance::decode(doc).expect("validated provenance"),
         wedges: if doc.required_extensions.iter().any(|e|e==core::wedges::EXTENSION) {core::wedges::decode(doc).expect("validated wedge endpoints")} else {vec![]},
         dashes: if doc.required_extensions.iter().any(|e|e==core::dashes::EXTENSION) {core::dashes::decode(doc).expect("validated dashes endpoints")} else {vec![]},
@@ -383,6 +385,7 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m)
                     if core::articulation_extension::is_kind(&m.kind)
                         || core::notation_extension::is_kind(&m.kind)
+                        || m.kind==core::authored_dynamics::KIND
                         || core::provenance::is_kind(&m.kind)
                         || m.kind == core::credits::KIND
                         || core::defaults::is_kind(&m.kind)
@@ -842,6 +845,7 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .cloned()
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
+    if !score.authored_dynamics.is_empty() {doc.required_extensions.push(core::authored_dynamics::EXTENSION.into());}
     if score.provenance.is_some() {doc.required_extensions.push(core::provenance::EXTENSION.into());}
     if score.metronomes.iter().any(|m|m.presentation.is_some()) {doc.required_extensions.push(core::metronome_display::EXTENSION.into());}
     if score.parts.iter().any(|p|p.labels.is_some()) {doc.required_extensions.push(core::part_labels::EXTENSION.into());}
@@ -954,6 +958,11 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
     let mut frames: BTreeMap<Rational, Vec<Record>> = BTreeMap::new();
     for (i,g) in score.part_groups.iter().enumerate(){let mut mapped=g.clone();mapped.before_part=g.before_part.as_ref().map(|p|parts.get(p,&mut report));frames.entry(Rational::zero()).or_default().push(Record::Mark(core::part_groups::encode(&mapped,i)));}
     if let Some(d)=&score.defaults{frames.entry(Rational::zero()).or_default().extend(core::defaults::encode(d).into_iter().map(Record::Mark));}
+    for (index,value) in score.authored_dynamics.iter().enumerate() {
+        let mut e=value.clone();e.part=parts.get(&value.part,&mut report);e.measure=measures.get(&value.measure,&mut report);
+        let start=score.parts.iter().find(|p|p.id.0==value.part).unwrap().measures.iter().find(|m|m.id==value.measure).unwrap().start.clone();
+        frames.entry(start).or_default().push(Record::Mark(core::authored_dynamics::encode(&e,index)));
+    }
     if let Some(value)=&score.provenance {
         frames.entry(Rational::zero()).or_default().extend(core::provenance::encode(value).into_iter().map(Record::Mark));
     }

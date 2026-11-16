@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct ScoreDocument {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub authored_dynamics: Vec<crate::authored_dynamics::AuthoredDynamic>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub part_groups: Vec<crate::part_groups::PartGroupBoundary>,
     /// Score-wide authored engraving defaults, not applied by preview or playback.
     #[serde(default, skip_serializing_if = "Option::is_none")]

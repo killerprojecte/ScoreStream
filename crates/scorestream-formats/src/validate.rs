@@ -19,6 +19,17 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
         let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
         if !scorestream_core::dashes::valid(&score.dashes,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"dashes.fields","/dashes","Invalid dashes measure ownership, staff, position, number or decimal fields");}
     }
+    if !score.authored_dynamics.is_empty() {
+        let hosts:scorestream_core::authored_dynamics::Hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move|m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
+        let overlaps_legacy=score.authored_dynamics.iter().any(|e| {
+            let Some((start,len,_))=hosts.get(&(e.part.clone(),e.measure.clone())) else {return false};
+            let end=start+len;
+            score.dynamics.iter().any(|d|d.scope.part.0==e.part && d.at>=*start && d.at<end)
+                || score.sound_dynamics.iter().any(|d|d.scope.part.0==e.part && (d.at>=*start && d.at<end || d.scope.staff==e.staff&&d.at==e.sounding_at))
+        });
+        if overlaps_legacy {report.push(Format::ScoreModel,MappingEffect::Invalid,"authored_dynamics.mixed_owner","/authored_dynamics","A captured dynamic owner/position cannot also contain unlinked legacy dynamic statements; partial promotion is not lossless");}
+        if !scorestream_core::authored_dynamics::valid_set(&score.authored_dynamics,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"authored_dynamics.fields","/authored_dynamics","Invalid authored dynamic owner or exact locations");}
+    }
     if !score.words.is_empty() {
         let hosts=score.parts.iter().flat_map(|p|p.measures.iter().map(move |m|((p.id.0.clone(),m.id.clone()),(m.start.clone(),m.length.clone(),p.staves)))).collect();
         if !scorestream_core::words::valid(&score.words,&hosts) {report.push(Format::ScoreModel,MappingEffect::Invalid,"words.fields","/words","Invalid words measure ownership, staff, position, number or decimal fields");}

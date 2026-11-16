@@ -414,6 +414,7 @@ fn read_with_audit<R: BufRead + Seek>(
             slur_endpoints.append(&mut reader.slur_endpoints);
             score.tempos.append(&mut reader.tempos);
             score.metronomes.append(&mut reader.metronomes);
+            score.authored_dynamics.extend(super::authored_dynamics::select(&reader.part,&reader.dynamic_candidates,&mut reader.dynamics,&mut reader.sound_dynamics));
             score.dynamics.append(&mut reader.dynamics);
             score.sound_dynamics.append(&mut reader.sound_dynamics);
             score.fermatas.append(&mut reader.fermatas);
@@ -486,6 +487,9 @@ fn read_with_audit<R: BufRead + Seek>(
             }
         }
     }
+    let authored_positions:std::collections::BTreeMap<_,_>=score.parts.iter().flat_map(|p|p.measures.iter().map(move|m|((p.id.0.as_str(),m.id.as_str()),&m.start))).collect();
+    score.authored_dynamics.sort_by(|a,b|a.part.cmp(&b.part).then(authored_positions[&(a.part.as_str(),a.measure.as_str())].cmp(authored_positions[&(b.part.as_str(),b.measure.as_str())])).then(a.order.cmp(&b.order)));
+    if !score.authored_dynamics.is_empty(){report.push(crate::Format::MusicXml,crate::MappingEffect::Preserved,"authored_dynamics.performance_required","/authored_dynamics","Distinct terminal/opening dynamic statements retain authored owner, ordering, offsets and numeric values. Explicit boundary performance and repeat-phase mapping are required; playback is withheld rather than guessing precedence");}
     super::dynamics::report_unassigned_initial(&score, &mut report);
     crate::dynamics::normalize(&mut score, &mut report, crate::Format::MusicXml);
     crate::tempo::normalize(&mut score.tempos, &mut report, crate::Format::MusicXml);
@@ -573,6 +577,7 @@ struct PartReader {
     metronomes: Vec<ScoreMetronome>,
     dynamics: Vec<ScoreDynamic>,
     sound_dynamics: Vec<ScoreSoundDynamics>,
+    dynamic_candidates: Vec<scorestream_core::authored_dynamics::AuthoredDynamic>,
     fermatas: Vec<ScoreFermata>,
     articulations: Vec<ScoreArticulation>,
     authored_articulations: Vec<ArticulationEvent>,
@@ -624,6 +629,7 @@ impl PartReader {
             metronomes: vec![],
             dynamics: vec![],
             sound_dynamics: vec![],
+            dynamic_candidates: vec![],
             fermatas: vec![],
             articulations: vec![],
             authored_articulations: vec![],
@@ -661,6 +667,7 @@ impl PartReader {
             metronomes,
             dynamics,
             sound_dynamics,
+            dynamic_candidates,
             fermatas,
             articulations,
             authored_articulations,
@@ -902,6 +909,7 @@ impl PartReader {
                         return Err(unsupported(n,"pizzicato.owner","Pizzicato is mapped only as explicit sound on a standalone words direction; other owners are not guessed"));
                     }
                     if let Some(endpoint) = word_endpoint { words.push(endpoint); }
+                    let old_marks=dynamics.len();let old_sounds=sound_dynamics.len();
                     super::dynamics::read(
                         n,
                         part,
@@ -911,6 +919,7 @@ impl PartReader {
                         dynamics,
                         sound_dynamics,
                     )?;
+                    if let Some(e)=super::authored_dynamics::capture(n,part,&m.id,(old_marks-dynamic_start) as u32,&cursor,divisions.as_ref(),&dynamics[old_marks..],&sound_dynamics[old_sounds..])? {dynamic_candidates.push(e);}
                     super::tempo::read(
                         n,
                         part,
@@ -1239,6 +1248,8 @@ impl PartReader {
                 "Cannot infer a positive length for an empty measure without meter",
             ));
         }
+        let captured=dynamic_candidates.iter().filter(|e|e.measure==m.id).count();
+        if captured!=dynamics.len()-dynamic_start || captured!=sound_dynamics.len()-sound_dynamic_start {dynamic_candidates.retain(|e|e.measure!=m.id);}
         let end = &*start + &m.length;
         if tempos[tempo_start..]
             .iter()
@@ -1258,7 +1269,7 @@ impl PartReader {
             .any(|d| d.at < *start || d.at >= end)
             || sound_dynamics[sound_dynamic_start..]
                 .iter()
-                .any(|d| d.at < *start || d.at >= end)
+                .any(|d| d.at < *start || d.at > end || d.at==end && !dynamic_candidates.iter().any(|e|e.measure==m.id&&e.sounding_at==d.at&&e.percent==d.percent&&e.staff==d.scope.staff))
         {
             return Err(unsupported(
                 measure,

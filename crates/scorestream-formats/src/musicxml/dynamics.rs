@@ -388,4 +388,52 @@ mod geometry_corpus {
             );
         }
     }
+    #[test]
+    #[ignore = "set SCORESTREAM_MXL_FIXTURES to pinned originals"]
+    fn original_terminal_numeric_dynamics_conflict_with_next_opening_without_time_shift() {
+        let root=PathBuf::from(std::env::var("SCORESTREAM_MXL_FIXTURES").unwrap());
+        let template=MusicXml.read(r#"<score-partwise version="4.0"><part-list><score-part id="p"><part-name>Piano</part-name><score-instrument id="i"><instrument-name>piano</instrument-name></score-instrument></score-part></part-list><part id="p"><measure id="m" number="1"><attributes><divisions>1</divisions></attributes><note id="e"><rest/><duration>4</duration><voice>1</voice></note></measure></part></score-partwise>"#).unwrap().value;
+        let mut divisions=BTreeMap::<String,Rational>::new();
+        let mut captured=BTreeMap::<String,(Vec<ScoreDynamic>,Vec<ScoreSoundDynamics>)>::new();
+        let scan=xml::walk(BufReader::new(File::open(root.join("Beethoven_Op.67_2.musicxml")).unwrap()),|m,parent,phase|{
+            if phase!=xml::Phase::Complete || m.name!="measure" {return Ok(());}
+            let pid=parent.unwrap().attr("id").unwrap();
+            if !matches!(pid,"P6"|"P8") {return Ok(());}
+            let mut cursor=Rational::zero();
+            for n in &m.children {
+                match n.name.as_str() {
+                    "attributes"=>{if let Some(d)=n.value("divisions") {divisions.insert(pid.into(),d.parse().unwrap());}},
+                    "note" if n.child("grace").is_none() && n.child("chord").is_none()=>{cursor=&cursor+&(&n.value("duration").unwrap().parse::<Rational>().unwrap()/&divisions[pid]);},
+                    "backup"|"forward"=>{let duration=&n.value("duration").unwrap().parse::<Rational>().unwrap()/&divisions[pid];cursor=if n.name=="backup" {&cursor-&duration}else{&cursor+&duration};},
+                    "direction" if matches!(m.attr("number"),Some("217"|"218")) && n.child("direction-type").and_then(|d|d.child("dynamics")).is_some()=>{
+                        assert_eq!(divisions[pid].to_string(),"24");
+                        let (marks,sounds)=captured.entry(pid.into()).or_default();
+                        let start=if m.attr("number")==Some("217") {
+                            assert_eq!(cursor.to_string(),"3/2");
+                            assert_eq!(n.child("offset").unwrap().text,"-20");
+                            assert_eq!(n.child("offset").unwrap().attr("sound"),None);
+                            Rational::zero()
+                        } else {assert_eq!(cursor,Rational::zero());"3/2".parse().unwrap()};
+                        super::read(n,&template.parts[0],&start,&cursor,divisions.get(pid),marks,sounds)?;
+                    },
+                    _=>{}
+                }
+            }
+            Ok(())
+        }).unwrap();
+        assert_eq!(scan.fingerprint.iter().map(|b|format!("{b:02x}")).collect::<String>(),"c962fecc2e85c070633ad1990b7046c2c23ed5673ad95f4d02eeeac94528f09a");
+        assert_eq!(captured.len(),2);
+        for (pid,(marks,sounds)) in captured {
+            assert_eq!(marks.len(),2,"{pid}");assert_eq!(sounds.len(),2);
+            assert_eq!(marks[0].at.to_string(),"2/3");assert_eq!(marks[1].at.to_string(),"3/2");
+            assert_eq!(sounds[0].at.to_string(),"3/2");assert_eq!(sounds[1].at,sounds[0].at);
+            assert_eq!(sounds[0].percent.to_string(),"1111/25");assert_eq!(sounds[1].percent.to_string(),"10667/100");
+            let mut model=template.clone();model.dynamics=marks;model.sound_dynamics=sounds;
+            let mut report=MappingReport::default();crate::dynamics::normalize(&mut model,&mut report,Format::MusicXml);
+            assert!(report.diagnostics.iter().any(|d|d.feature=="sound_dynamics.conflict"));
+            assert_eq!(model.sound_dynamics.len(),2,"Do not silently discard either authored assignment");
+            assert!(SfsAdapter.write(&model).is_err(),"Unique legacy state cannot encode both assignments");
+        }
+    }
+
 }

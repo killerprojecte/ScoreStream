@@ -86,6 +86,7 @@ pub(super) fn perform(
     maximum_timing_bits: Option<u64>,
     grace_budgets: Option<(usize, usize)>,
 ) -> Result<PerformedScore> {
+    lower::reject_authored_dynamics(doc)?;
     lower::reject_dynamic_qualifiers(doc)?;
     let articulations = matches!(
         profile,

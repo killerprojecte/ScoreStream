@@ -241,3 +241,13 @@ and [MusicXML pan](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elem
 See [PIZZICATO.md](PIZZICATO.md) for the separately selected, hash/preset-verified
 local TimGM6mb shared-string approximation. It preserves instrument identities
 and uses attack-specific native channels without changing default/browser behavior.
+
+## Experimental command-line audition
+
+[`examples/audition`](examples/audition/README.md) provides a directly executable
+Linux local harness: source-bound typed JSON policies, occurrence discovery,
+pure preflight, and atomic native WAV rendering from an explicit existing bank
+and exact palette. Its included synthetic joint fixture has an actual verified
+listening path. This is not desktop/default playback or a claim that an entire
+original orchestral score is supported; the README lists concrete remaining
+native and musical gates without relaxing them.
