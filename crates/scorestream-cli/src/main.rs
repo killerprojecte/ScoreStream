@@ -111,7 +111,14 @@ fn conversion(args: &[String]) -> ExitCode {
                 return ExitCode::from(2);
             }
         };
-        musicxml_reader(file, path).and_then(scorestream_formats::musicxml::read_reader)
+        musicxml_reader(file, path).and_then(|reader| {
+            let options = scorestream_formats::musicxml::MusicXmlOptions {
+                geometry: scorestream_formats::musicxml::GeometryPolicy::PreserveNoteAndMeasureCoordinates,
+                articulations: scorestream_formats::musicxml::ArticulationProfile::Automatic,
+                ..Default::default()
+            };
+            scorestream_formats::musicxml::read_reader_with_options(reader, &options)
+        })
     } else {
         // SFS has its own text parser; an XML byte budget must not reject valid SFS input.
         let source = match fs::read_to_string(path) {

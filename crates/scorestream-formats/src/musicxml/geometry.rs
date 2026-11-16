@@ -1,10 +1,10 @@
-//! Explicit, finite geometry regeneration. Never a generic unknown-field filter.
+//! Exact authored coordinate preservation or explicit regeneration. Never a generic unknown-field filter.
 use super::{read::decimal, xml::Node};
 use crate::{Format, MappingEffect, MappingReport};
 use scorestream_core::SourceRange;
 use serde::{Deserialize, Serialize};
 
-/// Input-only policy. No original positions are claimed to survive regeneration.
+/// Import chooses strict rejection, exact retention, or explicit, reported regeneration.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GeometryPolicy {
@@ -13,6 +13,8 @@ pub enum GeometryPolicy {
     /// Only direct measure/@width and note/@default-x, @default-y. Other geometry,
     /// semantic display fields, unknown elements and descendants remain blocking.
     RegenerateNoteAndMeasureCoordinates,
+    /// Retain typed event/measure coordinates without applying them to rendering.
+    PreserveNoteAndMeasureCoordinates,
 }
 impl GeometryPolicy {
     pub(crate) fn is_strict(&self) -> bool {
@@ -60,6 +62,7 @@ impl Field {
 pub(super) struct Audit {
     counts: [u64; 3],
     first: [Option<(String, SourceRange)>; 3],
+    preserved: bool,
 }
 impl Audit {
     /// true means the exact field was handled, including invalid-value diagnostics.
@@ -77,7 +80,7 @@ impl Audit {
         let Some(field) = Field::classify(n, key) else {
             return false;
         };
-        // Reuse the exact XML decimal lexical/precision boundary without cloning
+        // Check exact XML decimal syntax without cloning
         // a measure or note subtree just to validate one scalar attribute.
         let mut scalar = n.scalar_attribute(key);
         scalar.path.push_str(&format!("/@{key}"));
@@ -96,10 +99,15 @@ impl Audit {
             );
             return true;
         }
-        if let Err(errors) = decimal(&scalar) {
+        if let Err(errors) = if policy == GeometryPolicy::PreserveNoteAndMeasureCoordinates {
+            exact_decimal(&scalar)
+        } else {
+            decimal(&scalar)
+        } {
             report.append(errors);
             return true;
         }
+        self.preserved = policy == GeometryPolicy::PreserveNoteAndMeasureCoordinates;
         let i = field as usize;
         self.counts[i] += 1;
         self.first[i].get_or_insert((scalar.path, n.source));
@@ -110,9 +118,9 @@ impl Audit {
         for field in [Field::MeasureWidth, Field::NoteX, Field::NoteY] {
             let i = field as usize;
             if let Some((path, source)) = self.first[i].as_ref() {
-                out.push_source(Format::MusicXml, MappingEffect::PolicyApplied,
-                    "geometry.regenerate_coordinates", path,
-                    format!("Explicit regenerate_note_and_measure_coordinates policy: {} validated {} values encountered in the first pass. On successful import the original values are not retained; engraving must regenerate these positions. Failed import returns no partial document. Pitch, rhythm, visibility and other authored notation are not covered. This is not a whole-score acceptance result.", self.counts[i], field.name()),
+                out.push_source(Format::MusicXml, if self.preserved { MappingEffect::Preserved } else { MappingEffect::PolicyApplied },
+                    if self.preserved { "geometry.preserved_coordinates" } else { "geometry.regenerate_coordinates" }, path,
+                    if self.preserved { format!("Validated {} authored {} values in the first pass. Successful import retains their exact decimal tenths; a failed import returns no score. Preview engraves independently.", self.counts[i], field.name()) } else { format!("Explicit regenerate_note_and_measure_coordinates policy: {} validated {} values encountered in the first pass. On successful import the original values are not retained; engraving must regenerate these positions. Failed import returns no partial document. Pitch, rhythm, visibility and other authored notation are not covered. This is not a whole-score acceptance result.", self.counts[i], field.name()) },
                     Some(*source));
             }
         }
@@ -121,4 +129,156 @@ impl Audit {
         out.append(report);
         out
     }
+}
+
+pub(super) fn event(
+    n: &Node,
+    id: &str,
+    policy: GeometryPolicy,
+) -> Result<Option<scorestream_core::geometry::Geometry>, MappingReport> {
+    if policy != GeometryPolicy::PreserveNoteAndMeasureCoordinates {
+        return Ok(None);
+    }
+    let x = n
+        .attr("default-x")
+        .map(|_| exact_decimal(&n.scalar_attribute("default-x")))
+        .transpose()?;
+    let y = n
+        .attr("default-y")
+        .map(|_| exact_decimal(&n.scalar_attribute("default-y")))
+        .transpose()?;
+    Ok(if x.is_some() || y.is_some() {
+        Some(scorestream_core::geometry::Geometry::Event {
+            event: id.into(),
+            default_x: x,
+            default_y: y,
+        })
+    } else {
+        None
+    })
+}
+pub(super) struct Export {
+    events: std::collections::BTreeMap<String, String>,
+    measures: std::collections::BTreeMap<(String, String), String>,
+}
+impl Export {
+    pub(super) fn new(score: &scorestream_core::score::ScoreDocument) -> Self {
+        let mut result = Self {
+            events: Default::default(),
+            measures: Default::default(),
+        };
+        for g in &score.geometry {
+            match g {
+                scorestream_core::geometry::Geometry::Event {
+                    event,
+                    default_x,
+                    default_y,
+                } => {
+                    let mut attrs = String::new();
+                    for (name, value) in [("default-x", default_x), ("default-y", default_y)] {
+                        if let Some(value) = value {
+                            attrs.push_str(&format!(
+                                " {name}=\"{}\"",
+                                decimal_text(value).expect("validated decimal")
+                            ));
+                        }
+                    }
+                    result.events.insert(event.clone(), attrs);
+                }
+                scorestream_core::geometry::Geometry::Measure {
+                    part,
+                    measure,
+                    width,
+                } => {
+                    result.measures.insert(
+                        (part.clone(), measure.clone()),
+                        format!(
+                            " width=\"{}\"",
+                            decimal_text(width).expect("validated decimal")
+                        ),
+                    );
+                }
+            }
+        }
+        result
+    }
+    pub(super) fn event(&self, id: &str) -> &str {
+        self.events.get(id).map(String::as_str).unwrap_or("")
+    }
+    pub(super) fn measure(&self, part: &str, id: &str) -> &str {
+        self.measures
+            .get(&(part.into(), id.into()))
+            .map(String::as_str)
+            .unwrap_or("")
+    }
+}
+
+pub(super) fn exact_decimal(n: &Node) -> Result<scorestream_core::Rational, MappingReport> {
+    use num_bigint::BigInt;
+    use scorestream_core::Rational;
+    let value = n.text.trim_matches([' ', '\t', '\n', '\r']);
+    let signed = value.strip_prefix(['+', '-']).unwrap_or(value);
+    let (whole, fraction) = signed.split_once('.').unwrap_or((signed, ""));
+    if (whole.is_empty() && fraction.is_empty())
+        || !whole.bytes().all(|b| b.is_ascii_digit())
+        || !fraction.bytes().all(|b| b.is_ascii_digit())
+    {
+        return Err(super::read::error(
+            n,
+            "geometry.decimal",
+            "Expected exact XML decimal tenths",
+        ));
+    }
+    let digits = format!("{whole}{fraction}")
+        .parse::<BigInt>()
+        .map_err(|_| super::read::error(n, "geometry.decimal", "Invalid decimal tenths"))?;
+    let denominator = format!("1{}", "0".repeat(fraction.len()))
+        .parse::<BigInt>()
+        .expect("decimal power");
+    Ok(&Rational::from_big_integer(if value.starts_with('-') {
+        -digits
+    } else {
+        digits
+    }) / &Rational::from_big_integer(denominator))
+}
+pub(crate) fn decimal_text(value: &scorestream_core::Rational) -> Option<String> {
+    use num_bigint::BigInt;
+    let mut denominator = value.denominator().clone();
+    let mut scale = 0usize;
+    while &denominator % 2u8 == BigInt::from(0) {
+        denominator /= 2u8;
+        scale += 1;
+    }
+    let mut fives = 0usize;
+    while &denominator % 5u8 == BigInt::from(0) {
+        denominator /= 5u8;
+        fives += 1;
+    }
+    if denominator != BigInt::from(1) {
+        return None;
+    }
+    scale = scale.max(fives);
+    let power = format!("1{}", "0".repeat(scale)).parse::<BigInt>().ok()?;
+    let numerator = value.numerator() * power / value.denominator();
+    let raw = numerator.to_string();
+    let (sign, digits) = raw
+        .strip_prefix('-')
+        .map(|s| ("-", s))
+        .unwrap_or(("", raw.as_str()));
+    if scale == 0 {
+        return Some(raw);
+    }
+    let padded = format!(
+        "{}{}",
+        "0".repeat((scale + 1).saturating_sub(digits.len())),
+        digits
+    );
+    let split = padded.len() - scale;
+    let result = format!("{sign}{}.{}", &padded[..split], &padded[split..]);
+    Some(
+        result
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string(),
+    )
 }

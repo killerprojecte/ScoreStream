@@ -476,16 +476,18 @@ pub fn write_with_options(
         out.push_str("    </score-part>\n");
     }
     out.push_str("  </part-list>\n");
+    let geometry = super::geometry::Export::new(score);
     for p in &score.parts {
         writeln!(out, "  <part id=\"{}\">", escape(&p.id.0)).unwrap();
         for (mi, m) in p.measures.iter().enumerate() {
             let div = divisions(m, &tempo_index, &dynamics_index, p, &graces).unwrap();
             writeln!(
                 out,
-                "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\">",
+                "    <measure id=\"{}\" number=\"{}\" implicit=\"{}\"{}>",
                 escape(&m.id),
                 escape(&m.label),
-                if m.implicit { "yes" } else { "no" }
+                if m.implicit { "yes" } else { "no" },
+                geometry.measure(&p.id.0, &m.id)
             )
             .unwrap();
             barlines.emit(&mut out, &m.id, BarlineLocation::Left);
@@ -565,8 +567,14 @@ pub fn write_with_options(
                     if !is_chord && cursor < e.offset {
                         writeln!(out, "      <forward><duration>{}</duration><voice>{}</voice><staff>{}</staff></forward>", units(&(&e.offset - &cursor), div), escape(&v.id.0), v.staff).unwrap();
                     }
-                    graces.write_before(e, &v.id.0, div, &beams, &slurs, &mut out);
-                    writeln!(out, "      <note id=\"{}\">", escape(&e.id.0)).unwrap();
+                    graces.write_before(e, &v.id.0, div, &beams, &slurs, &geometry, &mut out);
+                    writeln!(
+                        out,
+                        "      <note id=\"{}\"{}>",
+                        escape(&e.id.0),
+                        geometry.event(&e.id.0)
+                    )
+                    .unwrap();
                     if is_chord {
                         out.push_str("        <chord/>\n");
                     }

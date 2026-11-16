@@ -232,10 +232,17 @@ impl<'a> Export<'a> {
         div: u64,
         beams: &super::beams::Export<'_>,
         slurs: &super::slurs::Export<'_>,
+        geometry: &super::geometry::Export,
         out: &mut String,
     ) {
         for g in self.by_anchor.get(&anchor.id).into_iter().flatten() {
-            write!(out, "      <note id=\"{}\"><grace", escape(&g.id.0)).unwrap();
+            write!(
+                out,
+                "      <note id=\"{}\"{}><grace",
+                escape(&g.id.0),
+                geometry.event(&g.id.0)
+            )
+            .unwrap();
             if let Some(s) = g.slash {
                 write!(out, " slash=\"{}\"", if s { "yes" } else { "no" }).unwrap();
             }

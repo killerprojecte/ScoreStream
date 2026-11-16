@@ -173,10 +173,16 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
             && e != core::slur_extension::EXTENSION
             && e != core::articulation_extension::EXTENSION
             && e != core::notation_extension::EXTENSION
+            && e != core::geometry::EXTENSION
     }) {
         unsupported(&mut report, "extensions", "document");
     }
     let mut score = ScoreDocument {
+        geometry: if doc.required_extensions.iter().any(|e| e == core::geometry::EXTENSION) {
+            core::geometry::decode(doc).expect("validated geometry")
+        } else {
+            Vec::new()
+        },
         metadata: doc.metadata.clone(),
         parts: vec![],
         ties: vec![],
@@ -312,7 +318,8 @@ pub fn from_document(doc: &Document) -> Result<Conversion<ScoreDocument>, Mappin
                 Record::Mark(m) if m.kind == "accidental" => {}
                 Record::Mark(m)
                     if core::articulation_extension::is_kind(&m.kind)
-                        || core::notation_extension::is_kind(&m.kind) => {}
+                        || core::notation_extension::is_kind(&m.kind)
+                        || core::geometry::is_kind(&m.kind) => {}
                 Record::Mark(m) if m.kind == "articulation" => {
                     crate::articulations::read_mark(m, &mut score, &mut report);
                 }
@@ -745,6 +752,10 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
         .cloned()
         .collect();
     let mut doc = Document::new(DocumentKind::Score);
+    if !score.geometry.is_empty() {
+        doc.required_extensions
+            .push(core::geometry::EXTENSION.into());
+    }
     doc.metadata = score.metadata.clone();
     if score.notation_order.is_some() {
         doc.required_extensions
@@ -1169,6 +1180,37 @@ pub fn to_document(score: &ScoreDocument) -> Result<Conversion<Document>, Mappin
                         .map(Record::Mark),
                 );
         }
+    }
+    let geometry_positions = crate::beams::positions(score);
+    let geometry_measures: BTreeMap<_, _> = score
+        .parts
+        .iter()
+        .flat_map(|p| {
+            p.measures
+                .iter()
+                .map(move |m| ((p.id.0.as_str(), m.id.as_str()), &m.start))
+        })
+        .collect();
+    for geometry in &score.geometry {
+        let (at, host, part) = match geometry {
+            core::geometry::Geometry::Event { event, .. } => (
+                geometry_positions[&EventId(event.clone())].clone(),
+                events.get(event, &mut report),
+                None,
+            ),
+            core::geometry::Geometry::Measure { part, measure, .. } => {
+                let at = geometry_measures[&(part.as_str(), measure.as_str())];
+                (
+                    at.clone(),
+                    measures.get(measure, &mut report),
+                    Some(parts.get(part, &mut report)),
+                )
+            }
+        };
+        frames
+            .entry(at)
+            .or_default()
+            .push(Record::Mark(core::geometry::encode(geometry, host, part)));
     }
     let measure_index: BTreeMap<_, _> = score
         .parts

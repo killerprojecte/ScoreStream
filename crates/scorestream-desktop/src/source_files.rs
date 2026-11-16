@@ -80,6 +80,7 @@ pub fn read(path: &Path) -> Result<PreparedFile, String> {
     }
     let options = musicxml::MusicXmlOptions {
         articulations: musicxml::ArticulationProfile::Automatic,
+        geometry: musicxml::GeometryPolicy::PreserveNoteAndMeasureCoordinates,
         ..Default::default()
     };
     let converted = if extension == "mxl" {

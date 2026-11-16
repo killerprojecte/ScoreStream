@@ -14,7 +14,7 @@ mod automatic;
 mod mixed_notations;
 pub use authored_articulations::ArticulationProfile;
 mod fermatas;
-mod geometry;
+pub(crate) mod geometry;
 mod graces;
 mod instruments;
 pub use geometry::GeometryPolicy;

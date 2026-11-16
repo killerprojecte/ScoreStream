@@ -238,5 +238,64 @@ pub fn validate_score(score: &ScoreDocument) -> MappingReport {
     crate::fermatas::validate(score, &mut report);
     crate::graces::validate(score, &mut report);
     crate::navigation::validate_barlines(score, &mut report);
+    let event_hosts: BTreeSet<_> = score
+        .parts
+        .iter()
+        .flat_map(|p| &p.measures)
+        .flat_map(|m| &m.events)
+        .map(|e| e.id.0.as_str())
+        .chain(score.graces.iter().map(|g| g.id.0.as_str()))
+        .collect();
+    let measure_hosts: BTreeSet<_> = score
+        .parts
+        .iter()
+        .flat_map(|p| {
+            p.measures
+                .iter()
+                .map(move |m| (p.id.0.as_str(), m.id.as_str()))
+        })
+        .collect();
+    let mut geometry_hosts = BTreeSet::new();
+    for g in &score.geometry {
+        use scorestream_core::geometry::Geometry;
+        let (kind, id, valid, numbers) = match g {
+            Geometry::Event {
+                event,
+                default_x,
+                default_y,
+            } => (
+                "event",
+                event,
+                event_hosts.contains(event.as_str()),
+                vec![default_x.as_ref(), default_y.as_ref()],
+            ),
+            Geometry::Measure {
+                part,
+                measure,
+                width,
+            } => (
+                "measure",
+                measure,
+                measure_hosts.contains(&(part.as_str(), measure.as_str())),
+                vec![Some(width)],
+            ),
+        };
+        if !valid
+            || !geometry_hosts.insert((kind, id))
+            || numbers.iter().all(|v| v.is_none())
+            || numbers
+                .into_iter()
+                .flatten()
+                .any(|r| crate::musicxml::geometry::decimal_text(r).is_none())
+        {
+            report.push(
+                Format::ScoreModel,
+                MappingEffect::Invalid,
+                "geometry.invalid",
+                id,
+                "Geometry needs a unique existing host and exact finite decimal coordinates",
+            );
+        }
+    }
     report
 }

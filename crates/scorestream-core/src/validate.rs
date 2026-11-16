@@ -37,6 +37,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
             && requirement != crate::slur_extension::EXTENSION
             && requirement != crate::articulation_extension::EXTENSION
             && requirement != crate::notation_extension::EXTENSION
+            && requirement != crate::geometry::EXTENSION
         {
             out.push(Diagnostic::error(
                 "extension_unsupported",
@@ -180,6 +181,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     let mut chords: BTreeMap<&str, (&Rational, &Event)> = BTreeMap::new();
     let mut ids = BTreeSet::new();
     let mut mark_ids = BTreeSet::new();
+    let mut has_geometry = false;
     let mut measures = Vec::new();
     let mut previous: Option<&Rational> = None;
     for frame in &doc.frames {
@@ -428,6 +430,7 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
                 }
                 Record::Mark(m) => {
                     validate_attributes("mark", &m.kind, &m.attributes, m.source, &mut out);
+                    has_geometry |= crate::geometry::is_kind(&m.kind);
                     if let Some(id) = m.attributes.get("id").and_then(Scalar::as_str) {
                         if !mark_ids.insert(id) {
                             out.push(Diagnostic::error(
@@ -452,6 +455,9 @@ pub fn validate(doc: &Document, context: Option<&FragmentContext>) -> Vec<Diagno
     crate::slur_extension::validate(doc, &mut out);
     crate::articulation_extension::validate(doc, &mut out);
     crate::notation_extension::validate(doc, &mut out);
+    if has_geometry || doc.required_extensions.iter().any(|e| e == crate::geometry::EXTENSION) {
+        crate::geometry::validate(doc, &mut out);
+    }
     validate_measures(&measures, &parts, &mut out);
     validate_measure_rests(doc, &measures, &voices, &mut out);
     validate_references(doc, &events, &parts, &voices, &mut out);
@@ -790,6 +796,9 @@ fn validate_references<'a>(
                     }
                 }
                 Record::Mark(m) => {
+                    if m.kind == crate::geometry::MEASURE {
+                        continue;
+                    }
                     if m.target.starts_with('#') {
                         if let Some((_, e)) = resolve(&m.target, &frame.time, events, m.source, out)
                         {

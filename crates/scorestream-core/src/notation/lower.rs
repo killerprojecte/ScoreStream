@@ -434,6 +434,8 @@ pub(super) fn lower(doc: &Document, profile: LoweringProfile) -> Result<Resolved
                 // Fully validated authored beams are printed notation only. They
                 // do not change pitch, measured time, or grace/fermata policy.
                 Record::Mark(mark) if mark.kind == crate::beam_extension::KIND => {}
+                // Validated authored coordinates are visual metadata, not performance.
+                Record::Mark(mark) if crate::geometry::is_kind(&mark.kind) => {}
                 Record::Mark(mark) if fermatas && mark.kind == crate::fermata_extension::KIND => {}
                 Record::Mark(mark) if graces && mark.kind == crate::grace_extension::KIND => {}
                 Record::Mark(mark) => {

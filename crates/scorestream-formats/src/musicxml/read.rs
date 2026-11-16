@@ -418,6 +418,7 @@ fn read_with_audit<R: BufRead + Seek>(
             notation_order.append(&mut reader.notation_order);
             score.graces.append(&mut reader.graces);
             score.beams.append(&mut reader.beams);
+            score.geometry.append(&mut reader.geometry);
             parts[reader.part_index] = Some(reader.part);
         }
         Ok(())
@@ -519,6 +520,7 @@ struct PartReader {
     notation_order: Vec<super::mixed_notations::Pending>,
     graces: Vec<ScoreGraceNote>,
     beams: Vec<ScoreBeam>,
+    geometry: Vec<scorestream_core::geometry::Geometry>,
     barlines: Vec<ScoreBarline>,
 }
 impl PartReader {
@@ -562,6 +564,7 @@ impl PartReader {
             notation_order: vec![],
             graces: vec![],
             beams: vec![],
+            geometry: vec![],
             barlines: vec![],
         })
     }
@@ -592,6 +595,7 @@ impl PartReader {
             notation_order,
             graces,
             beams,
+            geometry,
             barlines,
         } = self;
         let part_index = *part_index;
@@ -610,6 +614,15 @@ impl PartReader {
             states: vec![],
             events: vec![],
         };
+        if options.geometry == super::GeometryPolicy::PreserveNoteAndMeasureCoordinates
+            && measure.attr("width").is_some()
+        {
+            geometry.push(scorestream_core::geometry::Geometry::Measure {
+                part: part.id.0.clone(),
+                measure: m.id.clone(),
+                width: super::geometry::exact_decimal(&measure.scalar_attribute("width"))?,
+            });
+        }
         let tempo_start = tempos.len();
         let metronome_start = metronomes.len();
         let dynamic_start = dynamics.len();
@@ -951,6 +964,7 @@ impl PartReader {
                                 articulation_profile == super::ArticulationProfile::AuthoredMixedV1,
                             )?;
                         }
+                        geometry.extend(super::geometry::event(n, &id, options.geometry)?);
                         beams.extend(super::beams::read(n, &EventId(id.clone()))?);
                         slur_endpoints.extend(super::slurs::read(
                             n,
@@ -1013,6 +1027,7 @@ impl PartReader {
                         .map(String::from)
                         .unwrap_or_else(|| fresh_id(format!("mx_n{note_counter}"), object_ids));
                     beams.extend(super::beams::read(n, &EventId(id.clone()))?);
+                    geometry.extend(super::geometry::event(n, &id, options.geometry)?);
                     fermatas.extend(super::fermatas::read(n, &EventId(id.clone()))?);
                     slur_endpoints.extend(super::slurs::read(n, &part.id, &EventId(id.clone()))?);
                     let mut authored_event = false;

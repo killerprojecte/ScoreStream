@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ScoreDocument {
+    /// Authored event and measure geometry in exact tenths; not a rendering promise.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub geometry: Vec<crate::geometry::Geometry>,
     pub metadata: DocumentMetadata,
     pub parts: Vec<ScorePart>,
     /// Ordinary printed and sounding ties. Written notes remain separate events.

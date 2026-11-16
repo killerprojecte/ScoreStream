@@ -13,7 +13,9 @@ export function project(view:View):{mei:string;map:Record<string,string>;warning
  const mixedNamespace='scorestream.notations';
  if((Array.isArray(view.document.required_extensions)&&view.document.required_extensions.some(e=>typeof e==='string'&&e.startsWith(`${mixedNamespace}@`))) || (view.document.frames??[]).some(f=>f.records.some(r=>r.record==='mark'&&(r.kind===mixedNamespace||(typeof r.kind==='string'&&r.kind.startsWith(`${mixedNamespace}.`))))))throw Error('Ordered mixed-family notation is preserved but not yet supported by the preview. Preview withheld; source is unchanged.');
  if(!view.events.length)throw Error('No measured events to engrave yet.');
- const warnings:string[]=[];const map:Record<string,string>={};
+ const warnings:string[]=[];
+ if(Array.isArray(view.document.required_extensions)&&view.document.required_extensions.includes('scorestream.geometry@1'))warnings.push('Original note and measure coordinates are retained in the score. This preview reflows notation independently and does not reproduce those authored positions.');
+ const map:Record<string,string>={};
  const authoredArticulations=projectAuthoredArticulations(view);
  const marks=projectMarks(view,warnings);
  const articulations=projectArticulations(view);

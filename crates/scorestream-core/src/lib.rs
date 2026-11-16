@@ -30,3 +30,5 @@ pub use model::*;
 pub use rational::*;
 pub use registry::{attribute_type, is_text_attribute};
 pub use validate::validate;
+
+pub mod geometry;
