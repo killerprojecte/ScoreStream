@@ -1,5 +1,14 @@
 export type Language='en'|'zh-CN';
 export const zh:Record<string,string>={
+"A trusted system FluidSynth 2 backend with dry-group support is unavailable. This check does not authorize audio export. Policy draft and validation remain available.":"无法使用具备独立干声分组能力的可信系统 FluidSynth 2 后端。本次检查未授权音频导出。仍可生成和校验策略草稿。",
+"Generate policy draft…":"生成策略草稿…",
+"Validate edited policy…":"校验已填策略…",
+"Policy validation report":"策略校验报告",
+"Choose a new JSON filename for the incomplete source-bound draft. No sound or timing choices are filled in.":"请为绑定当前谱面的未完成策略草稿选择新 JSON 文件名。不会自动选择音源或时间参数。",
+"Choose your edited policy JSON. Validation uses this score; it does not open a bank or create audio.":"请选择已填写的策略 JSON。将对照当前谱面校验，不会打开音源或生成音频。",
+"Incomplete policy draft saved. Fill its null fields explicitly, then validate it here.":"未完成的策略草稿已保存。请明确填写 null 项，再回到此处校验。",
+"Policy validation finished. Check missing choices and errors below; a compiled policy is not native bank verification.":"策略校验已结束。请查看下方缺项和错误；策略编译通过不代表原生音源已经验证。",
+
 "Offline rehearsal WAV (Linux)":"离线排练 WAV（Linux）",
 "Uses the current applied score and your explicitly selected local policy and TimGM6mb bank. Existing files are never replaced. Normal playback and Export WAV are unchanged.":"使用当前已应用的乐谱，以及你明确选择的本地策略和 TimGM6mb 音源。不会覆盖已有文件，也不改变普通播放和“导出 WAV”。",
 "This rehearsal does not realize wedge, dashes, ornaments or slur sound. It keeps per-note gain curves, uses declared local GM mixing and shared pizzicato samples, treats tied continuation dynamics as inert, and releases unmarked notes before selected holds. Native note timing is quantized to 64 frames. Hold and grace choices come from your source-bound policy. It is not a fully faithful performance.":"本排练不实现渐强渐弱线、虚线、装饰音或连音线的音效。保留逐音增益曲线，采用明确的本地 GM 混音及共用拨弦采样；延音续段的力度不触发新音，未标记音符在所选延长前释放。音符时刻量化至 64 帧，延长和倚音选择来自绑定本谱的策略。这不是完全忠实的演奏。",

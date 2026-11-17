@@ -7,7 +7,7 @@ fn main()->Result<(),Box<dyn std::error::Error>> {
     let args:Vec<_>=std::env::args().collect();
     if !(args.len()==5 || ((args.len()==6 || args.len()==8) && args[5]=="until_native_idle")) || args[4]!="hold_last_gain_at_noteoff_v1" {return Err("Usage: dry_admission_probe SOURCE POLICY BANK hold_last_gain_at_noteoff_v1 [until_native_idle [READINESS_JSON NEW_WAV]]; WAV requires exact successful readiness and complete replay verification".into());}
     let source=std::fs::read_to_string(&args[1])?;
-    let config=serde_json::from_str(&std::fs::read_to_string(&args[2])?)?;
+    let config=scorestream_audio::policy_draft::parse(&source,serde_json::from_str(&std::fs::read_to_string(&args[2])?)?)?;
     let audition=support::Audition::compile_practice(&source,
         scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
         scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,

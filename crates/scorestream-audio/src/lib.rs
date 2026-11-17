@@ -7,6 +7,10 @@
 pub mod assignments;
 #[cfg(target_os = "linux")]
 pub mod audition_session;
+#[cfg(target_os = "linux")]
+pub mod policy_draft;
+#[cfg(target_os = "linux")]
+pub mod backend_probe;
 pub mod attack_rehearsal;
 pub mod dry_lanes;
 #[cfg(target_os = "linux")]
