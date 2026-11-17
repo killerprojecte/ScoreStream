@@ -1,32 +1,16 @@
-name: Desktop bundles
+# CI-only validation overlay. Do not merge this trigger/matrix into master.
+name: Linux rehearsal export validation
 
 on:
-  workflow_dispatch:
   push:
-    branches: [master]
-    paths:
-      - '.github/workflows/desktop-bundles.yml'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'crates/**'
-      - 'desktop/**'
-      - 'design/**'
-  pull_request:
-    branches: [master]
-    paths:
-      - '.github/workflows/desktop-bundles.yml'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'crates/**'
-      - 'desktop/**'
-      - 'design/**'
+    branches: ['ci/linux-rehearsal-export-validation']
 
-# Build-only PR jobs never receive publishing permissions or signing secrets.
+# Validation only: no signing credentials or release publishing permissions.
 permissions:
   contents: read
 
 concurrency:
-  group: desktop-bundles-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: linux-rehearsal-export-validation-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -47,31 +31,6 @@ jobs:
             runner: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bundles: deb,appimage
-          - platform: linux
-            arch: arm64
-            runner: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-gnu
-            bundles: deb,appimage
-          - platform: macos
-            arch: x64
-            runner: macos-15-intel
-            target: x86_64-apple-darwin
-            bundles: app,dmg
-          - platform: macos
-            arch: arm64
-            runner: macos-15
-            target: aarch64-apple-darwin
-            bundles: app,dmg
-          - platform: windows
-            arch: x64
-            runner: windows-2022
-            target: x86_64-pc-windows-msvc
-            bundles: nsis
-          - platform: windows
-            arch: arm64
-            runner: windows-11-arm
-            target: aarch64-pc-windows-msvc
-            bundles: nsis
     defaults:
       run:
         shell: bash
@@ -146,6 +105,22 @@ jobs:
             --bin scorestream-desktop wav_export::tests:: -- --color never 2>&1 | tee "$test_log"
           if ! grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed;' "$test_log"; then
             echo "::error::The native WAV test filter did not run any passing tests."
+            exit 1
+          fi
+
+      - name: Test Linux offline export ownership and gate lifecycle
+        if: runner.os == 'Linux'
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          test_log="$RUNNER_TEMP/scorestream-offline-tests.log"
+          cargo test --manifest-path crates/scorestream-desktop/Cargo.toml \
+            --target-dir crates/scorestream-desktop/target \
+            --release --target "$BUILD_TARGET" --locked \
+            --bin scorestream-desktop offline_export:: -- --color never 2>&1 | tee "$test_log"
+          if ! grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed;' "$test_log"; then
+            echo "::error::The Linux offline export test filter did not run any passing tests."
             exit 1
           fi
 

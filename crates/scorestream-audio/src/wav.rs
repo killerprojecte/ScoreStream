@@ -10,6 +10,24 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
+/// Validated, synced private WAV awaiting one host-authorized no-clobber commit.
+/// Dropping it removes the temporary file. There is no path override.
+pub struct PendingWav<'a> {
+    temporary: tempfile::NamedTempFile,
+    output: &'a Path,
+    identity: std::sync::Arc<()>,
+}
+/// Receipt obtainable only by committing the corresponding pending WAV.
+pub struct PublishedWav { identity: std::sync::Arc<()> }
+impl PendingWav<'_> {
+    /// Call only inside the host's short owner/revision publication lock.
+    pub fn commit(self) -> Result<PublishedWav> {
+        self.temporary.persist_noclobber(self.output)
+            .map_err(|failure| AudioError::Io(failure.error))?;
+        Ok(PublishedWav { identity: self.identity })
+    }
+}
+
 fn header(frames: u64, rate: u32) -> Result<[u8; 44]> {
     let bytes = frames
         .checked_mul(4)
@@ -79,6 +97,17 @@ pub(crate) fn render_with<R>(
     output: &Path,
     render: impl FnOnce(&mut Sink<'_>) -> Result<R>,
 ) -> Result<R> {
+    render_with_gate(frames, options, cancel, output, render, |pending| pending.commit())
+}
+
+pub(crate) fn render_with_gate<R>(
+    frames: u64,
+    options: &RenderOptions,
+    cancel: &AtomicBool,
+    output: &Path,
+    render: impl FnOnce(&mut Sink<'_>) -> Result<R>,
+    gate: impl FnOnce(PendingWav<'_>) -> Result<PublishedWav>,
+) -> Result<R> {
     let expected_header = header(frames, options.sample_rate)?;
     if cancel.load(Ordering::Relaxed) {
         return Err(AudioError::Cancelled);
@@ -119,12 +148,14 @@ pub(crate) fn render_with<R>(
     if cancel.load(Ordering::Relaxed) {
         return Err(AudioError::Cancelled);
     }
-    // tempfile uses no-clobber publication. On failure its retained TempPath is
-    // dropped and removed; existing/concurrently-created destination is untouched.
-    // Cancellation is no longer accepted once publication begins.
-    temporary
-        .persist_noclobber(output)
-        .map_err(|failure| AudioError::Io(failure.error))?;
+    // Rendering, validation, flushing and sync above run OUTSIDE the host gate.
+    // The host must synchronously return this commit's receipt; never retain the
+    // pending file or return a later cancellation after a successful commit.
+    let identity = std::sync::Arc::new(());
+    let receipt = gate(PendingWav { temporary, output, identity: identity.clone() })?;
+    if !std::sync::Arc::ptr_eq(&identity, &receipt.identity) {
+        return Err(AudioError::Native("Publication receipt belongs to another WAV".into()));
+    }
     Ok(report)
 }
 
@@ -140,5 +171,88 @@ mod tests {
             48_000 * 3600 * 4
         );
         assert!(header(u64::from(u32::MAX), 48_000).is_err());
+    }
+}
+
+#[cfg(test)]
+#[path = "../../scorestream-desktop/src/offline_export/lease.rs"]
+mod desktop_lease;
+
+#[cfg(test)]
+mod gate_tests {
+    use super::*;
+    use super::desktop_lease::Leases;
+    use std::sync::{Arc, Mutex, mpsc};
+
+    #[test]
+    fn invalidation_at_precommit_barrier_removes_real_temp_without_output() {
+        for action in ["cancel", "edit", "reload"] {
+            let directory = tempfile::tempdir().unwrap();
+            let output = directory.path().join("out.wav");
+            let mut leases = Leases::default();
+            let work = leases.begin("main", "r1", "score").unwrap();
+            leases.ready("main", &work, ()).unwrap();
+            leases.start_render("main", &work).unwrap();
+            let state = Arc::new(Mutex::new(leases));
+            let (arrived, wait) = mpsc::channel();
+            let (resume, go) = mpsc::channel();
+            let worker_state = state.clone();
+            let worker_work = work.clone();
+            let result = std::thread::scope(|scope| {
+                let output_ref = &output;
+                let worker = scope.spawn(move || render_with_gate(1, &RenderOptions::default(),
+                    worker_work.cancellation(), output_ref,
+                    |sink| { assert!(worker_state.try_lock().is_ok()); sink.write(0, &[0.25, -0.25]) },
+                    |pending| {
+                        // Reached AFTER final writer cancel check and sync, before persist.
+                        arrived.send(()).unwrap(); go.recv().unwrap();
+                        worker_state.lock().unwrap().publish("main", &worker_work, || pending.commit())
+                            .map_err(|_| AudioError::Cancelled)?
+                    }));
+                wait.recv().unwrap();
+                assert!(!output.exists());
+                assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+                let mut host = state.lock().unwrap();
+                match action {
+                    "cancel" => host.cancel("main", &work),
+                    "edit" => host.observe_snapshot("main", "r2", "score"),
+                    _ => host.close("main"),
+                }
+                drop(host); resume.send(()).unwrap();
+                worker.join().unwrap()
+            });
+            assert!(matches!(result, Err(AudioError::Cancelled)));
+            assert!(!output.exists());
+            assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 0);
+        }
+    }
+
+    #[test]
+    fn real_commit_wins_then_cancel_cannot_remove_artifact() {
+        let directory = tempfile::tempdir().unwrap(); let output = directory.path().join("out.wav");
+        let mut leases = Leases::default(); let work = leases.begin("main", "r1", "score").unwrap();
+        leases.ready("main", &work, ()).unwrap(); leases.start_render("main", &work).unwrap();
+        let state = Mutex::new(leases);
+        render_with_gate(1, &RenderOptions::default(), work.cancellation(), &output,
+            |sink| { assert!(state.try_lock().is_ok()); sink.write(0, &[0.25, -0.25]) },
+            |pending| state.lock().unwrap().publish("main", &work, || pending.commit())
+                .map_err(|_| AudioError::Cancelled)?).unwrap();
+        let bytes = std::fs::read(&output).unwrap();
+        assert_eq!(bytes.len(), 48); assert_eq!(&bytes[..4], b"RIFF");
+        state.lock().unwrap().cancel("main", &work);
+        state.lock().unwrap().observe_snapshot("main", "r2", "changed");
+        assert_eq!(std::fs::read(&output).unwrap(), bytes);
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn destination_created_at_gate_is_never_overwritten() {
+        let directory = tempfile::tempdir().unwrap(); let output = directory.path().join("out.wav");
+        let result = render_with_gate(1, &RenderOptions::default(), &AtomicBool::new(false), &output,
+            |sink| sink.write(0, &[0.0, 0.0]),
+            |pending| { std::fs::write(&output, b"other owner").unwrap(); pending.commit() });
+        assert!(matches!(result, Err(AudioError::Io(_))));
+        assert_eq!(std::fs::read(&output).unwrap(), b"other owner");
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
     }
 }

@@ -15,7 +15,7 @@ pub(super) async fn destination(_window: &WebviewWindow, _reservation: &Reservat
 pub(super) use linux::destination;
 
 #[cfg(target_os = "linux")]
-pub(super) mod linux {
+pub(crate) mod linux {
     use super::*;
     use super::super::WavError;
     use gtk::{FileChooserAction, FileChooserDialog, FileFilter, ResponseType, prelude::*};
@@ -51,19 +51,26 @@ pub(super) mod linux {
     }
 
     pub(in crate::wav_export) async fn destination(window: &WebviewWindow, reservation: &Reservation) -> Choice {
-        let (sender, mut receiver) = channel(1);
-        let parent = window.clone();
         let state = reservation.state.clone();
         let owner = reservation.owner.clone();
         let id = reservation.id.clone();
+        choose_local(window, "Export WAV (choose a new filename)", true, "WAV audio", "*.[wW][aA][vV]",
+            move || state.lock().map(|s| s.matches(&owner, &id)).map_err(|_| WavError::chooser())).await
+    }
+
+    /// Shared parented native chooser. No webview path or owner is accepted.
+    pub(crate) async fn choose_local(window: &WebviewWindow, title: &'static str,
+        save: bool, filter_name: &'static str, pattern: &'static str,
+        active: impl Fn() -> Result<bool> + Send + 'static) -> Choice {
+        let (sender, mut receiver) = channel(1);
+        let parent = window.clone();
         window.run_on_main_thread(move || {
             // Never create a late dialog for an invalidated invocation/window.
             if sender.is_closed() { return; }
-            let active = state.lock().map(|sessions| sessions.matches(&owner, &id));
-            match active {
+            match active() {
                 Ok(true) => (),
                 Ok(false) => { let _ = sender.try_send(Err(WavError::cancelled())); return; }
-                Err(_) => { let _ = sender.try_send(Err(WavError::chooser())); return; }
+                Err(error) => { let _ = sender.try_send(Err(error)); return; }
             }
             // GTK objects, callbacks and destruction all stay on Tauri's GTK
             // thread. No nested dialog.run() loop or blocking channel receive.
@@ -76,18 +83,18 @@ pub(super) mod linux {
                 return;
             };
             let dialog = FileChooserDialog::with_buttons(
-                Some("Export WAV (choose a new filename)"), Some(&parent), FileChooserAction::Save,
-                &[("_Cancel", ResponseType::Cancel), ("_Save", ResponseType::Accept)],
+                Some(title), Some(&parent), if save { FileChooserAction::Save } else { FileChooserAction::Open },
+                &[("_Cancel", ResponseType::Cancel), (if save { "_Save" } else { "_Open" }, ResponseType::Accept)],
             );
             dialog.set_modal(true);
             dialog.set_destroy_with_parent(true);
             dialog.set_local_only(true);
-            dialog.set_current_name("score.wav");
+            if save { dialog.set_current_name("score.wav"); }
             // The sink cannot overwrite. Do not offer a misleading Replace prompt.
             dialog.set_do_overwrite_confirmation(false);
             let filter = FileFilter::new();
-            filter.set_name(Some("WAV audio"));
-            filter.add_pattern("*.[wW][aA][vV]");
+            filter.set_name(Some(filter_name));
+            filter.add_pattern(pattern);
             dialog.add_filter(filter);
             dialog.set_default_response(ResponseType::Accept);
 

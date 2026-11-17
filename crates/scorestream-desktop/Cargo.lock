@@ -3399,6 +3399,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "scorestream-audio"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "scorestream-app",
+ "scorestream-codec",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+]
+
+[[package]]
 name = "scorestream-desktop"
 version = "0.1.0"
 dependencies = [
@@ -3407,6 +3420,7 @@ dependencies = [
  "rfd",
  "same-file",
  "scorestream-app",
+ "scorestream-audio",
  "scorestream-formats",
  "scorestream-mcp",
  "serde",

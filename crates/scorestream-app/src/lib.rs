@@ -19,6 +19,14 @@ pub struct ViewDiagnostic {
     pub code: String,
     pub severity: String,
 }
+/// Borrowed native authority identity; does not build a view or clone score data.
+pub struct SourceRevision<'a> {
+    pub source: &'a str,
+    pub revision_id: &'a str,
+    pub dirty: bool,
+    pub draft_seq: u64,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ViewResponse {
     pub valid: bool,
@@ -235,6 +243,15 @@ impl Workspace {
         let snap = &self.history[self.cursor];
         self.view(snap, &snap.source, true, vec![])
     }
+    /// Cheap final-publication check while the native workspace lock is held.
+    pub fn source_revision(&self) -> SourceRevision<'_> {
+        SourceRevision {
+            source: &self.history[self.cursor].source,
+            revision_id: &self.revision_id,
+            dirty: self.buffer_dirty,
+            draft_seq: self.draft_seq,
+        }
+    }
     pub fn committed_snapshot(&self) -> CommittedSnapshot {
         let snap = &self.history[self.cursor];
         CommittedSnapshot {
@@ -439,5 +456,31 @@ mod tests {
         let source = "!score 1.1 unit=q\n!part p instrument=piano staves=2\n!voice v part=p staff=1\n@0\n| p m len=1\nv C4:1 id=n\n= v staff=2\n.\n!end at=1\n";
         let w = Workspace::from_source(source).unwrap();
         assert_eq!(w.current().events[0]["staff"], 2);
+    }
+}
+
+#[cfg(test)]
+mod source_revision_tests {
+    use super::*;
+    #[test]
+    fn borrowed_source_revision_tracks_identical_apply_and_dirty_preview() {
+        let mut w = Workspace::demo().unwrap();
+        let source = w.source_revision().source.to_owned();
+        let revision = w.source_revision().revision_id.to_owned();
+        assert!(!w.source_revision().dirty);
+        w.preview_source(&(source.clone() + "\n"));
+        assert!(w.source_revision().dirty);
+        assert_eq!(w.source_revision().source, source);
+        w.apply_source(&source, &revision).unwrap();
+        assert_eq!(w.source_revision().source, source);
+        // Same-byte apply keeps Workspace revision; the desktop mutation hook
+        // still invalidates its lease before invoking it.
+        assert_eq!(w.source_revision().revision_id, revision);
+        assert!(!w.source_revision().dirty);
+        w.apply_source(&(source.clone() + "\n"), &revision).unwrap();
+        let changed = w.source_revision().revision_id.to_owned();
+        w.apply_source(&source, &changed).unwrap();
+        assert_eq!(w.source_revision().source, source);
+        assert_ne!(w.source_revision().revision_id, revision);
     }
 }

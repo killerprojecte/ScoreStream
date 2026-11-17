@@ -162,6 +162,24 @@ impl Audition {
         if prepared.source_sha256!=self.source_sha256 {return Err("Readiness belongs to a different source snapshot".into());}
         self.render_dry_snapshot(current_source,&prepared.bank,&prepared.report,output,cancel)
     }
+    /// Host-only final gate: lock the window lease here, not during native replay.
+    pub fn render_prepared_snapshot_with_gate(
+        &self, current_source: &str, prepared: &DryReadiness, output: &Path,
+        cancel: &AtomicBool,
+        gate: impl FnOnce(crate::PendingWav<'_>) -> crate::Result<crate::PublishedWav>,
+    ) -> Result<Value> {
+        self.check_request(current_source, cancel)?;
+        if prepared.source_sha256 != self.source_sha256 {
+            return Err("Readiness belongs to a different source snapshot".into());
+        }
+        let Plan::Technique(plan) = &self.plan else { return Err("Dry render requires opaque technique plan".into()); };
+        Ok(serde_json::to_value(crate::dry_admission::render_verified_wav_with_gate(
+            &self.captured_source, plan, &self.routes, &prepared.bank, &self.options,
+            crate::dry_lanes::DryTailPolicy::HoldLastGainAtNoteOffV1,
+            crate::pizzicato::PizzicatoSamplePolicy::InstalledTimGm6mbSharedStringsV1,
+            cancel, &prepared.report, output, gate,
+        )?)?)
+    }
     /// Rechecks the current source before opening any output. The native engine
     /// freshly verifies readiness and publishes atomically only on complete match.
     pub fn render_dry_snapshot(&self, current_source: &str, bank: &Path, expected: &Value, output: &Path, cancel: &AtomicBool) -> Result<Value> {

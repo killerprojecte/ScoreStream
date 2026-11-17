@@ -403,6 +403,25 @@ pub fn render_verified_wav(
     expected: &serde_json::Value,
     output: &Path,
 ) -> Result<DryAdmissionReport> {
+    render_verified_wav_with_gate(source, plan, routes, bank_path, options, tail_policy,
+        pizzicato, cancel, expected, output, |pending| pending.commit())
+}
+
+/// Same verified replay, with a host-controlled final no-clobber publication gate.
+#[allow(clippy::too_many_arguments)]
+pub fn render_verified_wav_with_gate(
+    source: &str,
+    plan: &TechniquePlaybackPlan,
+    routes: &[RouteAssignment],
+    bank_path: &Path,
+    options: &RenderOptions,
+    tail_policy: DryTailPolicy,
+    pizzicato: PizzicatoSamplePolicy,
+    cancel: &AtomicBool,
+    expected: &serde_json::Value,
+    output: &Path,
+    gate: impl FnOnce(crate::PendingWav<'_>) -> Result<crate::PublishedWav>,
+) -> Result<DryAdmissionReport> {
     let frames = expected["completed_frames"]
         .as_u64()
         .ok_or_else(|| invalid("Missing observed frame extent"))?;
@@ -423,7 +442,7 @@ pub fn render_verified_wav(
             "Readiness does not cover this exact complete dry plan",
         ));
     }
-    crate::wav::render_with(frames, options, cancel, output, |sink| {
+    crate::wav::render_with_gate(frames, options, cancel, output, |sink| {
         let report = probe_selected(
             source,
             plan,
@@ -443,7 +462,7 @@ pub fn render_verified_wav(
             ));
         }
         Ok(report)
-    })
+    }, gate)
 }
 
 #[cfg(test)]

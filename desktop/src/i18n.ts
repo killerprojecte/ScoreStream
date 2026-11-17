@@ -1,5 +1,15 @@
 export type Language='en'|'zh-CN';
 export const zh:Record<string,string>={
+"Offline rehearsal WAV (Linux)":"离线排练 WAV（Linux）",
+"Uses the current applied score and your explicitly selected local policy and TimGM6mb bank. Existing files are never replaced. Normal playback and Export WAV are unchanged.":"使用当前已应用的乐谱，以及你明确选择的本地策略和 TimGM6mb 音源。不会覆盖已有文件，也不改变普通播放和“导出 WAV”。",
+"This rehearsal does not realize wedge, dashes, ornaments or slur sound. It keeps per-note gain curves, uses declared local GM mixing and shared pizzicato samples, treats tied continuation dynamics as inert, and releases unmarked notes before selected holds. Native note timing is quantized to 64 frames. Hold and grace choices come from your source-bound policy. It is not a fully faithful performance.":"本排练不实现渐强渐弱线、虚线、装饰音或连音线的音效。保留逐音增益曲线，采用明确的本地 GM 混音及共用拨弦采样；延音续段的力度不触发新音，未标记音符在所选延长前释放。音符时刻量化至 64 帧，延长和倚音选择来自绑定本谱的策略。这不是完全忠实的演奏。",
+"Choose policy JSON, bank and a new WAV destination in the native dialogs. Then native verification and rendering run. Editing cancels this export.":"请在系统对话框中选择策略 JSON、音源及新的 WAV 保存位置，随后进行原生验证和渲染。编辑乐谱将取消本次导出。",
+"Cancelling offline export. Close any native chooser; waiting for the native result…":"正在取消离线导出。请关闭尚未关闭的文件对话框，等待原生结果…",
+"Verified WAV saved to your selected destination.":"已验证的 WAV 已保存到你选择的位置。",
+"Offline export cancelled before publication.":"离线导出已在文件发布前取消。",
+"Offline export failed. Check the source-bound policy, trusted local bank and new destination. No successful publication was reported.":"离线导出失败。请检查绑定本谱的策略、可信本地音源和新保存位置。尚未收到文件成功发布的结果。",
+"Use this rehearsal policy and choose files":"采用此排练策略并选择文件",
+
 "Export WAV":"导出 WAV",
 "Export WAV…":"导出 WAV…",
 "Exports the source captured when you choose Export WAV, without applying or saving your score. Built-in synthesized instruments only: 48 kHz stereo PCM16. Long exports use more memory.":"导出点击“导出 WAV”时的源码，不会应用或保存乐谱。当前仅使用内置合成音色：48 kHz 双声道 PCM16。长时导出需要更多内存。",
