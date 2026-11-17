@@ -9,6 +9,8 @@ type PendingImport = Mutex<source_files::Pending>;
 static IMPORT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 type ImportOrigin = Mutex<Option<std::path::PathBuf>>;
 mod wav_export;
+#[cfg(target_os = "linux")]
+mod offline_export;
 mod window_chrome;
 use wav_export::WavExports;
 #[cfg(feature = "smoke-test")]
@@ -45,21 +47,29 @@ async fn mcp_stop(state: State<'_, McpHost>) -> Result<McpStatus, String> {
     state.lock().map_err(|e| e.to_string())?.stop()
 }
 #[tauri::command]
+fn offline_export_supported() -> bool { cfg!(target_os = "linux") }
+#[tauri::command]
 fn current(state: State<'_, Authority>) -> Result<ViewResponse, String> {
     Ok(state.lock().map_err(|e| e.to_string())?.current())
 }
-#[tauri::command]
-fn open_demo(state: State<'_, Authority>) -> Result<ViewResponse, String> {
-    let mut service = state.lock().map_err(|e| e.to_string())?;
-    *service = Workspace::demo()?;
-    Ok(service.current())
+// Lock order is always workspace -> offline lease, including final publication.
+fn change_workspace(app: &tauri::AppHandle, state: &Authority,
+    change: impl FnOnce(&mut Workspace) -> Result<ViewResponse, String>) -> Result<ViewResponse, String> {
+    let mut workspace = state.lock().map_err(|e| e.to_string())?;
+    #[cfg(target_os = "linux")]
+    offline_export::invalidate(app);
+    #[cfg(not(target_os = "linux"))]
+    let _ = app;
+    change(&mut workspace)
 }
 #[tauri::command]
-fn preview_source(source: String, state: State<'_, Authority>) -> Result<ViewResponse, String> {
-    Ok(state
-        .lock()
-        .map_err(|e| e.to_string())?
-        .preview_source(&source))
+fn open_demo(app: tauri::AppHandle, state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    change_workspace(&app, state.inner(), |service| { *service = Workspace::demo()?; Ok(service.current()) })
+}
+#[tauri::command]
+fn preview_source(source: String, app: tauri::AppHandle, state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    // Even an uncommitted editor draft invalidates its prior audition reservation.
+    change_workspace(&app, state.inner(), |service| Ok(service.preview_source(&source)))
 }
 #[tauri::command]
 async fn playback_plan(source: String) -> Result<scorestream_app::playback::PlaybackPlan, String> {
@@ -69,49 +79,27 @@ async fn playback_plan(source: String) -> Result<scorestream_app::playback::Play
         .map_err(|error| format!("Playback planning failed: {error}"))?
 }
 #[tauri::command]
-fn apply_source(
-    source: String,
-    expected_revision_id: String,
-    state: State<'_, Authority>,
-) -> Result<ViewResponse, String> {
-    state
-        .lock()
-        .map_err(|e| e.to_string())?
-        .apply_source(&source, &expected_revision_id)
+fn apply_source(source: String, expected_revision_id: String, app: tauri::AppHandle,
+    state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    change_workspace(&app, state.inner(), |w| w.apply_source(&source, &expected_revision_id))
 }
 #[tauri::command]
-fn undo(state: State<'_, Authority>) -> Result<ViewResponse, String> {
-    state.lock().map_err(|e| e.to_string())?.undo()
+fn undo(app: tauri::AppHandle, state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    change_workspace(&app, state.inner(), Workspace::undo)
 }
 #[tauri::command]
-fn redo(state: State<'_, Authority>) -> Result<ViewResponse, String> {
-    state.lock().map_err(|e| e.to_string())?.redo()
+fn redo(app: tauri::AppHandle, state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    change_workspace(&app, state.inner(), Workspace::redo)
 }
 #[tauri::command]
-fn set_event_pitch(
-    event_id: String,
-    pitch: String,
-    expected_revision_id: String,
-    state: State<'_, Authority>,
-) -> Result<ViewResponse, String> {
-    state.lock().map_err(|e| e.to_string())?.set_event_pitch(
-        &event_id,
-        &pitch,
-        &expected_revision_id,
-    )
+fn set_event_pitch(event_id: String, pitch: String, expected_revision_id: String,
+    app: tauri::AppHandle, state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    change_workspace(&app, state.inner(), |w| w.set_event_pitch(&event_id, &pitch, &expected_revision_id))
 }
 #[tauri::command]
-fn set_event_duration(
-    event_id: String,
-    duration: String,
-    expected_revision_id: String,
-    state: State<'_, Authority>,
-) -> Result<ViewResponse, String> {
-    state.lock().map_err(|e| e.to_string())?.set_event_duration(
-        &event_id,
-        &duration,
-        &expected_revision_id,
-    )
+fn set_event_duration(event_id: String, duration: String, expected_revision_id: String,
+    app: tauri::AppHandle, state: State<'_, Authority>) -> Result<ViewResponse, String> {
+    change_workspace(&app, state.inner(), |w| w.set_event_duration(&event_id, &duration, &expected_revision_id))
 }
 #[tauri::command]
 async fn open_source_file(pending: State<'_, PendingImport>) -> Result<Option<OpenedFile>, String> {
@@ -137,6 +125,7 @@ async fn open_source_file(pending: State<'_, PendingImport>) -> Result<Option<Op
 }
 #[tauri::command]
 fn activate_import(
+    app: tauri::AppHandle,
     token: String,
     expected_revision_id: String,
     authority: State<'_, Authority>,
@@ -144,6 +133,8 @@ fn activate_import(
     pending: State<'_, PendingImport>,
 ) -> Result<ViewResponse, String> {
     let mut workspace = authority.lock().map_err(|e| e.to_string())?;
+    #[cfg(target_os = "linux")]
+    offline_export::invalidate(&app);
     let mut imported = origin.lock().map_err(|e| e.to_string())?;
     let mut prepared = pending.lock().map_err(|e| e.to_string())?;
     source_files::activate(
@@ -198,6 +189,8 @@ fn main() {
         .manage(Mutex::new(None::<(String, Workspace, std::path::PathBuf)>))
         .on_page_load(|webview, payload| {
             if matches!(payload.event(), tauri::webview::PageLoadEvent::Started) {
+                #[cfg(target_os = "linux")]
+                offline_export::discard_window(webview.app_handle(), webview.label());
                 if let Some(pending) = webview.try_state::<PendingImport>() {
                     if let Ok(mut value) = pending.lock() {
                         *value = None;
@@ -210,6 +203,8 @@ fn main() {
         })
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
+                #[cfg(target_os = "linux")]
+                offline_export::discard_window(window.app_handle(), window.label());
                 if let Some(state) = window.try_state::<WavExports>() {
                     wav_export::discard_window(state.inner(), window.label());
                 }
@@ -264,8 +259,14 @@ fn main() {
             window.build()?;
             Ok(())
         });
-    #[cfg(feature = "smoke-test")]
+    #[cfg(target_os = "linux")]
+    let builder = builder.manage(offline_export::Exports::default());
+    #[cfg(all(feature = "smoke-test", target_os = "linux"))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        offline_export::offline_export_reserve,
+        offline_export::offline_export_run,
+        offline_export::offline_export_cancel,
+        offline_export_supported,
         current,
         open_demo,
         preview_source,
@@ -288,8 +289,61 @@ fn main() {
         mcp_stop,
         report_smoke_test
     ]);
-    #[cfg(not(feature = "smoke-test"))]
+    #[cfg(all(not(feature = "smoke-test"), target_os = "linux"))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        offline_export::offline_export_reserve,
+        offline_export::offline_export_run,
+        offline_export::offline_export_cancel,
+        offline_export_supported,
+        current,
+        open_demo,
+        preview_source,
+        playback_plan,
+        apply_source,
+        undo,
+        redo,
+        set_event_pitch,
+        set_event_duration,
+        open_source_file,
+        activate_import,
+        save_source_file,
+        wav_export::wav_export_begin,
+        wav_export::wav_export_write,
+        wav_export::wav_export_finish,
+        wav_export::wav_export_abort,
+        mcp_status,
+        mcp_save_settings,
+        mcp_start,
+        mcp_stop
+    ]);
+    #[cfg(all(feature = "smoke-test", not(target_os = "linux")))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        offline_export_supported,
+        current,
+        open_demo,
+        preview_source,
+        playback_plan,
+        apply_source,
+        undo,
+        redo,
+        set_event_pitch,
+        set_event_duration,
+        open_source_file,
+        activate_import,
+        save_source_file,
+        wav_export::wav_export_begin,
+        wav_export::wav_export_write,
+        wav_export::wav_export_finish,
+        wav_export::wav_export_abort,
+        mcp_status,
+        mcp_save_settings,
+        mcp_start,
+        mcp_stop,
+        report_smoke_test
+    ]);
+    #[cfg(all(not(feature = "smoke-test"), not(target_os = "linux")))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        offline_export_supported,
         current,
         open_demo,
         preview_source,
@@ -316,6 +370,8 @@ fn main() {
         .expect("failed to build ScoreStream")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
+                #[cfg(target_os = "linux")]
+                offline_export::invalidate(app);
                 if let Some(state) = app.try_state::<WavExports>() {
                     wav_export::discard_all(state.inner());
                 }

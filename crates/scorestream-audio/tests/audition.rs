@@ -360,3 +360,44 @@ fn library_session_reuses_native_readiness_and_atomic_export_on_one_captured_sco
     assert!(session.render_prepared_snapshot(&source,&prepared,&output,&cancel).is_err());
     assert_eq!(std::fs::read(&output).unwrap(),bytes);
 }
+
+#[path = "../../scorestream-desktop/src/offline_export/lease.rs"]
+mod desktop_lease;
+#[test]
+#[ignore="requires installed trusted FluidSynth and exact local TimGM; no corpus assets"]
+fn native_prepared_session_publishes_through_real_window_lease() {
+    use std::{path::Path, sync::Mutex};
+    let (source, session) = captured_practice();
+    let mut leases = desktop_lease::Leases::default();
+    let work = leases.begin("main", "r1", &source).unwrap();
+    let prepared = session.prepare_dry_snapshot(&source,
+        Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"), work.cancellation()).unwrap();
+    leases.ready("main", &work, ()).unwrap(); leases.start_render("main", &work).unwrap();
+    let state = Mutex::new(leases);
+    let directory = tempfile::tempdir().unwrap(); let output = directory.path().join("gated.wav");
+    let report = session.render_prepared_snapshot_with_gate(&source, &prepared, &output,
+        work.cancellation(), |pending| {
+            state.lock().unwrap().publish("main", &work, || pending.commit())
+                .map_err(|_| scorestream_audio::AudioError::Cancelled)?
+        }).unwrap();
+    let normalized: Value = serde_json::from_slice(&serde_json::to_vec(&report).unwrap()).unwrap();
+    assert_eq!(normalized, *prepared.report());
+    let bytes = std::fs::read(&output).unwrap();
+    assert_eq!(bytes.len() as u64, 44 + 4 * report["completed_frames"].as_u64().unwrap());
+    assert!(bytes[44..].iter().any(|v| *v != 0));
+    state.lock().unwrap().cancel("main", &work);
+    assert_eq!(std::fs::read(&output).unwrap(), bytes);
+}
+
+#[test]
+#[ignore="requires installed trusted FluidSynth and exact local TimGM; strict desktop path"]
+fn strict_joint_fixture_does_not_silently_gain_a_source_mixer() {
+    let session = compile(SOURCE, config()).unwrap();
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let error = session.prepare_dry_snapshot(SOURCE,
+        std::path::Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"), &cancel).err().unwrap();
+    assert!(error.to_string().contains("requires source mixer"));
+}
+
+#[path = "../../scorestream-desktop/src/offline_export/errors.rs"]
+mod offline_errors;

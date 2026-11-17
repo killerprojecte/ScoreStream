@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::{collections::BTreeMap, io::ErrorKind, path::PathBuf, sync::{Arc, Mutex}};
 use tauri::{State, WebviewWindow, ipc::{InvokeBody, Request}};
 
-mod chooser;
+pub(crate) mod chooser;
 
 const SESSION_HEADER: &str = "x-scorestream-wav-session";
 const OFFSET_HEADER: &str = "x-scorestream-wav-offset";

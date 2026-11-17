@@ -20,6 +20,7 @@ mod plan;
 #[cfg(target_os = "linux")]
 mod render;
 mod wav;
+pub use wav::{PendingWav, PublishedWav};
 
 use scorestream_app::playback::{PerformanceDiagnostic, PlaybackPlan};
 use serde::{Deserialize, Serialize};
