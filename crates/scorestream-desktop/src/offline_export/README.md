@@ -89,3 +89,34 @@ registry versions/checksums already exist. `cargo metadata --no-deps --offline
 existing desktop-bundles Linux runner installs GTK3, WebKit2GTK4.1, SSL, appindicator,
 librsvg, pkg-config and build tools before locked native build. Use it for the next
 bundle acceptance; do not install dependencies or report a local bundle pass here.
+
+
+## Source-bound policy draft and validation
+
+The same dialog now offers **Generate policy draft** and **Validate edited policy**.
+Both reserve the same native window/source/revision lease; native choosers alone
+select their paths. Draft JSON is written outside locks to a private temporary file,
+then no-clobber published under the same source/owner gate. It never replaces a
+user's policy, changes the score, chooses a bank or starts audio.
+
+The draft contains exact source SHA, part/instrument identifiers and authored MIDI
+facts. Program/bank/preset, hold/grace choices, gain and rendering options remain
+null. These are explicitly unchosen, not suggested defaults. Instructions show the
+existing hold/grace shapes and accepted enums; no new policy interpreter exists.
+The metadata/instructions are explanatory only and cannot authorize compiler routes.
+
+Validation accepts existing Config JSON or this closed draft envelope. It checks
+both source hashes, lists null paths, then uses the existing source mixer and
+practice discovery once routes are explicitly filled. Grace identities and their
+principal coordinates are included alongside fermatas; final-ending continuation
+is used only when explicitly selected. The real practice compiler remains the
+final check for complete policy fields, group membership and timing. Validation
+never opens a bank or creates a WAV, and `policy_compiled` does not mean native
+bank verification. UI shows the actual report for inspection/copying.
+
+A filled draft is accepted directly by the existing export path and both CLI
+examples, so users do not have to extract a hidden subobject. Empty drafts cannot
+compile or export. Actual local six-note fixture testing verifies an explicitly
+filled draft through the same native preflight/atomic WAV path, not a mock engine.
+The newly added native commands still require subsequent Tauri CI acceptance;
+this increment does not trigger or claim another bundle build.

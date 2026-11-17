@@ -263,6 +263,8 @@ fn main() {
     let builder = builder.manage(offline_export::Exports::default());
     #[cfg(all(feature = "smoke-test", target_os = "linux"))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        offline_export::offline_policy_draft,
+        offline_export::offline_policy_validate,
         offline_export::offline_export_reserve,
         offline_export::offline_export_run,
         offline_export::offline_export_cancel,
@@ -291,6 +293,8 @@ fn main() {
     ]);
     #[cfg(all(not(feature = "smoke-test"), target_os = "linux"))]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        offline_export::offline_policy_draft,
+        offline_export::offline_policy_validate,
         offline_export::offline_export_reserve,
         offline_export::offline_export_run,
         offline_export::offline_export_cancel,
