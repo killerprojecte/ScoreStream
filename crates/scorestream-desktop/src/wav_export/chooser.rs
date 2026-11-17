@@ -54,13 +54,13 @@ pub(crate) mod linux {
         let state = reservation.state.clone();
         let owner = reservation.owner.clone();
         let id = reservation.id.clone();
-        choose_local(window, "Export WAV (choose a new filename)", true, "WAV audio", "*.[wW][aA][vV]",
+        choose_local(window, "Export WAV (choose a new filename)", true, "score.wav", "WAV audio", "*.[wW][aA][vV]",
             move || state.lock().map(|s| s.matches(&owner, &id)).map_err(|_| WavError::chooser())).await
     }
 
     /// Shared parented native chooser. No webview path or owner is accepted.
     pub(crate) async fn choose_local(window: &WebviewWindow, title: &'static str,
-        save: bool, filter_name: &'static str, pattern: &'static str,
+        save: bool, default_name: &'static str, filter_name: &'static str, pattern: &'static str,
         active: impl Fn() -> Result<bool> + Send + 'static) -> Choice {
         let (sender, mut receiver) = channel(1);
         let parent = window.clone();
@@ -89,7 +89,7 @@ pub(crate) mod linux {
             dialog.set_modal(true);
             dialog.set_destroy_with_parent(true);
             dialog.set_local_only(true);
-            if save { dialog.set_current_name("score.wav"); }
+            if save { dialog.set_current_name(default_name); }
             // The sink cannot overwrite. Do not offer a misleading Replace prompt.
             dialog.set_do_overwrite_confirmation(false);
             let filter = FileFilter::new();

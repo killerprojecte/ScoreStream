@@ -42,6 +42,12 @@ impl DryApi {
     }
 }
 
+/// Load the exact dry ABI table and query native limits without a synth or bank.
+pub(crate) fn probe_api(api: &Api) -> Result<usize> {
+    let _functions = DryApi::load(api)?;
+    DrySynth::physical_group_limit(api)
+}
+
 /// Private fields prevent callers constructing a fake empty-voice certificate.
 /// Valid only at its completed frame; no native pointers escape a snapshot.
 #[derive(Debug)]

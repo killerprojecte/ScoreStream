@@ -15,7 +15,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 && args[8] == "authored_note_on_with_relative_trajectory_v1" =>
         {
             let source = std::fs::read_to_string(&args[2])?;
-            let config = serde_json::from_str(&std::fs::read_to_string(&args[3])?)?;
+            let config = scorestream_audio::policy_draft::parse(&source, serde_json::from_str(&std::fs::read_to_string(&args[3])?)?)?;
             let audition=support::Audition::compile_practice(
                 &source,
                 scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
@@ -71,7 +71,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 || (command == "render" && args.len() == 6) =>
         {
             let source = std::fs::read_to_string(&args[2])?;
-            let config = serde_json::from_str(&std::fs::read_to_string(&args[3])?)?;
+            let config = scorestream_audio::policy_draft::parse(&source, serde_json::from_str(&std::fs::read_to_string(&args[3])?)?)?;
             let audition = support::Audition::compile(&source, config)?;
             if command == "preflight" {
                 audition.preflight()?

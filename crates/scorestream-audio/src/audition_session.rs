@@ -560,6 +560,12 @@ pub fn discover_practice(
     source: &str,
     mix: &crate::midi_mixer::LocalMidiMix,
 ) -> Result<Value> {
+    discover_practice_with_final_ending(source, mix, FinalEnding::Reject)
+}
+/// Same discovery with an explicitly selected existing final-ending policy.
+pub fn discover_practice_with_final_ending(
+    source: &str, mix: &crate::midi_mixer::LocalMidiMix, final_ending: FinalEnding,
+) -> Result<Value> {
     mix.verify_source(source)?;
     let doc = scorestream_codec::parse(source).map_err(|e| format!("{e:?}"))?;
     let routes = mix
@@ -572,18 +578,20 @@ pub fn discover_practice(
             program_zero_based: r.route.program,
         })
         .collect::<Vec<_>>();
-    let result = discover_document_practice_joint(
+    let result = discover_document_practice_joint_with_final_ending(
         &doc,
         PracticeDiscoveryPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
         ExplicitArticulationPolicy::SimpleStaccatoAccentV1,
         &routes,
+        final_ending.core(),
     );
+    let selected_ending = match final_ending { FinalEnding::Reject => "reject", FinalEnding::ContinueToMovementEnd => "continue_to_movement_end" };
     match result {
         Ok(q) => Ok(
-            json!({"source_sha256":source_sha256(source),"midi_receipt":mix,"nonrealizations":q.nonrealizations(),"playback_plan_created":false,"hold_seconds_selected":false,"grace_occurrences":q.discovery().graces.occurrences.len(),"fermatas":q.discovery().fermatas.occurrences.iter().map(|f|json!({"event":f.id,"written_event":f.written_id,"part":f.part,"start":f.quarter_start,"end":f.quarter_end})).collect::<Vec<_>>()}),
+            json!({"source_sha256":source_sha256(source),"selected_final_ending":selected_ending,"midi_receipt":mix,"nonrealizations":q.nonrealizations(),"playback_plan_created":false,"hold_seconds_selected":false,"grace_occurrences":q.discovery().graces.occurrences.len(),"graces":q.discovery().graces.occurrences.iter().map(|g|json!({"event":g.id,"written_event":g.written_id,"principal":g.principal,"part":g.part,"order":g.order,"principal_start":g.principal_start,"principal_end":g.principal_end,"authored_timing":g.timing})).collect::<Vec<_>>(),"fermatas":q.discovery().fermatas.occurrences.iter().map(|f|json!({"event":f.id,"written_event":f.written_id,"part":f.part,"start":f.quarter_start,"end":f.quarter_end})).collect::<Vec<_>>()}),
         ),
         Err(e) => Ok(
-            json!({"source_sha256":source_sha256(source),"midi_receipt":mix,"playback_plan_created":false,"hold_seconds_selected":false,"practice_discovery_errors":e.iter().map(ToString::to_string).collect::<Vec<_>>()}),
+            json!({"source_sha256":source_sha256(source),"selected_final_ending":selected_ending,"midi_receipt":mix,"playback_plan_created":false,"hold_seconds_selected":false,"practice_discovery_errors":e.iter().map(ToString::to_string).collect::<Vec<_>>()}),
         ),
     }
 }

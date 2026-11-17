@@ -298,12 +298,12 @@ fn boundary_policy_is_explicit_and_cannot_enter_ordinary_compiler() {
 }
 
 fn captured_practice() -> (String, Audition) {
-    let (source, config)=practice_fixture();
+    let (source, fixture_config)=practice_fixture();
     let session=Audition::compile_practice(&source,
         scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
         scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
         scorestream_app::playback::PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,
-        config,support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        fixture_config,support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
         scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1).unwrap();
     (source,session)
 }
@@ -401,3 +401,75 @@ fn strict_joint_fixture_does_not_silently_gain_a_source_mixer() {
 
 #[path = "../../scorestream-desktop/src/offline_export/errors.rs"]
 mod offline_errors;
+
+#[test]
+fn policy_draft_leaves_choices_unset_and_real_validation_requires_explicit_completion() {
+    use scorestream_audio::policy_draft;
+    let (source, fixture_config) = practice_fixture();
+    let mut draft=policy_draft::create(&source).unwrap();
+    assert!(draft["config"]["bank_sha256"].is_null());
+    assert!(draft["config"]["palette"][0]["program"].is_null());
+    assert!(draft["config"]["timing"]["holds"].is_null());
+    assert!(policy_draft::parse(&source,draft.clone()).is_err());
+    let report=policy_draft::validate(&source,draft.clone()).unwrap();
+    assert!(!report["unchosen_fields"].as_array().unwrap().is_empty());
+    assert_eq!(report["policy_compiled"],false);
+    assert_eq!(report["native_bank_verified"],false);
+    // Existing selected fixture choices, not defaults invented by the generator.
+    let mut selected=config();
+    let mut extra=selected["palette"][0].clone();extra["part"]="r".into();
+    selected["palette"].as_array_mut().unwrap().push(extra);
+    selected["source_sha256"]=support::Audition::compile_practice(&source,
+        scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
+        scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
+        scorestream_app::playback::PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,
+        fixture_config,support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1).unwrap().source_sha256().into();
+    selected["final_ending"]="reject".into();selected["boundary_dynamics"]="reject".into();
+    draft["config"]=selected;
+    let report=policy_draft::validate(&source,draft.clone()).unwrap();
+    assert_eq!(report["policy_compiled"],true,"{report:#}");
+    assert_eq!(report["discovery"]["graces"][0]["principal"],"occ1:principal");
+    assert_eq!(report["wav_created"],false);
+    assert!(policy_draft::validate(&(source.clone()+"\n"),draft.clone()).is_err());
+    draft["config"]["timing"]["holds"]=json!([]);
+    assert_eq!(policy_draft::validate(&source,draft).unwrap()["policy_compiled"],false);
+}
+
+#[test]
+#[ignore="requires installed trusted FluidSynth and TimGM; filled user-selected draft"]
+fn filled_policy_draft_reuses_real_native_session_without_changing_choices() {
+    use scorestream_audio::policy_draft;
+    let (source, _) = practice_fixture();
+    let mut selected=config();
+    let mut extra=selected["palette"][0].clone();extra["part"]="r".into();selected["palette"].as_array_mut().unwrap().push(extra);
+    selected["source_sha256"]=scorestream_audio::assignments::source_sha256(&source).into();
+    selected["final_ending"]="reject".into();selected["boundary_dynamics"]="reject".into();
+    let mut draft=policy_draft::create(&source).unwrap();draft["config"]=selected.clone();
+    let session=Audition::compile_practice(&source,
+        scorestream_app::playback::PracticeTieNoteOnPolicy::InertWithoutNewNoteOnV1,
+        scorestream_app::playback::PracticeHoldEndpointPolicy::ReleaseUnmarkedAtBoundaryBeforeHoldV1,
+        scorestream_app::playback::PracticeNoteExpressionPolicy::AuthoredNoteOnWithRelativeTrajectoryV1,
+        policy_draft::parse(&source,draft).unwrap(),
+        support::PracticeReviewPolicy::WrittenNotesWithoutWedgeDashesOrnamentsSlurV1,
+        scorestream_audio::midi_mixer::LocalMidiPolicy::InitialGmCc7CenteredV1).unwrap();
+    let cancel=std::sync::atomic::AtomicBool::new(false);
+    let ready=session.prepare_dry_snapshot(&source,std::path::Path::new("/usr/share/sounds/sf2/TimGM6mb.sf2"),&cancel).unwrap();
+    let dir=tempfile::tempdir().unwrap();let output=dir.path().join("filled.wav");
+    let report=session.render_prepared_snapshot_with_gate(&source,&ready,&output,&cancel,|p|p.commit()).unwrap();
+    assert_eq!(report["admitted_notes"],6);assert_eq!(report["playing_lanes_at_end"],0);
+    assert!(std::fs::read(&output).unwrap()[44..].iter().any(|v|*v!=0));
+    assert_eq!(selected["timing"]["holds"][0]["added_seconds"],"1");
+}
+
+#[test]
+fn policy_draft_rejects_wrong_schema_changed_inner_hash_and_unrecognized_fields() {
+    let (source,_)=practice_fixture();
+    let original=scorestream_audio::policy_draft::create(&source).unwrap();
+    let mut changed=original.clone();changed["schema"]="unknown".into();
+    assert!(scorestream_audio::policy_draft::validate(&source,changed).is_err());
+    let mut changed=original.clone();changed["config"]["source_sha256"]="different".into();
+    assert!(scorestream_audio::policy_draft::validate(&source,changed).is_err());
+    let mut changed=original;changed["automatic_route_override"]=true.into();
+    assert!(scorestream_audio::policy_draft::validate(&source,changed).is_err());
+}

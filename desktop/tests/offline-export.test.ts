@@ -5,7 +5,7 @@ describe('native offline export lifecycle',()=>{
  it('requires explicit confirmation and carries only revision/token, never paths',async()=>{
   const api={reserve:vi.fn(async()=> 'host-1'),run:vi.fn(async()=>({completed_frames:64})),cancel:vi.fn(async()=>{})};
   const m=new OfflineExport(api);await m.start('r1');expect(api.reserve).not.toHaveBeenCalled();
-  m.open();await m.start('r1');expect(api.reserve).toHaveBeenCalledWith('r1');expect(api.run).toHaveBeenCalledWith('host-1');expect(m.getSnapshot().phase).toBe('succeeded');
+  m.open();await m.start('r1');expect(api.reserve).toHaveBeenCalledWith('r1');expect(api.run).toHaveBeenCalledWith('host-1','export');expect(m.getSnapshot().phase).toBe('succeeded');
  });
  it('edit/cancel before reserve returns retires late token without starting native run',async()=>{
   const reservation=deferred<string>();const api={reserve:()=>reservation.promise,run:vi.fn(),cancel:vi.fn(async()=>{})};
@@ -31,4 +31,12 @@ describe('offline IPC uncertainty',()=>{
   const m=new OfflineExport(api);m.open();const done=m.start('r1');await Promise.resolve();m.cancel();rendered.reject('connection lost');await done;
   expect(m.getSnapshot().phase).toBe('failed');expect(api.cancel).toHaveBeenCalledWith('one');
  });
+});
+
+it('policy draft and validation actions share native reservation without rendering by default',async()=>{
+ const api={reserve:vi.fn(async()=> 'draft-1'),run:vi.fn(async()=>({policy_compiled:false,unchosen_fields:['config.bank_sha256']})),cancel:vi.fn(async()=>{})};
+ const m=new OfflineExport(api);m.open();await m.start('r1','draft');
+ expect(api.run).toHaveBeenLastCalledWith('draft-1','draft');
+ m.open();await m.start('r1','validate');expect(api.run).toHaveBeenLastCalledWith('draft-1','validate');
+ expect(m.getSnapshot().action).toBe('validate');expect(m.getSnapshot().result).toEqual({policy_compiled:false,unchosen_fields:['config.bank_sha256']});
 });
