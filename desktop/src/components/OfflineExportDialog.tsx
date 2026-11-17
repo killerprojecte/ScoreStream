@@ -5,6 +5,7 @@ import {OfflineExport} from '../app/offline-export';
 import type {Workbench} from '../app/workbench';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from './ui/dialog';
 import {Button} from './ui/button';
+import {Textarea} from './ui/textarea';
 import {t} from '../i18n';
 
 export function useOfflineExport(workbench:Workbench){
@@ -31,7 +32,7 @@ export function OfflineExportDialog({offline,revision,enabled}:{offline:ReturnTy
    <p className="text-sm">{t('This rehearsal does not realize wedge, dashes, ornaments or slur sound. It keeps per-note gain curves, uses declared local GM mixing and shared pizzicato samples, treats tied continuation dynamics as inert, and releases unmarked notes before selected holds. Native note timing is quantized to 64 frames. Hold and grace choices come from your source-bound policy. It is not a fully faithful performance.')}</p>
    {state.phase==='pending'&&<p role="status">{t(state.action==='export'?'Choose policy JSON, bank and a new WAV destination in the native dialogs. Then native verification and rendering run. Editing cancels this export.':state.action==='draft'?'Choose a new JSON filename for the incomplete source-bound draft. No sound or timing choices are filled in.':'Choose your edited policy JSON. Validation uses this score; it does not open a bank or create audio.')}</p>}
    {state.phase==='cancelling'&&<p role="status">{t('Cancelling offline export. Close any native chooser; waiting for the native result…')}</p>}
-   {state.phase==='succeeded'&&<><p role="status">{t(state.action==='export'?'Verified WAV saved to your selected destination.':state.action==='draft'?'Incomplete policy draft saved. Fill its null fields explicitly, then validate it here.':'Policy validation finished. Check missing choices and errors below; a compiled policy is not native bank verification.')}</p>{state.action==='validate'&&<textarea aria-label={t('Policy validation report')} className="w-full min-h-48 font-mono text-xs" rows={12} readOnly value={JSON.stringify(state.result,null,2)}/>}</>}
+   {state.phase==='succeeded'&&<><p role="status">{t(state.action==='export'?'Verified WAV saved to your selected destination.':state.action==='draft'?'Incomplete policy draft saved. Fill its null fields explicitly, then validate it here.':'Policy validation finished. Check missing choices and errors below; a compiled policy is not native bank verification.')}</p>{state.action==='validate'&&<Textarea aria-label={t('Policy validation report')} className="w-full min-h-48 font-mono text-xs" rows={12} readOnly value={JSON.stringify(state.result,null,2)}/>}</>}
    {state.phase==='cancelled'&&<p role="status">{t('Offline export cancelled before publication.')}</p>}
    {state.phase==='failed'&&<p role="alert">{t('Offline export failed. Check the source-bound policy, trusted local bank and new destination. No successful publication was reported.')}</p>}
    {state.error&&<p className="text-sm" role="alert">{state.error}</p>}
